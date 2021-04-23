@@ -1,0 +1,4 @@
+aiohttp==3.7.4.post0
+asyncio==3.4.3
+aiofiles==0.6.0
+coloredlogs==15.0
