@@ -1,12 +1,14 @@
 import json
 import re
-from typing import Any, TypedDict
+from typing import Any, TypedDict, Literal
 
 from aiohttp import ClientSession
 
 from yutto.api.types import AId, AvId, BvId, CId, EpisodeId
 from yutto.urlparser import regexp_bangumi_ep
 from yutto.utils.fetcher import Fetcher
+from yutto.media.codec import VideoCodec, AudioCodec
+from yutto.media.quality import VideoQuality, AudioQuality
 
 
 class HttpStatusError(Exception):
@@ -30,6 +32,30 @@ class VideoInfo(TypedDict):
     cid: CId
     picture: str
     title: str
+
+
+class AcgVideoListItem(TypedDict):
+    id: int
+    name: str
+    cid: CId
+
+
+class VideoUrlMeta(TypedDict):
+    url: str
+    mirrors: list[str]
+    codec: VideoCodec
+    width: int
+    height: int
+    quality: VideoQuality
+
+
+class AudioUrlMeta(TypedDict):
+    url: str
+    mirrors: list[str]
+    codec: AudioCodec
+    width: int
+    height: int
+    quality: AudioQuality
 
 
 async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
@@ -56,7 +82,7 @@ async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
     return (await get_video_info(session, avid))["title"]
 
 
-async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[dict[str, Any]]:
+async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVideoListItem]:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
     return [
@@ -64,7 +90,7 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[dict[st
         {
             "id": i + 1,
             "name": item["part"],
-            "cid": str(item["cid"])
+            "cid": CId(str(item["cid"]))
         }
         for i, item in enumerate(res_json["data"])
     ]
@@ -72,8 +98,9 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[dict[st
 
 async def get_acg_video_playurl(
     session: ClientSession, avid: AvId, cid: CId
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=125&type=&otype=json&fnver=0&fnval=80&fourk=1"
+    codecid_map: dict[Literal[7, 12], VideoCodec] = {7: "avc", 12: "hevc"}
 
     async with session.get(play_api.format(**avid.to_dict(), cid=cid)) as resp:
         if not resp.ok:
@@ -86,7 +113,7 @@ async def get_acg_video_playurl(
                 {
                     "url": video["base_url"],
                     "mirrors": video["backup_url"],
-                    "codec": {7: "avc", 12: "hevc"}[video["codecid"]],
+                    "codec": codecid_map[video["codecid"]],
                     "width": video["width"],
                     "height": video["height"],
                     "quality": video["id"],
