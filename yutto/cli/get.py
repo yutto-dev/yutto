@@ -1,16 +1,25 @@
 import argparse
-import aiohttp
-from yutto.processor.crawler import gen_cookies, gen_headers
-from yutto.utils.functiontools.sync import sync
+import os
 import sys
 
+import aiohttp
+
+from yutto.api.acg_video import get_acg_video_playurl, get_acg_video_title, get_acg_video_list
+from yutto.api.bangumi import get_bangumi_list, get_bangumi_playurl, get_bangumi_title, get_season_id_by_episode_id
+from yutto.api.types import AId, AvId, BvId, CId, EpisodeId, MediaId, SeasonId
+from yutto.processor.crawler import gen_cookies, gen_headers
 from yutto.processor.downloader import download_video
-from yutto.api.bangumi import get_bangumi_playurl, get_bangumi_title, get_season_id_by_episode_id, get_bangumi_list
-from yutto.api.acg_video import get_acg_video_title, get_acg_video_playurl
-from yutto.api.types import AvId, AId, BvId, EpisodeId, MediaId, SeasonId, CId
-from yutto.processor.urlparser import regexp_bangumi_ep
-from yutto.utils.console.logger import Logger
+from yutto.processor.urlparser import (
+    regexp_acg_video_av,
+    regexp_acg_video_av_short,
+    regexp_acg_video_bv,
+    regexp_acg_video_bv_short,
+    regexp_bangumi_ep,
+    regexp_bangumi_ep_short,
+)
 from yutto.utils.console.formatter import repair_filename
+from yutto.utils.console.logger import Badge, Logger
+from yutto.utils.functiontools.sync import sync
 
 
 def add_get_arguments(parser: argparse.ArgumentParser):
@@ -20,10 +29,17 @@ def add_get_arguments(parser: argparse.ArgumentParser):
 
 @sync
 async def run(args: argparse.Namespace):
+    # args.sessdata = "0a7f9758%2C1629361847%2Ca86ac*21"
+    # # args.sessdata = ""
+    # sessdata = "0a7f9758%2C1629361847%2Ca86ac*21"
+    # # sessdata = "dfasdlfsa"
     async with aiohttp.ClientSession(
-        headers=gen_headers(), cookies=gen_cookies(args.sessdata), timeout=aiohttp.ClientTimeout(total=5)
+        headers=gen_headers(),
+        cookies=gen_cookies(args.sessdata),
+        cookie_jar=aiohttp.DummyCookieJar(),
+        timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        if match_obj := regexp_bangumi_ep.match(args.url):
+        if (match_obj := regexp_bangumi_ep.match(args.url)) or (match_obj := regexp_bangumi_ep_short.match(args.url)):
             episode_id = EpisodeId(match_obj.group("episode_id"))
             season_id = await get_season_id_by_episode_id(session, episode_id)
             bangumi_list = await get_bangumi_list(session, season_id)
@@ -37,7 +53,27 @@ async def run(args: argparse.Namespace):
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(1)
             videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
-            # title = await get_bangumi_title(session, season_id)
+            title = await get_bangumi_title(session, season_id)
+            Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
+        elif (
+            (match_obj := regexp_acg_video_av.match(args.url))
+            or (match_obj := regexp_acg_video_av_short.match(args.url))
+            or (match_obj := regexp_acg_video_bv.match(args.url))
+            or (match_obj := regexp_acg_video_bv_short.match(args.url))
+        ):
+            page: int = 1
+            if "aid" in match_obj.groupdict().keys():
+                avid = AId(match_obj.group("aid"))
+            else:
+                avid = BvId(match_obj.group("bvid"))
+            if match_obj.group("page") is not None:
+                page = int(match_obj.group("page"))
+            acg_video_list = await get_acg_video_list(session, avid)
+            cid = acg_video_list[page - 1]["cid"]
+            filename = acg_video_list[page - 1]["name"]
+            videos, audios = await get_acg_video_playurl(session, avid, cid)
+            title = await get_acg_video_title(session, avid)
+            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
         else:
             Logger.error("url 不正确～")
             sys.exit(1)

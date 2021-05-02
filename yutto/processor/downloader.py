@@ -61,13 +61,19 @@ async def download_video(
 ):
     video_path = os.path.join(output_dir, file_name + "_video.m4s")
     audio_path = os.path.join(output_dir, file_name + "_audio.m4s")
-    output_path = os.path.join(output_dir, file_name + "{output_format}")
+    output_path_template = os.path.join(output_dir, file_name + "{output_format}")
     ffmpeg = FFmpeg()
 
     # TODO: 显示全部 Videos、Audios 信息
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
     audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
     # TODO: 显示被选中的 Video、Audio 信息
+
+    output_format = ".mp4" if video is not None else ".aac"
+    output_path = output_path_template.format(output_format=output_format)
+    if not options["overwrite"] and os.path.exists(output_path):
+        Logger.info("文件 {} 已存在".format(file_name))
+        return
 
     # idx_video = -1
     # if video is not None:
@@ -146,8 +152,8 @@ async def download_video(
             "-acodec", options["audio_save_codec"],
         ])
     args.extend(["-y"])
-    output_format = ".mp4" if video is not None else ".aac"
-    args.append(output_path.format(output_format=output_format))
+
+    args.append(output_path)
     Logger.debug("FFmpeg > ffmpeg {}".format(" ".join(args)))
     ffmpeg.exec(args)
     # fmt: on

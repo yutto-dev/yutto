@@ -28,3 +28,8 @@ yutto -q 64 get https://www.bilibili.com/bangumi/play/ep395211
 ## TODO List
 
 -  [ ] 好多，不知道该写些啥，等剩余任务较少时候再来写吧……
+
+## References
+
+-  https://github.com/SigureMo/bilili
+-  https://github.com/changmenseng/AsyncBilibiliDownloader
