@@ -119,3 +119,12 @@ dmypy.json
 
 # Editor/IDE Configures
 .vscode
+
+# Media files
+*.aac
+*.mp3
+*.mp4
+*.m4s
+
+# test files
+*.test.py

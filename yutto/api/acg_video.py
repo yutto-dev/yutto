@@ -4,78 +4,28 @@ from typing import Any, TypedDict, Literal
 
 from aiohttp import ClientSession
 
-from yutto.api.types import AId, AvId, BvId, CId, EpisodeId
-from yutto.urlparser import regexp_bangumi_ep
+from yutto.api.types import (
+    AId,
+    AvId,
+    BvId,
+    CId,
+    EpisodeId,
+    HttpStatusError,
+    NoAccessError,
+    UnSupportedTypeError,
+    VideoUrlMeta,
+    AudioUrlMeta,
+)
 from yutto.utils.fetcher import Fetcher
 from yutto.media.codec import VideoCodec, AudioCodec
 from yutto.media.quality import VideoQuality, AudioQuality
-
-
-class HttpStatusError(Exception):
-    pass
-
-
-class NoAccessError(Exception):
-    pass
-
-
-class UnSupportedTypeError(Exception):
-    pass
-
-
-class VideoInfo(TypedDict):
-    avid: AvId
-    aid: AId
-    bvid: BvId
-    episode_id: EpisodeId
-    is_bangumi: bool
-    cid: CId
-    picture: str
-    title: str
+from yutto.api.info import get_video_info
 
 
 class AcgVideoListItem(TypedDict):
     id: int
     name: str
     cid: CId
-
-
-class VideoUrlMeta(TypedDict):
-    url: str
-    mirrors: list[str]
-    codec: VideoCodec
-    width: int
-    height: int
-    quality: VideoQuality
-
-
-class AudioUrlMeta(TypedDict):
-    url: str
-    mirrors: list[str]
-    codec: AudioCodec
-    width: int
-    height: int
-    quality: AudioQuality
-
-
-async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
-    info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
-    res_json = await Fetcher.fetch_json(session, info_api.format(**avid.to_dict()))
-    res_json_data = res_json.get("data")
-    assert res_json_data is not None, "响应数据无 data 域"
-    episode_id = EpisodeId("")
-    if res_json_data.get("redirect_url") and (ep_match := regexp_bangumi_ep.match(res_json_data["redirect_url"])):
-        episode_id = EpisodeId(ep_match.group("episode_id"))
-    return {
-        "avid": BvId(res_json_data["bvid"]),
-        "aid": AId(str(res_json_data["aid"])),
-        "bvid": BvId(res_json_data["bvid"]),
-        "episode_id": episode_id,
-        "is_bangumi": bool(episode_id),
-        "cid": CId(str(res_json_data["cid"])),
-        "picture": res_json_data["pic"],
-        "title": res_json_data["title"],
-    }
 
 
 async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
@@ -92,6 +42,7 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVide
             "name": item["part"],
             "cid": CId(str(item["cid"]))
         }
+        # fmt: on
         for i, item in enumerate(res_json["data"])
     ]
 
@@ -147,6 +98,7 @@ async def get_acg_video_subtitile(session: ClientSession, avid: AvId, cid: CId) 
                 "lines": (await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"]))["body"]
             }
             for sub_info in subtitle_json["subtitles"]
+            # fmt: on
         ]
     else:
         return []

@@ -1,14 +1,15 @@
 import asyncio
 from typing import Any, Coroutine, Iterable
 
-from yutto.utils.logger import logger
+from yutto.utils.console.logger import Logger
 
 try:
     import uvloop
 except ImportError:
-    logger.warning("no install uvloop package")
+    Logger.warning("no install uvloop package")
 else:
-    uvloop.install()
+    # uvloop.install()
+    pass
 
 CoroutineTask = Coroutine[Any, Any, Any]
 
@@ -63,3 +64,23 @@ def run_with_n_workers(tasks: Iterable[CoroutineTask], num_workers: int = 4):
     pool = LimitParallelsPool(num_workers=4)
     pool.add_list(tasks)
     asyncio.run(pool.run())
+
+
+def parallel(funcs: Iterable[CoroutineTask]):
+    return [asyncio.create_task(func) for func in funcs]
+
+
+def parallel_with_limit(funcs: Iterable[CoroutineTask], num_workers: int = 4):
+    tasks = asyncio.Queue[CoroutineTask]()
+    for func in funcs:
+        tasks.put_nowait(func)
+
+    async def worker():
+        while True:
+            if not tasks.empty():
+                task = await tasks.get()
+                await task
+            else:
+                break
+
+    return [asyncio.create_task(worker()) for _ in range(num_workers)]

@@ -1,4 +1,6 @@
-from typing import NamedTuple
+from typing import NamedTuple, TypedDict
+from yutto.media.codec import VideoCodec, AudioCodec
+from yutto.media.quality import VideoQuality, AudioQuality
 
 
 class BilibiliId(NamedTuple):
@@ -9,6 +11,9 @@ class BilibiliId(NamedTuple):
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def __eq__(self, other: "BilibiliId") -> bool:
+        return self.value == other.value
 
 
 class AvId(BilibiliId):
@@ -42,6 +47,41 @@ class EpisodeId(BilibiliId):
 class MediaId(BilibiliId):
     def to_dict(self):
         return {"media_id": self.value}
+
+
+class SeasonId(BilibiliId):
+    def to_dict(self):
+        return {"season_id": self.value}
+
+
+class HttpStatusError(Exception):
+    pass
+
+
+class NoAccessError(Exception):
+    pass
+
+
+class UnSupportedTypeError(Exception):
+    pass
+
+
+class VideoUrlMeta(TypedDict):
+    url: str
+    mirrors: list[str]
+    codec: VideoCodec
+    width: int
+    height: int
+    quality: VideoQuality
+
+
+class AudioUrlMeta(TypedDict):
+    url: str
+    mirrors: list[str]
+    codec: AudioCodec
+    width: int
+    height: int
+    quality: AudioQuality
 
 
 if __name__ == "__main__":

@@ -1,64 +1,67 @@
-import asyncio
-import json
-from typing import Any, Optional
+import argparse
 
-import aiofiles
-import aiohttp
-
-from yutto.api.acg_video import (
-    AudioUrlMeta,
-    VideoUrlMeta,
-    get_acg_video_list,
-    get_acg_video_playurl,
-    get_acg_video_subtitile,
-    get_video_info,
-)
-from yutto.api.types import AId, BvId, CId
-from yutto.filter import select_audio, select_video
-from yutto.media.codec import AudioCodec, VideoCodec, gen_acodec_priority, gen_vcodec_priority
-from yutto.media.quality import AudioQuality, VideoQuality, gen_audio_quality_priority, gen_video_quality_priority
-from yutto.utils.asynclib import LimitParallelsPool, run_with_n_workers
-from yutto.utils.fetcher import Fetcher
-from yutto.utils.file_buffer import AsyncFileBuffer, BufferChunk
-from yutto.utils.logger import logger
+from yutto.cli import get, info, check_options
+from yutto.__version__ import __version__
+from yutto.utils.ffmpeg import FFmpeg
+from yutto.utils.console.colorful import colored_string
+from yutto.utils.console.logger import Logger
+from yutto.media.quality import video_quality_priority_default, audio_quality_priority_default
 
 
-def gen_headers():
-    return {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
-        "Referer": "https://www.bilibili.com",
-    }
+def main():
+    parser = argparse.ArgumentParser(description="yutto 一个任性的 B 站视频下载器", prog="yutto")
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s {}".format(__version__))
+    parser.add_argument("-n", "--num-workers", type=int, default=8, help="同时下载的 Worker 个数")
+    parser.add_argument(
+        "-q",
+        "--video-quality",
+        default=125,
+        choices=video_quality_priority_default,
+        type=int,
+        help="视频清晰度等级（125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
+    )
+    parser.add_argument(
+        "--audio-quality",
+        default=30280,
+        choices=audio_quality_priority_default,
+        type=int,
+        help="音频码率等级（30280:320kbps, 30232:128kbps, 30216:64kbps）",
+    )
+    parser.add_argument("--vcodec", default="avc:copy", help="视频编码格式（<下载格式>:<生成格式>）")
+    parser.add_argument("--acodec", default="mp4a:copy", help="音频编码格式（<下载格式>:<生成格式>）")
+    parser.add_argument("--only-video", dest="require_audio", action="store_false", help="只下载视频")
+    parser.add_argument("--only-audio", dest="require_video", action="store_false", help="只下载音频")
+    parser.add_argument("--danmaku", default="xml", choices=["xml", "ass", "no"], help="视频主页xxx")
+    parser.add_argument("-b", "--block-size", default=1.0, type=float, help="分块下载时各块大小，单位为 MiB，默认为 1MiB")
+    parser.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
+    parser.add_argument("-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
+    parser.add_argument("-d", "--dir", default="", help="下载目录")
+    parser.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
+    parser.add_argument("--path-pattern", default="{auto}", help="多级目录的存储路径 Pattern")
+    parser.add_argument("--no-color", action="store_true", help="不使用颜色")
+    parser.add_argument("--debug", action="store_true", help="启用 debug 模式")
+    parser.set_defaults(action=run)
+
+    subparsers = parser.add_subparsers()
+    # 子命令 get
+    parser_get = subparsers.add_parser("get", help="获取单个视频")
+    get.add_get_arguments(parser_get)
+    # 子命令 info
+    # TODO
+    # 子命令 batch
+    # TODO
+
+    # 执行各自的 action
+    args = parser.parse_args()
+    check_options.check_basic_options(args)
+    args.action(args)
 
 
-async def main():
-
-    async with aiohttp.ClientSession(headers=gen_headers(), timeout=aiohttp.ClientTimeout(total=5)) as sess:
-        res = await get_video_info(sess, BvId("BV1864y1m7Yj"))
-        print(res)
-        print(json.dumps(str(res)))
-        res = await get_video_info(sess, AId("887650906"))
-        print(res)
-        res = await get_acg_video_list(sess, AId("887650906"))
-        print(res)
-        res = await get_acg_video_subtitile(sess, BvId("BV1C4411J7cR"), CId("92109804"))
-        print(res)
-        videos, audios = await get_acg_video_playurl(sess, BvId("BV1C4411J7cR"), CId("92109804"))
-        print(videos, audios)
-        await Fetcher.get_size(sess, videos[0]["url"])
-        video = select_video(videos)
-        audio = select_audio(audios)
-        print(video)
-        print(audio)
+def run(args: argparse.Namespace):
+    Logger.error("未指定子命令 (get, info, batch)")
+    Logger.info("yutto version: {}".format(colored_string(__version__, fore="green")))
+    Logger.info("FFmpeg version: {}".format(colored_string(FFmpeg().version, fore="blue")))
 
 
-# async def main():
-
-#     buf = await AsyncFileBuffer.create('tt.txt')
-#     await buf.write(b'12345', 25)
-#     await buf.write(b'34567', 20)
-#     await buf.write(b'00000', 30)
-#     await buf.write(b'99999', 35)
-
-#     await buf.close()
-
-asyncio.run(main())
+if __name__ == "__main__":
+    main()

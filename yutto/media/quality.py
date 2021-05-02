@@ -59,21 +59,6 @@ video_quality_map = {
         "width": 720,
         "height": 360,
     },
-    6: {
-        "description": "240P 极速",
-        "width": 320,
-        "height": 240,
-    },
-    208: {
-        "description": "1080P 高清",
-        "width": 1920,
-        "height": 1080,
-    },
-    192: {
-        "description": "720P 高清",
-        "width": 1280,
-        "height": 720,
-    },
 }
 
 audio_quality_map = {
