@@ -4,7 +4,7 @@ from yutto.utils.functiontools.singleton import Singleton
 from yutto.utils.console.colorful import colored_string, Fore, Back, Style
 from yutto.utils.console.formatter import get_string_width
 
-_logger_debug = False
+_logger_debug: bool = False
 
 
 def set_logger_debug():
@@ -98,3 +98,7 @@ class Logger(metaclass=Singleton):
     @classmethod
     def print(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         print(string, *print_args, **print_kwargs)
+
+    @classmethod
+    def is_debug(cls) -> bool:
+        return _logger_debug

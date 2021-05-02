@@ -1,15 +1,17 @@
 import argparse
+import asyncio
 import os
 import sys
-import aiohttp
-import asyncio
 
-from yutto.utils.console.colorful import set_no_color
-from yutto.utils.console.logger import set_logger_debug, Logger, Badge
-from yutto.media.codec import video_codec_priority_default, audio_codec_priority_default
-from yutto.utils.ffmpeg import FFmpeg
-from yutto.processor.crawler import gen_cookies, gen_headers
+import aiohttp
+
 from yutto.api.info import is_vip
+from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
+from yutto.processor.crawler import gen_cookies, gen_headers
+from yutto.utils.asynclib import install_uvloop
+from yutto.utils.console.colorful import set_no_color
+from yutto.utils.console.logger import Badge, Logger, set_logger_debug
+from yutto.utils.ffmpeg import FFmpeg
 
 
 def check_basic_options(args: argparse.Namespace):
@@ -25,6 +27,9 @@ def check_basic_options(args: argparse.Namespace):
     # debug 设置
     if args.debug:
         set_logger_debug()
+    else:
+        # 为保证协程任务的可读性，仅在非 debug 模式启用 uvloop
+        install_uvloop()
 
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")

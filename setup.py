@@ -54,7 +54,7 @@ def get_long_description():
 setup(
     name="yutto",
     version=__version__,
-    description="yutto 一个任性的 B 站视频下载器",
+    description="yutto 一个可爱且任性的 B 站视频下载器",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     classifiers=[

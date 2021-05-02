@@ -9,9 +9,9 @@ from yutto.media.quality import video_quality_priority_default, audio_quality_pr
 
 
 def main():
-    parser = argparse.ArgumentParser(description="yutto 一个任性的 B 站视频下载器", prog="yutto")
+    parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
     parser.add_argument("-v", "--version", action="version", version="%(prog)s {}".format(__version__))
-    parser.add_argument("-n", "--num-workers", type=int, default=8, help="同时下载的 Worker 个数")
+    parser.add_argument("-n", "--num-workers", type=int, default=8, help="同时用于下载的最大 Worker 数")
     parser.add_argument(
         "-q",
         "--video-quality",
@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--acodec", default="mp4a:copy", help="音频编码格式（<下载格式>:<生成格式>）")
     parser.add_argument("--only-video", dest="require_audio", action="store_false", help="只下载视频")
     parser.add_argument("--only-audio", dest="require_video", action="store_false", help="只下载音频")
-    parser.add_argument("--danmaku", default="xml", choices=["xml", "ass", "no"], help="视频主页xxx")
+    parser.add_argument("--danmaku", default="xml", choices=["xml", "ass", "no"], help="弹幕类型，no 为不生成弹幕")
     parser.add_argument("-b", "--block-size", default=1.0, type=float, help="分块下载时各块大小，单位为 MiB，默认为 1MiB")
     parser.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
     parser.add_argument("-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
