@@ -28,9 +28,9 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ss,
     regexp_bangumi_ss_short,
 )
-from yutto.utils.console.formatter import repair_filename
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.functiontools.sync import sync
+from yutto.processor.path_resolver import reslove_path_pattern, reslove_path
 
 
 def add_get_arguments(parser: argparse.ArgumentParser):
@@ -48,7 +48,7 @@ async def run(args: argparse.Namespace):
         cookies=gen_cookies(args.sessdata),
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        download_list: list[tuple[list[VideoUrlMeta], list[AudioUrlMeta], str]] = []
+        download_list: list[tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str]] = []
         if (
             (match_obj := regexp_bangumi_ep.match(args.url))
             or (match_obj := regexp_bangumi_ep_short.match(args.url))
@@ -78,10 +78,21 @@ async def run(args: argparse.Namespace):
                 avid = bangumi_item["avid"]
                 cid = bangumi_item["cid"]
                 episode_id = bangumi_item["episode_id"]
-                filename = bangumi_item["name"]
+                name = bangumi_item["name"]
+                id = bangumi_item["id"]
                 videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
-                # TODO: 根据 Path Pattern 动态决定位置
-                download_list.append((videos, audios, filename))
+                # fmt: off
+                subpath = reslove_path_pattern(
+                    args.path_pattern,
+                    "{title}/{name}",
+                    {
+                        "title": title,
+                        "id": id,
+                        "name": name
+                    })
+                # fmt: on
+                output_dir, filename = reslove_path(args.dir, subpath)
+                download_list.append((videos, audios, output_dir, filename))
         elif (
             (match_obj := regexp_acg_video_av.match(args.url))
             or (match_obj := regexp_acg_video_av_short.match(args.url))
@@ -102,20 +113,31 @@ async def run(args: argparse.Namespace):
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.info("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)), end="\r")
                 cid = acg_video_item["cid"]
-                filename = acg_video_item["name"]
+                name = acg_video_item["name"]
+                id = acg_video_item["id"]
                 videos, audios = await get_acg_video_playurl(session, avid, cid)
-                # TODO: 根据 Path Pattern 动态决定位置
-                download_list.append((videos, audios, filename))
+                # fmt: off
+                subpath = reslove_path_pattern(
+                    args.path_pattern,
+                    "{title}/{name}",
+                    {
+                        "title": title,
+                        "id": id,
+                        "name": name
+                    })
+                # fmt: on
+                output_dir, filename = reslove_path(args.dir, subpath)
+                download_list.append((videos, audios, output_dir, filename))
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
-        for videos, audios, filename in download_list:
+        for videos, audios, output_dir, filename in download_list:
             await download_video(
                 session,
                 videos,
                 audios,
-                args.dir,
-                repair_filename(filename),
+                output_dir,
+                filename,
                 {
                     "require_video": args.require_video,
                     "video_quality": args.video_quality,

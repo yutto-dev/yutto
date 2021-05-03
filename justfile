@@ -10,25 +10,25 @@ docker-build-env:
   docker build -t siguremo/{{DOCKER_NAME}} .
 
 run:
-  python -m yutto
+  python3 -m yutto
 
 test:
-  python -m pytest
+  python3 -m pytest
 
 release:
-  python setup.py upload
+  python3 setup.py upload
 
 upgrade-pip:
-  python -m pip install --upgrade yutto
+  python3 -m pip install --upgrade yutto
 
 upgrade:
-  python setup.py build
-  python setup.py install
+  python3 setup.py build
+  python3 setup.py install
 
 clean:
-  rm *.m4s
-  rm *.mp4
-  rm *.aac
+  find . -name "*.m4s" -print0 | xargs -0 rm -f
+  find . -name "*.mp4" -print0 | xargs -0 rm -f
+  find . -name "*.aac" -print0 | xargs -0 rm -f
 
 clean-builds:
   rm -rf build/

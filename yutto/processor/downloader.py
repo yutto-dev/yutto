@@ -73,6 +73,8 @@ async def download_video(
     # TODO: options 使用 TypedDict
     options: Any,
 ):
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
     video_path = os.path.join(output_dir, file_name + "_video.m4s")
     audio_path = os.path.join(output_dir, file_name + "_audio.m4s")
     output_path_template = os.path.join(output_dir, file_name + "{output_format}")

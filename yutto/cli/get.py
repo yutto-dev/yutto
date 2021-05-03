@@ -17,9 +17,9 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ep,
     regexp_bangumi_ep_short,
 )
-from yutto.utils.console.formatter import repair_filename
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.functiontools.sync import sync
+from yutto.processor.path_resolver import reslove_path_pattern, reslove_path
 
 
 def add_get_arguments(parser: argparse.ArgumentParser):
@@ -45,7 +45,8 @@ async def run(args: argparse.Namespace):
                 if bangumi_item["episode_id"] == episode_id:
                     avid = bangumi_item["avid"]
                     cid = bangumi_item["cid"]
-                    filename = bangumi_item["name"]
+                    name = bangumi_item["name"]
+                    id = bangumi_item["id"]
                     break
             else:
                 Logger.error("在列表中未找到该剧集")
@@ -69,17 +70,29 @@ async def run(args: argparse.Namespace):
             Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
             acg_video_list = await get_acg_video_list(session, avid)
             cid = acg_video_list[page - 1]["cid"]
-            filename = acg_video_list[page - 1]["name"]
+            name = acg_video_list[page - 1]["name"]
+            id = acg_video_list[page - 1]["id"]
             videos, audios = await get_acg_video_playurl(session, avid, cid)
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
+        # fmt: off
+        subpath = reslove_path_pattern(
+            args.path_pattern,
+            "{name}",
+            {
+                "title": title,
+                "id": id,
+                "name": name
+            })
+        # fmt: on
+        output_dir, filename = reslove_path(args.dir, subpath)
         await download_video(
             session,
             videos,
             audios,
-            args.dir,
-            repair_filename(filename),
+            output_dir,
+            filename,
             {
                 "require_video": args.require_video,
                 "video_quality": args.video_quality,
