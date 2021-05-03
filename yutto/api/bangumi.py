@@ -96,6 +96,8 @@ async def get_bangumi_playurl(
         if not resp.ok:
             raise NoAccessError("无法下载该视频（cid: {cid}）".format(cid=cid))
         resp_json = await resp.json()
+        if resp_json.get("result") is None:
+            raise NoAccessError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
         if resp_json["result"].get("dash") is None:
             raise UnSupportedTypeError("该视频（cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
         if resp_json["result"]["is_preview"] == 1:

@@ -1,6 +1,6 @@
 import argparse
 
-from yutto.cli import get, info, check_options
+from yutto.cli import get, info, batch_get, check_options
 from yutto.__version__ import __version__
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.console.colorful import colored_string
@@ -39,6 +39,8 @@ def main():
     parser.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
     parser.add_argument("--path-pattern", default="{auto}", help="多级目录的存储路径 Pattern")
     parser.add_argument("--no-subtitle", action="store_true", help="不生成字幕文件")
+    parser.add_argument("--embed-danmaku", action="store_true", help="将弹幕文件嵌入到视频中")
+    parser.add_argument("--embed-subtitle", default=None, help="将字幕文件嵌入到视频中（需输入语言代码）")
     parser.add_argument("--no-color", action="store_true", help="不使用颜色")
     parser.add_argument("--debug", action="store_true", help="启用 debug 模式")
     parser.set_defaults(action=run)
@@ -50,8 +52,11 @@ def main():
     # 子命令 info
     # TODO
     # 子命令 batch
-    # TODO
-
+    parser_batch = subparsers.add_parser("batch", help="批量获取视频")
+    subparsers_batch = parser_batch.add_subparsers()
+    # 子命令 batch get
+    parser_batch_get = subparsers_batch.add_parser("get", help="批量获取视频")
+    batch_get.add_get_arguments(parser_batch_get)
     # 执行各自的 action
     args = parser.parse_args()
     check_options.check_basic_options(args)

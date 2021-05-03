@@ -29,19 +29,17 @@ def add_get_arguments(parser: argparse.ArgumentParser):
 
 @sync
 async def run(args: argparse.Namespace):
-    # args.sessdata = "0a7f9758%2C1629361847%2Ca86ac*21"
-    # # args.sessdata = ""
-    # sessdata = "0a7f9758%2C1629361847%2Ca86ac*21"
-    # # sessdata = "dfasdlfsa"
     async with aiohttp.ClientSession(
         headers=gen_headers(),
         cookies=gen_cookies(args.sessdata),
-        cookie_jar=aiohttp.DummyCookieJar(),
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         if (match_obj := regexp_bangumi_ep.match(args.url)) or (match_obj := regexp_bangumi_ep_short.match(args.url)):
+            # 匹配为番剧
             episode_id = EpisodeId(match_obj.group("episode_id"))
             season_id = await get_season_id_by_episode_id(session, episode_id)
+            title = await get_bangumi_title(session, season_id)
+            Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
             bangumi_list = await get_bangumi_list(session, season_id)
             for bangumi_item in bangumi_list:
                 if bangumi_item["episode_id"] == episode_id:
@@ -53,14 +51,13 @@ async def run(args: argparse.Namespace):
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(1)
             videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
-            title = await get_bangumi_title(session, season_id)
-            Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
         elif (
             (match_obj := regexp_acg_video_av.match(args.url))
             or (match_obj := regexp_acg_video_av_short.match(args.url))
             or (match_obj := regexp_acg_video_bv.match(args.url))
             or (match_obj := regexp_acg_video_bv_short.match(args.url))
         ):
+            # 匹配为投稿视频
             page: int = 1
             if "aid" in match_obj.groupdict().keys():
                 avid = AId(match_obj.group("aid"))
@@ -68,12 +65,12 @@ async def run(args: argparse.Namespace):
                 avid = BvId(match_obj.group("bvid"))
             if match_obj.group("page") is not None:
                 page = int(match_obj.group("page"))
+            title = await get_acg_video_title(session, avid)
+            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
             acg_video_list = await get_acg_video_list(session, avid)
             cid = acg_video_list[page - 1]["cid"]
             filename = acg_video_list[page - 1]["name"]
             videos, audios = await get_acg_video_playurl(session, avid, cid)
-            title = await get_acg_video_title(session, avid)
-            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
         else:
             Logger.error("url 不正确～")
             sys.exit(1)

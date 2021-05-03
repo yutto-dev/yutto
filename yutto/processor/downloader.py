@@ -42,6 +42,20 @@ def slice(start: int, total_size: Optional[int], block_size: Optional[int] = Non
 
 
 def combine(*l_list: list[Any]) -> list[Any]:
+    """将多个 list 「均匀」地合并到一个 list
+
+    # example
+
+    ```
+    l_list = [
+        [1, 2, 3, 4, 5],
+        [6, 7, 8],
+        [9, 10, 11, 12]
+    ]
+    combine(l_list)
+    # [1, 6, 9, 2, 7, 10, 3, 8, 11, 4, 12, 5]
+    ```
+    """
     results: list[Any] = []
     for i in range(max([len(l) for l in l_list])):
         for l in l_list:
@@ -154,7 +168,6 @@ async def download_video(
     args.extend(["-y"])
 
     args.append(output_path)
-    Logger.debug("FFmpeg > ffmpeg {}".format(" ".join(args)))
     ffmpeg.exec(args)
     # fmt: on
     Logger.info("合并完成！")

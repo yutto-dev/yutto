@@ -12,6 +12,7 @@ from yutto.utils.asynclib import install_uvloop
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.ffmpeg import FFmpeg
+from yutto.processor.filter import check_episodes
 
 
 def check_basic_options(args: argparse.Namespace):
@@ -20,7 +21,7 @@ def check_basic_options(args: argparse.Namespace):
     ffmpeg = FFmpeg()
 
     # 在使用 --no-color 或者环境变量 NO_COLOR 非空时都应该不显示颜色
-    # Also see: https://no-color.org/
+    # See also: https://no-color.org/
     if args.no_color or os.environ.get("NO_COLOR"):
         set_no_color()
 
@@ -28,7 +29,7 @@ def check_basic_options(args: argparse.Namespace):
     if args.debug:
         set_logger_debug()
     else:
-        # 为保证协程任务的可读性，仅在非 debug 模式启用 uvloop
+        # 为保证协程错误栈的可读性，debug 模式不启用 uvloop
         install_uvloop()
 
     # vcodec 检查
@@ -76,13 +77,36 @@ def check_basic_options(args: argparse.Namespace):
 
     # TODO: proxy 检验
 
+    # 不下载视频无法嵌入字幕
+    if not args.require_video and args.embed_subtitle:
+        Logger.error("不下载视频时无法嵌入字幕")
+        sys.exit(1)
+
+    # 不下载视频无法嵌入弹幕
+    if not args.require_video and args.embed_danmaku:
+        Logger.error("不下载视频时无法嵌入弹幕")
+        sys.exit(1)
+
+    # 嵌入弹幕功能仅支持 ASS 弹幕
+    if args.embed_danmaku and args.danmaku != "ass":
+        Logger.error("嵌入弹幕功能仅支持 ASS 弹幕")
+        sys.exit(1)
+
     # 大会员身份校验
     if not args.sessdata:
-        Logger.warning("未提供 SESSDATA，无法下载会员专属剧集")
+        Logger.warning("未提供 SESSDATA，无法下载会员专享剧集")
     elif asyncio.run(check_is_vip(args.sessdata)):
         Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta"))
     else:
-        Logger.warning("以非大会员身份登录，无法下载会员专属剧集")
+        Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
+
+
+def check_batch_options(args: argparse.Namespace):
+    """ 检查批量下载相关选项 """
+    # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
+    if not check_episodes(args.episodes):
+        Logger.error("选集参数（{}）格式不正确".format(args.episodes))
+        sys.exit(1)
 
 
 async def check_is_vip(sessdata: str = "") -> bool:

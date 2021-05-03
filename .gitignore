@@ -117,9 +117,6 @@ dmypy.json
 # macOS
 .DS_Store
 
-# Editor/IDE Configures
-.vscode
-
 # Media files
 *.aac
 *.mp3

@@ -41,7 +41,7 @@ class Badge:
 WARNING_BADGE = Badge("WARN", fore="black", back="yellow")
 ERROR_BADGE = Badge("ERROR", fore="white", back="red")
 INFO_BADGE = Badge("INFO", fore="black", back="green")
-DEBUG_BADGE = Badge("ERROR", fore="black", back="blue")
+DEBUG_BADGE = Badge("DEBUG", fore="black", back="blue")
 
 
 class Logger(metaclass=Singleton):

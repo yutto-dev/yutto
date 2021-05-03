@@ -5,6 +5,7 @@ import subprocess
 from functools import cached_property
 
 from yutto.utils.functiontools.singleton import Singleton
+from yutto.utils.console.logger import Logger
 
 
 class FFmpegNotFoundError(Exception):
@@ -25,6 +26,7 @@ class FFmpeg(object, metaclass=Singleton):
     def exec(self, args: list[str]):
         cmd = [self.path]
         cmd.extend(args)
+        Logger.debug(" ".join(cmd))
         return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     @cached_property

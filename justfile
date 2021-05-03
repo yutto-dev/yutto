@@ -24,3 +24,13 @@ upgrade-pip:
 upgrade:
   python setup.py build
   python setup.py install
+
+clean:
+  rm *.m4s
+  rm *.mp4
+  rm *.aac
+
+clean-builds:
+  rm -rf build/
+  rm -rf dist/
+  rm -rf yutto.egg-info/
