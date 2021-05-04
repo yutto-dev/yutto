@@ -17,6 +17,7 @@ test:
 
 release:
   python3 setup.py upload
+  just clean-builds
 
 upgrade-pip:
   python3 -m pip install --upgrade yutto
