@@ -16,7 +16,7 @@ from yutto.api.bangumi import (
 from yutto.api.danmaku import get_xml_danmaku
 from yutto.api.types import AId, AudioUrlMeta, BvId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
 from yutto.cli import check_options
-from yutto.processor.crawler import gen_cookies, gen_headers
+from yutto.processor.crawler import gen_cookies, gen_headers, gen_trust_env
 from yutto.processor.downloader import download_video
 from yutto.processor.filter import parse_episodes
 from yutto.processor.path_resolver import reslove_path, reslove_path_pattern
@@ -49,6 +49,7 @@ async def run(args: argparse.Namespace):
     async with aiohttp.ClientSession(
         headers=gen_headers(),
         cookies=gen_cookies(args.sessdata),
+        trust_env=gen_trust_env(),
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         download_list: list[

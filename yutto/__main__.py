@@ -38,7 +38,7 @@ def main():
     parser.add_argument("--danmaku", default="xml", choices=["xml", "ass", "no"], help="弹幕类型，no 为不生成弹幕")
     parser.add_argument("-b", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB")
     parser.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
-    parser.add_argument("-x", "--proxy", default="auto", help="（待实现）设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
+    parser.add_argument("-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
     parser.add_argument("-d", "--dir", default="./", help="下载目录，默认为运行目录")
     parser.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
     parser.add_argument("--path-pattern", default="{auto}", help="多级目录的存储路径 Pattern")

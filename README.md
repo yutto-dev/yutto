@@ -52,7 +52,6 @@ yutto -q 64 --danmaku=ass batch get https://www.bilibili.com/bangumi/play/ep3952
 -  [ ] 完善的信息提示
 -  [ ] 完善的下载进度展示
 -  [ ] 字幕、弹幕嵌入视频支持
--  [ ] 代理设置支持
 -  [ ] 更多批下载支持（UP 主、收藏夹等）
 -  [ ] 等等等等，以及
 -  [ ] 更加可爱～

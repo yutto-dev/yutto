@@ -15,6 +15,7 @@ from yutto.api.types import (
     VideoUrlMeta,
 )
 from yutto.media.codec import VideoCodec
+from yutto.processor.crawler import gen_proxy
 from yutto.utils.fetcher import Fetcher
 
 
@@ -49,7 +50,7 @@ async def get_acg_video_playurl(
     play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=125&type=&otype=json&fnver=0&fnval=80&fourk=1"
     codecid_map: dict[Literal[7, 12], VideoCodec] = {7: "avc", 12: "hevc"}
 
-    async with session.get(play_api.format(**avid.to_dict(), cid=cid)) as resp:
+    async with session.get(play_api.format(**avid.to_dict(), cid=cid), proxy=gen_proxy()) as resp:
         if not resp.ok:
             raise NoAccessError("无法下载该视频（cid: {cid}）".format(cid=cid))
         resp_json = await resp.json()

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import os
 import sys
+import re
 
 import aiohttp
 
@@ -13,6 +14,7 @@ from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.processor.filter import check_episodes
+from yutto.processor.crawler import set_proxy
 
 
 def check_basic_options(args: argparse.Namespace):
@@ -31,6 +33,12 @@ def check_basic_options(args: argparse.Namespace):
     else:
         # 为保证协程错误栈的可读性，debug 模式不启用 uvloop
         install_uvloop()
+
+    # proxy 校验
+    if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
+        Logger.error("proxy 参数值（{}）错误".format(args.proxy))
+        sys.exit(1)
+    set_proxy(args.proxy)
 
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
@@ -74,8 +82,6 @@ def check_basic_options(args: argparse.Namespace):
     if not args.require_video and not args.require_audio:
         Logger.error("only_video 和 only_audio 不能同时设置")
         sys.exit(1)
-
-    # TODO: proxy 检验
 
     # 不下载视频无法嵌入字幕
     if not args.require_video and args.embed_subtitle:

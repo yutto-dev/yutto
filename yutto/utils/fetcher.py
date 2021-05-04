@@ -7,6 +7,7 @@ from aiohttp import ClientSession
 
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.console.logger import Logger
+from yutto.processor.crawler import gen_proxy
 
 
 class MaxRetryError(Exception):
@@ -21,7 +22,7 @@ class Fetcher:
         retry = max_retry + 1
         while retry:
             try:
-                async with session.get(url) as resp:
+                async with session.get(url, proxy=gen_proxy()) as resp:
                     return await resp.text(encoding=encoding)
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
@@ -34,7 +35,7 @@ class Fetcher:
         retry = max_retry + 1
         while retry:
             try:
-                async with session.get(url) as resp:
+                async with session.get(url, proxy=gen_proxy()) as resp:
                     return await resp.read()
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
@@ -47,7 +48,7 @@ class Fetcher:
         retry = max_retry + 1
         while retry:
             try:
-                async with session.get(url) as resp:
+                async with session.get(url, proxy=gen_proxy()) as resp:
                     return await resp.json()
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
@@ -59,7 +60,7 @@ class Fetcher:
     async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
         headers = session.headers.copy()
         headers["Range"] = "bytes=0-1"
-        async with session.get(url, headers=headers) as resp:
+        async with session.get(url, headers=headers, proxy=gen_proxy()) as resp:
             if resp.status == 206:
                 return int(resp.headers["Content-Range"].split("/")[-1])
             else:
@@ -87,7 +88,7 @@ class Fetcher:
                     offset + block_offset, offset + size - 1 if size is not None else ""
                 )
                 async with session.get(
-                    url, headers=headers, timeout=aiohttp.ClientTimeout(connect=5, sock_read=10)
+                    url, headers=headers, timeout=aiohttp.ClientTimeout(connect=5, sock_read=10), proxy=gen_proxy()
                 ) as resp:
                     if stream:
                         while True:

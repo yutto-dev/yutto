@@ -17,6 +17,7 @@ from yutto.api.types import (
     VideoUrlMeta,
 )
 from yutto.media.codec import VideoCodec
+from yutto.processor.crawler import gen_proxy
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -89,7 +90,9 @@ async def get_bangumi_playurl(
     play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=125&fnver=0&fnval=16&fourk=1"
     codecid_map: dict[Literal[7, 12], VideoCodec] = {7: "avc", 12: "hevc"}
 
-    async with session.get(play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id)) as resp:
+    async with session.get(
+        play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id), proxy=gen_proxy()
+    ) as resp:
         if not resp.ok:
             raise NoAccessError("无法下载该视频（cid: {cid}）".format(cid=cid))
         resp_json = await resp.json()
