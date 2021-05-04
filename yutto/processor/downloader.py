@@ -8,13 +8,15 @@ from aiofiles import os as aioos
 from yutto.api.types import AudioUrlMeta, VideoUrlMeta, MultiLangSubtitle
 from yutto.processor.filter import filter_none_value, select_audio, select_video
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
-from yutto.utils.console.logger import Logger
+from yutto.utils.console.logger import Logger, Badge
+from yutto.utils.console.colorful import colored_string
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.processor.progressor import show_progress
 from yutto.utils.danmaku import write_danmaku, DanmakuData
 from yutto.utils.subtitle import write_subtitle
+from yutto.media.quality import video_quality_map, audio_quality_map
 
 
 def slice(start: int, total_size: Optional[int], block_size: Optional[int] = None) -> list[tuple[int, Optional[int]]]:
@@ -65,6 +67,34 @@ def combine(*l_list: list[Any]) -> list[Any]:
     return results
 
 
+def show_videos_info(videos: list[VideoUrlMeta], selected: int):
+    Logger.info(f"共包含以下 {len(videos)} 个视频流：")
+    for i, video in enumerate(videos):
+        log = "{}{:2} [{:^4}] [{:>4}x{:<4}] <{:^8}>".format(
+            "*" if i == selected else " ",
+            i,
+            video["codec"].upper(),
+            video["width"],
+            video["height"],
+            video_quality_map[video["quality"]]["description"],
+        )
+        if i == selected:
+            log = colored_string(log, fore="blue")
+        Logger.info(log)
+
+
+def show_audios_info(audios: list[AudioUrlMeta], selected: int):
+    Logger.info(f"共包含以下 {len(audios)} 个音频流：")
+    for i, audio in enumerate(audios):
+        log = "{}{:2} [{:^4}] <{:^8}>".format(
+            "*" if i == selected else " ", i, audio["codec"].upper(), audio_quality_map[audio["quality"]]["description"]
+        )
+        if i == selected:
+            log = colored_string(log, fore="magenta")
+        Logger.info(log)
+
+
+# TODO: 逻辑拆分
 async def download_video(
     session: aiohttp.ClientSession,
     videos: list[VideoUrlMeta],
@@ -84,10 +114,12 @@ async def download_video(
     audio_path = output_path_no_ext + "_audio.m4s"
     ffmpeg = FFmpeg()
 
-    # TODO: 显示全部 Videos、Audios 信息
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
     audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
-    # TODO: 显示被选中的 Video、Audio 信息
+
+    # 显示音视频详细信息
+    show_videos_info(videos, videos.index(video) if video is not None else -1)
+    show_audios_info(audios, audios.index(audio) if audio is not None else -1)
 
     output_format = ".mp4" if video is not None else ".aac"
     output_path = output_path_no_ext + output_format
@@ -95,43 +127,28 @@ async def download_video(
         Logger.info("文件 {} 已存在".format(file_name))
         return
 
-    # idx_video = -1
-    # if video is not None:
-    #     idx_video = videos.index(video)
-    # Logger.info(f"视频 {file_name} 共包含以下 {len(videos)} 个视频流：")
-    # videos_log = [
-    #     "{:02} [{:>4}] [{:>4}x{:>4}] <{:>10}>".format(
-    #         i,
-    #         video["codec"].upper(),
-    #         video["width"],
-    #         video["height"],
-    #         video_quality_map[video["quality"]]["description"],
-    #     )
-    #     for i, video in enumerate(videos)
-    # ]
-
-    # for video_log in videos_log:
-    #     Logger.info(video_log)
-
     if video is None and audio is None:
         Logger.warning("没有音视频需要下载")
         return
 
     # 保存字幕
     if subtitles:
-        Logger.info("共 {} 种字幕（{}）".format(len(subtitles), ", ".join([subtitle["lang"] for subtitle in subtitles])))
         for subtitle in subtitles:
             write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+        Logger.custom(
+            "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
+            badge=Badge("字幕", fore="black", back="cyan"),
+        )
 
     # 保存弹幕
     if danmaku["data"] is not None:
-        Logger.info("正在保存 {} 弹幕".format(danmaku["save_type"]))
         write_danmaku(
             danmaku,
             output_path,
             video["height"] if video is not None else 0,
             video["width"] if video is not None else 0,
         )
+        Logger.custom("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan"))
 
     buffers: list[Optional[AsyncFileBuffer]] = [None, None]
     sizes: list[Optional[int]] = [None, None]
