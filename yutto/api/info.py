@@ -1,22 +1,10 @@
-from aiohttp import ClientSession
-from yutto.processor.urlparser import regexp_bangumi_ep
-from yutto.utils.fetcher import Fetcher
-from yutto.media.codec import VideoCodec, AudioCodec
-
 from typing import TypedDict
 
-from yutto.api.types import (
-    AId,
-    AvId,
-    BvId,
-    CId,
-    EpisodeId,
-    HttpStatusError,
-    NoAccessError,
-    UnSupportedTypeError,
-    VideoUrlMeta,
-    AudioUrlMeta,
-)
+from aiohttp import ClientSession
+
+from yutto.api.types import AId, AvId, BvId, CId, EpisodeId
+from yutto.processor.urlparser import regexp_bangumi_ep
+from yutto.utils.fetcher import Fetcher
 
 
 class VideoInfo(TypedDict):

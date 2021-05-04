@@ -1,27 +1,24 @@
-import json
 import re
-from typing import Any, TypedDict, Literal
+from typing import Literal, TypedDict
 
 from aiohttp import ClientSession
 
 from yutto.api.types import (
-    AId,
+    AudioUrlMeta,
     AvId,
     BvId,
     CId,
     EpisodeId,
     MediaId,
-    SeasonId,
-    HttpStatusError,
+    MultiLangSubtitle,
     NoAccessError,
+    SeasonId,
     UnSupportedTypeError,
     VideoUrlMeta,
-    AudioUrlMeta,
 )
-from yutto.utils.fetcher import Fetcher
-from yutto.media.codec import VideoCodec, AudioCodec
-from yutto.media.quality import VideoQuality, AudioQuality
+from yutto.media.codec import VideoCodec
 from yutto.utils.console.logger import Logger
+from yutto.utils.fetcher import Fetcher
 
 
 class BangumiListItem(TypedDict):
@@ -128,7 +125,7 @@ async def get_bangumi_playurl(
         )
 
 
-async def get_bangumi_subtitile(session: ClientSession, avid: AvId, cid: CId) -> list[dict[str, str]]:
+async def get_bangumi_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
     subtitile_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
     subtitles_info = (await Fetcher.fetch_json(session, subtitile_url))["data"]["subtitle"]

@@ -15,12 +15,27 @@ class MaxRetryError(Exception):
 
 class Fetcher:
     @classmethod
-    async def fetch_text(cls, session: ClientSession, url: str, max_retry: int = 2) -> str:
+    async def fetch_text(
+        cls, session: ClientSession, url: str, encoding: Optional[str] = None, max_retry: int = 2
+    ) -> str:
         retry = max_retry + 1
         while retry:
             try:
                 async with session.get(url) as resp:
-                    return await resp.text()
+                    return await resp.text(encoding=encoding)
+            except asyncio.TimeoutError as e:
+                Logger.warning("url: {url} 抓取超时".format(url=url))
+            finally:
+                retry -= 1
+        raise MaxRetryError()
+
+    @classmethod
+    async def fetch_bin(cls, session: ClientSession, url: str, max_retry: int = 2) -> bytes:
+        retry = max_retry + 1
+        while retry:
+            try:
+                async with session.get(url) as resp:
+                    return await resp.read()
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
             finally:

@@ -122,6 +122,10 @@ dmypy.json
 *.mp3
 *.mp4
 *.m4s
+*.xml
+*.protobuf
+*.ass
+*.srt
 
 # test files
 *.test.py

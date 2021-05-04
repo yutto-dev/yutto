@@ -1,25 +1,21 @@
 import json
 import re
-from typing import Any, TypedDict, Literal
+from typing import Literal, TypedDict
 
 from aiohttp import ClientSession
 
+from yutto.api.info import get_video_info
 from yutto.api.types import (
-    AId,
+    AudioUrlMeta,
     AvId,
-    BvId,
     CId,
-    EpisodeId,
-    HttpStatusError,
     NoAccessError,
     UnSupportedTypeError,
     VideoUrlMeta,
-    AudioUrlMeta,
+    MultiLangSubtitle,
 )
+from yutto.media.codec import VideoCodec
 from yutto.utils.fetcher import Fetcher
-from yutto.media.codec import VideoCodec, AudioCodec
-from yutto.media.quality import VideoQuality, AudioQuality
-from yutto.api.info import get_video_info
 
 
 class AcgVideoListItem(TypedDict):
@@ -87,7 +83,7 @@ async def get_acg_video_playurl(
         )
 
 
-async def get_acg_video_subtitile(session: ClientSession, avid: AvId, cid: CId) -> list[dict[str, str]]:
+async def get_acg_video_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
     subtitile_api = "https://api.bilibili.com/x/player.so?aid={aid}&bvid={bvid}&id=cid:{cid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
     res_text = await Fetcher.fetch_text(session, subtitile_url)

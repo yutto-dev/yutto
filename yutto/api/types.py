@@ -1,6 +1,7 @@
 from typing import NamedTuple, TypedDict
 from yutto.media.codec import VideoCodec, AudioCodec
 from yutto.media.quality import VideoQuality, AudioQuality
+from yutto.utils.subtitle import SubtitleData
 
 
 class BilibiliId(NamedTuple):
@@ -82,6 +83,11 @@ class AudioUrlMeta(TypedDict):
     width: int
     height: int
     quality: AudioQuality
+
+
+class MultiLangSubtitle(TypedDict):
+    lang: str
+    lines: SubtitleData
 
 
 if __name__ == "__main__":

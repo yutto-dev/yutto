@@ -1,7 +1,7 @@
 import os
 import re
 from typing import Literal, Any
-from urllib.parse import unquote
+from html import unescape
 
 patterns = ["title", "id", "name"]
 PathPattern = Literal["title", "id", "name"]
@@ -27,8 +27,8 @@ def repair_filename(filename: str) -> str:
         r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a]"
     )
 
-    # url decode
-    filename = unquote(filename)
+    # 由于部分内容可能是从 HTML 解析的，所以使用 html 反转义
+    filename = unescape(filename)
     filename = regex_path.sub(to_full_width_chr, filename)
     filename = regex_spaces.sub(" ", filename)
     filename = regex_non_printable.sub("", filename)

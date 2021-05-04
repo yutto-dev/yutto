@@ -1,18 +1,27 @@
 import argparse
-import os
 import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_title, get_acg_video_subtitles
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_playurl,
     get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
+    get_bangumi_subtitles,
 )
-from yutto.api.types import AId, AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, SeasonId, VideoUrlMeta
+from yutto.api.types import (
+    AId,
+    AudioUrlMeta,
+    BvId,
+    EpisodeId,
+    MediaId,
+    SeasonId,
+    VideoUrlMeta,
+    MultiLangSubtitle,
+)
 from yutto.cli import check_options
 from yutto.processor.crawler import gen_cookies, gen_headers
 from yutto.processor.downloader import download_video
@@ -48,7 +57,7 @@ async def run(args: argparse.Namespace):
         cookies=gen_cookies(args.sessdata),
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        download_list: list[tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str]] = []
+        download_list: list[tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str, list[MultiLangSubtitle]]] = []
         if (
             (match_obj := regexp_bangumi_ep.match(args.url))
             or (match_obj := regexp_bangumi_ep_short.match(args.url))
@@ -92,7 +101,8 @@ async def run(args: argparse.Namespace):
                     })
                 # fmt: on
                 output_dir, filename = reslove_path(args.dir, subpath)
-                download_list.append((videos, audios, output_dir, filename))
+                subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
+                download_list.append((videos, audios, output_dir, filename, subtitles))
         elif (
             (match_obj := regexp_acg_video_av.match(args.url))
             or (match_obj := regexp_acg_video_av_short.match(args.url))
@@ -127,17 +137,19 @@ async def run(args: argparse.Namespace):
                     })
                 # fmt: on
                 output_dir, filename = reslove_path(args.dir, subpath)
-                download_list.append((videos, audios, output_dir, filename))
+                subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
+                download_list.append((videos, audios, output_dir, filename, subtitles))
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
-        for videos, audios, output_dir, filename in download_list:
+        for videos, audios, output_dir, filename, subtitles in download_list:
             await download_video(
                 session,
                 videos,
                 audios,
                 output_dir,
                 filename,
+                subtitles,
                 {
                     "require_video": args.require_video,
                     "video_quality": args.video_quality,

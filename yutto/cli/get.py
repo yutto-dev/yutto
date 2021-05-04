@@ -1,12 +1,17 @@
 import argparse
-import os
 import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_playurl, get_acg_video_title, get_acg_video_list
-from yutto.api.bangumi import get_bangumi_list, get_bangumi_playurl, get_bangumi_title, get_season_id_by_episode_id
-from yutto.api.types import AId, AvId, BvId, CId, EpisodeId, MediaId, SeasonId
+from yutto.api.acg_video import get_acg_video_playurl, get_acg_video_title, get_acg_video_list, get_acg_video_subtitles
+from yutto.api.bangumi import (
+    get_bangumi_list,
+    get_bangumi_playurl,
+    get_bangumi_title,
+    get_season_id_by_episode_id,
+    get_bangumi_subtitles,
+)
+from yutto.api.types import AId, BvId, EpisodeId
 from yutto.processor.crawler import gen_cookies, gen_headers
 from yutto.processor.downloader import download_video
 from yutto.processor.urlparser import (
@@ -52,6 +57,7 @@ async def run(args: argparse.Namespace):
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(1)
             videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
+            subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
         elif (
             (match_obj := regexp_acg_video_av.match(args.url))
             or (match_obj := regexp_acg_video_av_short.match(args.url))
@@ -73,6 +79,7 @@ async def run(args: argparse.Namespace):
             name = acg_video_list[page - 1]["name"]
             id = acg_video_list[page - 1]["id"]
             videos, audios = await get_acg_video_playurl(session, avid, cid)
+            subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
@@ -93,6 +100,7 @@ async def run(args: argparse.Namespace):
             audios,
             output_dir,
             filename,
+            subtitles,
             {
                 "require_video": args.require_video,
                 "video_quality": args.video_quality,

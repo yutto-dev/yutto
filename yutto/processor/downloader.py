@@ -6,7 +6,7 @@ from typing import Any, Optional
 import aiohttp
 from aiofiles import os as aioos
 
-from yutto.api.types import AudioUrlMeta, VideoUrlMeta
+from yutto.api.types import AudioUrlMeta, VideoUrlMeta, MultiLangSubtitle
 from yutto.processor.filter import filter_none_value, select_audio, select_video
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
 from yutto.utils.console.logger import Logger
@@ -14,6 +14,8 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.processor.progressor import show_progress
+from yutto.utils.danmaku.write_danmaku import write_xml_danmaku, write_ass_danmaku
+from yutto.utils.subtitle import write_subtitle
 
 
 def slice(start: int, total_size: Optional[int], block_size: Optional[int] = None) -> list[tuple[int, Optional[int]]]:
@@ -70,6 +72,7 @@ async def download_video(
     audios: list[AudioUrlMeta],
     output_dir: str,
     file_name: str,
+    subtitles: list[MultiLangSubtitle],
     # TODO: options 使用 TypedDict
     options: Any,
 ):
@@ -79,6 +82,10 @@ async def download_video(
     audio_path = os.path.join(output_dir, file_name + "_audio.m4s")
     output_path_template = os.path.join(output_dir, file_name + "{output_format}")
     ffmpeg = FFmpeg()
+
+    Logger.info("共 {} 种字幕（{}）".format(len(subtitles), ", ".join([subtitle["lang"] for subtitle in subtitles])))
+    for subtitle in subtitles:
+        write_subtitle(subtitle["lines"], video_path, subtitle["lang"])
 
     # TODO: 显示全部 Videos、Audios 信息
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
