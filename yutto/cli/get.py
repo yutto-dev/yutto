@@ -13,7 +13,7 @@ from yutto.api.bangumi import (
 )
 from yutto.api.danmaku import get_xml_danmaku
 from yutto.api.types import AId, BvId, EpisodeId
-from yutto.processor.crawler import gen_cookies, gen_headers, gen_trust_env
+from yutto.utils.fetcher import Fetcher
 from yutto.processor.downloader import download_video
 from yutto.processor.path_resolver import reslove_path, reslove_path_pattern
 from yutto.processor.urlparser import (
@@ -37,9 +37,9 @@ def add_get_arguments(parser: argparse.ArgumentParser):
 @sync
 async def run(args: argparse.Namespace):
     async with aiohttp.ClientSession(
-        headers=gen_headers(),
-        cookies=gen_cookies(args.sessdata),
-        trust_env=gen_trust_env(),
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         if (match_obj := regexp_bangumi_ep.match(args.url)) or (match_obj := regexp_bangumi_ep_short.match(args.url)):

@@ -1,13 +1,13 @@
 import asyncio
-import aiohttp
 import random
-from typing import Any, Optional
+from typing import Any, Literal, Optional, Union
+from urllib.parse import quote, unquote
 
+import aiohttp
 from aiohttp import ClientSession
 
-from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.console.logger import Logger
-from yutto.processor.crawler import gen_proxy
+from yutto.utils.file_buffer import AsyncFileBuffer
 
 
 class MaxRetryError(Exception):
@@ -15,6 +15,32 @@ class MaxRetryError(Exception):
 
 
 class Fetcher:
+    proxy: Optional[str] = None
+    trust_env: bool = True
+    headers: dict[str, str] = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
+        "Referer": "https://www.bilibili.com",
+    }
+    cookies = {}
+
+    @classmethod
+    def set_proxy(cls, proxy: Union[Literal["no", "auto"], str]):
+        if proxy == "auto":
+            Fetcher.proxy = None
+            Fetcher.trust_env = True
+        elif proxy == "no":
+            Fetcher.proxy = None
+            Fetcher.trust_env = False
+        else:
+            Fetcher.proxy = proxy
+            Fetcher.trust_env = False
+
+    @classmethod
+    def set_sessdata(cls, sessdata: str):
+        # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
+        # 而番剧无法使用解码后的 SESSDATA
+        Fetcher.cookies = {"SESSDATA": quote(unquote(sessdata))}
+
     @classmethod
     async def fetch_text(
         cls, session: ClientSession, url: str, encoding: Optional[str] = None, max_retry: int = 2
@@ -22,7 +48,7 @@ class Fetcher:
         retry = max_retry + 1
         while retry:
             try:
-                async with session.get(url, proxy=gen_proxy()) as resp:
+                async with session.get(url, proxy=Fetcher.proxy) as resp:
                     return await resp.text(encoding=encoding)
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
@@ -35,7 +61,7 @@ class Fetcher:
         retry = max_retry + 1
         while retry:
             try:
-                async with session.get(url, proxy=gen_proxy()) as resp:
+                async with session.get(url, proxy=Fetcher.proxy) as resp:
                     return await resp.read()
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
@@ -48,7 +74,7 @@ class Fetcher:
         retry = max_retry + 1
         while retry:
             try:
-                async with session.get(url, proxy=gen_proxy()) as resp:
+                async with session.get(url, proxy=Fetcher.proxy) as resp:
                     return await resp.json()
             except asyncio.TimeoutError as e:
                 Logger.warning("url: {url} 抓取超时".format(url=url))
@@ -60,7 +86,7 @@ class Fetcher:
     async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
         headers = session.headers.copy()
         headers["Range"] = "bytes=0-1"
-        async with session.get(url, headers=headers, proxy=gen_proxy()) as resp:
+        async with session.get(url, headers=headers, proxy=Fetcher.proxy) as resp:
             if resp.status == 206:
                 return int(resp.headers["Content-Range"].split("/")[-1])
             else:
@@ -88,7 +114,7 @@ class Fetcher:
                     offset + block_offset, offset + size - 1 if size is not None else ""
                 )
                 async with session.get(
-                    url, headers=headers, timeout=aiohttp.ClientTimeout(connect=5, sock_read=10), proxy=gen_proxy()
+                    url, headers=headers, timeout=aiohttp.ClientTimeout(connect=5, sock_read=10), proxy=Fetcher.proxy
                 ) as resp:
                     if stream:
                         while True:

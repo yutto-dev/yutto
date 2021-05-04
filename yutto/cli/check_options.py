@@ -8,13 +8,12 @@ import aiohttp
 
 from yutto.api.info import is_vip
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
-from yutto.processor.crawler import gen_cookies, gen_headers
 from yutto.utils.asynclib import install_uvloop
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.processor.filter import check_episodes
-from yutto.processor.crawler import set_proxy
+from yutto.utils.fetcher import Fetcher
 
 
 def check_basic_options(args: argparse.Namespace):
@@ -38,7 +37,7 @@ def check_basic_options(args: argparse.Namespace):
     if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
         Logger.error("proxy 参数值（{}）错误".format(args.proxy))
         sys.exit(1)
-    set_proxy(args.proxy)
+    Fetcher.set_proxy(args.proxy)
 
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
@@ -106,10 +105,12 @@ def check_basic_options(args: argparse.Namespace):
     # 大会员身份校验
     if not args.sessdata:
         Logger.warning("未提供 SESSDATA，无法下载会员专享剧集")
-    elif asyncio.run(check_is_vip(args.sessdata)):
-        Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta"))
     else:
-        Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
+        Fetcher.set_sessdata(args.sessdata)
+        if asyncio.run(check_is_vip(args.sessdata)):
+            Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta"))
+        else:
+            Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
 
 
 def check_batch_options(args: argparse.Namespace):
@@ -122,6 +123,9 @@ def check_batch_options(args: argparse.Namespace):
 
 async def check_is_vip(sessdata: str = "") -> bool:
     async with aiohttp.ClientSession(
-        headers=gen_headers(), cookies=gen_cookies(sessdata), timeout=aiohttp.ClientTimeout(total=5)
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         return await is_vip(session)
