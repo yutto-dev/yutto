@@ -1,6 +1,5 @@
 import asyncio
 import os
-import time
 from typing import Any, Optional
 
 import aiohttp
@@ -14,7 +13,7 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.processor.progressor import show_progress
-from yutto.utils.danmaku.write_danmaku import write_xml_danmaku, write_ass_danmaku
+from yutto.utils.danmaku import write_danmaku, DanmakuData
 from yutto.utils.subtitle import write_subtitle
 
 
@@ -73,19 +72,17 @@ async def download_video(
     output_dir: str,
     file_name: str,
     subtitles: list[MultiLangSubtitle],
+    danmaku: DanmakuData,
     # TODO: options 使用 TypedDict
     options: Any,
 ):
+    Logger.info("开始处理视频 {}".format(file_name))
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    video_path = os.path.join(output_dir, file_name + "_video.m4s")
-    audio_path = os.path.join(output_dir, file_name + "_audio.m4s")
-    output_path_template = os.path.join(output_dir, file_name + "{output_format}")
+    output_path_no_ext = os.path.join(output_dir, file_name)
+    video_path = output_path_no_ext + "_video.m4s"
+    audio_path = output_path_no_ext + "_audio.m4s"
     ffmpeg = FFmpeg()
-
-    Logger.info("共 {} 种字幕（{}）".format(len(subtitles), ", ".join([subtitle["lang"] for subtitle in subtitles])))
-    for subtitle in subtitles:
-        write_subtitle(subtitle["lines"], video_path, subtitle["lang"])
 
     # TODO: 显示全部 Videos、Audios 信息
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
@@ -93,7 +90,7 @@ async def download_video(
     # TODO: 显示被选中的 Video、Audio 信息
 
     output_format = ".mp4" if video is not None else ".aac"
-    output_path = output_path_template.format(output_format=output_format)
+    output_path = output_path_no_ext + output_format
     if not options["overwrite"] and os.path.exists(output_path):
         Logger.info("文件 {} 已存在".format(file_name))
         return
@@ -117,7 +114,25 @@ async def download_video(
     #     Logger.info(video_log)
 
     if video is None and audio is None:
+        Logger.warning("没有音视频需要下载")
         return
+
+    # 保存字幕
+    if subtitles:
+        Logger.info("共 {} 种字幕（{}）".format(len(subtitles), ", ".join([subtitle["lang"] for subtitle in subtitles])))
+        for subtitle in subtitles:
+            write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+
+    # 保存弹幕
+    if danmaku["data"] is not None:
+        Logger.info("正在保存 {} 弹幕".format(danmaku["save_type"]))
+        write_danmaku(
+            danmaku,
+            output_path,
+            video["height"] if video is not None else 0,
+            video["width"] if video is not None else 0,
+        )
+
     buffers: list[Optional[AsyncFileBuffer]] = [None, None]
     sizes: list[Optional[int]] = [None, None]
     task_funcs: list[list[CoroutineTask]] = []

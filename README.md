@@ -28,27 +28,37 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 pip install --pre yutto
 ```
 
-现在只能简单地下载视频，字幕弹幕等功能还没有做。
-
-由于 yutto 的弹幕支持方式可能需要考虑一段时间，暂时我不太想用 danmaku2ass，所以关于弹幕的支持会延后一段时间。
+-  单个视频下载支持、批量下载支持
+-  投稿视频支持、番剧支持
+-  弹幕支持、字幕支持
 
 现在可以通过以下命令来尝试下载《転スラ日記》第一话
 
 ```bash
-yutto -q 64 get https://www.bilibili.com/bangumi/play/ep395211
+yutto -q 64 --danmaku=ass get https://www.bilibili.com/bangumi/play/ep395211
 ```
 
 或者通过 batch get 命令也是可以的
 
 ```bash
-yutto -q 64 batch get https://www.bilibili.com/bangumi/play/ep395211 -p 1
+yutto -q 64 --danmaku=ass batch get https://www.bilibili.com/bangumi/play/ep395211 -p 1
 ```
+
+更多功能请 `yutto -h` 查看～
 
 ## TODO List
 
--  [ ] 好多，不知道该写些啥，等剩余任务较少时候再来写吧……
+-  [ ] `info` 子命令、`batch info` 子命令
+-  [ ] 完善的信息提示
+-  [ ] 完善的下载进度展示
+-  [ ] 字幕、弹幕嵌入视频支持
+-  [ ] 代理设置支持
+-  [ ] 更多批下载支持（UP 主、收藏夹等）
+-  [ ] 等等等等，以及
+-  [ ] 更加可爱～
 
 ## References
 
 -  基本结构：<https://github.com/SigureMo/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
+-  弹幕转换：<https://github.com/ShigureLab/biliass>

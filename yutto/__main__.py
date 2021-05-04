@@ -35,14 +35,14 @@ def main():
     )
     parser.add_argument("--only-video", dest="require_audio", action="store_false", help="只下载视频")
     parser.add_argument("--only-audio", dest="require_video", action="store_false", help="只下载音频")
-    parser.add_argument("--danmaku", default="xml", choices=["xml", "ass", "no"], help="（待实现）弹幕类型，no 为不生成弹幕")
+    parser.add_argument("--danmaku", default="xml", choices=["xml", "ass", "no"], help="弹幕类型，no 为不生成弹幕")
     parser.add_argument("-b", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB")
     parser.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
     parser.add_argument("-x", "--proxy", default="auto", help="（待实现）设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
     parser.add_argument("-d", "--dir", default="./", help="下载目录，默认为运行目录")
     parser.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
     parser.add_argument("--path-pattern", default="{auto}", help="多级目录的存储路径 Pattern")
-    parser.add_argument("--no-subtitle", action="store_true", help="（待实现）不生成字幕文件")
+    parser.add_argument("--no-subtitle", action="store_true", help="不生成字幕文件")
     parser.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")
     parser.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
     parser.add_argument("--no-color", action="store_true", help="不使用颜色")
@@ -61,6 +61,8 @@ def main():
     # 子命令 batch get
     parser_batch_get = subparsers_batch.add_parser("get", help="批量获取视频")
     batch_get.add_get_arguments(parser_batch_get)
+    # 子命令 batch info
+    # TODO
     # 执行各自的 action
     args = parser.parse_args()
     check_options.check_basic_options(args)

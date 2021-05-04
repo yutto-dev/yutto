@@ -9,10 +9,10 @@ from yutto.api.types import (
     AudioUrlMeta,
     AvId,
     CId,
+    MultiLangSubtitle,
     NoAccessError,
     UnSupportedTypeError,
     VideoUrlMeta,
-    MultiLangSubtitle,
 )
 from yutto.media.codec import VideoCodec
 from yutto.utils.fetcher import Fetcher

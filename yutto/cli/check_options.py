@@ -87,6 +87,11 @@ def check_basic_options(args: argparse.Namespace):
         Logger.error("不下载视频时无法嵌入弹幕")
         sys.exit(1)
 
+    # 不下载视频无法生成 ASS 弹幕（ASS 弹幕生成计算依赖于视频分辨率大小）
+    if not args.require_video and args.danmaku == "ass":
+        Logger.error("不下载视频无法生成 ASS 弹幕")
+        sys.exit(1)
+
     # 嵌入弹幕功能仅支持 ASS 弹幕
     if args.embed_danmaku and args.danmaku != "ass":
         Logger.error("嵌入弹幕功能仅支持 ASS 弹幕")
