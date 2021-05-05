@@ -68,6 +68,9 @@ def combine(*l_list: list[Any]) -> list[Any]:
 
 
 def show_videos_info(videos: list[VideoUrlMeta], selected: int):
+    if not videos:
+        Logger.info("不包含任何视频流")
+        return
     Logger.info(f"共包含以下 {len(videos)} 个视频流：")
     for i, video in enumerate(videos):
         log = "{}{:2} [{:^4}] [{:>4}x{:<4}] <{:^8}>".format(
@@ -84,6 +87,9 @@ def show_videos_info(videos: list[VideoUrlMeta], selected: int):
 
 
 def show_audios_info(audios: list[AudioUrlMeta], selected: int):
+    if not audios:
+        Logger.info("不包含任何音频流")
+        return
     Logger.info(f"共包含以下 {len(audios)} 个音频流：")
     for i, audio in enumerate(audios):
         log = "{}{:2} [{:^4}] <{:^8}>".format(

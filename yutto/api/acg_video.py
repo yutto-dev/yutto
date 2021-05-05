@@ -68,7 +68,9 @@ async def get_acg_video_playurl(
                     "quality": video["id"],
                 }
                 for video in resp_json["data"]["dash"]["video"]
-            ],
+            ]
+            if resp_json["data"]["dash"]["video"]
+            else [],
             [
                 {
                     "url": audio["base_url"],
@@ -79,7 +81,9 @@ async def get_acg_video_playurl(
                     "quality": audio["id"],
                 }
                 for audio in resp_json["data"]["dash"]["audio"]
-            ],
+            ]
+            if resp_json["data"]["dash"]["audio"]
+            else [],
         )
 
 
