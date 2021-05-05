@@ -123,9 +123,13 @@ async def download_video(
 
     output_format = ".mp4" if video is not None else ".aac"
     output_path = output_path_no_ext + output_format
-    if not options["overwrite"] and os.path.exists(output_path):
-        Logger.info("文件 {} 已存在".format(file_name))
-        return
+    if os.path.exists(output_path):
+        if not options["overwrite"]:
+            Logger.info("文件 {} 已存在".format(file_name))
+            return
+        else:
+            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
+            os.remove(output_path)
 
     if video is None and audio is None:
         Logger.warning("没有音视频需要下载")
@@ -176,7 +180,7 @@ async def download_video(
     tasks = parallel_with_limit(combine(*task_funcs), num_workers=options["num_workers"])
     tasks.append(asyncio.create_task(show_progress(filter_none_value(buffers), sum(filter_none_value(sizes)))))
 
-    Logger.info(f"开始下载 {file_name}……")
+    Logger.info(f"开始下载……")
     for task in tasks:
         await task
     Logger.info("下载完成！")
@@ -187,7 +191,7 @@ async def download_video(
         await abuf.close()
 
     # TODO: 将 merge 分离出去？
-    Logger.info(f"开始合并 {file_name}……")
+    Logger.info(f"开始合并……")
     # fmt: off
     args: list[str] = []
     if video is not None:
