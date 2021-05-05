@@ -1,9 +1,16 @@
 import asyncio
+import platform
 from typing import Any, Coroutine, Iterable
 
 from yutto.utils.console.logger import Logger
 
 CoroutineTask = Coroutine[Any, Any, Any]
+
+
+def initial_async_policy():
+    if platform.system() == "Windows":
+        Logger.debug("Windows 平台，单独设置 EventLoopPolicy")
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 def install_uvloop():

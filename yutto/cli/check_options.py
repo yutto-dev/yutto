@@ -8,7 +8,7 @@ import aiohttp
 
 from yutto.api.info import is_vip
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
-from yutto.utils.asynclib import install_uvloop
+from yutto.utils.asynclib import install_uvloop, initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.ffmpeg import FFmpeg
@@ -32,6 +32,9 @@ def check_basic_options(args: argparse.Namespace):
     else:
         # 为保证协程错误栈的可读性，debug 模式不启用 uvloop
         install_uvloop()
+
+    # 初始化异步策略，消除平台差异
+    initial_async_policy()
 
     # proxy 校验
     if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
