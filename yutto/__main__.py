@@ -47,7 +47,7 @@ def main():
     parser.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
     parser.add_argument("--no-color", action="store_true", help="不使用颜色")
     parser.add_argument("--debug", action="store_true", help="启用 debug 模式")
-    parser.set_defaults(action=run)
+    # parser.set_defaults(action=run)
 
     subparsers = parser.add_subparsers()
     # 子命令 get
@@ -56,7 +56,7 @@ def main():
     # 子命令 info
     # TODO
     # 子命令 batch
-    parser_batch = subparsers.add_parser("batch", help="批量获取视频")
+    parser_batch = subparsers.add_parser("batch", help="批量获取视频（需使用其子命令 get/info）")
     subparsers_batch = parser_batch.add_subparsers()
     # 子命令 batch get
     parser_batch_get = subparsers_batch.add_parser("get", help="批量获取视频")
@@ -65,14 +65,14 @@ def main():
     # TODO
     # 执行各自的 action
     args = parser.parse_args()
-    check_options.check_basic_options(args)
-    args.action(args)
-
-
-def run(args: argparse.Namespace):
-    Logger.error("未指定子命令 (get, info, batch)")
-    Logger.info("yutto version: {}".format(colored_string(__version__, fore="green")))
-    Logger.info("FFmpeg version: {}".format(colored_string(FFmpeg().version, fore="blue")))
+    if "action" in args:
+        check_options.check_basic_options(args)
+        args.action(args)
+    else:
+        Logger.error("未指定子命令 (get, info, batch)")
+        Logger.info("yutto version: {}".format(colored_string(__version__, fore="green")))
+        Logger.info("FFmpeg version: {}".format(colored_string(FFmpeg().version, fore="blue")))
+        parser.print_help()
 
 
 if __name__ == "__main__":
