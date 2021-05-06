@@ -82,7 +82,7 @@ def check_episodes(episodes_str: str) -> bool:
 def parse_episodes(episodes_str: str, total: int) -> list[int]:
     """ 将选集字符串转为列表（标号从 1 开始） """
 
-    def reslove_negetive(value: int) -> int:
+    def resolve_negetive(value: int) -> int:
         if value == 0:
             Logger.error("不可使用 0 作为剧集号（剧集号从 1 开始计算）")
             sys.exit(1)
@@ -98,14 +98,14 @@ def parse_episodes(episodes_str: str, total: int) -> list[int]:
             if "~" in episode_item:
                 start, end = episode_item.split("~")
                 start, end = int(start), int(end)
-                start, end = reslove_negetive(start), reslove_negetive(end)
+                start, end = resolve_negetive(start), resolve_negetive(end)
                 if not (end >= start):
                     Logger.error("终点值（{}）应不小于起点值（{}）".format(end, start))
                     sys.exit(1)
                 episode_list.extend(list(range(start, end + 1)))
             else:
                 episode_item = int(episode_item)
-                episode_item = reslove_negetive(episode_item)
+                episode_item = resolve_negetive(episode_item)
                 episode_list.append(episode_item)
     else:
         episode_list = []

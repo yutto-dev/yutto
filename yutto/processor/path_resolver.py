@@ -39,7 +39,7 @@ def repair_filename(filename: str) -> str:
     return filename
 
 
-def reslove_path_pattern(
+def resolve_path_pattern(
     pattern_template: str, auto_pattern_template: str, pattern_dict: dict[PathPattern, Any]
 ) -> str:
     # 保证所有传进来的值都满足路径要求
@@ -49,7 +49,7 @@ def reslove_path_pattern(
     return pattern_template.format(auto=auto_pattern_template.format(**pattern_dict), **pattern_dict)
 
 
-def reslove_path(dir: str, subpath: str) -> tuple[str, str]:
+def resolve_path(dir: str, subpath: str) -> tuple[str, str]:
     """ 将目录与子路径拼接后重新分离为「目录路径」与「文件名」"""
     path = os.path.join(dir, subpath)
     return os.path.split(path)

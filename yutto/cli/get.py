@@ -15,7 +15,7 @@ from yutto.api.danmaku import get_xml_danmaku
 from yutto.api.types import AId, BvId, EpisodeId
 from yutto.utils.fetcher import Fetcher
 from yutto.processor.downloader import download_video
-from yutto.processor.path_resolver import reslove_path, reslove_path_pattern
+from yutto.processor.path_resolver import resolve_path, resolve_path_pattern
 from yutto.processor.urlparser import (
     regexp_acg_video_av,
     regexp_acg_video_av_short,
@@ -89,7 +89,7 @@ async def run(args: argparse.Namespace):
             Logger.error("url 不正确～")
             sys.exit(1)
         # fmt: off
-        subpath = reslove_path_pattern(
+        subpath = resolve_path_pattern(
             args.path_pattern,
             "{name}",
             {
@@ -98,7 +98,7 @@ async def run(args: argparse.Namespace):
                 "name": name
             })
         # fmt: on
-        output_dir, filename = reslove_path(args.dir, subpath)
+        output_dir, filename = resolve_path(args.dir, subpath)
 
         # fmt: off
         danmaku: DanmakuData = {
