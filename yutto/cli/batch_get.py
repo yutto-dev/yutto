@@ -36,7 +36,7 @@ from yutto.utils.danmaku import DanmakuData
 from yutto.utils.functiontools.sync import sync
 
 
-def add_get_arguments(parser: argparse.ArgumentParser):
+def add_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("url", help="视频主页 url")
     parser.add_argument("-p", "--episodes", default="^~$", help="选集")
     parser.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")

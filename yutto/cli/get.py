@@ -29,7 +29,7 @@ from yutto.utils.danmaku import DanmakuData
 from yutto.utils.functiontools.sync import sync
 
 
-def add_get_arguments(parser: argparse.ArgumentParser):
+def add_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("url", help="视频主页 url")
     parser.set_defaults(action=run)
 
