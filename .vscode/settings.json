@@ -1,6 +1,5 @@
 {
   "python.formatting.provider": "black",
   "python.formatting.blackArgs": ["--line-length", "120"],
-  "python.pythonPath": "/opt/homebrew/bin/python3",
   "python.analysis.typeCheckingMode": "strict"
 }

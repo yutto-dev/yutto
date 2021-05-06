@@ -5,18 +5,18 @@ from typing import Any, Optional
 import aiohttp
 from aiofiles import os as aioos
 
-from yutto.api.types import AudioUrlMeta, VideoUrlMeta, MultiLangSubtitle
+from yutto.api.types import AudioUrlMeta, MultiLangSubtitle, VideoUrlMeta
+from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import filter_none_value, select_audio, select_video
+from yutto.processor.progressor import show_progress
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
-from yutto.utils.console.logger import Logger, Badge
 from yutto.utils.console.colorful import colored_string
+from yutto.utils.console.logger import Badge, Logger
+from yutto.utils.danmaku import DanmakuData, write_danmaku
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.processor.progressor import show_progress
-from yutto.utils.danmaku import write_danmaku, DanmakuData
 from yutto.utils.subtitle import write_subtitle
-from yutto.media.quality import video_quality_map, audio_quality_map
 
 
 def slice(start: int, total_size: Optional[int], block_size: Optional[int] = None) -> list[tuple[int, Optional[int]]]:

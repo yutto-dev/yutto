@@ -1,8 +1,8 @@
 from typing import Any, Optional
 
-from yutto.utils.functiontools.singleton import Singleton
-from yutto.utils.console.colorful import colored_string, Fore, Back, Style
+from yutto.utils.console.colorful import Back, Fore, Style, colored_string
 from yutto.utils.console.formatter import get_string_width
+from yutto.utils.functiontools.singleton import Singleton
 
 _logger_debug: bool = False
 

@@ -1,11 +1,10 @@
 import os
 import re
 import subprocess
-
 from functools import cached_property
 
-from yutto.utils.functiontools.singleton import Singleton
 from yutto.utils.console.logger import Logger
+from yutto.utils.functiontools.singleton import Singleton
 
 
 class FFmpegNotFoundError(Exception):

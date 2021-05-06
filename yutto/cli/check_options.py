@@ -1,19 +1,19 @@
 import argparse
 import asyncio
 import os
-import sys
 import re
+import sys
 
 import aiohttp
 
 from yutto.api.info import is_vip
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
-from yutto.utils.asynclib import install_uvloop, initial_async_policy
+from yutto.processor.filter import check_episodes
+from yutto.utils.asynclib import initial_async_policy, install_uvloop
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
-from yutto.utils.ffmpeg import FFmpeg
-from yutto.processor.filter import check_episodes
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.ffmpeg import FFmpeg
 
 
 def check_basic_options(args: argparse.Namespace):

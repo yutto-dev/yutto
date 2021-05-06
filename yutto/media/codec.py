@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Literal
 
 VideoCodec = Literal["hevc", "avc"]
 AudioCodec = Literal["mp4a"]

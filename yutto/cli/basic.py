@@ -1,5 +1,6 @@
 import argparse
-from yutto.media.quality import video_quality_priority_default, audio_quality_priority_default
+
+from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
 
 
 def add_basic_parameters(parser: argparse.ArgumentParser):

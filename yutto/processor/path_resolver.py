@@ -1,7 +1,7 @@
 import os
 import re
-from typing import Literal, Any
 from html import unescape
+from typing import Any, Literal
 
 patterns = ["title", "id", "name"]
 PathPattern = Literal["title", "id", "name"]

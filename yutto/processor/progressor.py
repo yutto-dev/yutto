@@ -2,8 +2,8 @@ import asyncio
 import time
 
 from yutto.utils.console.formatter import size_format
-from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.console.logger import Logger
+from yutto.utils.file_buffer import AsyncFileBuffer
 
 
 async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):

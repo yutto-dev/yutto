@@ -16,7 +16,6 @@ from yutto.api.bangumi import (
 from yutto.api.danmaku import get_xml_danmaku
 from yutto.api.types import AId, AudioUrlMeta, BvId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
 from yutto.cli import check_options
-from yutto.utils.fetcher import Fetcher
 from yutto.processor.downloader import download_video
 from yutto.processor.filter import parse_episodes
 from yutto.processor.path_resolver import resolve_path, resolve_path_pattern
@@ -33,6 +32,7 @@ from yutto.processor.urlparser import (
 )
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuData
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
 
 

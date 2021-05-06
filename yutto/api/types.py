@@ -1,6 +1,7 @@
 from typing import NamedTuple, TypedDict
-from yutto.media.codec import VideoCodec, AudioCodec
-from yutto.media.quality import VideoQuality, AudioQuality
+
+from yutto.media.codec import AudioCodec, VideoCodec
+from yutto.media.quality import AudioQuality, VideoQuality
 from yutto.utils.subtitle import SubtitleData
 
 
