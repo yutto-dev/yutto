@@ -35,13 +35,13 @@ pip install --pre yutto
 现在可以通过以下命令来尝试下载《転スラ日記》第一话
 
 ```bash
-yutto -q 64 --danmaku=ass get https://www.bilibili.com/bangumi/play/ep395211
+yutto get -q 64 --danmaku=ass https://www.bilibili.com/bangumi/play/ep395211
 ```
 
 或者通过 batch get 命令也是可以的
 
 ```bash
-yutto -q 64 --danmaku=ass batch get https://www.bilibili.com/bangumi/play/ep395211 -p 1
+yutto batch get -q 64 --danmaku=ass https://www.bilibili.com/bangumi/play/ep395211 -p 1
 ```
 
 更多功能请 `yutto -h` 查看～
