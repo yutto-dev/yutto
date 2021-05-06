@@ -1,0 +1,28 @@
+name: Release Latest Test
+
+schedule:
+  - cron: "0 0 * * *"
+
+jobs:
+  test-yutto-latest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        architecture: ["x64", "arm64"]
+    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} sample
+    steps:
+      - name: Install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+
+      - name: Install yutto latest
+        run: |
+          pip install yutto
+
+      # TODO: pytest 集成测试
+      - name: Test yutto
+        run: |
+          yutto -v
