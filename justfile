@@ -8,12 +8,13 @@ release:
   python3 setup.py upload
   just clean-builds
 
-upgrade-pip:
-  python3 -m pip install --upgrade --pre yutto
-
-upgrade:
+install:
   python3 setup.py build
   python3 setup.py install
+  just clean-builds
+
+upgrade-pip:
+  python3 -m pip install --upgrade --pre yutto
 
 clean:
   find . -name "*.m4s" -print0 | xargs -0 rm -f

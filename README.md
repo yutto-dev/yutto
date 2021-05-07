@@ -20,13 +20,25 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 至于名字嘛，开始只是觉得 yutto 很可爱，印象里是萌王说过的，但具体忘记出处是在哪里了，今天“重温”《転スラ日記》第一话时候，居然 00:25 就是～总之，リムル最可爱啦〜
 
-## 可用程度
+## 安装预览版
 
-安装预览版：
+在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚处于 beta，没有测试）与 FFmpeg（参照 bilili 文档）
+
+### pip 安装
 
 ```bash
 pip install --pre yutto
 ```
+
+### GitHub clone
+
+```bash
+git clone https://github.com/SigureMo/yutto.git
+python setup.py build
+python setup.py install
+```
+
+## 可用程度
 
 -  单个视频下载支持、批量下载支持
 -  投稿视频支持、番剧支持
@@ -61,3 +73,7 @@ yutto batch get -q 64 --danmaku=ass https://www.bilibili.com/bangumi/play/ep3952
 -  基本结构：<https://github.com/SigureMo/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
 -  弹幕转换：<https://github.com/ShigureLab/biliass>
+
+## 参与贡献
+
+请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)
