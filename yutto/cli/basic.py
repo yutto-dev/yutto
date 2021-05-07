@@ -3,7 +3,7 @@ import argparse
 from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
 
 
-def add_basic_parameters(parser: argparse.ArgumentParser):
+def add_basic_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("-n", "--num-workers", type=int, default=8, help="同时用于下载的最大 Worker 数")
     parser.add_argument(
         "-q",

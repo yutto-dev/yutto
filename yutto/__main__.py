@@ -14,7 +14,7 @@ def main():
     subparsers = parser.add_subparsers()
     # 子命令 get
     parser_get = subparsers.add_parser("get", help="获取单个视频")
-    basic.add_basic_parameters(parser_get)
+    basic.add_basic_arguments(parser_get)
     get.add_arguments(parser_get)
     # 子命令 info
     # TODO
@@ -23,7 +23,7 @@ def main():
     subparsers_batch = parser_batch.add_subparsers()
     # 子命令 batch get
     parser_batch_get = subparsers_batch.add_parser("get", help="批量获取视频")
-    basic.add_basic_parameters(parser_batch_get)
+    basic.add_basic_arguments(parser_batch_get)
     batch_get.add_arguments(parser_batch_get)
     # 子命令 batch info
     # TODO
