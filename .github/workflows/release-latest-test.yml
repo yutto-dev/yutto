@@ -10,8 +10,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9"]
-        architecture: ["x64", "arm64"]
-    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} sample
+        architecture: ["x64"]
+    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} test
     steps:
       - name: Install python
         uses: actions/setup-python@v2
