@@ -107,11 +107,11 @@ def check_basic_options(args: argparse.Namespace):
 
     # 大会员身份校验
     if not args.sessdata:
-        Logger.warning("未提供 SESSDATA，无法下载会员专享剧集")
+        Logger.info("未提供 SESSDATA，无法下载会员专享剧集")
     else:
         Fetcher.set_sessdata(args.sessdata)
         if asyncio.run(check_is_vip(args.sessdata)):
-            Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta"))
+            Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style="bold"))
         else:
             Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
 
