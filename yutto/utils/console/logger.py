@@ -1,8 +1,7 @@
 from typing import Any, Optional
 
-from yutto.utils.console.colorful import Back, Fore, Style, colored_string
+from yutto.utils.console.colorful import Color, Style, colored_string
 from yutto.utils.console.formatter import get_string_width
-from yutto.utils.functiontools.singleton import Singleton
 
 _logger_debug: bool = False
 
@@ -16,14 +15,14 @@ class Badge:
     def __init__(
         self,
         text: str = "CUSTOM",
-        fore: Optional[Fore] = None,
-        back: Optional[Back] = None,
-        style: Optional[Style] = None,
+        fore: Optional[Color] = None,
+        back: Optional[Color] = None,
+        style: Optional[list[Style]] = None,
     ):
         self.text: str = text
-        self.fore: Optional[Fore] = fore
-        self.back: Optional[Back] = back
-        self.style: Optional[Style] = style
+        self.fore: Optional[Color] = fore
+        self.back: Optional[Color] = back
+        self.style: Optional[list[Style]] = style
 
     def __str__(self):
         return colored_string(" {} ".format(self.text), fore=self.fore, back=self.back, style=self.style)
@@ -44,7 +43,7 @@ INFO_BADGE = Badge("INFO", fore="black", back="green")
 DEBUG_BADGE = Badge("DEBUG", fore="black", back="blue")
 
 
-class Logger(metaclass=Singleton):
+class Logger:
     @classmethod
     def custom(cls, string: Any, badge: Badge, *print_args: Any, **print_kwargs: Any):
         prefix = badge + " "

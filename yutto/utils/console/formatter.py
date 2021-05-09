@@ -1,24 +1,25 @@
-import re
 from typing import Literal
 
+from yutto.utils.console.colorful import no_colored_string
 
-def size_format(size: float, ndigits: int = 2, baseUnitSize: Literal[1024, 1000] = 1024) -> str:
+
+def size_format(size: float, ndigits: int = 2, base_unit_size: Literal[1024, 1000] = 1024) -> str:
     """ 输入数据字节数，与保留小数位数，返回数据量字符串 """
     sign = "-" if size < 0 else ""
     size = abs(size)
     unit_list = (
         ["Bytes", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB", "BiB"]
-        if baseUnitSize == 1024
+        if base_unit_size == 1024
         else ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB", "BB"]
     )
 
     index = 0
     while index < len(unit_list) - 1:
-        if size >= baseUnitSize ** (index + 1):
+        if size >= base_unit_size ** (index + 1):
             index += 1
         else:
             break
-    return "{}{:.{}f} {}".format(sign, size / baseUnitSize ** index, ndigits, unit_list[index])
+    return "{}{:.{}f} {}".format(sign, size / base_unit_size ** index, ndigits, unit_list[index])
 
 
 def get_char_width(char: str) -> int:
@@ -48,16 +49,9 @@ def get_char_width(char: str) -> int:
 def get_string_width(string: str) -> int:
     """ 计算包含中文的字符串宽度 """
     # 去除颜色码
-    string = no_color_string(string)
+    string = no_colored_string(string)
     try:
         length = sum([get_char_width(c) for c in string])
     except:
         length = len(string)
     return length
-
-
-def no_color_string(string: str) -> str:
-    """ 去除字符串中的颜色码 """
-    regex_color = re.compile(r"\033\[\d+m")
-    string = regex_color.sub("", string)
-    return string

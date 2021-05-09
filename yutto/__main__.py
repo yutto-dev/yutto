@@ -1,10 +1,10 @@
 import argparse
+import sys
 
-from yutto.cli import get, info, batch_get, check_options, basic
 from yutto.__version__ import __version__
+from yutto.cli import basic, batch_get, check_options, get, info
+from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.ffmpeg import FFmpeg
-from yutto.utils.console.colorful import colored_string
-from yutto.utils.console.logger import Logger
 
 
 def main():
@@ -34,8 +34,16 @@ def main():
         args.action(args)
     else:
         Logger.error("未指定子命令 (get, info, batch)")
-        Logger.info("yutto version: {}".format(colored_string(__version__, fore="green")))
-        Logger.info("FFmpeg version: {}".format(colored_string(FFmpeg().version, fore="blue")))
+        python_version = "{}.{}.{}".format(sys.version_info[0], sys.version_info[1], sys.version_info[2])
+        ffmpeg_version = FFmpeg().version
+        yutto_version = __version__
+        Logger.print(
+            Badge("Python", fore="black", back="green"), Badge(python_version, fore="green", back="black"), sep=""
+        )
+        Logger.print(Badge("yutto", fore="black", back="blue"), Badge(yutto_version, fore="blue", back="black"), sep="")
+        Logger.print(
+            Badge("ffmpeg", fore="black", back="cyan"), Badge(ffmpeg_version, fore="cyan", back="black"), sep=""
+        )
         parser.print_help()
 
 
