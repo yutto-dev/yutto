@@ -5,6 +5,7 @@
 很高兴你对参与 yutto 的贡献感兴趣，在提交你的贡献之前，请花一点点时间阅读本指南
 
 > TODO: justfile 相关
+> TODO: 说明各个模块的作用
 
 ## 本地调试
 
@@ -18,6 +19,10 @@ python -m yutto get <url>
 ```
 
 注意本地调试请不要直接使用 `yutto` 命令
+
+## 开发环境建议
+
+由于 yutto 全面使用了 [Type Hints](https://docs.python.org/3/library/typing.html)，所以这里建议使用 VSCode + 扩展 pylance 来保证类型提示的准确性，同时配置格式化工具 black 以保证代码格式的一致性。
 
 ## 测试
 
