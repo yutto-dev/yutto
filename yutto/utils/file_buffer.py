@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import aiofiles
-from aiofiles import os as aioos
 
 from yutto.utils.console.logger import Logger
 
@@ -27,7 +26,7 @@ class AsyncFileBuffer:
         self = cls()
         self.file_path = file_path
         if overwrite and os.path.exists(file_path):
-            await aioos.remove(file_path)
+            os.remove(file_path)
         self.written_size = os.path.getsize(file_path) if not overwrite and os.path.exists(file_path) else 0
         self.file_obj = await aiofiles.open(file_path, "ab")
         return self

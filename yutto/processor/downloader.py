@@ -1,10 +1,9 @@
 import asyncio
-import os
 import functools
+import os
 from typing import Any, Optional
 
 import aiohttp
-from aiofiles import os as aioos
 
 from yutto.api.types import AudioUrlMeta, MultiLangSubtitle, VideoUrlMeta
 from yutto.media.quality import audio_quality_map, video_quality_map
@@ -213,6 +212,6 @@ async def download_video(
     Logger.info("合并完成！")
 
     if video is not None:
-        await aioos.remove(video_path)
+        os.remove(video_path)
     if audio is not None:
-        await aioos.remove(audio_path)
+        os.remove(audio_path)
