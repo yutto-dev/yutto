@@ -35,7 +35,7 @@ def write_ass_danmaku(xml_danmaku: str, filepath: str, height: int, width: int):
                 width,
                 height,
                 reserve_blank=0,
-                font_face="sans-serif",
+                font_face="SimHei",
                 font_size=width / 40,
                 text_opacity=0.8,
                 duration_marquee=15.0,
