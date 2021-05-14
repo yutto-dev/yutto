@@ -1,5 +1,6 @@
 import asyncio
 import os
+import functools
 from typing import Any, Optional
 
 import aiohttp
@@ -199,27 +200,15 @@ async def download_video(
     # TODO: 将 merge 分离出去？
     Logger.info(f"开始合并……")
     # fmt: off
-    args: list[str] = []
-    if video is not None:
-        args.extend([
-            "-i", video_path,
-        ])
-    if audio is not None:
-        args.extend([
-            "-i", audio_path,
-        ])
-    if video is not None:
-        args.extend([
-            "-vcodec", options["video_save_codec"],
-        ])
-    if audio is not None:
-        args.extend([
-            "-acodec", options["audio_save_codec"],
-        ])
-    args.extend(["-y"])
+    args_list: list[list[str]] = [
+        ["-i", video_path] if video is not None else [],
+        ["-i", audio_path] if audio is not None else [],
+        ["-vcodec", options["video_save_codec"]] if video is not None else [],
+        ["-acodec", options["audio_save_codec"]] if video is not None else [],
+        ["-y", "output_path"]
+    ]
 
-    args.append(output_path)
-    ffmpeg.exec(args)
+    ffmpeg.exec(functools.reduce(lambda prev, cur: prev+cur, args_list))
     # fmt: on
     Logger.info("合并完成！")
 
