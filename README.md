@@ -22,7 +22,7 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 ## 安装预览版
 
-在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚处于 beta，没有测试）与 FFmpeg（参照 bilili 文档）
+在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚处于 beta，没有测试）与 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
 
 ### pip 安装
 
@@ -38,25 +38,165 @@ python setup.py build
 python setup.py install
 ```
 
-## 可用程度
+## 功能预览
 
--  单个视频下载支持、批量下载支持
--  投稿视频支持、番剧支持
--  弹幕支持、字幕支持
+### 基本命令
 
-现在可以通过以下命令来尝试下载《転スラ日記》第一话
+你可以通过 get 子命令来下载**一个**视频。它支持 av/BV 号以及相应带 p=n 参数的投稿视频页面，也支持 ep 号（episode_id）的番剧页面。
 
-```bash
-yutto get -q 64 --danmaku=ass https://www.bilibili.com/bangumi/play/ep395211
-```
-
-或者通过 batch get 命令也是可以的
+比如只需要这样你就可以下载《転スラ日記》第一话：
 
 ```bash
-yutto batch get -q 64 --danmaku=ass https://www.bilibili.com/bangumi/play/ep395211 -p 1
+yutto get https://www.bilibili.com/bangumi/play/ep395211
 ```
 
-更多功能请 `yutto -h` 查看～
+不过有时你可能想要批量下载很多剧集，因此 yutto 提供了用于批量下载的子命令 `batch get`，它不仅支持前面所说的单个视频所在页面地址（会解析该单个视频所在的系列视频），还支持一些明确用于表示系列视频的地址，比如 md 页面（media_id）、ss 页面（season_id）。
+
+比如像下面这样就可以下载《転スラ日記》所有已更新的剧集：
+
+```bash
+yutto batch get https://www.bilibili.com/bangumi/play/ep395211
+```
+
+### 基础参数
+
+> 大部分参数与 bilili 重合，可参考 [bilili 的 cli 文档](https://bilili.nyakku.moe/cli/)
+
+yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可以使用的。
+
+#### 最大并行 worker 数量
+
+-  参数 `-n` 或 `--num-workers`
+-  默认值 `8`
+
+与 bilili 不同的是，yutto 并不是使用多线程实现并行下载，而是使用协程实现的，本参数限制的是最大的并行 Worker 数量。
+
+#### 视频质量
+
+-  参数 `-q` 或 `--video-quality`
+-  可选值 `125 | 120 | 116 | 112 | 80 | 74 | 64 | 32 | 16`
+-  默认值 `125`
+
+用于调节视频清晰度（详情可参考 bilili 文档）。
+
+#### 音频质量
+
+-  参数 `-aq` 或 `--audio-quality`
+-  可选值 `30280 | 30232 | 30216`
+-  默认值 `30280`
+
+用于调节音频码率（详情可参考 bilili 文档）。
+
+#### 视频编码
+
+-  参数 `--vcodec`
+-  下载编码可选值 `hevc | avc`
+-  保存编码可选值 FFmpeg 所有可用的视频编码器
+-  默认值 `avc:copy`
+
+该参数略微复杂，前半部分表示在下载时**优先**选择哪一种编码的视频流，后半部分则表示在合并时如何编码视频流，两者使用 `:` 分隔。
+
+值得注意的是，前半的下载编码只是优先下载的编码而已，如果不存在该编码，则仍会像视频清晰度调节机制一样自动选择其余编码。
+
+而后半部分的参数如果设置成非 `copy` 的值则可以确保在下载完成后对其进行重新编码，而且不止支持 `hevc` 与 `avc`，只要你的 FFmpeg 支持的视频编码器，它都可以完成。
+
+#### 音频编码
+
+-  参数 `--acodec`
+-  下载编码可选值 `mp4a`
+-  保存编码可选值 FFmpeg 所有可用的音频编码器
+-  默认值 `mp4a:copy`
+
+详情同视频编码。
+
+#### 仅下载视频流
+
+-  参数 `--only-video`
+-  默认值 `False`
+
+#### 仅下载音频流
+
+-  参数 `--only-audio`
+-  默认值 `False`
+
+仅下载其中的音频流，保存为 `.aac` 文件。
+
+值得注意的是，在不选择视频流时，嵌入字幕、弹幕功能将无法工作。
+
+#### 弹幕选择
+
+-  参数 `--danmaku`
+-  可选值 `ass | xml | no`
+-  默认值 `ass`
+
+选择生成弹幕格式，`no` 为不生成。
+
+#### 下载块大小
+
+-  参数 `-b` 或 `--block-size`
+-  默认值 `0.5`
+
+以 MiB 为单位，为分块下载时各块大小，不建议更改。
+
+#### 强制覆盖已下载文件
+
+-  参数 `-w` 或 `--overwrite`
+-  默认值 `False`
+
+#### 代理设置
+
+-  参数 `-x` 或 `--proxy`
+-  可选值 `auto | no | <https?://url/to/proxy/server>`
+-  默认值 `auto`
+
+设置代理服务器，默认是从环境变量读取，`no` 则为不设置代理，设置其它 http/https url 则将其作为代理服务器。
+
+#### 存放根路径
+
+-  参数 `-d` 或 `--dir`
+-  默认值 `./`
+
+#### 存放子路径模板
+
+参数尚需调整
+
+#### Cookies 设置
+
+-  参数 `-c` 或 `--sessdata`
+-  默认值 `""`
+
+详情参考 bilili 文档。
+
+#### 不下载字幕
+
+-  参数 `--no-subtitle`
+-  默认值 `False`
+
+#### 不显示颜色
+
+-  参数 `--no-color`
+-  默认值 `False`
+
+#### 启用 Debug 模式
+
+-  参数 `--debug`
+-  默认值 `False`
+
+### 批量参数
+
+有些参数是只有 `batch` 子命令才可以使用的
+
+#### 选集
+
+-  参数 `-p` 或 `--episodes`
+-  默认值 `^~$`
+
+详情参考 bilili 文档。
+
+#### 同时下载附加剧集
+
+-  参数 `-s` 或 `--with-section`
+-  默认值 `False`
 
 ## TODO List
 
