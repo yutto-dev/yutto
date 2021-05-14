@@ -204,7 +204,7 @@ async def download_video(
         ["-i", audio_path] if audio is not None else [],
         ["-vcodec", options["video_save_codec"]] if video is not None else [],
         ["-acodec", options["audio_save_codec"]] if video is not None else [],
-        ["-y", "output_path"]
+        ["-y", output_path]
     ]
 
     ffmpeg.exec(functools.reduce(lambda prev, cur: prev+cur, args_list))
