@@ -8,7 +8,7 @@ import aiohttp
 from yutto.api.types import AudioUrlMeta, MultiLangSubtitle, VideoUrlMeta
 from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import filter_none_value, select_audio, select_video
-from yutto.processor.progressor import show_progress
+from yutto.processor.progressbar import show_progress
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger

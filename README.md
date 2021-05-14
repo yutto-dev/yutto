@@ -62,7 +62,6 @@ yutto batch get -q 64 --danmaku=ass https://www.bilibili.com/bangumi/play/ep3952
 
 -  [ ] `info` 子命令、`batch info` 子命令
 -  [ ] 完善的信息提示
--  [ ] 完善的下载进度展示
 -  [ ] 字幕、弹幕嵌入视频支持
 -  [ ] 更多批下载支持（UP 主、收藏夹等）
 -  [ ] 等等等等，以及
