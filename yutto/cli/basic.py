@@ -14,6 +14,7 @@ def add_basic_arguments(parser: argparse.ArgumentParser):
         help="视频清晰度等级（125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
     )
     parser.add_argument(
+        "-aq",
         "--audio-quality",
         default=30280,
         choices=audio_quality_priority_default,
