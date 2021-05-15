@@ -1,10 +1,10 @@
 import os
 import re
 from html import unescape
-from typing import Any, Literal
+from typing import Union, Literal
 
-patterns = ["title", "id", "name"]
-PathPattern = Literal["title", "id", "name"]
+path_template_variables = ["title", "id", "name"]
+PathTemplateVariable = Literal["title", "id", "name"]
 
 _count: int = 0
 
@@ -12,7 +12,7 @@ _count: int = 0
 def repair_filename(filename: str) -> str:
     """ 修复不合法的文件名 """
 
-    def to_full_width_chr(matchobj: "re.Match[str]") -> str:
+    def to_full_width_chr(matchobj: re.Match[str]) -> str:
         char = matchobj.group(0)
         full_width_char = chr(ord(char) + ord("？") - ord("?"))
         return full_width_char
@@ -39,17 +39,12 @@ def repair_filename(filename: str) -> str:
     return filename
 
 
-def resolve_path_pattern(
-    pattern_template: str, auto_pattern_template: str, pattern_dict: dict[PathPattern, Any]
+def resolve_path_template(
+    path_template: str, auto_path_template: str, template_dict: dict[PathTemplateVariable, Union[int, str]]
 ) -> str:
     # 保证所有传进来的值都满足路径要求
-    for key, value in pattern_dict.items():
+    for key, value in template_dict.items():
+        # 只对字符串值修改，int 型不修改以适配高级模板
         if isinstance(value, str):
-            pattern_dict[key] = repair_filename(value)
-    return pattern_template.format(auto=auto_pattern_template.format(**pattern_dict), **pattern_dict)
-
-
-def resolve_path(dir: str, subpath: str) -> tuple[str, str]:
-    """ 将目录与子路径拼接后重新分离为「目录路径」与「文件名」"""
-    path = os.path.join(dir, subpath)
-    return os.path.split(path)
+            template_dict[key] = repair_filename(value)
+    return path_template.format(auto=auto_path_template.format(**template_dict), **template_dict)

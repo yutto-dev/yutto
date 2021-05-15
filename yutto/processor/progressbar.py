@@ -31,7 +31,7 @@ class ProgressBar:
         )
 
     def end(self) -> str:
-        return " " * (self.width + 40) + "\r"
+        return "\n"
 
 
 async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):

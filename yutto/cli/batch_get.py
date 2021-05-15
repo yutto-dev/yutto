@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from typing import Optional
 
@@ -18,7 +19,7 @@ from yutto.api.types import AId, AudioUrlMeta, BvId, EpisodeId, MediaId, MultiLa
 from yutto.cli import check_options
 from yutto.processor.downloader import download_video
 from yutto.processor.filter import parse_episodes
-from yutto.processor.path_resolver import resolve_path, resolve_path_pattern
+from yutto.processor.path_resolver import resolve_path_template
 from yutto.processor.urlparser import (
     regexp_acg_video_av,
     regexp_acg_video_av_short,
@@ -88,8 +89,8 @@ async def run(args: argparse.Namespace):
                 id = bangumi_item["id"]
                 videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
                 # fmt: off
-                subpath = resolve_path_pattern(
-                    args.path_pattern,
+                subpath = resolve_path_template(
+                    args.subpath_template,
                     "{title}/{name}",
                     {
                         "title": title,
@@ -97,7 +98,7 @@ async def run(args: argparse.Namespace):
                         "name": name
                     })
                 # fmt: on
-                output_dir, filename = resolve_path(args.dir, subpath)
+                output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
                 subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
                 xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
                 download_list.append((videos, audios, output_dir, filename, subtitles, xml_danmaku))
@@ -125,8 +126,8 @@ async def run(args: argparse.Namespace):
                 id = acg_video_item["id"]
                 videos, audios = await get_acg_video_playurl(session, avid, cid)
                 # fmt: off
-                subpath = resolve_path_pattern(
-                    args.path_pattern,
+                subpath = resolve_path_template(
+                    args.subpath_template,
                     "{title}/{name}",
                     {
                         "title": title,
@@ -134,7 +135,7 @@ async def run(args: argparse.Namespace):
                         "name": name
                     })
                 # fmt: on
-                output_dir, filename = resolve_path(args.dir, subpath)
+                output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
                 subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
                 xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
                 download_list.append((videos, audios, output_dir, filename, subtitles, xml_danmaku))

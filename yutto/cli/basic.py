@@ -35,7 +35,7 @@ def add_basic_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
     parser.add_argument("-d", "--dir", default="./", help="下载目录，默认为运行目录")
     parser.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
-    parser.add_argument("--path-pattern", default="{auto}", help="多级目录的存储路径 Pattern")
+    parser.add_argument("-tp", "--subpath-template", default="{auto}", help="多级目录的存储路径模板")
     parser.add_argument("--no-subtitle", action="store_true", help="不生成字幕文件")
     parser.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")
     parser.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")

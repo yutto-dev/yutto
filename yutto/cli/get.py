@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 
 import aiohttp
@@ -14,7 +15,7 @@ from yutto.api.bangumi import (
 from yutto.api.danmaku import get_xml_danmaku
 from yutto.api.types import AId, BvId, EpisodeId
 from yutto.processor.downloader import download_video
-from yutto.processor.path_resolver import resolve_path, resolve_path_pattern
+from yutto.processor.path_resolver import resolve_path_template
 from yutto.processor.urlparser import (
     regexp_acg_video_av,
     regexp_acg_video_av_short,
@@ -59,6 +60,7 @@ async def run(args: argparse.Namespace):
             else:
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(1)
+            auto_subpath_template = "{name}"
             videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
             subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
             xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
@@ -82,6 +84,7 @@ async def run(args: argparse.Namespace):
             cid = acg_video_list[page - 1]["cid"]
             name = acg_video_list[page - 1]["name"]
             id = acg_video_list[page - 1]["id"]
+            auto_subpath_template = "{title}"
             videos, audios = await get_acg_video_playurl(session, avid, cid)
             subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
             xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
@@ -89,16 +92,16 @@ async def run(args: argparse.Namespace):
             Logger.error("url 不正确～")
             sys.exit(1)
         # fmt: off
-        subpath = resolve_path_pattern(
-            args.path_pattern,
-            "{name}",
+        subpath = resolve_path_template(
+            args.subpath_template,
+            auto_subpath_template,
             {
                 "title": title,
                 "id": id,
                 "name": name
             })
         # fmt: on
-        output_dir, filename = resolve_path(args.dir, subpath)
+        output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
 
         # fmt: off
         danmaku: DanmakuData = {
