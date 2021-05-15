@@ -198,6 +198,28 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 -  参数 `-s` 或 `--with-section`
 -  默认值 `False`
 
+## 从 bilili1.x 迁移
+
+### 取消的功能
+
+-  `- bilibili` 目录的生成
+-  播放列表生成
+-  源格式修改功能（不再支持 flv 源视频下载，如果仍有视频不支持 dash 源，请继续使用 bilili）
+
+### 默认行为的修改
+
+-  使用协程而非多线程进行下载，同时也不是批量解析批量下载，而是边解析边下载
+-  默认生成弹幕为 ASS
+-  默认启用从多镜像源下载的特性
+-  不仅可以控制是否使用系统代理，还能配置特定的代理服务器
+
+### 新增的特性
+
+-  单视频下载与批量下载命令分离（`bilili` 命令与 `yutto batch get` 相类似）
+-  音频/视频编码选择
+-  仅下载音频/视频
+-  存放子路径的自由定制
+
 ## TODO List
 
 -  [ ] `info` 子命令、`batch info` 子命令
@@ -207,7 +229,7 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 -  [ ] 等等等等，以及
 -  [ ] 更加可爱～
 
-## References
+## 参考
 
 -  基本结构：<https://github.com/SigureMo/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
