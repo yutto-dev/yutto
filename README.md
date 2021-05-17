@@ -64,6 +64,9 @@ yutto batch get https://www.bilibili.com/bangumi/play/ep395211
 
 yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可以使用的。
 
+<details>
+<summary>点击展开详细参数</summary>
+
 #### 最大并行 worker 数量
 
 -  参数 `-n` 或 `--num-workers`
@@ -190,9 +193,14 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 -  参数 `--debug`
 -  默认值 `False`
 
+</details>
+
 ### 批量参数
 
 有些参数是只有 `batch` 子命令才可以使用的
+
+<details>
+<summary>点击展开详细参数</summary>
 
 #### 选集
 
@@ -205,6 +213,8 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 
 -  参数 `-s` 或 `--with-section`
 -  默认值 `False`
+
+</details>
 
 ## 从 bilili1.x 迁移
 
@@ -230,6 +240,7 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 
 ## TODO List
 
+-  [ ] 使用 [rich](https://github.com/willmcgugan/rich) 重写 UI
 -  [ ] `info` 子命令、`batch info` 子命令
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持
