@@ -152,7 +152,7 @@ async def download_video(
         )
 
     # 保存弹幕
-    if danmaku["data"] is not None:
+    if danmaku["data"]:
         write_danmaku(
             danmaku,
             output_path,

@@ -129,7 +129,7 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 #### 弹幕格式选择
 
 -  参数 `-df` 或 `--danmaku-format`
--  可选值 `ass | xml`
+-  可选值 `ass | xml | protobuf`
 -  默认值 `ass`
 
 #### 下载块大小

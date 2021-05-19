@@ -13,7 +13,7 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.api.danmaku import get_xml_danmaku
+from yutto.api.danmaku import get_danmaku
 from yutto.api.types import AId, AudioUrlMeta, BvId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
 from yutto.cli import check_options
 from yutto.processor.downloader import download_video
@@ -101,7 +101,9 @@ async def run(args: argparse.Namespace):
                 # fmt: on
                 output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
                 subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
-                danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else EmptyDanmakuData
+                danmaku = (
+                    await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
+                )
                 download_list.append((videos, audios, output_dir, filename, subtitles, danmaku))
         elif (
             (match_obj := regexp_acg_video_av.match(url))
@@ -138,13 +140,14 @@ async def run(args: argparse.Namespace):
                 # fmt: on
                 output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
                 subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
-                danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else EmptyDanmakuData
+                danmaku = (
+                    await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
+                )
                 download_list.append((videos, audios, output_dir, filename, subtitles, danmaku))
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
         for videos, audios, output_dir, filename, subtitles, danmaku in download_list:
-            danmaku["save_type"] = args.danmaku_format
 
             await download_video(
                 session,
