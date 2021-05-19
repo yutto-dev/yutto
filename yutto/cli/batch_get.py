@@ -53,15 +53,17 @@ async def run(args: argparse.Namespace):
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
+        url: str = args.url
+        url = await Fetcher.get_redirected_url(session, url)
         download_list: list[
             tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str, list[MultiLangSubtitle], Optional[str]]
         ] = []
         if (
-            (match_obj := regexp_bangumi_ep.match(args.url))
-            or (match_obj := regexp_bangumi_ep_short.match(args.url))
-            or (match_obj := regexp_bangumi_ss.match(args.url))
-            or (match_obj := regexp_bangumi_ss_short.match(args.url))
-            or (match_obj := regexp_bangumi_md.match(args.url))
+            (match_obj := regexp_bangumi_ep.match(url))
+            or (match_obj := regexp_bangumi_ep_short.match(url))
+            or (match_obj := regexp_bangumi_ss.match(url))
+            or (match_obj := regexp_bangumi_ss_short.match(url))
+            or (match_obj := regexp_bangumi_md.match(url))
         ):
             # 匹配为番剧
             if "episode_id" in match_obj.groupdict().keys():
@@ -103,10 +105,10 @@ async def run(args: argparse.Namespace):
                 xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
                 download_list.append((videos, audios, output_dir, filename, subtitles, xml_danmaku))
         elif (
-            (match_obj := regexp_acg_video_av.match(args.url))
-            or (match_obj := regexp_acg_video_av_short.match(args.url))
-            or (match_obj := regexp_acg_video_bv.match(args.url))
-            or (match_obj := regexp_acg_video_bv_short.match(args.url))
+            (match_obj := regexp_acg_video_av.match(url))
+            or (match_obj := regexp_acg_video_av_short.match(url))
+            or (match_obj := regexp_acg_video_bv.match(url))
+            or (match_obj := regexp_acg_video_bv_short.match(url))
         ):
             # 匹配为投稿视频
             if "aid" in match_obj.groupdict().keys():

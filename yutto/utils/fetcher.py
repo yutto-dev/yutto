@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import Any, Literal, Optional, Union
+from typing import Any, Callable, Coroutine, Literal, Optional, TypeVar, Union
 from urllib.parse import quote, unquote
 
 import aiohttp
@@ -12,6 +12,28 @@ from yutto.utils.file_buffer import AsyncFileBuffer
 
 class MaxRetryError(Exception):
     pass
+
+
+T = TypeVar("T")
+
+
+class MaxRetry:
+    def __init__(self, max_retry: int = 2):
+        self.max_retry = max_retry
+
+    def __call__(self, connect_once: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
+        async def connect_n_times(*args: Any, **kwargs: Any) -> T:
+            retry = self.max_retry + 1
+            while retry:
+                try:
+                    return await connect_once(*args, **kwargs)
+                except asyncio.TimeoutError as e:
+                    Logger.warning("抓取超时，正在重试")
+                finally:
+                    retry -= 1
+            raise MaxRetryError()
+
+        return connect_n_times
 
 
 class Fetcher:
@@ -42,47 +64,31 @@ class Fetcher:
         Fetcher.cookies = {"SESSDATA": quote(unquote(sessdata))}
 
     @classmethod
-    async def fetch_text(
-        cls, session: ClientSession, url: str, encoding: Optional[str] = None, max_retry: int = 2
-    ) -> str:
-        retry = max_retry + 1
-        while retry:
-            try:
-                async with session.get(url, proxy=Fetcher.proxy) as resp:
-                    return await resp.text(encoding=encoding)
-            except asyncio.TimeoutError as e:
-                Logger.warning("url: {url} 抓取超时".format(url=url))
-            finally:
-                retry -= 1
-        raise MaxRetryError()
+    @MaxRetry(2)
+    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
+        async with session.get(url, proxy=Fetcher.proxy) as resp:
+            return await resp.text(encoding=encoding)
 
     @classmethod
-    async def fetch_bin(cls, session: ClientSession, url: str, max_retry: int = 2) -> bytes:
-        retry = max_retry + 1
-        while retry:
-            try:
-                async with session.get(url, proxy=Fetcher.proxy) as resp:
-                    return await resp.read()
-            except asyncio.TimeoutError as e:
-                Logger.warning("url: {url} 抓取超时".format(url=url))
-            finally:
-                retry -= 1
-        raise MaxRetryError()
+    @MaxRetry(2)
+    async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
+        async with session.get(url, proxy=Fetcher.proxy) as resp:
+            return await resp.read()
 
     @classmethod
-    async def fetch_json(cls, session: ClientSession, url: str, max_retry: int = 2) -> Any:
-        retry = max_retry + 1
-        while retry:
-            try:
-                async with session.get(url, proxy=Fetcher.proxy) as resp:
-                    return await resp.json()
-            except asyncio.TimeoutError as e:
-                Logger.warning("url: {url} 抓取超时".format(url=url))
-            finally:
-                retry -= 1
-        raise MaxRetryError()
+    @MaxRetry(2)
+    async def fetch_json(cls, session: ClientSession, url: str) -> Any:
+        async with session.get(url, proxy=Fetcher.proxy) as resp:
+            return await resp.json()
 
     @classmethod
+    @MaxRetry(2)
+    async def get_redirected_url(cls, session: ClientSession, url: str) -> str:
+        async with session.get(url, proxy=Fetcher.proxy) as resp:
+            return str(resp.url)
+
+    @classmethod
+    @MaxRetry(2)
     async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
         headers = session.headers.copy()
         headers["Range"] = "bytes=0-1"

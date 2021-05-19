@@ -43,7 +43,9 @@ async def run(args: argparse.Namespace):
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        if (match_obj := regexp_bangumi_ep.match(args.url)) or (match_obj := regexp_bangumi_ep_short.match(args.url)):
+        url: str = args.url
+        url = await Fetcher.get_redirected_url(session, url)
+        if (match_obj := regexp_bangumi_ep.match(url)) or (match_obj := regexp_bangumi_ep_short.match(url)):
             # 匹配为番剧
             episode_id = EpisodeId(match_obj.group("episode_id"))
             season_id = await get_season_id_by_episode_id(session, episode_id)
@@ -65,10 +67,10 @@ async def run(args: argparse.Namespace):
             subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
             xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
         elif (
-            (match_obj := regexp_acg_video_av.match(args.url))
-            or (match_obj := regexp_acg_video_av_short.match(args.url))
-            or (match_obj := regexp_acg_video_bv.match(args.url))
-            or (match_obj := regexp_acg_video_bv_short.match(args.url))
+            (match_obj := regexp_acg_video_av.match(url))
+            or (match_obj := regexp_acg_video_av_short.match(url))
+            or (match_obj := regexp_acg_video_bv.match(url))
+            or (match_obj := regexp_acg_video_bv_short.match(url))
         ):
             # 匹配为投稿视频
             page: int = 1
