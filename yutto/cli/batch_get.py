@@ -1,7 +1,6 @@
 import argparse
 import os
 import sys
-from typing import Optional
 
 import aiohttp
 
@@ -32,7 +31,7 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ss_short,
 )
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.danmaku import DanmakuData
+from yutto.utils.danmaku import DanmakuData, EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
 
@@ -56,7 +55,7 @@ async def run(args: argparse.Namespace):
         url: str = args.url
         url = await Fetcher.get_redirected_url(session, url)
         download_list: list[
-            tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str, list[MultiLangSubtitle], Optional[str]]
+            tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str, list[MultiLangSubtitle], DanmakuData]
         ] = []
         if (
             (match_obj := regexp_bangumi_ep.match(url))
@@ -102,8 +101,8 @@ async def run(args: argparse.Namespace):
                 # fmt: on
                 output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
                 subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
-                xml_danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else None
-                download_list.append((videos, audios, output_dir, filename, subtitles, xml_danmaku))
+                danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else EmptyDanmakuData
+                download_list.append((videos, audios, output_dir, filename, subtitles, danmaku))
         elif (
             (match_obj := regexp_acg_video_av.match(url))
             or (match_obj := regexp_acg_video_av_short.match(url))
@@ -139,19 +138,13 @@ async def run(args: argparse.Namespace):
                 # fmt: on
                 output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
                 subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
-                xml_danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else None
-                download_list.append((videos, audios, output_dir, filename, subtitles, xml_danmaku))
+                danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else EmptyDanmakuData
+                download_list.append((videos, audios, output_dir, filename, subtitles, danmaku))
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
-        for videos, audios, output_dir, filename, subtitles, xml_danmaku in download_list:
-            # fmt: off
-            danmaku: DanmakuData = {
-                "source_type": "xml",
-                "save_type": args.danmaku_format,
-                "data": xml_danmaku
-            }
-            # fmt: on
+        for videos, audios, output_dir, filename, subtitles, danmaku in download_list:
+            danmaku["save_type"] = args.danmaku_format
 
             await download_video(
                 session,

@@ -17,6 +17,9 @@ class DanmakuData(TypedDict):
     data: Optional[DanmakuSourceDataType]
 
 
+EmptyDanmakuData: DanmakuData = {"source_type": None, "save_type": None, "data": None}
+
+
 def write_xml_danmaku(xml_danmaku: str, filepath: str):
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(xml_danmaku)

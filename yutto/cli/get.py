@@ -25,7 +25,7 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ep_short,
 )
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.danmaku import DanmakuData
+from yutto.utils.danmaku import DanmakuData, EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
 
@@ -65,7 +65,7 @@ async def run(args: argparse.Namespace):
             auto_subpath_template = "{name}"
             videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
             subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
-            xml_danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else None
+            danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else EmptyDanmakuData
         elif (
             (match_obj := regexp_acg_video_av.match(url))
             or (match_obj := regexp_acg_video_av_short.match(url))
@@ -89,7 +89,7 @@ async def run(args: argparse.Namespace):
             auto_subpath_template = "{title}"
             videos, audios = await get_acg_video_playurl(session, avid, cid)
             subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
-            xml_danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else None
+            danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else EmptyDanmakuData
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
@@ -105,13 +105,7 @@ async def run(args: argparse.Namespace):
         # fmt: on
         output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
 
-        # fmt: off
-        danmaku: DanmakuData = {
-            "source_type": "xml",
-            "save_type": args.danmaku_format,
-            "data": xml_danmaku
-        }
-        # fmt: on
+        danmaku["save_type"] = args.danmaku_format
 
         await download_video(
             session,
