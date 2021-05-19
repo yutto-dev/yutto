@@ -61,7 +61,7 @@ async def get_acg_video_playurl(
             [
                 {
                     "url": video["base_url"],
-                    "mirrors": video["backup_url"],
+                    "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
                     "codec": codecid_map[video["codecid"]],
                     "width": video["width"],
                     "height": video["height"],
@@ -74,7 +74,7 @@ async def get_acg_video_playurl(
             [
                 {
                     "url": audio["base_url"],
-                    "mirrors": audio["backup_url"],
+                    "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
                     "codec": "mp4a",
                     "width": 0,
                     "height": 0,

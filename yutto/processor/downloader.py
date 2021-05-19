@@ -73,13 +73,14 @@ def show_videos_info(videos: list[VideoUrlMeta], selected: int):
         return
     Logger.info(f"共包含以下 {len(videos)} 个视频流：")
     for i, video in enumerate(videos):
-        log = "{}{:2} [{:^4}] [{:>4}x{:<4}] <{:^8}>".format(
+        log = "{}{:2} [{:^4}] [{:>4}x{:<4}] <{:^8}> #{}".format(
             "*" if i == selected else " ",
             i,
             video["codec"].upper(),
             video["width"],
             video["height"],
             video_quality_map[video["quality"]]["description"],
+            len(video["mirrors"]) + 1,
         )
         if i == selected:
             log = colored_string(log, fore="blue")

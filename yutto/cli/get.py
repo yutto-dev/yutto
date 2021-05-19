@@ -65,7 +65,7 @@ async def run(args: argparse.Namespace):
             auto_subpath_template = "{name}"
             videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
             subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
-            xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
+            xml_danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else None
         elif (
             (match_obj := regexp_acg_video_av.match(url))
             or (match_obj := regexp_acg_video_av_short.match(url))
@@ -89,7 +89,7 @@ async def run(args: argparse.Namespace):
             auto_subpath_template = "{title}"
             videos, audios = await get_acg_video_playurl(session, avid, cid)
             subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
-            xml_danmaku = await get_xml_danmaku(session, cid) if args.danmaku != "no" else None
+            xml_danmaku = await get_xml_danmaku(session, cid) if not args.no_danmaku else None
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
@@ -108,7 +108,7 @@ async def run(args: argparse.Namespace):
         # fmt: off
         danmaku: DanmakuData = {
             "source_type": "xml",
-            "save_type": args.danmaku,
+            "save_type": args.danmaku_format,
             "data": xml_danmaku
         }
         # fmt: on

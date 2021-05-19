@@ -3,8 +3,8 @@ from typing import Literal, Optional, TypedDict, Union
 
 from biliass import Danmaku2ASS
 
-DanmakuSourceType = Literal["xml", "protobuf", "no"]
-DanmakuSaveType = Literal["xml", "ass", "no"]
+DanmakuSourceType = Literal["xml", "protobuf"]
+DanmakuSaveType = Literal["xml", "ass"]
 
 DanmakuSourceDataXml = str
 DanmakuSourceDataProtobuf = bytes
@@ -12,8 +12,8 @@ DanmakuSourceDataType = Union[DanmakuSourceDataXml, DanmakuSourceDataProtobuf]
 
 
 class DanmakuData(TypedDict):
-    source_type: DanmakuSourceType
-    save_type: DanmakuSaveType
+    source_type: Optional[DanmakuSourceType]
+    save_type: Optional[DanmakuSaveType]
     data: Optional[DanmakuSourceDataType]
 
 
