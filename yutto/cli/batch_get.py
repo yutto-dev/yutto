@@ -76,7 +76,7 @@ async def run(args: argparse.Namespace):
             episodes = parse_episodes(args.episodes, len(bangumi_list))
             bangumi_list = list(filter(lambda item: item["id"] in episodes, bangumi_list))
             for i, bangumi_item in enumerate(bangumi_list):
-                Logger.info("正在努力解析第 {}/{} 个视频".format(i + 1, len(bangumi_list)), end="\r")
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(bangumi_list)))
                 avid = bangumi_item["avid"]
                 cid = bangumi_item["cid"]
                 episode_id = bangumi_item["episode_id"]
@@ -112,7 +112,7 @@ async def run(args: argparse.Namespace):
             episodes = parse_episodes(args.episodes, len(acg_video_list))
             acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
             for i, acg_video_item in enumerate(acg_video_list):
-                Logger.info("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)), end="\r")
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 cid = acg_video_item["cid"]
                 name = acg_video_item["name"]
                 id = acg_video_item["id"]

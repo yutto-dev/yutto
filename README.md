@@ -243,7 +243,6 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 
 ## TODO List
 
--  [ ] 使用 [rich](https://github.com/willmcgugan/rich) 重写 UI
 -  [ ] `info` 子命令、`batch info` 子命令
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持
@@ -256,6 +255,7 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 -  基本结构：<https://github.com/SigureMo/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
 -  弹幕转换：<https://github.com/ShigureLab/biliass>
+-  样式设计：<https://github.com/willmcgugan/rich>
 
 ## 参与贡献
 

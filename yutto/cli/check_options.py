@@ -20,6 +20,7 @@ def check_basic_options(args: argparse.Namespace):
     """ 检查 argparse 无法检查的选项，并设置某些全局变量 """
 
     ffmpeg = FFmpeg()
+    Logger.enable_statusbar()
 
     # 在使用 --no-color 或者环境变量 NO_COLOR 非空时都应该不显示颜色
     # See also: https://no-color.org/

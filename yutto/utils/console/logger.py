@@ -2,6 +2,7 @@ from typing import Any, Optional
 
 from yutto.utils.console.colorful import Color, Style, colored_string
 from yutto.utils.console.formatter import get_string_width
+from yutto.utils.console.status_bar import StatusBar
 
 _logger_debug: bool = False
 
@@ -37,17 +38,25 @@ class Badge:
         return str(self) + other
 
 
-WARNING_BADGE = Badge("WARN", fore="black", back="yellow")
-ERROR_BADGE = Badge("ERROR", fore="white", back="red")
-INFO_BADGE = Badge("INFO", fore="black", back="green")
-DEBUG_BADGE = Badge("DEBUG", fore="black", back="blue")
+WARNING_BADGE = Badge("WARN", fore="yellow")
+ERROR_BADGE = Badge("ERROR", fore="red", style=["bold"])
+INFO_BADGE = Badge("INFO", fore="bright_blue")
+DEBUG_BADGE = Badge("DEBUG", fore="green")
 
 
 class Logger:
+    status = StatusBar
+
+    @classmethod
+    def enable_statusbar(cls):
+        cls.status.enable()
+
     @classmethod
     def custom(cls, string: Any, badge: Badge, *print_args: Any, **print_kwargs: Any):
         prefix = badge + " "
+        cls.status.clear()
         print(prefix + str(string), *print_args, **print_kwargs)
+        cls.status.set_wait()
 
     @classmethod
     def warning(cls, string: Any, *print_args: Any, **print_kwargs: Any):
