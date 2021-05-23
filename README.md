@@ -24,6 +24,8 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚处于 beta，没有测试）与 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
 
+由于是预览版，所以希望得到更多的建议～特别是命令的设计上（当前这种多级子命令是否合适？）
+
 ### pip 安装
 
 ```bash
@@ -244,6 +246,8 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 ## TODO List
 
 -  [ ] `info` 子命令、`batch info` 子命令
+-  [ ] 支持 url-alias，直接使用一个别名就可以下载特定的番剧等等
+-  [ ] 支持 file scheme
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持
 -  [ ] 更多批下载支持（UP 主、收藏夹等）
