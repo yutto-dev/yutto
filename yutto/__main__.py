@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from yutto.__version__ import __version__
+from yutto.__version__ import VERSION as yutto_version
 from yutto.cli import basic, batch_get, check_options, get, info
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.ffmpeg import FFmpeg
@@ -9,7 +9,7 @@ from yutto.utils.ffmpeg import FFmpeg
 
 def main():
     parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s {}".format(__version__))
+    parser.add_argument("-v", "--version", action="version", version="%(prog)s {}".format(yutto_version))
 
     subparsers = parser.add_subparsers()
     # 子命令 get
@@ -36,7 +36,6 @@ def main():
         Logger.error("未指定子命令 (get, info, batch)")
         python_version = "{}.{}.{}".format(sys.version_info[0], sys.version_info[1], sys.version_info[2])
         ffmpeg_version = FFmpeg().version
-        yutto_version = __version__
         Logger.print(
             Badge("Python", fore="black", back="green"), Badge(python_version, fore="green", back="black"), sep=""
         )
