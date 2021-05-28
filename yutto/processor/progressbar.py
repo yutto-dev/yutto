@@ -3,7 +3,7 @@ import math
 import time
 from typing import Union, Optional
 
-from yutto.utils.console.colorful import colored_string, Color, RGBColor
+from yutto.utils.console.colorful import colored_string, Color, RGBColor, Style
 from yutto.utils.console.formatter import size_format
 from yutto.utils.console.logger import Logger
 from yutto.utils.file_buffer import AsyncFileBuffer
@@ -59,22 +59,29 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         size_now = size_written + size_in_buffer
         speed = (size_now - size) / (t_now - t + 10 ** -6)
 
-        # 默认颜色为青色
-        # 当速度过快导致 buffer 中的块数过多时（>1000 块），使用红色进行警告
+        # 进度条默认颜色为青色
+        # 当速度过快导致 buffer 中的块数过多时（>2048 块，每块 2**15Bytes，缓冲区共 64MiB），使用红色进行警告
         # 在速度高于 8MiB/s 时，使用绿色示意高速下载中
-        color = "red" if num_blocks_in_buffer > 1000 else ("green" if speed >= 8 * 1024 * 1024 else "cyan")
+        speed_threshold = 8 * 1024 * 1024
+        is_fast = speed >= speed_threshold
+        bar_color = "red" if num_blocks_in_buffer > 2048 else ("green" if is_fast else "cyan")
         bar = progress_bar.render(
-            size_now / total_size, bar_fore_color=color, remaining_bar_fore_color=RGBColor(64, 64, 64)
+            size_now / total_size, bar_fore_color=bar_color, remaining_bar_fore_color=RGBColor(64, 64, 64)
         )
+        # 速度文本同时也使用绿色与青色作为速度标志
+        speed_text_color: Color = "green" if is_fast else "cyan"
+        speed_text_style: Optional[list[Style]] = ["bold"] if is_fast else None
+        speed_text_suffix: str = "/⚡" if is_fast else "/s"
         # fmt: off
         Logger.status.set(
-            "{} {:>10}/{:>10} {:>10}/s  ".format(
+            "{} {:>10}/{:>10} {:>12}  ".format(
                 bar,
                 size_format(size_now),
                 size_format(total_size),
-                size_format(speed),
+                colored_string(size_format(speed)+speed_text_suffix, fore=speed_text_color, style=speed_text_style),
             )
         )
+        # fmt: on
 
         t, size = t_now, size_now
         await asyncio.sleep(0.25)
