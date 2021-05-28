@@ -77,6 +77,6 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         )
 
         t, size = t_now, size_now
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.25)
         if total_size == size:
             break
