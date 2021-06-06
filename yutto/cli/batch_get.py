@@ -160,3 +160,4 @@ async def run(args: argparse.Namespace):
                     "num_workers": args.num_workers,
                 },
             )
+            Logger.info("")
