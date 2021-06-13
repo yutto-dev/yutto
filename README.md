@@ -116,12 +116,12 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 
 #### 仅下载视频流
 
--  参数 `--only-video`
+-  参数 `--video-only`
 -  默认值 `False`
 
 #### 仅下载音频流
 
--  参数 `--only-audio`
+-  参数 `--audio-only`
 -  默认值 `False`
 
 仅下载其中的音频流，保存为 `.aac` 文件。
