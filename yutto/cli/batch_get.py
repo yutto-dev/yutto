@@ -20,6 +20,7 @@ from yutto.processor.downloader import download_video
 from yutto.processor.filter import parse_episodes
 from yutto.processor.path_resolver import resolve_path_template
 from yutto.processor.urlparser import (
+    alias_parser,
     regexp_acg_video_av,
     regexp_acg_video_bv,
     regexp_bangumi_ep,
@@ -49,6 +50,9 @@ async def run(args: argparse.Namespace):
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         url: str = args.url
+        alias_map = alias_parser(args.alias_file)
+        if url in alias_map:
+            url = alias_map[url]
         url = await Fetcher.get_redirected_url(session, url)
         download_list: list[
             tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str, list[MultiLangSubtitle], DanmakuData]

@@ -16,11 +16,7 @@ from yutto.api.danmaku import get_danmaku
 from yutto.api.types import AId, BvId, EpisodeId
 from yutto.processor.downloader import download_video
 from yutto.processor.path_resolver import resolve_path_template
-from yutto.processor.urlparser import (
-    regexp_acg_video_av,
-    regexp_acg_video_bv,
-    regexp_bangumi_ep,
-)
+from yutto.processor.urlparser import alias_parser, regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
@@ -41,6 +37,9 @@ async def run(args: argparse.Namespace):
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         url: str = args.url
+        alias_map = alias_parser(args.alias_file)
+        if url in alias_map:
+            url = alias_map[url]
         url = await Fetcher.get_redirected_url(session, url)
         if match_obj := regexp_bangumi_ep.match(url):
             # 匹配为番剧

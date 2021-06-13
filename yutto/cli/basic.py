@@ -36,6 +36,7 @@ def add_basic_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("-d", "--dir", default="./", help="下载目录，默认为运行目录")
     parser.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
     parser.add_argument("-tp", "--subpath-template", default="{auto}", help="多级目录的存储路径模板")
+    parser.add_argument("-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径")
     parser.add_argument("--no-danmaku", action="store_true", help="不生成弹幕文件")
     parser.add_argument("--no-subtitle", action="store_true", help="不生成字幕文件")
     parser.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")

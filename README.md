@@ -171,6 +171,31 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 
 另外，该功能语法由 Python format 语法提供，所以也支持一些高级的用法，比如 `{id:0>3}{name}`。
 
+#### url 别名文件路径
+
+-  参数 `-af` 或 `--alias-file`
+-  默认值 `None`
+
+指定别名文件路径，别名文件中存放一个别名与其对应的 url，使用空格或者 `=` 分隔，示例如下：
+
+```
+rimuru1=https://www.bilibili.com/bangumi/play/ss25739/
+rimuru2=https://www.bilibili.com/bangumi/play/ss36170/
+rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+```
+
+比如将上述文件存储到 `~/.yutto_alias`，则通过以下命令即可解析该文件：
+
+```bash
+yutto batch get rimuru1 --alias-file='~/.yutto_alias'
+```
+
+当参数值为 `-` 时，会从标准输入中读取：
+
+```bash
+cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
+```
+
 #### Cookies 设置
 
 -  参数 `-c` 或 `--sessdata`
@@ -246,7 +271,6 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 ## TODO List
 
 -  [ ] `info` 子命令、`batch info` 子命令
--  [ ] 支持 url-alias，直接使用一个别名就可以下载特定的番剧等等
 -  [ ] 支持 file scheme
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持
