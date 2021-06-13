@@ -136,8 +136,8 @@ async def run(args: argparse.Namespace):
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
-        for videos, audios, output_dir, filename, subtitles, danmaku in download_list:
-
+        for i, (videos, audios, output_dir, filename, subtitles, danmaku) in enumerate(download_list):
+            Logger.custom(f"{filename}", Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"))
             await download_video(
                 session,
                 videos,
@@ -160,4 +160,4 @@ async def run(args: argparse.Namespace):
                     "num_workers": args.num_workers,
                 },
             )
-            Logger.info("")
+            Logger.print("")
