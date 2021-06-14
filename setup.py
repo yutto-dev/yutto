@@ -76,7 +76,7 @@ setup(
     zip_safe=True,
     python_requires=">=3.9.0",
     setup_requires=["wheel"],
-    install_requires=["aiohttp", "aiofiles", "biliass==1.3.3"],
+    install_requires=["aiohttp", "aiofiles", "biliass==1.3.4"],
     entry_points={"console_scripts": ["yutto = yutto.__main__:main"]},
     cmdclass={
         "upload": UploadCommand,

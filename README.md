@@ -267,6 +267,7 @@ cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
 -  音频/视频编码选择
 -  仅下载音频/视频
 -  存放子路径的自由定制
+-  支持 url alias
 
 ## TODO List
 
@@ -274,6 +275,7 @@ cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
 -  [ ] 支持 file scheme
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持
+-  [ ] 以插件形式支持更多音视频处理方面的功能，比如 autosub
 -  [ ] 更多批下载支持（UP 主、收藏夹等）
 -  [ ] 编写测试
 -  [ ] 等等等等，以及
