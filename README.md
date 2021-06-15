@@ -275,10 +275,75 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 -  仅下载音频/视频
 -  存放子路径的自由定制
 -  支持 url alias
+-  支持 file scheme
+
+### 小技巧
+
+#### 使用 url alias
+
+yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
+
+```
+rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+```
+
+之后下载最新话只需要
+
+```
+yutto --batch rimuru-nikki --alias-file=/path/to/alias-file
+```
+
+#### 使用 file scheme 作为 url
+
+现在 url 不仅支持 http/https scheme，还支持使用 file scheme 来用于表示文件列表，文件列表以行分隔，每行写一次命令的参数，该参数会覆盖掉主程序中所使用的参数，示例如下：
+
+```
+rimuru-nikki --batch -p $
+https://www.bilibili.com/bangumi/play/ss38260/ --batch -p $
+```
+
+现在只需要
+
+```
+yutto --batch file:///path/to/list
+```
+
+即可分别下载这两个番剧的最新一话
+
+当然，也许你不想每次输入这个路径，只需要将该路径存到 alias 文件中即可（alias 也支持 file scheme），比如
+
+```
+subscription=file:///path/to/list
+rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+```
+
+这样就可以直接使用
+
+```
+yutto --batch subscription --alias-file=/path/to/alias-file
+```
+
+貌似没太大作用呢 2333
+
+值得注意的是，在文件列表各项里的参数优先级是高于命令里的优先级的，比如文件中使用：
+
+```
+rimuru-nikki --batch -p $ --no-danmaku --vcodec="hevc:copy"
+rimuru1 --batch -p $
+```
+
+而命令中则使用
+
+```
+yutto --batch file:///path/to/list --vcodec="avc:copy"
+```
+
+最终下载的 rimuru-nikki 会是 "hevc:copy"，而 rimuru1 则会是 "avc:copy"
+
+最后，你当然可以在列表中嵌套列表～
 
 ## TODO List
 
--  [ ] 支持 file scheme
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持
 -  [ ] 以插件形式支持更多音视频处理方面的功能，比如 autosub

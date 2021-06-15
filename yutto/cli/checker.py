@@ -16,10 +16,9 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 
 
-def check_basic_arguments(args: argparse.Namespace):
-    """ 检查 argparse 无法检查的选项，并设置某些全局变量 """
+def initial_check(args: argparse.Namespace):
+    """ 初始化检查，仅执行一次 """
 
-    ffmpeg = FFmpeg()
     Logger.enable_statusbar()
 
     # 在使用 --no-color 或者环境变量 NO_COLOR 非空时都应该不显示颜色
@@ -42,6 +41,22 @@ def check_basic_arguments(args: argparse.Namespace):
         Logger.error("proxy 参数值（{}）错误".format(args.proxy))
         sys.exit(1)
     Fetcher.set_proxy(args.proxy)
+
+    # 大会员身份校验
+    if not args.sessdata:
+        Logger.info("未提供 SESSDATA，无法下载会员专享剧集")
+    else:
+        Fetcher.set_sessdata(args.sessdata)
+        if asyncio.run(check_is_vip(args.sessdata)):
+            Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
+        else:
+            Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
+
+
+def check_basic_arguments(args: argparse.Namespace):
+    """ 检查 argparse 无法检查的选项，并设置某些全局变量 """
+
+    ffmpeg = FFmpeg()
 
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
@@ -115,16 +130,6 @@ def check_basic_arguments(args: argparse.Namespace):
     if args.embed_danmaku and args.danmaku_format != "ass":
         Logger.error("嵌入弹幕功能仅支持 ASS 弹幕")
         sys.exit(1)
-
-    # 大会员身份校验
-    if not args.sessdata:
-        Logger.info("未提供 SESSDATA，无法下载会员专享剧集")
-    else:
-        Fetcher.set_sessdata(args.sessdata)
-        if asyncio.run(check_is_vip(args.sessdata)):
-            Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
-        else:
-            Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
 
 
 def check_batch_argments(args: argparse.Namespace):

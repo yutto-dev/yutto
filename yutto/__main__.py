@@ -1,8 +1,11 @@
 import argparse
+import re
 
 from yutto.__version__ import VERSION as yutto_version
 from yutto.cli import batch_get, checker, get
 from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
+from yutto.processor.urlparser import alias_parser, file_scheme_parser
+from yutto.utils.console.logger import Logger
 
 
 def main():
@@ -54,14 +57,36 @@ def main():
     parser.add_argument("-p", "--episodes", default="^~$", help="选集")
     parser.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
 
-    # 执行各自的 action
+    # 仅 file scheme 列表中使用
+    parser.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
+
+    # 执行各自的 run
     args = parser.parse_args()
+    checker.initial_check(args)
+    run(args, parser)
+
+
+def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
     checker.check_basic_arguments(args)
-    if not args.batch:
-        get.run(args)
+    # 查看是否存在于 alias 中
+    alias_map = alias_parser(args.alias_file)
+    if args.url in alias_map:
+        args.url = alias_map[args.url]
+
+    # 是否为下载列表
+    if re.match(r"file://", args.url):
+        for line in file_scheme_parser(args.url):
+            local_args = parser.parse_args(line.split(), args)
+            if local_args.no_inherit:
+                local_args = parser.parse_args(line.split())
+            Logger.debug("列表参数: {}".format(local_args))
+            run(local_args, parser)
     else:
-        checker.check_batch_argments(args)
-        batch_get.run(args)
+        if not args.batch:
+            get.run(args)
+        else:
+            checker.check_batch_argments(args)
+            batch_get.run(args)
 
 
 if __name__ == "__main__":
