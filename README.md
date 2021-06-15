@@ -44,27 +44,27 @@ python setup.py install
 
 ### 基本命令
 
-你可以通过 get 子命令来下载**一个**视频。它支持 av/BV 号以及相应带 p=n 参数的投稿视频页面，也支持 ep 号（episode_id）的番剧页面。
+你可以通过 yutto 命令来下载**一个**视频。它支持 av/BV 号以及相应带 p=n 参数的投稿视频页面，也支持 ep 号（episode_id）的番剧页面。
 
 比如只需要这样你就可以下载《転スラ日記》第一话：
 
 ```bash
-yutto get https://www.bilibili.com/bangumi/play/ep395211
+yutto https://www.bilibili.com/bangumi/play/ep395211
 ```
 
-不过有时你可能想要批量下载很多剧集，因此 yutto 提供了用于批量下载的子命令 `batch get`，它不仅支持前面所说的单个视频所在页面地址（会解析该单个视频所在的系列视频），还支持一些明确用于表示系列视频的地址，比如 md 页面（media_id）、ss 页面（season_id）。
+不过有时你可能想要批量下载很多剧集，因此 yutto 提供了用于批量下载的参数 `-b/--batch`，它不仅支持前面所说的单个视频所在页面地址（会解析该单个视频所在的系列视频），还支持一些明确用于表示系列视频的地址，比如 md 页面（media_id）、ss 页面（season_id）。
 
 比如像下面这样就可以下载《転スラ日記》所有已更新的剧集：
 
 ```bash
-yutto batch get https://www.bilibili.com/bangumi/play/ep395211
+yutto --batch https://www.bilibili.com/bangumi/play/ep395211
 ```
 
 ### 基础参数
 
 > 大部分参数与 bilili 重合，可参考 [bilili 的 cli 文档](https://bilili.nyakku.moe/cli/)
 
-yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可以使用的。
+yutto 支持一些基础参数，无论是批量下载还是单视频下载都适用。
 
 <details>
 <summary>点击展开详细参数</summary>
@@ -136,7 +136,7 @@ yutto 支持一些基础参数，是在 `get` 与 `batch get` 子命令中都可
 
 #### 下载块大小
 
--  参数 `-b` 或 `--block-size`
+-  参数 `-bs` 或 `--block-size`
 -  默认值 `0.5`
 
 以 MiB 为单位，为分块下载时各块大小，不建议更改。
@@ -187,13 +187,13 @@ rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 比如将上述文件存储到 `~/.yutto_alias`，则通过以下命令即可解析该文件：
 
 ```bash
-yutto batch get rimuru1 --alias-file='~/.yutto_alias'
+yutto rimuru1 --batch --alias-file='~/.yutto_alias'
 ```
 
 当参数值为 `-` 时，会从标准输入中读取：
 
 ```bash
-cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
+cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 ```
 
 #### Cookies 设置
@@ -227,10 +227,17 @@ cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
 
 ### 批量参数
 
-有些参数是只有 `batch` 子命令才可以使用的
+有些参数是只有批量下载时才可以使用的
 
 <details>
 <summary>点击展开详细参数</summary>
+
+#### 启用批量下载
+
+-  参数 `-b` 或 `--batch`
+-  默认值 `False`
+
+只需要 `yutto --batch <url>` 即可启用批量下载功能。
 
 #### 选集
 
@@ -263,7 +270,7 @@ cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
 
 ### 新增的特性
 
--  单视频下载与批量下载命令分离（`bilili` 命令与 `yutto batch get` 相类似）
+-  单视频下载与批量下载命令分离（`bilili` 命令与 `yutto --batch` 相类似）
 -  音频/视频编码选择
 -  仅下载音频/视频
 -  存放子路径的自由定制

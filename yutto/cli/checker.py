@@ -16,7 +16,7 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 
 
-def check_basic_options(args: argparse.Namespace):
+def check_basic_arguments(args: argparse.Namespace):
     """ 检查 argparse 无法检查的选项，并设置某些全局变量 """
 
     ffmpeg = FFmpeg()
@@ -127,7 +127,7 @@ def check_basic_options(args: argparse.Namespace):
             Logger.warning("以非大会员身份登录，无法下载会员专享剧集")
 
 
-def check_batch_options(args: argparse.Namespace):
+def check_batch_argments(args: argparse.Namespace):
     """ 检查批量下载相关选项 """
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
     if not check_episodes(args.episodes):

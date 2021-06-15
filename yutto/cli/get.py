@@ -23,11 +23,6 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
 
 
-def add_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument("url", help="视频主页 url")
-    parser.set_defaults(action=run)
-
-
 @sync
 async def run(args: argparse.Namespace):
     async with aiohttp.ClientSession(

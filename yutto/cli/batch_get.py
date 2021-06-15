@@ -15,7 +15,6 @@ from yutto.api.bangumi import (
 )
 from yutto.api.danmaku import get_danmaku
 from yutto.api.types import AId, AudioUrlMeta, BvId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
-from yutto.cli import check_options
 from yutto.processor.downloader import download_video
 from yutto.processor.filter import parse_episodes
 from yutto.processor.path_resolver import resolve_path_template
@@ -33,16 +32,8 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
 
 
-def add_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument("url", help="视频主页 url")
-    parser.add_argument("-p", "--episodes", default="^~$", help="选集")
-    parser.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
-    parser.set_defaults(action=run)
-
-
 @sync
 async def run(args: argparse.Namespace):
-    check_options.check_batch_options(args)
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
