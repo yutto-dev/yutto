@@ -271,7 +271,6 @@ cat ~/.yutto_alias | yutto batch get rimuru-nikki --alias-file -
 
 ## TODO List
 
--  [ ] `info` 子命令、`batch info` 子命令
 -  [ ] 支持 file scheme
 -  [ ] 完善的信息提示
 -  [ ] 字幕、弹幕嵌入视频支持

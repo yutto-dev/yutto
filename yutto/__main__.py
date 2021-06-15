@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from yutto.__version__ import VERSION as yutto_version
-from yutto.cli import basic, batch_get, check_options, get, info
+from yutto.cli import basic, batch_get, check_options, get
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.ffmpeg import FFmpeg
 
