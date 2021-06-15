@@ -305,7 +305,7 @@ https://www.bilibili.com/bangumi/play/ss38260/ --batch -p $
 现在只需要
 
 ```
-yutto --batch file:///path/to/list
+yutto file:///path/to/list
 ```
 
 即可分别下载这两个番剧的最新一话
@@ -320,7 +320,7 @@ rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 这样就可以直接使用
 
 ```
-yutto --batch subscription --alias-file=/path/to/alias-file
+yutto subscription --alias-file=/path/to/alias-file
 ```
 
 貌似没太大作用呢 2333
@@ -335,7 +335,7 @@ rimuru1 --batch -p $
 而命令中则使用
 
 ```
-yutto --batch file:///path/to/list --vcodec="avc:copy"
+yutto file:///path/to/list --vcodec="avc:copy"
 ```
 
 最终下载的 rimuru-nikki 会是 "hevc:copy"，而 rimuru1 则会是 "avc:copy"
