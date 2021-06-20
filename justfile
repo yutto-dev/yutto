@@ -2,7 +2,8 @@ run:
   python3 -m yutto
 
 test:
-  python3 -m pytest
+  pytest -m '(api or e2e) and not ci_only'
+  just clean
 
 release:
   python3 setup.py upload

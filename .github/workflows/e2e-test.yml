@@ -1,0 +1,43 @@
+name: e2e Test
+
+on: [push, pull_request]
+
+jobs:
+  test-e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        architecture: ["x64"]
+    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+
+      - name: Install packages
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install tools
+        run: |
+          sudo apt update
+          sudo apt install ffmpeg
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to DEST
+
+      - name: e2e without subprocess
+        run: |
+          python3 -m yutto -v
+          python3 -m yutto -h
+          python3 -m yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
+          just clean
+
+      - name: e2e test
+        run: |
+          pip install pytest
+          pytest -m "e2e and not ci_skip"
