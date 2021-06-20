@@ -25,6 +25,8 @@ clean:
   find . -name "*.xml" -print0 | xargs -0 rm -f
   find . -name "*.ass" -print0 | xargs -0 rm -f
   find . -name "*.pb" -print0 | xargs -0 rm -f
+  rm -rf .pytest_cache/
+  find . -maxdepth 1 -type d -empty -print0 | xargs -0 -r rm -r
 
 clean-builds:
   rm -rf build/

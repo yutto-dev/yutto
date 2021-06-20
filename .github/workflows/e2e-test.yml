@@ -28,7 +28,11 @@ jobs:
         run: |
           sudo apt update
           sudo apt install ffmpeg
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to DEST
+
+      - name: Install just
+        uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: e2e without subprocess
         run: |
