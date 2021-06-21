@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "yutto"
+version = "2.0.0-alpha.19"
+description = "yutto 一个可爱且任性的 B 站视频下载器"
+authors = ["Nyakku Shigure <sigure.qaq@gmail.com>"]
+license = "GPL-3.0"
+readme = "README.md"
+homepage = "https://github.com/SigureMo/yutto"
+repository = "https://github.com/SigureMo/yutto"
+keywords = ["python", "bilibili", "video", "downloader", "danmaku"]
+classifiers = [
+  "Environment :: Console",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[tool.poetry.dependencies]
+python = "^3.9.0"
+aiohttp = "3.7.4.post0"
+aiofiles = "0.7.0"
+biliass = "1.3.4"
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.4"
+
+[tool.poetry.scripts]
+yutto = "yutto.__main__:main"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/SigureMo/yutto/issues"
+
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+markers = ["api", "e2e", "ci_skip", "ci_only"]
+
+[tool.black]
+line-length = 120
+target-version = ['py39']

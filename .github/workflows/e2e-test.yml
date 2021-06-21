@@ -22,7 +22,8 @@ jobs:
 
       - name: Install packages
         run: |
-          pip install -r requirements.txt
+          pip install poetry
+          poetry install
 
       - name: Install tools
         run: |
@@ -36,12 +37,11 @@ jobs:
 
       - name: e2e without subprocess
         run: |
-          python3 -m yutto -v
-          python3 -m yutto -h
-          python3 -m yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
+          poetry run yutto -v
+          poetry run yutto -h
+          peotry run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
           just clean
 
       - name: e2e test
         run: |
-          pip install pytest
           pytest -m "e2e and not ci_skip"

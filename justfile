@@ -1,3 +1,5 @@
+version := `python3 -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+
 run:
   python3 -m yutto
 
@@ -5,13 +7,10 @@ test:
   pytest -m '(api or e2e) and not ci_only'
   just clean
 
-release:
-  python3 setup.py upload
-  just clean-builds
-
-install:
-  python3 setup.py build
-  python3 setup.py install
+publish:
+  poetry publish --build
+  git tag "v{{version}}"
+  git push --tags
   just clean-builds
 
 upgrade-pip:
