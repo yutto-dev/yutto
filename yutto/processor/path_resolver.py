@@ -1,4 +1,3 @@
-import os
 import re
 from html import unescape
 from typing import Union, Literal
@@ -11,6 +10,8 @@ _count: int = 0
 
 def repair_filename(filename: str) -> str:
     """ 修复不合法的文件名 """
+
+    global _count
 
     def to_full_width_chr(matchobj: re.Match[str]) -> str:
         char = matchobj.group(0)
