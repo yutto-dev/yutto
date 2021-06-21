@@ -19,6 +19,10 @@ publish:
   git push --tags
   just clean-builds
 
+upgrade:
+  just build
+  python3 -m pip install ./dist/yutto-*.whl
+
 upgrade-pip:
   python3 -m pip install --upgrade --pre yutto
 
