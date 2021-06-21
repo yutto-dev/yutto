@@ -79,7 +79,7 @@ audio_quality_map = {
 
 
 def gen_quality_priority(quality: Any, quality_priority: list[Any]) -> list[Any]:
-    """ 根据默认先降后升的清晰度机制生成清晰度序列 """
+    """根据默认先降后升的清晰度机制生成清晰度序列"""
 
     return quality_priority[quality_priority.index(quality) :] + list(
         reversed(quality_priority[: quality_priority.index(quality)])

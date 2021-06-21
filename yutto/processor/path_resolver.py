@@ -9,7 +9,7 @@ _count: int = 0
 
 
 def repair_filename(filename: str) -> str:
-    """ 修复不合法的文件名 """
+    """修复不合法的文件名"""
 
     global _count
 

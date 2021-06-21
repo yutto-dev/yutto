@@ -80,7 +80,7 @@ def check_episodes(episodes_str: str) -> bool:
 
 
 def parse_episodes(episodes_str: str, total: int) -> list[int]:
-    """ 将选集字符串转为列表（标号从 1 开始） """
+    """将选集字符串转为列表（标号从 1 开始）"""
 
     if total == 0:
         Logger.warning("该剧集列表无任何剧集，猜测正片尚未上线，如果想要下载 PV 等特殊剧集，请添加参数 -s")

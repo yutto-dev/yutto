@@ -4,8 +4,11 @@ run:
   poetry run python -m yutto
 
 test:
-  pytest -m '(api or e2e) and not ci_only'
+  poetry run pytest -m '(api or e2e) and not ci_only'
   just clean
+
+fmt:
+  poetry run black .
 
 build:
   poetry build

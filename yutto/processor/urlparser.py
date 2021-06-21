@@ -22,7 +22,7 @@ regexp_bangumi_ss = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ss(?P<
 
 
 def is_comment(line: str) -> bool:
-    """ 判断文件某行是否为注释 """
+    """判断文件某行是否为注释"""
     if line.startswith("#"):
         return True
     return False

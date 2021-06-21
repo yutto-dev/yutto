@@ -8,7 +8,7 @@ SubtitleData = list[SubtitleLineData]
 
 
 class Subtitle:
-    """ 播放列表类 """
+    """播放列表类"""
 
     def __init__(self):
         self._text = ""

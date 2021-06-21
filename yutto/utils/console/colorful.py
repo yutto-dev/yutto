@@ -114,7 +114,7 @@ def colored_string(
 
 
 def no_colored_string(string: str) -> str:
-    """ 去除字符串中的颜色码 """
+    """去除字符串中的颜色码"""
     regex_color = re.compile(r"\x1b\[(\d+;)*\d+m")
     string = regex_color.sub("", string)
     return string

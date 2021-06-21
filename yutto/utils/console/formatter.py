@@ -4,7 +4,7 @@ from yutto.utils.console.colorful import no_colored_string
 
 
 def size_format(size: float, ndigits: int = 2, base_unit_size: Literal[1024, 1000] = 1024) -> str:
-    """ 输入数据字节数，与保留小数位数，返回数据量字符串 """
+    """输入数据字节数，与保留小数位数，返回数据量字符串"""
     sign = "-" if size < 0 else ""
     size = abs(size)
     unit_list = (
@@ -23,7 +23,7 @@ def size_format(size: float, ndigits: int = 2, base_unit_size: Literal[1024, 100
 
 
 def get_char_width(char: str) -> int:
-    """ 计算单个字符的宽度 """
+    """计算单个字符的宽度"""
     # fmt: off
     widths = [
         (126, 1), (159, 0), (687, 1), (710, 0), (711, 1),
@@ -47,7 +47,7 @@ def get_char_width(char: str) -> int:
 
 
 def get_string_width(string: str) -> int:
-    """ 计算包含中文的字符串宽度 """
+    """计算包含中文的字符串宽度"""
     # 去除颜色码
     string = no_colored_string(string)
     try:

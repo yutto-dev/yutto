@@ -1,12 +1,28 @@
 # yutto 贡献快速指南
 
-<!-- 暂时直接 copy bilili 的，后续需针对 yutto 优化细节 -->
-
 很高兴你对参与 yutto 的贡献感兴趣，在提交你的贡献之前，请花一点点时间阅读本指南
 
-> TODO: justfile 相关
-> TODO: poetry 相关
-> TODO: 说明各个模块的作用
+## 工具安装
+
+为了获得最佳的开发体验，希望你能够安装一些开发工具
+
+### 依赖管理工具 poetry
+
+[poetry](https://github.com/python-poetry/poetry) 是 yutto 用来进行依赖管理的工具，通过 pip 就可以很方便地安装它：
+
+```bash
+pip install poetry
+```
+
+### 命令执行工具 just
+
+[just](https://github.com/casey/just) 是一款用 rust 编写的简单易用的命令执行工具，通过它可以方便地执行一些开发时常用的命令。安装方法请参考[它的文档](https://github.com/casey/just#installation)
+
+### 编辑器 Visual Studio Code
+
+[VSCode](https://github.com/microsoft/vscode) 是一款功能强大的编辑器，由于 yutto 全面使用了 [Type Hints](https://docs.python.org/3/library/typing.html)，所以这里建议使用 VSCode + 扩展 pylance 来保证类型提示的准确性，同时配置格式化工具 black 以保证代码格式的一致性。
+
+当然，如果你有更熟悉的编辑器或 IDE 的话，也是完全可以的。
 
 ## 本地调试
 
@@ -15,19 +31,33 @@
 ```bash
 git clone git@github.com:SigureMo/yutto.git
 cd yutto/
-pip install -r requirements.txt
-python -m yutto get <url>
+poetry install
+poetry run yutto -v
 ```
 
-注意本地调试请不要直接使用 `yutto` 命令
+注意本地调试请不要直接使用 `yutto` 命令，那只会运行使用从 pip 安装的 yutto，而不是本地调试的 yutto。
 
-## 开发环境建议
+## 模块结构
 
-由于 yutto 全面使用了 [Type Hints](https://docs.python.org/3/library/typing.html)，所以这里建议使用 VSCode + 扩展 pylance 来保证类型提示的准确性，同时配置格式化工具 black 以保证代码格式的一致性。
+> TODO: 说明各个模块的作用
 
 ## 测试
 
-> TODO
+yutto 已经编写好了一些测试，请确保在改动后仍能通过测试
+
+```bash
+just test
+```
+
+当然，如果你修改的内容需要对测试用例进行修改和增加，请尽管修改。
+
+## 代码格式化
+
+yutto 使用 black 对代码进行格式化，如果你的编辑器或 IDE 没有自动使用 black 进行格式化，请使用下面的命令对代码进行格式化
+
+```bash
+just fmt
+```
 
 ## 提交 PR
 
@@ -60,7 +90,7 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 
 ### 标题
 
-表明你所作的更改即可，没有太过苛刻的格式
+表明你所作的更改即可，没有太过苛刻的格式（合并时会重命名）
 
 如果可能，可以按照 `<gitmoji> <type>: <subject>` 来进行命名
 
