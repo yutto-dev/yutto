@@ -295,6 +295,8 @@ yutto --batch rimuru-nikki --alias-file=/path/to/alias-file
 
 #### 使用 file scheme 作为 url
 
+> TODO: 这里的例子太乱了，要好好修改下
+
 现在 url 不仅支持 http/https scheme，还支持使用 file scheme 来用于表示文件列表，文件列表以行分隔，每行写一次命令的参数，该参数会覆盖掉主程序中所使用的参数，示例如下：
 
 ```
@@ -342,15 +344,23 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 最后，你当然可以在列表中嵌套列表～
 
-## TODO List
+## Roadmap
 
--  [ ] 完善的信息提示
--  [ ] 字幕、弹幕嵌入视频支持
--  [ ] 以插件形式支持更多音视频处理方面的功能，比如 autosub
--  [ ] 更多批下载支持（UP 主、收藏夹等）
--  [ ] 编写测试
--  [ ] 等等等等，以及
--  [ ] 更加可爱～
+### 2.0.0-beta
+
+-  [ ] refactor: 尽可能使下载器成为独立模块
+-  [ ] feat: 支持 bare name (bare id, bare path)
+-  [ ] refactor: url 列表能够预线性展开
+-  [ ] feat: 添加各种 return code
+-  [ ] test: 编写单元测试
+
+### future
+
+-  [ ] feat: 字幕、弹幕嵌入视频支持
+-  [ ] refactor: 以插件形式支持更多音视频处理方面的功能，比如 autosub
+-  [ ] feat: 更多批下载支持（UP 主、收藏夹等）
+-  [ ] docs: 静态文档
+-  [ ] feat: 以及更加可爱～
 
 ## 参考
 
