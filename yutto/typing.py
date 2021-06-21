@@ -3,6 +3,7 @@ from typing import NamedTuple, TypedDict
 from yutto.media.codec import AudioCodec, VideoCodec
 from yutto.media.quality import AudioQuality, VideoQuality
 from yutto.utils.subtitle import SubtitleData
+from yutto.utils.danmaku import DanmakuData
 
 
 class BilibiliId(NamedTuple):
@@ -89,6 +90,29 @@ class AudioUrlMeta(TypedDict):
 class MultiLangSubtitle(TypedDict):
     lang: str
     lines: SubtitleData
+
+
+class EpisodeData(TypedDict):
+    videos: list[VideoUrlMeta]
+    audios: list[AudioUrlMeta]
+    subtitles: list[MultiLangSubtitle]
+    danmaku: DanmakuData
+    output_dir: str
+    filename: str
+
+
+class DownloaderOptions(TypedDict):
+    require_video: bool
+    video_quality: VideoQuality
+    video_download_codec: VideoCodec
+    video_save_codec: str
+    require_audio: bool
+    audio_quality: AudioQuality
+    audio_download_codec: AudioCodec
+    audio_save_codec: str
+    overwrite: bool
+    block_size: int
+    num_workers: int
 
 
 if __name__ == "__main__":

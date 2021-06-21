@@ -26,6 +26,7 @@ biliass = "1.3.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^3.4"
+black = "^21.6b0"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"
@@ -42,4 +43,3 @@ markers = ["api", "e2e", "ci_skip", "ci_only"]
 
 [tool.black]
 line-length = 120
-target-version = ['py39']

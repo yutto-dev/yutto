@@ -5,14 +5,14 @@ from typing import Any, Optional
 
 import aiohttp
 
-from yutto.api.types import AudioUrlMeta, MultiLangSubtitle, VideoUrlMeta
 from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import filter_none_value, select_audio, select_video
 from yutto.processor.progressbar import show_progress
+from yutto.typing import AudioUrlMeta, VideoUrlMeta, EpisodeData, DownloaderOptions
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.danmaku import DanmakuData, write_danmaku
+from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
@@ -104,19 +104,21 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 # TODO: 逻辑拆分
 async def download_video(
     session: aiohttp.ClientSession,
-    videos: list[VideoUrlMeta],
-    audios: list[AudioUrlMeta],
-    output_dir: str,
-    file_name: str,
-    subtitles: list[MultiLangSubtitle],
-    danmaku: DanmakuData,
+    episode_data: EpisodeData,
     # TODO: options 使用 TypedDict
-    options: Any,
+    options: DownloaderOptions,
 ):
-    Logger.info("开始处理视频 {}".format(file_name))
+    videos = episode_data["videos"]
+    audios = episode_data["audios"]
+    subtitles = episode_data["subtitles"]
+    danmaku = episode_data["danmaku"]
+    output_dir = episode_data["output_dir"]
+    filename = episode_data["filename"]
+
+    Logger.info("开始处理视频 {}".format(filename))
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    output_path_no_ext = os.path.join(output_dir, file_name)
+    output_path_no_ext = os.path.join(output_dir, filename)
     video_path = output_path_no_ext + "_video.m4s"
     audio_path = output_path_no_ext + "_audio.m4s"
     ffmpeg = FFmpeg()
@@ -132,7 +134,7 @@ async def download_video(
     output_path = output_path_no_ext + output_format
     if os.path.exists(output_path):
         if not options["overwrite"]:
-            Logger.info("文件 {} 已存在".format(file_name))
+            Logger.info("文件 {} 已存在".format(filename))
             return
         else:
             Logger.info("文件已存在，因启用 overwrite 选项强制删除……")

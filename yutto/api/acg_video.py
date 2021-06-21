@@ -5,16 +5,8 @@ from typing import Literal, TypedDict
 from aiohttp import ClientSession
 
 from yutto.api.info import get_video_info
-from yutto.api.types import (
-    AudioUrlMeta,
-    AvId,
-    CId,
-    MultiLangSubtitle,
-    NoAccessError,
-    UnSupportedTypeError,
-    VideoUrlMeta,
-)
 from yutto.media.codec import VideoCodec
+from yutto.typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, NoAccessError, UnSupportedTypeError, VideoUrlMeta
 from yutto.utils.fetcher import Fetcher
 
 

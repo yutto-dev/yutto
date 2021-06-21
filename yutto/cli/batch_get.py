@@ -1,23 +1,18 @@
 import argparse
-import os
 import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_title
 from yutto.api.bangumi import (
     get_bangumi_list,
-    get_bangumi_playurl,
-    get_bangumi_subtitles,
     get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.api.danmaku import get_danmaku
-from yutto.api.types import AId, AudioUrlMeta, BvId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
+from yutto.cli.get import fetch_acg_video_data, fetch_bangumi_data
 from yutto.processor.downloader import download_video
 from yutto.processor.filter import parse_episodes
-from yutto.processor.path_resolver import resolve_path_template
 from yutto.processor.urlparser import (
     regexp_acg_video_av,
     regexp_acg_video_bv,
@@ -25,8 +20,8 @@ from yutto.processor.urlparser import (
     regexp_bangumi_md,
     regexp_bangumi_ss,
 )
+from yutto.typing import AId, BvId, EpisodeId, MediaId, SeasonId, EpisodeData
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.danmaku import DanmakuData, EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
 
@@ -41,9 +36,7 @@ async def run(args: argparse.Namespace):
     ) as session:
         url: str = args.url
         url = await Fetcher.get_redirected_url(session, url)
-        download_list: list[
-            tuple[list[VideoUrlMeta], list[AudioUrlMeta], str, str, list[MultiLangSubtitle], DanmakuData]
-        ] = []
+        download_list: list[EpisodeData] = []
         if (
             (match_obj := regexp_bangumi_ep.match(url))
             or (match_obj := regexp_bangumi_ss.match(url))
@@ -68,28 +61,10 @@ async def run(args: argparse.Namespace):
             bangumi_list = list(filter(lambda item: item["id"] in episodes, bangumi_list))
             for i, bangumi_item in enumerate(bangumi_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(bangumi_list)))
-                avid = bangumi_item["avid"]
-                cid = bangumi_item["cid"]
-                episode_id = bangumi_item["episode_id"]
-                name = bangumi_item["name"]
-                id = bangumi_item["id"]
-                videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
-                # fmt: off
-                subpath = resolve_path_template(
-                    args.subpath_template,
-                    "{title}/{name}",
-                    {
-                        "title": title,
-                        "id": id,
-                        "name": name
-                    })
-                # fmt: on
-                output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
-                subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
-                danmaku = (
-                    await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
+                episode_data = await fetch_bangumi_data(
+                    session, bangumi_item["episode_id"], bangumi_item, title, args, "{title}/{name}"
                 )
-                download_list.append((videos, audios, output_dir, filename, subtitles, danmaku))
+                download_list.append(episode_data)
         elif (match_obj := regexp_acg_video_av.match(url)) or (match_obj := regexp_acg_video_bv.match(url)):
             # 匹配为投稿视频
             if "aid" in match_obj.groupdict().keys():
@@ -104,39 +79,20 @@ async def run(args: argparse.Namespace):
             acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
-                cid = acg_video_item["cid"]
-                name = acg_video_item["name"]
-                id = acg_video_item["id"]
-                videos, audios = await get_acg_video_playurl(session, avid, cid)
-                # fmt: off
-                subpath = resolve_path_template(
-                    args.subpath_template,
-                    "{title}/{name}",
-                    {
-                        "title": title,
-                        "id": id,
-                        "name": name
-                    })
-                # fmt: on
-                output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
-                subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
-                danmaku = (
-                    await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
+                episode_data = await fetch_acg_video_data(
+                    session, avid, i + 1, acg_video_item, title, args, "{title}/{name}"
                 )
-                download_list.append((videos, audios, output_dir, filename, subtitles, danmaku))
+                download_list.append(episode_data)
         else:
             Logger.error("url 不正确～")
             sys.exit(1)
-        for i, (videos, audios, output_dir, filename, subtitles, danmaku) in enumerate(download_list):
-            Logger.custom(f"{filename}", Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"))
+        for i, episode_data in enumerate(download_list):
+            Logger.custom(
+                f"{episode_data['filename']}", Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan")
+            )
             await download_video(
                 session,
-                videos,
-                audios,
-                output_dir,
-                filename,
-                subtitles,
-                danmaku,
+                episode_data,
                 {
                     "require_video": args.require_video,
                     "video_quality": args.video_quality,

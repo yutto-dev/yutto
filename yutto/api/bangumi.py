@@ -3,7 +3,7 @@ from typing import Literal, TypedDict
 
 from aiohttp import ClientSession
 
-from yutto.api.types import (
+from yutto.typing import (
     AudioUrlMeta,
     AvId,
     BvId,
