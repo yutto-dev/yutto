@@ -1,7 +1,3 @@
-import os
-import toml
+VERSION_TUPLE = (2, 0, "0-alpha", 21)
 
-_here = os.path.abspath(os.path.dirname(__file__))
-pyproject_filepath = os.path.join(os.path.dirname(_here), "pyproject.toml")
-
-VERSION = toml.load(pyproject_filepath)["tool"]["poetry"]["version"].strip()
+VERSION = ".".join(map(str, VERSION_TUPLE))

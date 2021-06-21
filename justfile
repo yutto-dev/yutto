@@ -1,11 +1,14 @@
-version := `python3 -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+version := `poetry run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
 
 run:
-  python3 -m yutto
+  poetry run python -m yutto
 
 test:
   pytest -m '(api or e2e) and not ci_only'
   just clean
+
+build:
+  poetry build
 
 publish:
   poetry publish --build
