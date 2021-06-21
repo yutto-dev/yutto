@@ -39,7 +39,7 @@ jobs:
         run: |
           poetry run yutto -v
           poetry run yutto -h
-          peotry run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
+          poetry run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
           just clean
 
       - name: e2e test
