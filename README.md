@@ -360,7 +360,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 -  [ ] feat: 字幕、弹幕嵌入视频支持
 -  [ ] refactor: 以插件形式支持更多音视频处理方面的功能，比如 autosub
--  [ ] feat: 更多批下载支持（UP 主、收藏夹等）
+-  [ ] feat: 更多批下载支持（UP 主、收藏夹、稍后再看等）
 -  [ ] docs: 静态文档
 -  [ ] feat: 以及更加可爱～
 

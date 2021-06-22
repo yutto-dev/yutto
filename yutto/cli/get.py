@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from typing import Optional, Union
+from typing import Optional
 
 import aiohttp
 
@@ -21,9 +21,9 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
 )
 from yutto.api.danmaku import get_danmaku
-from yutto.exceptions import ErrorCode, HttpStatusError, UnSupportedTypeError, NoAccessPermissionError
-from yutto.processor.downloader import download_video
-from yutto.processor.path_resolver import resolve_path_template, PathTemplateVariableDict
+from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.processor.downloader import process_video_download
+from yutto.processor.path_resolver import PathTemplateVariableDict, resolve_path_template
 from yutto.processor.urlparser import regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
 from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId
 from yutto.utils.console.logger import Badge, Logger
@@ -173,7 +173,7 @@ async def run(args: argparse.Namespace):
             Logger.error("url 不正确～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
-        await download_video(
+        await process_video_download(
             session,
             episode_data,
             {

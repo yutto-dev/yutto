@@ -102,10 +102,9 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 
 
 # TODO: 逻辑拆分
-async def download_video(
+async def process_video_download(
     session: aiohttp.ClientSession,
     episode_data: EpisodeData,
-    # TODO: options 使用 TypedDict
     options: DownloaderOptions,
 ):
     videos = episode_data["videos"]

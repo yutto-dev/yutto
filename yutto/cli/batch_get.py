@@ -3,17 +3,17 @@ import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_title, AcgVideoListItem
+from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_title
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.api.space import get_uploader_space_all_videos_avids, get_uploader_name
+from yutto.api.space import get_uploader_name, get_uploader_space_all_videos_avids
 from yutto.cli.get import fetch_acg_video_data, fetch_bangumi_data
 from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
-from yutto.processor.downloader import download_video
+from yutto.processor.downloader import process_video_download
 from yutto.processor.filter import parse_episodes
 from yutto.processor.urlparser import (
     regexp_acg_video_av,
@@ -23,7 +23,7 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ss,
     regexp_space_all,
 )
-from yutto.typing import AId, BvId, EpisodeData, EpisodeId, MediaId, SeasonId, MId, AvId
+from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId, MediaId, MId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
@@ -131,7 +131,7 @@ async def run(args: argparse.Namespace):
             Logger.custom(
                 f"{episode_data['filename']}", Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan")
             )
-            await download_video(
+            await process_video_download(
                 session,
                 episode_data,
                 {
