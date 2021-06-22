@@ -19,7 +19,9 @@ from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.subtitle import write_subtitle
 
 
-def slice(start: int, total_size: Optional[int], block_size: Optional[int] = None) -> list[tuple[int, Optional[int]]]:
+def slice_blocks(
+    start: int, total_size: Optional[int], block_size: Optional[int] = None
+) -> list[tuple[int, Optional[int]]]:
     """生成分块后的 (start, size) 序列
 
     Args:
@@ -44,7 +46,7 @@ def slice(start: int, total_size: Optional[int], block_size: Optional[int] = Non
     return offset_list
 
 
-def combine(*l_list: list[Any]) -> list[Any]:
+def mix_list(*l_list: list[Any]) -> list[Any]:
     """将多个 list 「均匀」地合并到一个 list
 
     # example
@@ -55,7 +57,7 @@ def combine(*l_list: list[Any]) -> list[Any]:
         [6, 7, 8],
         [9, 10, 11, 12]
     ]
-    combine(l_list)
+    mix_list(l_list)
     # [1, 6, 9, 2, 7, 10, 3, 8, 11, 4, 12, 5]
     ```
     """
@@ -68,6 +70,7 @@ def combine(*l_list: list[Any]) -> list[Any]:
 
 
 def show_videos_info(videos: list[VideoUrlMeta], selected: int):
+    """ 显示视频详细信息 """
     if not videos:
         Logger.info("不包含任何视频流")
         return
@@ -88,6 +91,7 @@ def show_videos_info(videos: list[VideoUrlMeta], selected: int):
 
 
 def show_audios_info(audios: list[AudioUrlMeta], selected: int):
+    """ 显示音频详细信息 """
     if not audios:
         Logger.info("不包含任何音频流")
         return
@@ -101,12 +105,91 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
         Logger.info(log)
 
 
-# TODO: 逻辑拆分
+async def download_video_and_audio(
+    session: aiohttp.ClientSession,
+    video: Optional[VideoUrlMeta],
+    video_path: str,
+    audio: Optional[AudioUrlMeta],
+    audio_path: str,
+    options: DownloaderOptions,
+):
+    """ 下载音视频 """
+
+    buffers: list[Optional[AsyncFileBuffer]] = [None, None]
+    sizes: list[Optional[int]] = [None, None]
+    task_funcs: list[list[CoroutineTask]] = []
+    if video is not None:
+        vbuf = await AsyncFileBuffer.create(video_path, overwrite=options["overwrite"])
+        vsize = await Fetcher.get_size(session, video["url"])
+        vtask_funcs = [
+            Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
+            for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
+        ]
+        task_funcs.append(vtask_funcs)
+        buffers[0], sizes[0] = vbuf, vsize
+
+    if audio is not None:
+        abuf = await AsyncFileBuffer.create(audio_path, overwrite=options["overwrite"])
+        asize = await Fetcher.get_size(session, audio["url"])
+        atask_funcs = [
+            Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
+            for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
+        ]
+        task_funcs.append(atask_funcs)
+        buffers[1], sizes[1] = abuf, asize
+
+    tasks = parallel_with_limit(mix_list(*task_funcs), num_workers=options["num_workers"])
+    tasks.append(asyncio.create_task(show_progress(filter_none_value(buffers), sum(filter_none_value(sizes)))))
+
+    Logger.info(f"开始下载……")
+    for task in tasks:
+        await task
+    Logger.info("下载完成！")
+
+    if video is not None:
+        await vbuf.close()
+    if audio is not None:
+        await abuf.close()
+
+
+def merge_video_and_audio(
+    video: Optional[VideoUrlMeta],
+    video_path: str,
+    audio: Optional[AudioUrlMeta],
+    audio_path: str,
+    output_path: str,
+    options: DownloaderOptions,
+):
+    """ 合并音视频 """
+
+    ffmpeg = FFmpeg()
+    Logger.info(f"开始合并……")
+    # fmt: off
+    args_list: list[list[str]] = [
+        ["-i", video_path] if video is not None else [],
+        ["-i", audio_path] if audio is not None else [],
+        ["-vcodec", options["video_save_codec"]] if video is not None else [],
+        ["-acodec", options["audio_save_codec"]] if video is not None else [],
+        ["-y", output_path]
+    ]
+
+    ffmpeg.exec(functools.reduce(lambda prev, cur: prev+cur, args_list))
+    # fmt: on
+    Logger.info("合并完成！")
+
+    if video is not None:
+        os.remove(video_path)
+    if audio is not None:
+        os.remove(audio_path)
+
+
 async def process_video_download(
     session: aiohttp.ClientSession,
     episode_data: EpisodeData,
     options: DownloaderOptions,
 ):
+    """ 处理单个视频下载任务，包含弹幕、字幕的存储 """
+
     videos = episode_data["videos"]
     audios = episode_data["audios"]
     subtitles = episode_data["subtitles"]
@@ -120,7 +203,6 @@ async def process_video_download(
     output_path_no_ext = os.path.join(output_dir, filename)
     video_path = output_path_no_ext + "_video.m4s"
     audio_path = output_path_no_ext + "_audio.m4s"
-    ffmpeg = FFmpeg()
 
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
     audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
@@ -162,58 +244,8 @@ async def process_video_download(
         )
         Logger.custom("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan"))
 
-    buffers: list[Optional[AsyncFileBuffer]] = [None, None]
-    sizes: list[Optional[int]] = [None, None]
-    task_funcs: list[list[CoroutineTask]] = []
-    if video is not None:
-        vbuf = await AsyncFileBuffer.create(video_path, overwrite=options["overwrite"])
-        vsize = await Fetcher.get_size(session, video["url"])
-        vtask_funcs = [
-            Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
-            for offset, block_size in slice(vbuf.written_size, vsize, options["block_size"])
-        ]
-        task_funcs.append(vtask_funcs)
-        buffers[0], sizes[0] = vbuf, vsize
+    # 下载视频 / 音频
+    await download_video_and_audio(session, video, video_path, audio, audio_path, options)
 
-    if audio is not None:
-        abuf = await AsyncFileBuffer.create(audio_path, overwrite=options["overwrite"])
-        asize = await Fetcher.get_size(session, audio["url"])
-        atask_funcs = [
-            Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
-            for offset, block_size in slice(abuf.written_size, asize, options["block_size"])
-        ]
-        task_funcs.append(atask_funcs)
-        buffers[1], sizes[1] = abuf, asize
-
-    tasks = parallel_with_limit(combine(*task_funcs), num_workers=options["num_workers"])
-    tasks.append(asyncio.create_task(show_progress(filter_none_value(buffers), sum(filter_none_value(sizes)))))
-
-    Logger.info(f"开始下载……")
-    for task in tasks:
-        await task
-    Logger.info("下载完成！")
-
-    if video is not None:
-        await vbuf.close()
-    if audio is not None:
-        await abuf.close()
-
-    # TODO: 将 merge 分离出去？
-    Logger.info(f"开始合并……")
-    # fmt: off
-    args_list: list[list[str]] = [
-        ["-i", video_path] if video is not None else [],
-        ["-i", audio_path] if audio is not None else [],
-        ["-vcodec", options["video_save_codec"]] if video is not None else [],
-        ["-acodec", options["audio_save_codec"]] if video is not None else [],
-        ["-y", output_path]
-    ]
-
-    ffmpeg.exec(functools.reduce(lambda prev, cur: prev+cur, args_list))
-    # fmt: on
-    Logger.info("合并完成！")
-
-    if video is not None:
-        os.remove(video_path)
-    if audio is not None:
-        os.remove(audio_path)
+    # 合并视频 / 音频
+    merge_video_and_audio(video, video_path, audio, audio_path, output_path, options)
