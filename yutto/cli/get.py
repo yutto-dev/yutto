@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from typing import Optional
+from typing import Optional, Union
 
 import aiohttp
 
@@ -23,7 +23,7 @@ from yutto.api.bangumi import (
 from yutto.api.danmaku import get_danmaku
 from yutto.exceptions import ErrorCode, HttpStatusError, UnSupportedTypeError, NoAccessPermissionError
 from yutto.processor.downloader import download_video
-from yutto.processor.path_resolver import resolve_path_template
+from yutto.processor.path_resolver import resolve_path_template, PathTemplateVariableDict
 from yutto.processor.urlparser import regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
 from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId
 from yutto.utils.console.logger import Badge, Logger
@@ -36,8 +36,8 @@ async def fetch_bangumi_data(
     session: aiohttp.ClientSession,
     episode_id: EpisodeId,
     bangumi_info: Optional[BangumiListItem],
-    title: str,
     args: argparse.Namespace,
+    subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
 ) -> EpisodeData:
     season_id = await get_season_id_by_episode_id(session, episode_id)
@@ -59,15 +59,15 @@ async def fetch_bangumi_data(
     subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
     # fmt: off
-    subpath = resolve_path_template(
-        args.subpath_template,
-        auto_subpath_template,
-        {
-            "title": title,
-            "id": id,
-            "name": name
-        })
+    subpath_variables_base: PathTemplateVariableDict = {
+        "id": id,
+        "name": name,
+        "title": "",
+        "username": "",
+    }
     # fmt: on
+    subpath_variables_base.update(subpath_variables)
+    subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
     output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
     # fmt: off
     return EpisodeData(
@@ -86,8 +86,8 @@ async def fetch_acg_video_data(
     avid: AvId,
     page: int,
     acg_video_info: Optional[AcgVideoListItem],
-    title: str,
     args: argparse.Namespace,
+    subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
 ) -> EpisodeData:
     acg_video_list = await get_acg_video_list(session, avid)
@@ -100,15 +100,15 @@ async def fetch_acg_video_data(
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
     # fmt: off
-    subpath = resolve_path_template(
-        args.subpath_template,
-        auto_subpath_template,
-        {
-            "title": title,
-            "id": id,
-            "name": name
-        })
+    subpath_variables_base: PathTemplateVariableDict = {
+        "id": id,
+        "name": name,
+        "title": "",
+        "username": "",
+    }
     # fmt: on
+    subpath_variables_base.update(subpath_variables)
+    subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
     output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
     # fmt: off
     return EpisodeData(
@@ -139,7 +139,7 @@ async def run(args: argparse.Namespace):
             title = await get_bangumi_title(session, season_id)
             Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
             try:
-                episode_data = await fetch_bangumi_data(session, episode_id, None, title, args, "{name}")
+                episode_data = await fetch_bangumi_data(session, episode_id, None, args, {"title": title}, "{name}")
             except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                 Logger.error(e.message)
                 sys.exit(e.code.value)
@@ -156,7 +156,15 @@ async def run(args: argparse.Namespace):
             title = await get_acg_video_title(session, avid)
             Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
             try:
-                episode_data = await fetch_acg_video_data(session, avid, page, None, title, args, "{title}")
+                episode_data = await fetch_acg_video_data(
+                    session,
+                    avid,
+                    page,
+                    None,
+                    args,
+                    {"title": title},
+                    "{title}",
+                )
             except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                 Logger.error(e.message)
                 sys.exit(e.code.value)

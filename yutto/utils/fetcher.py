@@ -145,5 +145,5 @@ class Fetcher:
                 Logger.warning("文件 {} 下载超时，尝试重新连接...".format(file_buffer.file_path))
 
             except aiohttp.client_exceptions.ClientPayloadError as e:
-                asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)
                 Logger.warning("文件 {} 下载出错，尝试重新连接...".format(file_buffer.file_path))

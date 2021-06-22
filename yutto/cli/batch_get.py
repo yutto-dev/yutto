@@ -3,13 +3,14 @@ import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_title, AcgVideoListItem
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
+from yutto.api.space import get_uploader_space_all_videos_avids, get_uploader_name
 from yutto.cli.get import fetch_acg_video_data, fetch_bangumi_data
 from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
 from yutto.processor.downloader import download_video
@@ -20,8 +21,9 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ep,
     regexp_bangumi_md,
     regexp_bangumi_ss,
+    regexp_space_all,
 )
-from yutto.typing import AId, BvId, EpisodeData, EpisodeId, MediaId, SeasonId
+from yutto.typing import AId, BvId, EpisodeData, EpisodeId, MediaId, SeasonId, MId, AvId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
@@ -64,7 +66,7 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(bangumi_list)))
                 try:
                     episode_data = await fetch_bangumi_data(
-                        session, bangumi_item["episode_id"], bangumi_item, title, args, "{title}/{name}"
+                        session, bangumi_item["episode_id"], bangumi_item, args, {"title": title}, "{title}/{name}"
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)
@@ -87,7 +89,34 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
                     episode_data = await fetch_acg_video_data(
-                        session, avid, i + 1, acg_video_item, title, args, "{title}/{name}"
+                        session, avid, i + 1, acg_video_item, args, {"title": title}, "{title}/{name}"
+                    )
+                except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
+                    Logger.error(e.message)
+                    continue
+                download_list.append(episode_data)
+
+        elif match_obj := regexp_space_all.match(url):
+            # 匹配为 UP 主个人空间
+            mid = MId(match_obj.group("mid"))
+            username = await get_uploader_name(session, mid)
+            Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
+            acg_video_with_avid_list: list[tuple[AvId, AcgVideoListItem]] = []
+            for avid in await get_uploader_space_all_videos_avids(session, mid):
+                acg_video_part_list = await get_acg_video_list(session, avid)
+                acg_video_with_avid_list += list(zip([avid] * len(acg_video_part_list), acg_video_part_list))
+            for i, (avid, acg_video_item) in enumerate(acg_video_with_avid_list):
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_with_avid_list)))
+                title = await get_acg_video_title(session, avid)
+                try:
+                    episode_data = await fetch_acg_video_data(
+                        session,
+                        avid,
+                        i + 1,
+                        acg_video_item,
+                        args,
+                        {"title": title, "username": username},
+                        "{username}的全部投稿视频/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)

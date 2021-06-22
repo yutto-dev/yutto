@@ -95,9 +95,9 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 #### 视频编码
 
 -  参数 `--vcodec`
--  下载编码可选值 `hevc | avc`
+-  下载编码可选值 `"hevc" | "avc"`
 -  保存编码可选值 FFmpeg 所有可用的视频编码器
--  默认值 `avc:copy`
+-  默认值 `"avc:copy"`
 
 该参数略微复杂，前半部分表示在下载时**优先**选择哪一种编码的视频流，后半部分则表示在合并时如何编码视频流，两者使用 `:` 分隔。
 
@@ -108,9 +108,9 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 #### 音频编码
 
 -  参数 `--acodec`
--  下载编码可选值 `mp4a`
+-  下载编码可选值 `"mp4a"`
 -  保存编码可选值 FFmpeg 所有可用的音频编码器
--  默认值 `mp4a:copy`
+-  默认值 `"mp4a:copy"`
 
 详情同视频编码。
 
@@ -131,8 +131,8 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 #### 弹幕格式选择
 
 -  参数 `-df` 或 `--danmaku-format`
--  可选值 `ass | xml | protobuf`
--  默认值 `ass`
+-  可选值 `"ass" | "xml" | "protobuf"`
+-  默认值 `"ass"`
 
 #### 下载块大小
 
@@ -149,21 +149,21 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 #### 代理设置
 
 -  参数 `-x` 或 `--proxy`
--  可选值 `auto | no | <https?://url/to/proxy/server>`
--  默认值 `auto`
+-  可选值 `"auto" | "no" | <https?://url/to/proxy/server>`
+-  默认值 `"auto"`
 
 设置代理服务器，默认是从环境变量读取，`no` 则为不设置代理，设置其它 http/https url 则将其作为代理服务器。
 
 #### 存放根目录
 
 -  参数 `-d` 或 `--dir`
--  默认值 `./`
+-  默认值 `"./"`
 
 #### 存放子路径模板
 
 -  参数 `-tp` 或 `--subpath-template`
 -  可选参数变量 `title | id | name` （以后可能会有更多）
--  默认值 `{auto}`
+-  默认值 `"{auto}"`
 
 通过配置子路径模板可以灵活地控制视频存放位置。
 
@@ -199,7 +199,7 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 #### Cookies 设置
 
 -  参数 `-c` 或 `--sessdata`
--  默认值 ``
+-  默认值 `""`
 
 详情参考 bilili 文档。
 
@@ -277,6 +277,7 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 -  存放子路径的自由定制
 -  支持 url alias
 -  支持 file scheme
+-  更多的批下载支持（现已支持 UP 主全部视频下载，扩展其它功能也很简单）
 
 ### 小技巧
 

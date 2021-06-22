@@ -2,8 +2,9 @@ import re
 from html import unescape
 from typing import Union, Literal
 
-path_template_variables = ["title", "id", "name"]
-PathTemplateVariable = Literal["title", "id", "name"]
+path_template_variables = ["title", "id", "name", "username"]
+PathTemplateVariable = Literal["title", "id", "name", "username"]
+PathTemplateVariableDict = dict[PathTemplateVariable, Union[int, str]]
 
 _count: int = 0
 
@@ -41,11 +42,11 @@ def repair_filename(filename: str) -> str:
 
 
 def resolve_path_template(
-    path_template: str, auto_path_template: str, template_dict: dict[PathTemplateVariable, Union[int, str]]
+    path_template: str, auto_path_template: str, subpath_variables: PathTemplateVariableDict
 ) -> str:
     # 保证所有传进来的值都满足路径要求
-    for key, value in template_dict.items():
+    for key, value in subpath_variables.items():
         # 只对字符串值修改，int 型不修改以适配高级模板
         if isinstance(value, str):
-            template_dict[key] = repair_filename(value)
-    return path_template.format(auto=auto_path_template.format(**template_dict), **template_dict)
+            subpath_variables[key] = repair_filename(value)
+    return path_template.format(auto=auto_path_template.format(**subpath_variables), **subpath_variables)
