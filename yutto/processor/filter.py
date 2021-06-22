@@ -3,6 +3,7 @@ import sys
 from typing import Optional, TypeVar
 
 from yutto.api.acg_video import AudioUrlMeta, VideoUrlMeta
+from yutto.exceptions import ErrorCode
 from yutto.media.codec import AudioCodec, VideoCodec, gen_acodec_priority, gen_vcodec_priority
 from yutto.media.quality import AudioQuality, VideoQuality, gen_audio_quality_priority, gen_video_quality_priority
 from yutto.utils.console.logger import Logger
@@ -89,7 +90,7 @@ def parse_episodes(episodes_str: str, total: int) -> list[int]:
     def resolve_negetive(value: int) -> int:
         if value == 0:
             Logger.error("不可使用 0 作为剧集号（剧集号从 1 开始计算）")
-            sys.exit(1)
+            sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
         return value if value > 0 else value + total + 1
 
     # 解析字符串为列表
@@ -105,7 +106,7 @@ def parse_episodes(episodes_str: str, total: int) -> list[int]:
                 start, end = resolve_negetive(start), resolve_negetive(end)
                 if not (end >= start):
                     Logger.error("终点值（{}）应不小于起点值（{}）".format(end, start))
-                    sys.exit(1)
+                    sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
                 episode_list.extend(list(range(start, end + 1)))
             else:
                 episode_item = int(episode_item)

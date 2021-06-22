@@ -3,20 +3,9 @@ from typing import Literal, TypedDict
 
 from aiohttp import ClientSession
 
-from yutto.typing import (
-    AudioUrlMeta,
-    AvId,
-    BvId,
-    CId,
-    EpisodeId,
-    MediaId,
-    MultiLangSubtitle,
-    NoAccessError,
-    SeasonId,
-    UnSupportedTypeError,
-    VideoUrlMeta,
-)
+from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import VideoCodec
+from yutto.typing import AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -93,10 +82,10 @@ async def get_bangumi_playurl(
         play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id), proxy=Fetcher.proxy
     ) as resp:
         if not resp.ok:
-            raise NoAccessError("无法下载该视频（cid: {cid}）".format(cid=cid))
+            raise NoAccessPermissionError("无法下载该视频（cid: {cid}）".format(cid=cid))
         resp_json = await resp.json()
         if resp_json.get("result") is None:
-            raise NoAccessError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
+            raise NoAccessPermissionError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
         if resp_json["result"].get("dash") is None:
             raise UnSupportedTypeError("该视频（cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
         if resp_json["result"]["is_preview"] == 1:

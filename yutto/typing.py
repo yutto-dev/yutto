@@ -57,18 +57,6 @@ class SeasonId(BilibiliId):
         return {"season_id": self.value}
 
 
-class HttpStatusError(Exception):
-    pass
-
-
-class NoAccessError(Exception):
-    pass
-
-
-class UnSupportedTypeError(Exception):
-    pass
-
-
 class VideoUrlMeta(TypedDict):
     url: str
     mirrors: list[str]

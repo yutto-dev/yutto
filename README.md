@@ -260,6 +260,7 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 -  `- bilibili` 目录的生成
 -  播放列表生成
 -  源格式修改功能（不再支持 flv 源视频下载，如果仍有视频不支持 dash 源，请继续使用 bilili）
+-  对 Python3.8 的支持，最低支持 Python3.9
 
 ### 默认行为的修改
 
@@ -351,7 +352,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 -  [ ] refactor: 尽可能使下载器成为独立模块
 -  [ ] feat: 支持 bare name (bare id, bare path)
 -  [ ] refactor: url 列表能够预线性展开
--  [ ] feat: 添加各种 return code
+-  [x] feat: 添加各种 return code
 -  [ ] test: 编写单元测试
 
 ### future

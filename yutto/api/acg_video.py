@@ -5,8 +5,9 @@ from typing import Literal, TypedDict
 from aiohttp import ClientSession
 
 from yutto.api.info import get_video_info
+from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import VideoCodec
-from yutto.typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, NoAccessError, UnSupportedTypeError, VideoUrlMeta
+from yutto.typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, VideoUrlMeta
 from yutto.utils.fetcher import Fetcher
 
 
@@ -43,10 +44,10 @@ async def get_acg_video_playurl(
 
     async with session.get(play_api.format(**avid.to_dict(), cid=cid), proxy=Fetcher.proxy) as resp:
         if not resp.ok:
-            raise NoAccessError("无法下载该视频（cid: {cid}）".format(cid=cid))
+            raise NoAccessPermissionError("无法下载该视频（cid: {cid}）".format(cid=cid))
         resp_json = await resp.json()
         if resp_json.get("data") is None:
-            raise NoAccessError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
+            raise NoAccessPermissionError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
         if resp_json["data"].get("dash") is None:
             raise UnSupportedTypeError("该视频（cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
         return (
