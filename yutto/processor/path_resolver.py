@@ -1,10 +1,13 @@
 import re
 from html import unescape
-from typing import Union, Literal
+from typing import Literal, Union
+
+from yutto.utils.console.logger import Logger
 
 path_template_variables = ["title", "id", "name", "username"]
 PathTemplateVariable = Literal["title", "id", "name", "username"]
 PathTemplateVariableDict = dict[PathTemplateVariable, Union[int, str]]
+UNKNOWN: str = ""
 
 _count: int = 0
 
@@ -48,5 +51,7 @@ def resolve_path_template(
     for key, value in subpath_variables.items():
         # 只对字符串值修改，int 型不修改以适配高级模板
         if isinstance(value, str):
+            if f"{{{key}}}" in path_template and value == UNKNOWN:
+                Logger.warning("使用了未知的变量，可能导致产生错误的下载路径")
             subpath_variables[key] = repair_filename(value)
     return path_template.format(auto=auto_path_template.format(**subpath_variables), **subpath_variables)
