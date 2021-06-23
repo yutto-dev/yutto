@@ -6,7 +6,7 @@ import copy
 from yutto.__version__ import VERSION as yutto_version
 from yutto.cli import batch_get, checker, get
 from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
-from yutto.processor.urlparser import alias_parser, file_scheme_parser
+from yutto.processor.urlparser import alias_parser, file_scheme_parser, bare_name_parser
 from yutto.utils.console.logger import Logger, Badge
 
 
@@ -92,6 +92,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
     alias_map = alias_parser(args.alias_file)
     if args.url in alias_map:
         args.url = alias_map[args.url]
+    args.url = bare_name_parser(args.url)
 
     # 是否为下载列表
     if re.match(r"file://", args.url) or os.path.exists(args.url):

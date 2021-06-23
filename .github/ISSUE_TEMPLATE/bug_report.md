@@ -26,14 +26,16 @@ assignees: ""
 
 ## 环境信息
 
--  OS： 操作系统类型及其版本号
--  Python： Python 版本号
--  yutto： yutto 版本号
--  FFmpeg: ffmpeg 版本号
+<!-- 如果你**确定**某些信息是本 issue 无关的，可以省略掉 -->
+
+-  OS: 操作系统类型及其版本号
+-  Python: Python 版本号 （`python --version`）
+-  yutto: yutto 版本号（`yutto -v`）
+-  FFmpeg: FFmpeg 版本号（`ffmpeg -version`）
 -  如果是显示相关问题
-   -  Shell：Shell 类型
-   -  Terminal：终端类型
--  Others： 其它信息
+   -  Shell: Shell 类型 (`echo $SHELL`)
+   -  Terminal: 终端类型
+-  Others: 其它信息
 
 ## 问题简述
 

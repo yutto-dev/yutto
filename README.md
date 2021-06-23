@@ -278,8 +278,9 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 -  存放子路径的自由定制
 -  支持 url alias
 -  支持 file scheme
--  更多的批下载支持（现已支持 UP 主全部视频下载，扩展其它功能也很简单）
+-  更多的批下载支持（现已支持 UP 主全部视频下载，扩展其它批下载支持也很简单）
 -  更加完善的 warning 与 error 提示
+-  支持仅输入 id 即可下载（aid、bvid、episode_id 等）
 
 ## 小技巧
 
@@ -362,7 +363,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 ### 2.0.0-beta
 
--  [ ] feat: 支持 bare name (bare id, bare path)
+-  [x] feat: 支持 bare name (bare id, bare path)
 -  [x] refactor: url 列表能够预线性展开
 -  [x] feat: 添加各种 return code
 -  [ ] test: 编写单元测试
