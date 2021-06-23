@@ -170,7 +170,7 @@ async def run(args: argparse.Namespace):
                 sys.exit(e.code.value)
 
         else:
-            Logger.error("url 不正确～")
+            Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
         await process_video_download(
