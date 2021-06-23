@@ -445,7 +445,9 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 最终下载的 rimuru1 会是 "hevc:copy"，而 rimuru2 则会是 "avc:copy"
 
-另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，而且列表支持是支持嵌套的（虽然没什么用 2333）
+另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
+
+最后，列表也是支持是支持嵌套的哦（虽然没什么用 2333）
 
 ## FAQ
 
