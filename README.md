@@ -36,6 +36,7 @@ pip install --pre yutto
 
 ```bash
 git clone https://github.com/SigureMo/yutto.git
+pip install poetry
 poetry build
 pip install ./dist/yutto-*.whl
 ```
@@ -278,10 +279,21 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 -  支持 url alias
 -  支持 file scheme
 -  更多的批下载支持（现已支持 UP 主全部视频下载，扩展其它功能也很简单）
+-  更加完善的 warning 与 error 提示
 
-### 小技巧
+## 小技巧
 
-#### 使用 url alias
+### 使用 uvloop 提升协程效率
+
+貌似 uvloop 可以提高协程效率，如果你是非 Windows 的话，可以试一下安装 uvloop：
+
+```bash
+pip install uvloop
+```
+
+具体提升多少我也不太清楚啦，没有测过
+
+### 使用 url alias
 
 yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
 
@@ -295,7 +307,7 @@ rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 yutto --batch rimuru-nikki --alias-file=/path/to/alias-file
 ```
 
-#### 使用 file scheme 作为 url
+### 使用 file scheme 作为 url
 
 > TODO: 这里的例子太乱了，要好好修改下
 
@@ -351,7 +363,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 ### 2.0.0-beta
 
 -  [ ] feat: 支持 bare name (bare id, bare path)
--  [ ] refactor: url 列表能够预线性展开
+-  [x] refactor: url 列表能够预线性展开
 -  [x] feat: 添加各种 return code
 -  [ ] test: 编写单元测试
 

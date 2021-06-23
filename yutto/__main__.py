@@ -1,11 +1,13 @@
 import argparse
 import re
+import os
+import copy
 
 from yutto.__version__ import VERSION as yutto_version
 from yutto.cli import batch_get, checker, get
 from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
 from yutto.processor.urlparser import alias_parser, file_scheme_parser
-from yutto.utils.console.logger import Logger
+from yutto.utils.console.logger import Logger, Badge
 
 
 def main():
@@ -68,10 +70,23 @@ def main():
     # 执行各自的 run
     args = parser.parse_args()
     checker.initial_check(args)
-    run(args, parser)
+    args_list = flatten_args(args, parser)
+    if len(args_list) > 1:
+        Logger.info(f"列表共 {len(args_list)} 项")
+    for i, args in enumerate(args_list):
+        if len(args_list) > 1:
+            Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
+        if not args.batch:
+            get.run(args)
+        else:
+            checker.check_batch_argments(args)
+            batch_get.run(args)
+        Logger.print("")
 
 
-def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[argparse.Namespace]:
+    """ 递归展平列表参数 """
+    args = copy.copy(args)
     checker.check_basic_arguments(args)
     # 查看是否存在于 alias 中
     alias_map = alias_parser(args.alias_file)
@@ -79,19 +94,18 @@ def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
         args.url = alias_map[args.url]
 
     # 是否为下载列表
-    if re.match(r"file://", args.url):
+    if re.match(r"file://", args.url) or os.path.exists(args.url):
+        args_list: list[argparse.Namespace] = []
+        # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):
             local_args = parser.parse_args(line.split(), args)
             if local_args.no_inherit:
                 local_args = parser.parse_args(line.split())
             Logger.debug("列表参数: {}".format(local_args))
-            run(local_args, parser)
+            args_list += flatten_args(local_args, parser)
+        return args_list
     else:
-        if not args.batch:
-            get.run(args)
-        else:
-            checker.check_batch_argments(args)
-            batch_get.run(args)
+        return [args]
 
 
 if __name__ == "__main__":
