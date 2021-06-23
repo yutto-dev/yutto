@@ -8,6 +8,7 @@ from yutto.utils.functiontools.sync import sync
 
 
 @pytest.mark.api
+@pytest.mark.ci_skip
 @sync
 async def test_get_video_info():
     bvid = BvId("BV1q7411v7Vd")
