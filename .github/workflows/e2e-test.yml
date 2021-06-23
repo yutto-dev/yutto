@@ -20,11 +20,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
 
-      - name: Install packages
-        run: |
-          pip install poetry
-          poetry install
-
       - name: Install tools
         run: |
           sudo apt update
@@ -34,6 +29,18 @@ jobs:
         uses: extractions/setup-just@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: Gr1N/setup-poetry@v4
+      - uses: actions/cache@v2
+        id: poetry-cache
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.poetry-cache.outputs.cache-hit != 'true'
+        run: |
+          poetry install
 
       - name: e2e without subprocess
         run: |

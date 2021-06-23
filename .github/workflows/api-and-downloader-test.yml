@@ -20,9 +20,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
 
-      - name: Install packages
+      - uses: Gr1N/setup-poetry@v4
+      - uses: actions/cache@v2
+        id: poetry-cache
+        with:
+          path: ~/.cache/pypoetry/virtualenvs
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
-          pip install poetry
           poetry install
 
       - name: api and downloader test
