@@ -4,7 +4,7 @@ run:
   poetry run python -m yutto
 
 test:
-  poetry run pytest -m '(api or e2e) and not ci_only'
+  poetry run pytest -m '(api or e2e or downloader) and not ci_only'
   just clean
 
 fmt:

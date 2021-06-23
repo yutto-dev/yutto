@@ -141,7 +141,7 @@ async def download_video_and_audio(
     tasks = parallel_with_limit(mix_list(*task_funcs), num_workers=options["num_workers"])
     tasks.append(asyncio.create_task(show_progress(filter_none_value(buffers), sum(filter_none_value(sizes)))))
 
-    Logger.info(f"开始下载……")
+    Logger.info("开始下载……")
     for task in tasks:
         await task
     Logger.info("下载完成！")
@@ -163,7 +163,7 @@ def merge_video_and_audio(
     """ 合并音视频 """
 
     ffmpeg = FFmpeg()
-    Logger.info(f"开始合并……")
+    Logger.info("开始合并……")
     # fmt: off
     args_list: list[list[str]] = [
         ["-i", video_path] if video is not None else [],

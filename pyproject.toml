@@ -39,7 +39,7 @@ requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-markers = ["api", "e2e", "ci_skip", "ci_only"]
+markers = ["api", "e2e", "downloader", "ci_skip", "ci_only"]
 
 [tool.black]
 line-length = 120

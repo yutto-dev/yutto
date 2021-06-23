@@ -1,0 +1,30 @@
+name: api and downloader Test
+
+on: [push, pull_request]
+
+jobs:
+  test-api-and-downloader:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        architecture: ["x64"]
+    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.architecture }}
+
+      - name: Install packages
+        run: |
+          pip install poetry
+          poetry install
+
+      - name: e2e test
+        run: |
+          poetry run pytest -m "(api or downloader) and not ci_skip"
