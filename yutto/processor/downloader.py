@@ -70,7 +70,7 @@ def mix_list(*l_list: list[Any]) -> list[Any]:
 
 
 def show_videos_info(videos: list[VideoUrlMeta], selected: int):
-    """ 显示视频详细信息 """
+    """显示视频详细信息"""
     if not videos:
         Logger.info("不包含任何视频流")
         return
@@ -91,7 +91,7 @@ def show_videos_info(videos: list[VideoUrlMeta], selected: int):
 
 
 def show_audios_info(audios: list[AudioUrlMeta], selected: int):
-    """ 显示音频详细信息 """
+    """显示音频详细信息"""
     if not audios:
         Logger.info("不包含任何音频流")
         return
@@ -113,7 +113,7 @@ async def download_video_and_audio(
     audio_path: str,
     options: DownloaderOptions,
 ):
-    """ 下载音视频 """
+    """下载音视频"""
 
     buffers: list[Optional[AsyncFileBuffer]] = [None, None]
     sizes: list[Optional[int]] = [None, None]
@@ -160,7 +160,7 @@ def merge_video_and_audio(
     output_path: str,
     options: DownloaderOptions,
 ):
-    """ 合并音视频 """
+    """合并音视频"""
 
     ffmpeg = FFmpeg()
     Logger.info("开始合并……")
@@ -188,7 +188,7 @@ async def process_video_download(
     episode_data: EpisodeData,
     options: DownloaderOptions,
 ):
-    """ 处理单个视频下载任务，包含弹幕、字幕的存储 """
+    """处理单个视频下载任务，包含弹幕、字幕的存储"""
 
     videos = episode_data["videos"]
     audios = episode_data["audios"]

@@ -85,7 +85,7 @@ def main():
 
 
 def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[argparse.Namespace]:
-    """ 递归展平列表参数 """
+    """递归展平列表参数"""
     args = copy.copy(args)
     checker.check_basic_arguments(args)
     # 查看是否存在于 alias 中

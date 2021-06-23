@@ -20,21 +20,21 @@ class BilibiliId(NamedTuple):
 
 
 class AvId(BilibiliId):
-    """ AID 与 BVID 的统一，大多数 API 只需要其中一种即可正常工作 """
+    """AID 与 BVID 的统一，大多数 API 只需要其中一种即可正常工作"""
 
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
 
 
 class AId(AvId):
-    """ AID """
+    """AID"""
 
     def to_dict(self):
         return {"aid": self.value, "bvid": ""}
 
 
 class BvId(AvId):
-    """ BVID """
+    """BVID"""
 
     def to_dict(self):
         return {
@@ -44,35 +44,35 @@ class BvId(AvId):
 
 
 class CId(BilibiliId):
-    """ 视频 ID """
+    """视频 ID"""
 
     def to_dict(self):
         return {"cid": self.value}
 
 
 class EpisodeId(BilibiliId):
-    """ 番剧剧集 ID """
+    """番剧剧集 ID"""
 
     def to_dict(self):
         return {"episode_id": self.value}
 
 
 class MediaId(BilibiliId):
-    """ 番剧 ID """
+    """番剧 ID"""
 
     def to_dict(self):
         return {"media_id": self.value}
 
 
 class SeasonId(BilibiliId):
-    """ 番剧（季） ID """
+    """番剧（季） ID"""
 
     def to_dict(self):
         return {"season_id": self.value}
 
 
 class MId(BilibiliId):
-    """ 用户 ID """
+    """用户 ID"""
 
     def to_dict(self):
         return {"mid": self.value}

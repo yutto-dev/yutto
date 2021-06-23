@@ -29,15 +29,15 @@ def is_comment(line: str) -> bool:
 
 def bare_name_parser(bare_name: str) -> str:
     url: str = bare_name
-    if (match_obj := regexp_acg_video_av_bare.match(bare_name)) :
+    if match_obj := regexp_acg_video_av_bare.match(bare_name):
         url = f"https://www.bilibili.com/video/av{match_obj.group('aid')}"
-    elif (match_obj := regexp_acg_video_bv_bare.match(bare_name)) :
+    elif match_obj := regexp_acg_video_bv_bare.match(bare_name):
         url = f"https://www.bilibili.com/video/BV{match_obj.group('bvid')}"
-    elif (match_obj := regexp_bangumi_md_bare.match(bare_name)) :
+    elif match_obj := regexp_bangumi_md_bare.match(bare_name):
         url = f"https://www.bilibili.com/bangumi/media/md{match_obj.group('media_id')}"
-    elif (match_obj := regexp_bangumi_ep_bare.match(bare_name)) :
+    elif match_obj := regexp_bangumi_ep_bare.match(bare_name):
         url = f"https://www.bilibili.com/bangumi/play/ep{match_obj.group('episode_id')}"
-    elif (match_obj := regexp_bangumi_ss_bare.match(bare_name)) :
+    elif match_obj := regexp_bangumi_ss_bare.match(bare_name):
         url = f"https://www.bilibili.com/bangumi/play/ss{match_obj.group('season_id')}"
     return url
 
