@@ -350,7 +350,6 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 ### 2.0.0-beta
 
--  [ ] refactor: 尽可能使下载器成为独立模块
 -  [ ] feat: 支持 bare name (bare id, bare path)
 -  [ ] refactor: url 列表能够预线性展开
 -  [x] feat: 添加各种 return code
@@ -358,6 +357,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 ### future
 
+-  [ ] refactor: 尽可能使下载器成为独立模块
 -  [ ] feat: 字幕、弹幕嵌入视频支持
 -  [ ] refactor: 以插件形式支持更多音视频处理方面的功能，比如 autosub
 -  [ ] feat: 更多批下载支持（UP 主、收藏夹、稍后再看等）
