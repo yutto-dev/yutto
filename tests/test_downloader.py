@@ -1,12 +1,13 @@
-import pytest
 import os
-import aiohttp
 import shutil
 
-from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.fetcher import Fetcher
+import aiohttp
+import pytest
+
 from yutto.processor.downloader import slice_blocks
 from yutto.utils.asynclib import parallel_with_limit
+from yutto.utils.fetcher import Fetcher
+from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functiontools.sync import sync
 
 

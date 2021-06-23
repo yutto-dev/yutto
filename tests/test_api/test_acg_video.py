@@ -1,0 +1,73 @@
+import aiohttp
+import pytest
+
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles, get_acg_video_title
+from yutto.typing import BvId, CId
+from yutto.utils.fetcher import Fetcher
+from yutto.utils.functiontools.sync import sync
+
+
+@pytest.mark.api
+@sync
+async def test_get_acg_video_title():
+    avid = BvId("BV1vZ4y1M7mQ")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        title = await get_acg_video_title(session, avid)
+        assert title == "用 bilili 下载 B 站视频"
+
+
+@pytest.mark.api
+@sync
+async def test_get_acg_video_list():
+    avid = BvId("BV1vZ4y1M7mQ")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        acg_video_list = await get_acg_video_list(session, avid)
+        assert acg_video_list[0]["id"] == 1
+        assert acg_video_list[0]["name"] == "bilili 特性以及使用方法简单介绍"
+        assert acg_video_list[0]["cid"] == CId("222190584")
+
+        assert acg_video_list[1]["id"] == 2
+        assert acg_video_list[1]["name"] == "bilili 环境配置方法"
+        assert acg_video_list[1]["cid"] == CId("222200470")
+
+
+@pytest.mark.api
+@sync
+async def test_get_acg_video_playurl():
+    avid = BvId("BV1vZ4y1M7mQ")
+    cid = CId("222190584")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        playlist = await get_acg_video_playurl(session, avid, cid)
+        assert len(playlist[0]) > 0
+        assert len(playlist[1]) > 0
+
+
+@pytest.mark.api
+@sync
+async def test_get_acg_video_subtitles():
+    avid = BvId("BV1Ra411A7kN")
+    cid = CId("253246252")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        subtitles = await get_acg_video_subtitles(session, avid=avid, cid=cid)
+        assert len(subtitles) > 0
+        assert len(subtitles[0]["lines"]) > 0

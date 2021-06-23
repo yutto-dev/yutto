@@ -25,6 +25,6 @@ jobs:
           pip install poetry
           poetry install
 
-      - name: e2e test
+      - name: api and downloader test
         run: |
           poetry run pytest -m "(api or downloader) and not ci_skip"

@@ -1,6 +1,7 @@
-import pytest
 import subprocess
 import sys
+
+import pytest
 
 from yutto.__version__ import VERSION as yutto_version
 
@@ -18,7 +19,7 @@ def test_version_e2e():
 @pytest.mark.ci_skip
 def test_bangumi_e2e():
     short_bangumi = "https://www.bilibili.com/bangumi/play/ep100367"
-    p = subprocess.run(
+    subprocess.run(
         [PYTHON, "-m", "yutto", short_bangumi, "-q=16", "-w"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -29,7 +30,7 @@ def test_bangumi_e2e():
 @pytest.mark.e2e
 def test_acg_video_e2e():
     short_acg_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
-    p = subprocess.run(
+    subprocess.run(
         [PYTHON, "-m", "yutto", short_acg_video, "-q=16", "-w"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
