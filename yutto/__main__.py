@@ -95,7 +95,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
     args.url = bare_name_parser(args.url)
 
     # 是否为下载列表
-    if re.match(r"file://", args.url) or os.path.exists(args.url):
+    if re.match(r"file://", args.url) or os.path.isfile(args.url):
         args_list: list[argparse.Namespace] = []
         # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):

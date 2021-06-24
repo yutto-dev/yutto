@@ -5,6 +5,7 @@
    <a href="https://pypi.org/project/yutto/" target="_blank"><img src="https://img.shields.io/pypi/v/yutto?style=flat-square" alt="pypi"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/yutto?style=flat-square"></a>
    <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/github/license/SigureMo/yutto?style=flat-square"></a>
+   <a href="https://github.com/psf/black"><img alt="black" src="https://img.shields.io/badge/code%20style-black-000000?style=flat-square"></a>
    <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67?style=flat-square" alt="Gitmoji"></a>
 </p>
 
@@ -383,13 +384,13 @@ yutto <url> -b -p ^~3,10,12~14,16,-4~$
 
 ### 使用 uvloop 提升协程效率
 
-貌似 uvloop 可以提高协程效率，如果你是非 Windows 的话，可以试一下安装 uvloop：
+听说 uvloop 可以提高协程效率，如果你的系统非 Windows 的话，可以试一下安装 uvloop：
 
 ```bash
 pip install uvloop
 ```
 
-具体提升多少我也不太清楚啦，没有测过
+现在再运行就会发现不会弹出「没有安装 uvloop 的」 warning 了，至于具体提升多少我也不太清楚啦，没有测过
 
 ### 使用 url alias
 
@@ -447,7 +448,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
 
-最后，列表也是支持是支持嵌套的哦（虽然没什么用 2333）
+最后，列表也是支持嵌套的哦（虽然没什么用 2333）
 
 ## FAQ
 
