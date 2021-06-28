@@ -58,27 +58,23 @@ async def fetch_bangumi_data(
     videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
     subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    # fmt: off
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
         "title": "",
         "username": "",
     }
-    # fmt: on
     subpath_variables_base.update(subpath_variables)
     subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
     output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
-    # fmt: off
     return EpisodeData(
-        videos = videos,
-        audios = audios,
-        subtitles = subtitles,
-        danmaku = danmaku,
-        output_dir = output_dir,
-        filename = filename
+        videos=videos,
+        audios=audios,
+        subtitles=subtitles,
+        danmaku=danmaku,
+        output_dir=output_dir,
+        filename=filename,
     )
-    # fmt: on
 
 
 async def fetch_acg_video_data(
@@ -99,27 +95,23 @@ async def fetch_acg_video_data(
     videos, audios = await get_acg_video_playurl(session, avid, cid)
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    # fmt: off
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
         "title": "",
         "username": "",
     }
-    # fmt: on
     subpath_variables_base.update(subpath_variables)
     subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
     output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
-    # fmt: off
     return EpisodeData(
-        videos = videos,
-        audios = audios,
-        subtitles = subtitles,
-        danmaku = danmaku,
-        output_dir = output_dir,
-        filename = filename
+        videos=videos,
+        audios=audios,
+        subtitles=subtitles,
+        danmaku=danmaku,
+        output_dir=output_dir,
+        filename=filename,
     )
-    # fmt: on
 
 
 @sync

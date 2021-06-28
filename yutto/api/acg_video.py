@@ -25,13 +25,11 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVide
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
     return [
-        # fmt: off
         {
             "id": i + 1,
             "name": item["part"],
-            "cid": CId(str(item["cid"]))
+            "cid": CId(str(item["cid"])),
         }
-        # fmt: on
         for i, item in enumerate(res_json["data"])
     ]
 
@@ -87,13 +85,11 @@ async def get_acg_video_subtitles(session: ClientSession, avid: AvId, cid: CId) 
     if subtitle_json_text_match := re.search(r"<subtitle>(.+)</subtitle>", res_text):
         subtitle_json = json.loads(subtitle_json_text_match.group(1))
         return [
-            # fmt: off
             {
                 "lang": sub_info["lan_doc"],
-                "lines": (await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"]))["body"]
+                "lines": (await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"]))["body"],
             }
             for sub_info in subtitle_json["subtitles"]
-            # fmt: on
         ]
     else:
         return []

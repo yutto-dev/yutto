@@ -23,13 +23,11 @@ async def get_danmaku(
 ) -> DanmakuData:
     # 暂时默认使用 XML 源
     source_type = "xml" if save_type == "xml" or save_type == "ass" else "protobuf"
-    # fmt: off
     danmaku_data: DanmakuData = {
         "source_type": source_type,
         "save_type": save_type,
-        "data": []
+        "data": [],
     }
-    # fmt: on
 
     if source_type == "xml":
         danmaku_data["data"].append(await get_xml_danmaku(session, cid))

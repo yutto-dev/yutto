@@ -121,11 +121,9 @@ async def get_bangumi_subtitles(session: ClientSession, avid: AvId, cid: CId) ->
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
     subtitles_info = (await Fetcher.fetch_json(session, subtitile_url))["data"]["subtitle"]
     return [
-        # fmt: off
         {
             "lang": sub_info["lan_doc"],
-            "lines": (await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"]))["body"]
+            "lines": (await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"]))["body"],
         }
         for sub_info in subtitles_info["subtitles"]
-        # fmt: on
     ]

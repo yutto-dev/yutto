@@ -72,16 +72,15 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         speed_text_color: Color = "green" if is_fast else "cyan"
         speed_text_style: Optional[list[Style]] = ["bold"] if is_fast else None
         speed_text_suffix: str = "/⚡" if is_fast else "/s"
-        # fmt: off
+
         Logger.status.set(
             "{} {:>10}/{:>10} {:>12}  ".format(
                 bar,
                 size_format(size_now),
                 size_format(total_size),
-                colored_string(size_format(speed)+speed_text_suffix, fore=speed_text_color, style=speed_text_style),
+                colored_string(size_format(speed) + speed_text_suffix, fore=speed_text_color, style=speed_text_style),
             )
         )
-        # fmt: on
 
         t, size = t_now, size_now
         await asyncio.sleep(0.25)

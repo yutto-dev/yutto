@@ -164,17 +164,15 @@ def merge_video_and_audio(
 
     ffmpeg = FFmpeg()
     Logger.info("开始合并……")
-    # fmt: off
     args_list: list[list[str]] = [
         ["-i", video_path] if video is not None else [],
         ["-i", audio_path] if audio is not None else [],
         ["-vcodec", options["video_save_codec"]] if video is not None else [],
         ["-acodec", options["audio_save_codec"]] if video is not None else [],
-        ["-y", output_path]
+        ["-y", output_path],
     ]
 
-    ffmpeg.exec(functools.reduce(lambda prev, cur: prev+cur, args_list))
-    # fmt: on
+    ffmpeg.exec(functools.reduce(lambda prev, cur: prev + cur, args_list))
     Logger.info("合并完成！")
 
     if video is not None:
