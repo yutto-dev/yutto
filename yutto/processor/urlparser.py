@@ -32,7 +32,7 @@ def bare_name_parser(bare_name: str) -> str:
     if match_obj := regexp_acg_video_av_bare.match(bare_name):
         url = f"https://www.bilibili.com/video/av{match_obj.group('aid')}"
     elif match_obj := regexp_acg_video_bv_bare.match(bare_name):
-        url = f"https://www.bilibili.com/video/BV{match_obj.group('bvid')}"
+        url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}"
     elif match_obj := regexp_bangumi_md_bare.match(bare_name):
         url = f"https://www.bilibili.com/bangumi/media/md{match_obj.group('media_id')}"
     elif match_obj := regexp_bangumi_ep_bare.match(bare_name):
