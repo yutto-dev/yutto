@@ -164,6 +164,12 @@ def merge_video_and_audio(
 
     ffmpeg = FFmpeg()
     Logger.info("开始合并……")
+
+    if video is not None and video["codec"] == options["video_save_codec"]:
+        options["video_save_codec"] = "copy"
+    if audio is not None and audio["codec"] == options["audio_save_codec"]:
+        options["audio_save_codec"] = "copy"
+
     args_list: list[list[str]] = [
         ["-i", video_path] if video is not None else [],
         ["-i", audio_path] if audio is not None else [],

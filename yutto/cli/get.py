@@ -124,8 +124,9 @@ async def run(args: argparse.Namespace):
     ) as session:
         url: str = args.url
         url = await Fetcher.get_redirected_url(session, url)
+
+        # 匹配为番剧
         if match_obj := regexp_bangumi_ep.match(url):
-            # 匹配为番剧
             episode_id = EpisodeId(match_obj.group("episode_id"))
             season_id = await get_season_id_by_episode_id(session, episode_id)
             title = await get_bangumi_title(session, season_id)
@@ -136,8 +137,8 @@ async def run(args: argparse.Namespace):
                 Logger.error(e.message)
                 sys.exit(e.code.value)
 
+        # 匹配为投稿视频
         elif (match_obj := regexp_acg_video_av.match(url)) or (match_obj := regexp_acg_video_bv.match(url)):
-            # 匹配为投稿视频
             page: int = 1
             if "aid" in match_obj.groupdict().keys():
                 avid = AId(match_obj.group("aid"))

@@ -40,12 +40,13 @@ async def run(args: argparse.Namespace):
         url: str = args.url
         url = await Fetcher.get_redirected_url(session, url)
         download_list: list[EpisodeData] = []
+
+        # 匹配为番剧
         if (
             (match_obj := regexp_bangumi_ep.match(url))
             or (match_obj := regexp_bangumi_ss.match(url))
             or (match_obj := regexp_bangumi_md.match(url))
         ):
-            # 匹配为番剧
             if "episode_id" in match_obj.groupdict().keys():
                 episode_id = EpisodeId(match_obj.group("episode_id"))
                 season_id = await get_season_id_by_episode_id(session, episode_id)
@@ -73,8 +74,8 @@ async def run(args: argparse.Namespace):
                     continue
                 download_list.append(episode_data)
 
+        # 匹配为投稿视频
         elif (match_obj := regexp_acg_video_av.match(url)) or (match_obj := regexp_acg_video_bv.match(url)):
-            # 匹配为投稿视频
             if "aid" in match_obj.groupdict().keys():
                 avid = AId(match_obj.group("aid"))
             else:
@@ -96,8 +97,8 @@ async def run(args: argparse.Namespace):
                     continue
                 download_list.append(episode_data)
 
+        # 匹配为 UP 主个人空间
         elif match_obj := regexp_space_all.match(url):
-            # 匹配为 UP 主个人空间
             mid = MId(match_obj.group("mid"))
             username = await get_uploader_name(session, mid)
             Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
