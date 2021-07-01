@@ -1,0 +1,51 @@
+name: "🐛 Bug report"
+description: Report an issue with yutto
+title: "🐛 "
+labels: ["bug: pending triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        非常感谢你的 issue report (๑>؂<๑），为了提高我们定位错误来源，请尽可能完整地填写本 Issue 表格
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 问题简述
+      description: 详述你所遇到的问题（如有报错也请粘贴在这里）～
+      placeholder: |
+        如果方便，请添加 --debug 参数以提供更加详细的报错信息
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现方式
+      description: "请在这里提供你所使用/调用 yutto 的方式。如果与特定 url 有关，请直接在命令中提供该 url。"
+      placeholder: "注意在粘贴的命令中隐去所有隐私信息哦(*/ω＼*)"
+    validations:
+      required: true
+  - type: textarea
+    id: environment-info
+    attributes:
+      label: 环境信息
+      description: 请尽可能详细地供以下信息～
+      placeholder: 你的环境信息～
+      value: |
+        -  OS: 操作系统类型及其版本号
+        -  Python: Python 版本号 (`python --version`)
+        -  yutto: yutto 版本号 (`yutto -v`)
+        -  FFmpeg: FFmpeg 版本号 (`ffmpeg -version`)
+        -  如果是显示相关问题
+            -  Shell: Shell 类型 (`echo $SHELL`)
+            -  Terminal: 终端类型
+        -  Others: 其它信息
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 额外信息
+      description:
+      placeholder: 如有额外的信息，请填写在这里～
+    validations:
+      required: false

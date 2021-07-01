@@ -7,7 +7,7 @@ body:
     id: feature-description
     attributes:
       label: 特性描述
-      description: "详述你所需要的特性"
+      description: 详述你所需要的特性～
       placeholder: "(๑>؂<๑）"
     validations:
       required: true
@@ -15,8 +15,8 @@ body:
     id: suggested-solution
     attributes:
       label: 建议解决方案
-      description: "你所建议的解决方案"
-      placeholder: "(*/ω＼*)"
+      description: 你所建议的解决方案～
+      placeholder: "ː̗̀(o›ᴗ‹o)ː̖́"
     validations:
       required: false
   - type: textarea
@@ -27,11 +27,3 @@ body:
       placeholder: "ヾ(❀^ω^)ﾉﾞ"
     validations:
       required: false
-  - type: checkboxes
-    id: willingness-to-contribute
-    attributes:
-      label: 是否愿意为此贡献代码
-      description: 欢迎贡献～
-      options:
-        - label: "我愿意(*/ω＼*)～"
-          required: false
