@@ -35,7 +35,7 @@ poetry install
 poetry run yutto -v
 ```
 
-注意本地调试请不要直接使用 `yutto` 命令，那只会运行使用从 pip 安装的 yutto，而不是本地调试的 yutto。
+注意本地调试请不要直接使用 `yutto` 命令，那只会运行从 pip 安装的 yutto，而不是本地调试的 yutto。
 
 ## 模块结构
 

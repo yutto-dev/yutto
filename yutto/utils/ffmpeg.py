@@ -37,18 +37,26 @@ class FFmpeg(object, metaclass=Singleton):
 
     @cached_property
     def video_encodecs(self) -> list[str]:
-        output = self.exec(["-codecs"]).stdout.decode()
         results: list[str] = []
+        output = self.exec(["-codecs"]).stdout.decode()
         for line in output.split("\n"):
             if match_obj := re.match(r"^\s*[D\.]EV[I\.][L\.][S\.] (?P<vcodec>\S+)", line):
                 results.append(match_obj.group("vcodec"))
+        output = self.exec(["-encoders"]).stdout.decode()
+        for line in output.split("\n"):
+            if match_obj := re.match(r"^\s*V[F\.][S\.][X\.][B\.][D\.] (?P<encoder>\S+)", line):
+                results.append(match_obj.group("encoder"))
         return results
 
     @cached_property
     def audio_encodecs(self) -> list[str]:
-        output = self.exec(["-codecs"]).stdout.decode()
         results: list[str] = []
+        output = self.exec(["-codecs"]).stdout.decode()
         for line in output.split("\n"):
-            if match_obj := re.match(r"^\s*[D\.]EA[I\.][L\.][S\.] (?P<vcodec>\S+)", line):
-                results.append(match_obj.group("vcodec"))
+            if match_obj := re.match(r"^\s*[D\.]EA[I\.][L\.][S\.] (?P<acodec>\S+)", line):
+                results.append(match_obj.group("acodec"))
+        output = self.exec(["-encoders"]).stdout.decode()
+        for line in output.split("\n"):
+            if match_obj := re.match(r"^\s*A[F\.][S\.][X\.][B\.][D\.] (?P<encoder>\S+)", line):
+                results.append(match_obj.group("encoder"))
         return results
