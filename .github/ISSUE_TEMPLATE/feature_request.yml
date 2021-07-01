@@ -1,0 +1,37 @@
+name: "✨ New feature proposal"
+description: Propose a new feature to be added to yutto
+title: "✨ "
+labels: ["enhancement: pending triage"]
+body:
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: 特性描述
+      description: "详述你所需要的特性"
+      placeholder: "(๑>؂<๑）"
+    validations:
+      required: true
+  - type: textarea
+    id: suggested-solution
+    attributes:
+      label: 建议解决方案
+      description: "你所建议的解决方案"
+      placeholder: "(*/ω＼*)"
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 额外信息
+      description:
+      placeholder: "ヾ(❀^ω^)ﾉﾞ"
+    validations:
+      required: false
+  - type: checkboxes
+    id: willingness-to-contribute
+    attributes:
+      label: 是否愿意为此贡献代码
+      description: 欢迎贡献～
+      options:
+        - label: "我愿意(*/ω＼*)～"
+          required: false
