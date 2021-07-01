@@ -6,13 +6,9 @@ from urllib.parse import quote, unquote
 import aiohttp
 from aiohttp import ClientSession
 
+from yutto.exceptions import MaxRetryError
 from yutto.utils.console.logger import Logger
 from yutto.utils.file_buffer import AsyncFileBuffer
-
-
-class MaxRetryError(Exception):
-    pass
-
 
 T = TypeVar("T")
 
@@ -31,7 +27,7 @@ class MaxRetry:
                     Logger.warning("抓取超时，正在重试")
                 finally:
                     retry -= 1
-            raise MaxRetryError()
+            raise MaxRetryError("超出最大重试次数！")
 
         return connect_n_times
 
