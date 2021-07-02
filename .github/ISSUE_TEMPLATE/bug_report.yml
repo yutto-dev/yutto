@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        非常感谢你的 issue report (๑>؂<๑），为了提高我们定位错误来源，请尽可能完整地填写本 Issue 表格
+        非常感谢你的 issue report (๑>؂<๑），为了使我们能够更快地定位错误来源，请尽可能完整地填写本 Issue 表格
   - type: textarea
     id: bug-description
     attributes:

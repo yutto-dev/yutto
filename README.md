@@ -224,7 +224,7 @@ rimuru2=https://www.bilibili.com/bangumi/play/ss36170/
 rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 ```
 
-比如将上述文件存储到 `~/.yutto_alias`，则通过以下命令即可解析该文件：
+比如将上述内容存储到 `~/.yutto_alias`，则通过以下命令即可解析该文件：
 
 ```bash
 yutto rimuru1 --batch --alias-file='~/.yutto_alias'
@@ -359,7 +359,7 @@ yutto <url> -b -p ^~3,10,12~14,16,-4~$
 -  播放列表生成
 -  源格式修改功能（不再支持 flv 源视频下载，如果仍有视频不支持 dash 源，请继续使用 bilili）
 -  对 Python3.8 的支持，最低支持 Python3.9
--  取消下载询问
+-  下载询问
 
 ### 默认行为的修改
 

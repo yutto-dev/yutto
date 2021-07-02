@@ -1,4 +1,5 @@
-version := `poetry run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+VERSION := `poetry run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+DOCKER_NAME := "siguremo/yutto:latest"
 
 run:
   poetry run python -m yutto
@@ -15,7 +16,7 @@ build:
 
 publish:
   poetry publish --build
-  git tag "v{{version}}"
+  git tag "v{{VERSION}}"
   git push --tags
   just clean-builds
 
