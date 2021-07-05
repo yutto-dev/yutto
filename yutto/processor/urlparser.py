@@ -13,8 +13,8 @@ regexp_bangumi_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<
 regexp_bangumi_ss = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ss(?P<season_id>\d+)")
 regexp_space_all = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)(/video)?")
 
-regexp_acg_video_av_bare = re.compile(r"av(?P<aid>\d+)")
-regexp_acg_video_bv_bare = re.compile(r"(?P<bvid>(bv|BV)\w+)")
+regexp_acg_video_av_bare = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
+regexp_acg_video_bv_bare = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
 regexp_bangumi_md_bare = re.compile(r"md(?P<media_id>\d+)")
 regexp_bangumi_ep_bare = re.compile(r"ep(?P<episode_id>\d+)")
 regexp_bangumi_ss_bare = re.compile(r"ss(?P<season_id>\d+)")
@@ -30,9 +30,15 @@ def is_comment(line: str) -> bool:
 def bare_name_parser(bare_name: str) -> str:
     url: str = bare_name
     if match_obj := regexp_acg_video_av_bare.match(bare_name):
-        url = f"https://www.bilibili.com/video/av{match_obj.group('aid')}"
+        page: int = 1
+        if match_obj.group("page") is not None:
+            page = int(match_obj.group("page"))
+        url = f"https://www.bilibili.com/video/av{match_obj.group('aid')}?p={page}"
     elif match_obj := regexp_acg_video_bv_bare.match(bare_name):
-        url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}"
+        page: int = 1
+        if match_obj.group("page") is not None:
+            page = int(match_obj.group("page"))
+        url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}?p={page}"
     elif match_obj := regexp_bangumi_md_bare.match(bare_name):
         url = f"https://www.bilibili.com/bangumi/media/md{match_obj.group('media_id')}"
     elif match_obj := regexp_bangumi_ep_bare.match(bare_name):

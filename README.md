@@ -31,6 +31,7 @@ pip install --pre yutto
 
 ```bash
 git clone https://github.com/SigureMo/yutto.git
+cd yutto/
 pip install poetry
 poetry build
 pip install ./dist/yutto-*.whl
