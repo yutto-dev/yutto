@@ -27,7 +27,7 @@ uvloop = { version="0.15.3", optional=true }
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
-black = "^21.6b0"
+black = "^21.7b0"
 
 [tool.poetry.extras]
 uvloop = ["uvloop"]
