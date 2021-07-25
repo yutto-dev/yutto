@@ -38,6 +38,14 @@ async def get_season_id_by_episode_id(session: ClientSession, episode_id: Episod
 
 
 async def get_bangumi_title(session: ClientSession, season_id: SeasonId) -> str:
+    play_url = "https://api.bilibili.com/pgc/view/web/season?season_id={season_id}".format(season_id=season_id)
+    resp = await Fetcher.fetch_json(session, play_url)
+    title = resp["result"]["title"]
+    return title
+
+
+async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonId) -> str:
+    """原来用的从 HTML 里解析标题，但由于 HTML 经常改版，所以暂时弃用，未来可能删掉"""
     play_url = "https://www.bilibili.com/bangumi/play/ss{season_id}".format(season_id=season_id)
     regex_title = re.compile(r'<a href=".+" target="_blank" title="(.*?)" class="media-title">(?P<title>.*?)</a>')
     if match_obj := regex_title.search(await Fetcher.fetch_text(session, play_url)):
