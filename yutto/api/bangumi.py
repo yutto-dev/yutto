@@ -30,7 +30,7 @@ async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -
 
 async def get_season_id_by_episode_id(session: ClientSession, episode_id: EpisodeId) -> SeasonId:
     home_url = "https://www.bilibili.com/bangumi/play/ep{episode_id}".format(episode_id=episode_id)
-    season_id = SeasonId
+    season_id = SeasonId("")
     regex_season_id = re.compile(r'"id":\d+,"ssId":(\d+)')
     if match_obj := regex_season_id.search(await Fetcher.fetch_text(session, home_url)):
         season_id = match_obj.group(1)
