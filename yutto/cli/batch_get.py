@@ -10,9 +10,15 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.api.space import get_uploader_name, get_uploader_space_all_videos_avids, get_fav_ids, get_fav_info
+from yutto.api.space import (
+    get_uploader_name,
+    get_uploader_space_all_videos_avids,
+    get_fav_ids,
+    get_fav_info,
+    get_all_favs,
+)
 from yutto.cli.get import fetch_acg_video_data, fetch_bangumi_data
-from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError, NotFoundError
 from yutto.processor.downloader import process_video_download
 from yutto.processor.filter import parse_episodes
 from yutto.processor.urlparser import (
@@ -23,6 +29,7 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ss,
     regexp_space_all,
     regexp_favourite,
+    regexp_favourite_all,
 )
 from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId, MediaId, MId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
@@ -51,8 +58,13 @@ async def run(args: argparse.Namespace):
         ):
             acg_video_with_avid_list: list[tuple[AvId, AcgVideoListItem]] = []
             for avid in avid_list:
-                acg_video_part_list = await get_acg_video_list(session, avid)
-                acg_video_with_avid_list += list(zip([avid] * len(acg_video_part_list), acg_video_part_list))
+                Logger.debug(f"正在获取稿件 {avid} 的分P..")
+                try:
+                    acg_video_part_list = await get_acg_video_list(session, avid)
+                    acg_video_with_avid_list += list(zip([avid] * len(acg_video_part_list), acg_video_part_list))
+                except NotFoundError as e:
+                    Logger.error(e.message)
+
             for i, (avid, acg_video_item) in enumerate(acg_video_with_avid_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_with_avid_list)))
                 title = await get_acg_video_title(session, avid)
@@ -144,6 +156,24 @@ async def run(args: argparse.Namespace):
                 {"username": username, "fav_title": fav_info["title"]},
                 "{username}的收藏夹{fav_title}/{title}/{name}",
             )
+
+        # 匹配为 UP 主全部收藏
+        elif match_obj := regexp_favourite_all.match(url):
+            mid = MId(match_obj.group("mid"))
+            username = await get_uploader_name(session, mid)
+            Logger.custom(username, Badge("UP 主", fore="black", back="cyan"))
+            fav_list = await get_all_favs(session, mid)
+
+            for fav in fav_list:
+                Logger.info(f"即将下载收藏夹: {fav['title']}")
+                Logger.info(f"稿件数量: {fav['media_count']}")
+                avid_list = await get_fav_ids(session, fav["id"])
+                await extract_acg_video_with_avid_list(
+                    mid,
+                    avid_list,
+                    {"username": username, "fav_title": fav["title"]},
+                    "{username}的收藏夹{fav_title}/{title}/{name}",
+                )
 
         # 匹配为 UP 主个人空间
         elif match_obj := regexp_space_all.match(url):

@@ -35,7 +35,7 @@ async def get_fav_info(session: ClientSession, fid: str) -> FavouriteMetadata:
     api = f"https://api.bilibili.com/x/v3/fav/folder/info?media_id={fid}"
     json_data = await Fetcher.fetch_json(session, api)
     data = json_data["data"]
-    return FavouriteMetadata(media_count=data["media_count"], title=data["title"])
+    return FavouriteMetadata(media_count=data["media_count"], title=data["title"], id=data["id"])
 
 
 async def get_fav_ids(session: ClientSession, fid: str) -> list[AvId]:
@@ -43,3 +43,14 @@ async def get_fav_ids(session: ClientSession, fid: str) -> list[AvId]:
     json_data = await Fetcher.fetch_json(session, api)
     rtn: list[AvId] = [BvId(video_info["bvid"]) for video_info in json_data["data"]]
     return rtn
+
+
+async def get_all_favs(session: ClientSession, mid: MId) -> list[FavouriteMetadata]:
+    api = f"https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={mid}"
+    json_data = await Fetcher.fetch_json(session, api)
+    if not json_data["data"]:
+        return []
+    return [
+        FavouriteMetadata(media_count=data["media_count"], title=data["title"], id=data["id"])
+        for data in json_data["data"]["list"]
+    ]

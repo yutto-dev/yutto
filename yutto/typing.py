@@ -125,6 +125,7 @@ class DownloaderOptions(TypedDict):
 
 
 class FavouriteMetadata(TypedDict):
+    id: str
     media_count: int
     title: str
 
