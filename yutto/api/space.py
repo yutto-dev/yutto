@@ -3,7 +3,7 @@ import random
 
 from aiohttp import ClientSession
 
-from yutto.typing import AvId, BvId, MId, FavouriteMetaData, FId
+from yutto.typing import AvId, BvId, FavouriteMetaData, FId, MId
 from yutto.utils.fetcher import Fetcher
 
 

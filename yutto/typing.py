@@ -2,8 +2,8 @@ from typing import NamedTuple, TypedDict
 
 from yutto.media.codec import AudioCodec, VideoCodec
 from yutto.media.quality import AudioQuality, VideoQuality
-from yutto.utils.subtitle import SubtitleData
 from yutto.utils.danmaku import DanmakuData
+from yutto.utils.subtitle import SubtitleData
 
 
 class BilibiliId(NamedTuple):
