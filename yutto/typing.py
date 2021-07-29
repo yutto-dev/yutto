@@ -78,6 +78,13 @@ class MId(BilibiliId):
         return {"mid": self.value}
 
 
+class FId(BilibiliId):
+    """收藏夹 ID"""
+
+    def to_dict(self):
+        return {"fid": self.value}
+
+
 class VideoUrlMeta(TypedDict):
     url: str
     mirrors: list[str]
@@ -124,9 +131,8 @@ class DownloaderOptions(TypedDict):
     num_workers: int
 
 
-class FavouriteMetadata(TypedDict):
-    id: str
-    media_count: int
+class FavouriteMetaData(TypedDict):
+    fid: FId
     title: str
 
 

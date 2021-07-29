@@ -129,9 +129,9 @@ async def run(args: argparse.Namespace):
         if match_obj := regexp_bangumi_ep.match(url):
             episode_id = EpisodeId(match_obj.group("episode_id"))
             season_id = await get_season_id_by_episode_id(session, episode_id)
-            title = await get_bangumi_title(session, season_id)
-            Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
             try:
+                title = await get_bangumi_title(session, season_id)
+                Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
                 episode_data = await fetch_bangumi_data(session, episode_id, None, args, {"title": title}, "{name}")
             except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                 Logger.error(e.message)

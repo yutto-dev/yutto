@@ -3,7 +3,7 @@ import random
 
 from aiohttp import ClientSession
 
-from yutto.typing import AvId, BvId, MId, FavouriteMetadata
+from yutto.typing import AvId, BvId, MId, FavouriteMetaData, FId
 from yutto.utils.fetcher import Fetcher
 
 
@@ -31,26 +31,22 @@ async def get_uploader_name(session: ClientSession, mid: MId) -> str:
     return uploader_info["data"]["name"]
 
 
-async def get_fav_info(session: ClientSession, fid: str) -> FavouriteMetadata:
-    api = f"https://api.bilibili.com/x/v3/fav/folder/info?media_id={fid}"
-    json_data = await Fetcher.fetch_json(session, api)
+async def get_favourite_info(session: ClientSession, fid: FId) -> FavouriteMetaData:
+    api = "https://api.bilibili.com/x/v3/fav/folder/info?media_id={fid}"
+    json_data = await Fetcher.fetch_json(session, api.format(fid=fid))
     data = json_data["data"]
-    return FavouriteMetadata(media_count=data["media_count"], title=data["title"], id=data["id"])
+    return FavouriteMetaData(title=data["title"], fid=FId(str(data["id"])))
 
 
-async def get_fav_ids(session: ClientSession, fid: str) -> list[AvId]:
-    api = f"https://api.bilibili.com/x/v3/fav/resource/ids?media_id={fid}"
-    json_data = await Fetcher.fetch_json(session, api)
-    rtn: list[AvId] = [BvId(video_info["bvid"]) for video_info in json_data["data"]]
-    return rtn
+async def get_favourite_avids(session: ClientSession, fid: FId) -> list[AvId]:
+    api = "https://api.bilibili.com/x/v3/fav/resource/ids?media_id={fid}"
+    json_data = await Fetcher.fetch_json(session, api.format(fid=fid))
+    return [BvId(video_info["bvid"]) for video_info in json_data["data"]]
 
 
-async def get_all_favs(session: ClientSession, mid: MId) -> list[FavouriteMetadata]:
-    api = f"https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={mid}"
-    json_data = await Fetcher.fetch_json(session, api)
+async def get_all_favourites(session: ClientSession, mid: MId) -> list[FavouriteMetaData]:
+    api = "https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={mid}"
+    json_data = await Fetcher.fetch_json(session, api.format(mid=mid))
     if not json_data["data"]:
         return []
-    return [
-        FavouriteMetadata(media_count=data["media_count"], title=data["title"], id=data["id"])
-        for data in json_data["data"]["list"]
-    ]
+    return [FavouriteMetaData(title=data["title"], fid=FId(str(data["id"]))) for data in json_data["data"]["list"]]

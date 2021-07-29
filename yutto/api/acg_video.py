@@ -14,6 +14,7 @@ from yutto.utils.fetcher import Fetcher
 class AcgVideoListItem(TypedDict):
     id: int
     name: str
+    avid: AvId
     cid: CId
 
 
@@ -28,6 +29,7 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVide
         {
             "id": i + 1,
             "name": item["part"],
+            "avid": avid,
             "cid": CId(str(item["cid"])),
         }
         for i, item in enumerate(res_json["data"])
