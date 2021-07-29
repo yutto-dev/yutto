@@ -12,6 +12,8 @@ regexp_bangumi_md = re.compile(r"https?://www\.bilibili\.com/bangumi/media/md(?P
 regexp_bangumi_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
 regexp_bangumi_ss = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ss(?P<season_id>\d+)")
 regexp_space_all = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)(/video)?")
+regexp_favourite_all = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist")
+regexp_favourite = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<fid>\d+)")
 
 regexp_acg_video_av_bare = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
 regexp_acg_video_bv_bare = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")

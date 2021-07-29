@@ -2,8 +2,8 @@ from typing import NamedTuple, TypedDict
 
 from yutto.media.codec import AudioCodec, VideoCodec
 from yutto.media.quality import AudioQuality, VideoQuality
-from yutto.utils.subtitle import SubtitleData
 from yutto.utils.danmaku import DanmakuData
+from yutto.utils.subtitle import SubtitleData
 
 
 class BilibiliId(NamedTuple):
@@ -78,6 +78,13 @@ class MId(BilibiliId):
         return {"mid": self.value}
 
 
+class FId(BilibiliId):
+    """收藏夹 ID"""
+
+    def to_dict(self):
+        return {"fid": self.value}
+
+
 class VideoUrlMeta(TypedDict):
     url: str
     mirrors: list[str]
@@ -122,6 +129,11 @@ class DownloaderOptions(TypedDict):
     overwrite: bool
     block_size: int
     num_workers: int
+
+
+class FavouriteMetaData(TypedDict):
+    fid: FId
+    title: str
 
 
 if __name__ == "__main__":

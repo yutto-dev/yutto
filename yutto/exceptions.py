@@ -14,6 +14,7 @@ class ErrorCode(Enum):
     WRONG_URL_ERROR = 14
     EPISODE_NOT_FOUND_ERROR = 15
     MAX_RETRY_ERROR = 16
+    NOT_FOUND_ERROR = 17
 
 
 class SuccessCode(Enum):
@@ -46,6 +47,10 @@ class UnSupportedTypeError(YuttoBaseException):
 
 class MaxRetryError(YuttoBaseException):
     code = ErrorCode.MAX_RETRY_ERROR
+
+
+class NotFoundError(YuttoBaseException):
+    code = ErrorCode.NOT_FOUND_ERROR
 
 
 def handleUncaughtException(exctype: Type[Exception], exception: Exception, trace: TracebackType):

@@ -3,16 +3,22 @@ import sys
 
 import aiohttp
 
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_title
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.api.space import get_uploader_name, get_uploader_space_all_videos_avids
+from yutto.api.space import (
+    get_all_favourites,
+    get_favourite_avids,
+    get_favourite_info,
+    get_uploader_name,
+    get_uploader_space_all_videos_avids,
+)
 from yutto.cli.get import fetch_acg_video_data, fetch_bangumi_data
-from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.processor.downloader import process_video_download
 from yutto.processor.filter import parse_episodes
 from yutto.processor.urlparser import (
@@ -21,9 +27,11 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ep,
     regexp_bangumi_md,
     regexp_bangumi_ss,
+    regexp_favourite,
+    regexp_favourite_all,
     regexp_space_all,
 )
-from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId, MediaId, MId, SeasonId
+from yutto.typing import AId, BvId, EpisodeData, EpisodeId, FId, MediaId, MId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
@@ -97,29 +105,94 @@ async def run(args: argparse.Namespace):
                     continue
                 download_list.append(episode_data)
 
+        # 匹配为收藏
+        elif match_obj := regexp_favourite.match(url):
+            mid = MId(match_obj.group("mid"))
+            fid = FId(match_obj.group("fid"))
+            username = await get_uploader_name(session, mid)
+            favourite_info = await get_favourite_info(session, fid)
+            Logger.custom(favourite_info["title"], Badge("收藏夹", fore="black", back="cyan"))
+
+            acg_video_list = [
+                acg_video_item
+                for avid in await get_favourite_avids(session, fid)
+                for acg_video_item in await get_acg_video_list(session, avid)
+            ]
+            for i, acg_video_item in enumerate(acg_video_list):
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+                try:
+                    title = await get_acg_video_title(session, acg_video_item["avid"])
+                    episode_data = await fetch_acg_video_data(
+                        session,
+                        acg_video_item["avid"],
+                        i + 1,
+                        acg_video_item,
+                        args,
+                        {"title": title, "username": username, "fav_title": favourite_info["title"]},
+                        "{username}的收藏夹/{fav_title}/{title}/{name}",
+                    )
+                except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
+                    Logger.error(e.message)
+                    continue
+                download_list.append(episode_data)
+
+        # 匹配为用户全部收藏
+        elif match_obj := regexp_favourite_all.match(url):
+            mid = MId(match_obj.group("mid"))
+            username = await get_uploader_name(session, mid)
+            Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
+
+            acg_video_list = [
+                (acg_video_item, fav["title"])
+                for fav in await get_all_favourites(session, mid)
+                for avid in await get_favourite_avids(session, fav["fid"])
+                for acg_video_item in await get_acg_video_list(session, avid)
+            ]
+
+            for i, (acg_video_item, fav_title) in enumerate(acg_video_list):
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+                try:
+                    title = await get_acg_video_title(session, acg_video_item["avid"])
+                    episode_data = await fetch_acg_video_data(
+                        session,
+                        acg_video_item["avid"],
+                        i + 1,
+                        acg_video_item,
+                        args,
+                        {"title": title, "username": username, "fav_title": fav_title},
+                        "{username}的收藏夹/{fav_title}/{title}/{name}",
+                    )
+                except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
+                    Logger.error(e.message)
+                    continue
+                download_list.append(episode_data)
+
         # 匹配为 UP 主个人空间
         elif match_obj := regexp_space_all.match(url):
             mid = MId(match_obj.group("mid"))
             username = await get_uploader_name(session, mid)
             Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
-            acg_video_with_avid_list: list[tuple[AvId, AcgVideoListItem]] = []
-            for avid in await get_uploader_space_all_videos_avids(session, mid):
-                acg_video_part_list = await get_acg_video_list(session, avid)
-                acg_video_with_avid_list += list(zip([avid] * len(acg_video_part_list), acg_video_part_list))
-            for i, (avid, acg_video_item) in enumerate(acg_video_with_avid_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_with_avid_list)))
-                title = await get_acg_video_title(session, avid)
+
+            acg_video_list = [
+                acg_video_item
+                for avid in await get_uploader_space_all_videos_avids(session, mid)
+                for acg_video_item in await get_acg_video_list(session, avid)
+            ]
+
+            for i, acg_video_item in enumerate(acg_video_list):
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
+                    title = await get_acg_video_title(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
                         session,
-                        avid,
+                        acg_video_item["avid"],
                         i + 1,
                         acg_video_item,
                         args,
                         {"title": title, "username": username},
                         "{username}的全部投稿视频/{title}/{name}",
                     )
-                except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
+                except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
                     continue
                 download_list.append(episode_data)

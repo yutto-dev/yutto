@@ -2,6 +2,7 @@ from typing import TypedDict
 
 from aiohttp import ClientSession
 
+from yutto.exceptions import NotFoundError
 from yutto.processor.urlparser import regexp_bangumi_ep
 from yutto.typing import AId, AvId, BvId, CId, EpisodeId
 from yutto.utils.fetcher import Fetcher
@@ -22,6 +23,8 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
     res_json = await Fetcher.fetch_json(session, info_api.format(**avid.to_dict()))
     res_json_data = res_json.get("data")
+    if res_json["code"] == 62002:
+        raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
     assert res_json_data is not None, "响应数据无 data 域"
     episode_id = EpisodeId("")
     if res_json_data.get("redirect_url") and (ep_match := regexp_bangumi_ep.match(res_json_data["redirect_url"])):

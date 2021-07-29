@@ -21,7 +21,7 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
 )
 from yutto.api.danmaku import get_danmaku
-from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError, NotFoundError
 from yutto.processor.downloader import process_video_download
 from yutto.processor.path_resolver import PathTemplateVariableDict, resolve_path_template
 from yutto.processor.urlparser import regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
@@ -129,9 +129,9 @@ async def run(args: argparse.Namespace):
         if match_obj := regexp_bangumi_ep.match(url):
             episode_id = EpisodeId(match_obj.group("episode_id"))
             season_id = await get_season_id_by_episode_id(session, episode_id)
-            title = await get_bangumi_title(session, season_id)
-            Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
             try:
+                title = await get_bangumi_title(session, season_id)
+                Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
                 episode_data = await fetch_bangumi_data(session, episode_id, None, args, {"title": title}, "{name}")
             except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                 Logger.error(e.message)
@@ -146,9 +146,9 @@ async def run(args: argparse.Namespace):
                 avid = BvId(match_obj.group("bvid"))
             if match_obj.group("page") is not None:
                 page = int(match_obj.group("page"))
-            title = await get_acg_video_title(session, avid)
-            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
             try:
+                title = await get_acg_video_title(session, avid)
+                Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
                 episode_data = await fetch_acg_video_data(
                     session,
                     avid,
@@ -158,7 +158,7 @@ async def run(args: argparse.Namespace):
                     {"title": title},
                     "{title}",
                 )
-            except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
+            except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                 Logger.error(e.message)
                 sys.exit(e.code.value)
 
