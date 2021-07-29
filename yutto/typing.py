@@ -124,6 +124,11 @@ class DownloaderOptions(TypedDict):
     num_workers: int
 
 
+class FavouriteMetadata(TypedDict):
+    media_count: int
+    title: str
+
+
 if __name__ == "__main__":
     aid = AId("add")
     cid = CId("xxx")
