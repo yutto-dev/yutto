@@ -31,6 +31,8 @@ def repair_filename(filename: str) -> str:
         r"[\001\002\003\004\005\006\007\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
         r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a]"
     )
+    # 尾部多个 .，转为省略号
+    regex_dots = re.compile(r'\.+$')
 
     # 由于部分内容可能是从 HTML 解析的，所以使用 html 反转义
     filename = unescape(filename)
@@ -38,6 +40,7 @@ def repair_filename(filename: str) -> str:
     filename = regex_spaces.sub(" ", filename)
     filename = regex_non_printable.sub("", filename)
     filename = filename.strip()
+    filename = regex_dots.sub("……", filename)
     if not filename:
         filename = "未命名文件_{:04}".format(_count)
         _count += 1
