@@ -108,6 +108,18 @@ class MultiLangSubtitle(TypedDict):
     lines: SubtitleData
 
 
+class MetadataInfo:
+    title: str
+    show_title: str
+    plot: str
+    thumb: str
+    premiered: str
+    dataadded: str
+    source: str = 'yutto'
+    original_filename: str
+
+
+
 class EpisodeData(TypedDict):
     videos: list[VideoUrlMeta]
     audios: list[AudioUrlMeta]
@@ -115,6 +127,7 @@ class EpisodeData(TypedDict):
     danmaku: DanmakuData
     output_dir: str
     filename: str
+    metadata: MetadataInfo
 
 
 class DownloaderOptions(TypedDict):
@@ -134,6 +147,9 @@ class DownloaderOptions(TypedDict):
 class FavouriteMetaData(TypedDict):
     fid: FId
     title: str
+
+
+metadata_type: list[str] = ['nfo']
 
 
 if __name__ == "__main__":

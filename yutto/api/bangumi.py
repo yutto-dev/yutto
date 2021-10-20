@@ -5,9 +5,11 @@ from aiohttp import ClientSession
 
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import VideoCodec
-from yutto.typing import AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
+from yutto.typing import AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta, \
+    MetadataInfo
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
 
 
 class BangumiListItem(TypedDict):
@@ -17,6 +19,7 @@ class BangumiListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
+    metadata: MetadataInfo
 
 
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
@@ -37,6 +40,15 @@ async def get_season_id_by_episode_id(session: ClientSession, episode_id: Episod
     return SeasonId(str(season_id))
 
 
+async def get_episode_data(session: ClientSession, episode_id: EpisodeId):
+    season_id = await get_season_id_by_episode_id(session, episode_id)
+    list = await get_bangumi_list(session, season_id)
+    for i, item in enumerate(list):
+        if item["episode_id"] == episode_id:
+            return item["metadata"]
+    return None
+
+
 async def get_bangumi_title(session: ClientSession, season_id: SeasonId) -> str:
     play_url = "https://api.bilibili.com/pgc/view/web/season?season_id={season_id}".format(season_id=season_id)
     resp = await Fetcher.fetch_json(session, play_url)
@@ -53,6 +65,25 @@ async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonI
     else:
         title = "呐，我也不知道是什么标题呢～"
     return title
+
+
+def parse_episode_data(item) -> MetadataInfo:
+    info = MetadataInfo()
+    info.title = item["long_title"]
+    info.show_title = item["share_copy"]
+    info.plot = item["share_copy"]
+    info.thumb = item["cover"]
+    info.premiered = get_time_str_by_stamp(item["pub_time"])
+    info.dataadded = get_time_str_by_now()
+
+    return {
+        "title": item["long_title"],
+        "show_title": item["share_copy"],
+        "plot": item["share_copy"],
+        "thumb": item["cover"],
+        "premiered": get_time_str_by_stamp(item["pub_time"]),
+        "dataadded": get_time_str_by_now()
+    }
 
 
 async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[BangumiListItem]:
@@ -75,6 +106,7 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[
             "episode_id": EpisodeId(str(item["id"])),
             "avid": BvId(item["bvid"]),
             "is_section": i >= len(result["episodes"]),
+            "metadata": parse_episode_data(item)
         }
         for i, item in enumerate(result["episodes"] + section_episodes)
     ]
