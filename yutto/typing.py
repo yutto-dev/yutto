@@ -108,16 +108,15 @@ class MultiLangSubtitle(TypedDict):
     lines: SubtitleData
 
 
-class MetadataInfo:
+class MetadataInfo(TypedDict):
     title: str
     show_title: str
     plot: str
     thumb: str
     premiered: str
     dataadded: str
-    source: str = 'yutto'
+    source: str
     original_filename: str
-
 
 
 class EpisodeData(TypedDict):

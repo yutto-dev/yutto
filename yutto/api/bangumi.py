@@ -68,22 +68,15 @@ async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonI
 
 
 def parse_episode_data(item) -> MetadataInfo:
-    info = MetadataInfo()
-    info.title = item["long_title"]
-    info.show_title = item["share_copy"]
-    info.plot = item["share_copy"]
-    info.thumb = item["cover"]
-    info.premiered = get_time_str_by_stamp(item["pub_time"])
-    info.dataadded = get_time_str_by_now()
 
-    return {
-        "title": item["long_title"],
-        "show_title": item["share_copy"],
-        "plot": item["share_copy"],
-        "thumb": item["cover"],
-        "premiered": get_time_str_by_stamp(item["pub_time"]),
-        "dataadded": get_time_str_by_now()
-    }
+    return MetadataInfo(
+        title=item["long_title"],
+        show_title=item["share_copy"],
+        plot=item["share_copy"],
+        thumb=item["cover"],
+        premiered=get_time_str_by_stamp(item["pub_time"]),
+        dataadded=get_time_str_by_now()
+    )
 
 
 async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[BangumiListItem]:
