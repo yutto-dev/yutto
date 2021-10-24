@@ -306,7 +306,7 @@ uvloop = ["uvloop"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.0"
-content-hash = "150ebfafc728291333b0b66e7375e9c9ede89407c0cf850e974308972f4dcb87"
+content-hash = "4052282640fe3b82a91f01b61e787208a879f0c771f6994a2adb0bbef050c9d3"
 
 [metadata.files]
 aiofiles = [
