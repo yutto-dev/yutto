@@ -36,7 +36,7 @@ class Fetcher:
     proxy: Optional[str] = None
     trust_env: bool = True
     headers: dict[str, str] = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36",
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
@@ -80,7 +80,11 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def get_redirected_url(cls, session: ClientSession, url: str) -> str:
-        async with session.get(url, proxy=Fetcher.proxy) as resp:
+        async with session.get(
+            url,
+            proxy=Fetcher.proxy,
+            ssl=False,
+        ) as resp:
             return str(resp.url)
 
     @classmethod
@@ -88,7 +92,12 @@ class Fetcher:
     async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
         headers = session.headers.copy()
         headers["Range"] = "bytes=0-1"
-        async with session.get(url, headers=headers, proxy=Fetcher.proxy) as resp:
+        async with session.get(
+            url,
+            headers=headers,
+            proxy=Fetcher.proxy,
+            ssl=False,
+        ) as resp:
             if resp.status == 206:
                 return int(resp.headers["Content-Range"].split("/")[-1])
             else:
@@ -116,7 +125,11 @@ class Fetcher:
                     offset + block_offset, offset + size - 1 if size is not None else ""
                 )
                 async with session.get(
-                    url, headers=headers, timeout=aiohttp.ClientTimeout(connect=5, sock_read=10), proxy=Fetcher.proxy
+                    url,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+                    proxy=Fetcher.proxy,
+                    ssl=False,
                 ) as resp:
                     if stream:
                         while True:
