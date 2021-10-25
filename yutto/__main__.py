@@ -57,7 +57,7 @@ def main():
     group_common.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
-    group_common.add_argument("--with-metadata", action="store_false", help="生成元数据文件")
+    group_common.add_argument("--with-metadata", action="store_true", help="生成元数据文件")
     group_common.add_argument("--metadata-type", default="nfo", choices=metadata_type, help="元数据文件类型，目前仅支持nfo")
 
     # 仅批量下载使用

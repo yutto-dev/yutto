@@ -5,8 +5,18 @@ from aiohttp import ClientSession
 
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import VideoCodec
-from yutto.typing import AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta, \
-    MetadataInfo
+from yutto.typing import (
+    AudioUrlMeta,
+    AvId,
+    BvId,
+    CId,
+    EpisodeId,
+    MediaId,
+    MultiLangSubtitle,
+    SeasonId,
+    VideoUrlMeta,
+    MetadataInfo,
+)
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
@@ -40,7 +50,7 @@ async def get_season_id_by_episode_id(session: ClientSession, episode_id: Episod
     return SeasonId(str(season_id))
 
 
-async def get_episode_data(session: ClientSession, episode_id: EpisodeId):
+async def get_bangumi_episode_metadata(session: ClientSession, episode_id: EpisodeId):
     season_id = await get_season_id_by_episode_id(session, episode_id)
     list = await get_bangumi_list(session, season_id)
     for i, item in enumerate(list):
@@ -75,7 +85,7 @@ def parse_episode_data(item) -> MetadataInfo:
         plot=item["share_copy"],
         thumb=item["cover"],
         premiered=get_time_str_by_stamp(item["pub_time"]),
-        dataadded=get_time_str_by_now()
+        dataadded=get_time_str_by_now(),
     )
 
 
@@ -99,7 +109,7 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[
             "episode_id": EpisodeId(str(item["id"])),
             "avid": BvId(item["bvid"]),
             "is_section": i >= len(result["episodes"]),
-            "metadata": parse_episode_data(item)
+            "metadata": parse_episode_data(item),
         }
         for i, item in enumerate(result["episodes"] + section_episodes)
     ]

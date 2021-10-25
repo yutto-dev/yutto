@@ -34,4 +34,3 @@ def save(dir: str, filename: str, data, encoding="utf8", custom_root="episodedet
     f = open(path, "w", encoding=encoding)
     f.write(pretty_content)
     f.close()
-

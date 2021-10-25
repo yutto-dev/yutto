@@ -148,7 +148,7 @@ class FavouriteMetaData(TypedDict):
     title: str
 
 
-metadata_type: list[str] = ['nfo']
+metadata_type: list[str] = ["nfo"]
 
 
 if __name__ == "__main__":
