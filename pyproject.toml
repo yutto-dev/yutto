@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yutto"
-version = "2.0.0-beta.4"
+version = "2.0.0-beta.5"
 description = "yutto 一个可爱且任性的 B 站视频下载器"
 authors = ["Nyakku Shigure <sigure.qaq@gmail.com>"]
 license = "GPL-3.0"
@@ -20,7 +20,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9.0"
-aiohttp = "^3.7.4.post0"
+aiohttp = "^3.7.4"
 aiofiles = "^0.7.0"
 biliass = "1.3.4"
 uvloop = { version = "0.16.0", optional = true }
