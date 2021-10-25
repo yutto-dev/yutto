@@ -75,6 +75,7 @@ async def fetch_bangumi_data(
         danmaku=danmaku,
         output_dir=output_dir,
         filename=filename,
+        metadata=bangumi_info["metadata"],
     )
 
 
@@ -168,9 +169,9 @@ async def run(args: argparse.Namespace):
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
         if args.with_metadata:
+            Logger.info("[{0}]正在生成【{1}】媒体描述文件".format(type, episode_data["filename"]))
             metadata_type = args.metadata_type
             save_episode_metadata_file(episode_data, metadata_type)
-            Logger.info("{0} 媒体文件({1})已生成.".format(episode_data['filename'], metadata_type))
 
         await process_video_download(
             session,
