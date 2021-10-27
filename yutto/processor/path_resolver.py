@@ -32,7 +32,7 @@ def repair_filename(filename: str) -> str:
         r"\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a]"
     )
     # 尾部多个 .，转为省略号
-    regex_dots = re.compile(r'\.+$')
+    regex_dots = re.compile(r"\.+$")
 
     # 由于部分内容可能是从 HTML 解析的，所以使用 html 反转义
     filename = unescape(filename)

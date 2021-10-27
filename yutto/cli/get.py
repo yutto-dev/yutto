@@ -30,6 +30,7 @@ from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
+from yutto.utils.metadata import save_episode_metadata_file
 
 
 async def fetch_bangumi_data(
@@ -74,6 +75,7 @@ async def fetch_bangumi_data(
         danmaku=danmaku,
         output_dir=output_dir,
         filename=filename,
+        metadata=bangumi_info["metadata"],
     )
 
 
@@ -165,6 +167,11 @@ async def run(args: argparse.Namespace):
         else:
             Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+
+        if args.with_metadata:
+            Logger.info("[{0}]正在生成【{1}】媒体描述文件".format(type, episode_data["filename"]))
+            metadata_type = args.metadata_type
+            save_episode_metadata_file(episode_data, metadata_type)
 
         await process_video_download(
             session,
