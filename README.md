@@ -17,9 +17,9 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 ## 安装预览版
 
-在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚无完整测试，不清楚是否可用）与 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
+在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
 
-当前 yutto 尚处于 beta 阶段，有任何建议尽管提出～～～
+当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/SigureMo/yutto/discussions) 提出～～～
 
 ### pip 安装
 
