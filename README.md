@@ -17,7 +17,7 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 ## 安装预览版
 
-在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚处于 beta，没有测试）与 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
+在此之前请确保安装 Python3.9（不支持 3.8 及以下，3.10 尚无完整测试，不清楚是否可用）与 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
 
 当前 yutto 尚处于 beta 阶段，有任何建议尽管提出～～～
 
@@ -284,14 +284,14 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 
 #### 生成媒体元数据文件
 
-- 参数 `--with-metadata`
-- 默认值 `False`
+-  参数 `--with-metadata`
+-  默认值 `False`
 
 #### 指定媒体元数据文件格式
 
-- 参数 `--metadata-type`
-- 可选值 `nfo`
-- 默认值 `nfo`
+-  参数 `--metadata-type`
+-  可选值 `nfo`
+-  默认值 `nfo`
 
 只有在`--with-metadata`参数开启时，格式参数才会生效。**目前只支持一种格式**
 
