@@ -46,6 +46,7 @@ def main():
     group_common.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
     group_common.add_argument("-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
     group_common.add_argument("-d", "--dir", default="./", help="下载目录，默认为运行目录")
+    group_common.add_argument("--tmp-dir", help="用来存放下载过程中临时文件的目录，默认为下载目录")
     group_common.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
     group_common.add_argument("-tp", "--subpath-template", default="{auto}", help="多级目录的存储路径模板")
     group_common.add_argument(

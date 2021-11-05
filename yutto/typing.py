@@ -125,6 +125,7 @@ class EpisodeData(TypedDict):
     subtitles: list[MultiLangSubtitle]
     danmaku: DanmakuData
     output_dir: str
+    tmp_dir: str
     filename: str
     metadata: MetadataInfo
 

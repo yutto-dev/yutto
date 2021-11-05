@@ -199,14 +199,15 @@ async def process_video_download(
     subtitles = episode_data["subtitles"]
     danmaku = episode_data["danmaku"]
     output_dir = episode_data["output_dir"]
+    tmp_dir = episode_data["tmp_dir"]
     filename = episode_data["filename"]
 
     Logger.info("开始处理视频 {}".format(filename))
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
-    output_path_no_ext = os.path.join(output_dir, filename)
-    video_path = output_path_no_ext + "_video.m4s"
-    audio_path = output_path_no_ext + "_audio.m4s"
+    if not os.path.isdir(tmp_dir):
+        os.makedirs(tmp_dir)
+    tmp_path_no_ext = os.path.join(tmp_dir, filename)
+    video_path = tmp_path_no_ext + "_video.m4s"
+    audio_path = tmp_path_no_ext + "_audio.m4s"
 
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
     audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
@@ -215,6 +216,9 @@ async def process_video_download(
     show_videos_info(videos, videos.index(video) if video is not None else -1)
     show_audios_info(audios, audios.index(audio) if audio is not None else -1)
 
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+    output_path_no_ext = os.path.join(output_dir, filename)
     output_format = ".mp4" if video is not None else ".aac"
     output_path = output_path_no_ext + output_format
     if os.path.exists(output_path):

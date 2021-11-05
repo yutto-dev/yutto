@@ -74,6 +74,7 @@ async def fetch_bangumi_data(
         subtitles=subtitles,
         danmaku=danmaku,
         output_dir=output_dir,
+        tmp_dir=args.tmp_dir or output_dir,
         filename=filename,
         metadata=bangumi_info["metadata"],
     )
@@ -112,6 +113,7 @@ async def fetch_acg_video_data(
         subtitles=subtitles,
         danmaku=danmaku,
         output_dir=output_dir,
+        tmp_dir=args.tmp_dir or output_dir,
         filename=filename,
     )
 
