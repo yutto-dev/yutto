@@ -1,14 +1,13 @@
-import datetime
 import time
 
 TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 def get_time_str_by_now():
-    now = datetime.datetime.now()
-    return now.strftime(TIME_FMT)
+    time_stamp_now = time.time()
+    return get_time_str_by_stamp(time_stamp_now)
 
 
-def get_time_str_by_stamp(stamp):
+def get_time_str_by_stamp(stamp: int):
     local_time = time.localtime(stamp)
     return time.strftime(TIME_FMT, local_time)

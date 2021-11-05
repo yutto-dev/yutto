@@ -1,5 +1,5 @@
 import re
-from typing import Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 from aiohttp import ClientSession
 
@@ -15,10 +15,10 @@ from yutto.typing import (
     MultiLangSubtitle,
     SeasonId,
     VideoUrlMeta,
-    MetadataInfo,
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
 
 
@@ -29,7 +29,7 @@ class BangumiListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
-    metadata: MetadataInfo
+    metadata: MetaData
 
 
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
@@ -77,18 +77,6 @@ async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonI
     return title
 
 
-def parse_episode_data(item) -> MetadataInfo:
-
-    return MetadataInfo(
-        title=item["long_title"],
-        show_title=item["share_copy"],
-        plot=item["share_copy"],
-        thumb=item["cover"],
-        premiered=get_time_str_by_stamp(item["pub_time"]),
-        dataadded=get_time_str_by_now(),
-    )
-
-
 async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[BangumiListItem]:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
     resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
@@ -109,7 +97,7 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[
             "episode_id": EpisodeId(str(item["id"])),
             "avid": BvId(item["bvid"]),
             "is_section": i >= len(result["episodes"]),
-            "metadata": parse_episode_data(item),
+            "metadata": _parse_bangumi_metadata(item),
         }
         for i, item in enumerate(result["episodes"] + section_episodes)
     ]
@@ -170,3 +158,17 @@ async def get_bangumi_subtitles(session: ClientSession, avid: AvId, cid: CId) ->
         }
         for sub_info in subtitles_info["subtitles"]
     ]
+
+
+def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
+
+    return MetaData(
+        title=item["long_title"],
+        show_title=item["share_copy"],
+        plot=item["share_copy"],
+        thumb=item["cover"],
+        premiered=get_time_str_by_stamp(item["pub_time"]),
+        dataadded=get_time_str_by_now(),
+        source="",  # TODO
+        original_filename="",  # TODO
+    )

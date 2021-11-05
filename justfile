@@ -34,6 +34,7 @@ clean:
   find . -name "*.srt" -print0 | xargs -0 rm -f
   find . -name "*.xml" -print0 | xargs -0 rm -f
   find . -name "*.ass" -print0 | xargs -0 rm -f
+  find . -name "*.nfo" -print0 | xargs -0 rm -f
   find . -name "*.pb" -print0 | xargs -0 rm -f
   rm -rf .pytest_cache/
   rm -rf .mypy_cache/

@@ -126,6 +126,7 @@ dmypy.json
 *.pb
 *.ass
 *.srt
+*.nfo
 
 # test files
 *.test.py

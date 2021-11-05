@@ -8,7 +8,7 @@ import aiohttp
 from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import filter_none_value, select_audio, select_video
 from yutto.processor.progressbar import show_progress
-from yutto.typing import AudioUrlMeta, VideoUrlMeta, EpisodeData, DownloaderOptions
+from yutto.typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
@@ -16,6 +16,7 @@ from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
+from yutto.utils.metadata import write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 
@@ -198,6 +199,7 @@ async def process_video_download(
     audios = episode_data["audios"]
     subtitles = episode_data["subtitles"]
     danmaku = episode_data["danmaku"]
+    metadata = episode_data["metadata"]
     output_dir = episode_data["output_dir"]
     tmp_dir = episode_data["tmp_dir"]
     filename = episode_data["filename"]
@@ -251,6 +253,11 @@ async def process_video_download(
             video["width"] if video is not None else 0,
         )
         Logger.custom("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan"))
+
+    # 保存媒体描述文件
+    if metadata is not None:
+        write_metadata(metadata, output_path)
+        Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     # 下载视频 / 音频
     await download_video_and_audio(session, video, video_path, audio, audio_path, options)

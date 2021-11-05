@@ -35,7 +35,6 @@ from yutto.typing import AId, BvId, EpisodeData, EpisodeId, FId, MediaId, MId, S
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
-from yutto.utils.metadata import save_episode_metadata_file
 
 
 @sync
@@ -201,15 +200,6 @@ async def run(args: argparse.Namespace):
         else:
             Logger.error("url 不正确～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
-
-        # 生成metadata file
-        if args.with_metadata:
-            type = args.metadata_type
-            for i, episode_data in enumerate(download_list):
-                Logger.info(
-                    "[{0}/{1}][{2}]正在生成【{3}】媒体描述文件".format(i, len(download_list), type, episode_data["filename"])
-                )
-                save_episode_metadata_file(episode_data, type)
 
         for i, episode_data in enumerate(download_list):
             Logger.custom(

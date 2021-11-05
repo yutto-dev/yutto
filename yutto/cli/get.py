@@ -30,7 +30,6 @@ from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools.sync import sync
-from yutto.utils.metadata import save_episode_metadata_file
 
 
 async def fetch_bangumi_data(
@@ -59,6 +58,7 @@ async def fetch_bangumi_data(
     videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
     subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
+    metadata = bangumi_info["metadata"] if args.with_metadata else None
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
@@ -73,10 +73,10 @@ async def fetch_bangumi_data(
         audios=audios,
         subtitles=subtitles,
         danmaku=danmaku,
+        metadata=metadata,
         output_dir=output_dir,
         tmp_dir=args.tmp_dir or output_dir,
         filename=filename,
-        metadata=bangumi_info["metadata"],
     )
 
 
@@ -98,6 +98,10 @@ async def fetch_acg_video_data(
     videos, audios = await get_acg_video_playurl(session, avid, cid)
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
+    # TODO: 支持投稿视频的 metadata 文件生成
+    if args.with_metadata:
+        Logger.warning("目前仅支持番剧 metadata 生成")
+    metadata = None
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
@@ -112,6 +116,7 @@ async def fetch_acg_video_data(
         audios=audios,
         subtitles=subtitles,
         danmaku=danmaku,
+        metadata=metadata,
         output_dir=output_dir,
         tmp_dir=args.tmp_dir or output_dir,
         filename=filename,
@@ -169,11 +174,6 @@ async def run(args: argparse.Namespace):
         else:
             Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
-
-        if args.with_metadata:
-            Logger.info("[{0}]正在生成【{1}】媒体描述文件".format(type, episode_data["filename"]))
-            metadata_type = args.metadata_type
-            save_episode_metadata_file(episode_data, metadata_type)
 
         await process_video_download(
             session,

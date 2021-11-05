@@ -1,9 +1,10 @@
-from typing import NamedTuple, TypedDict
+from typing import NamedTuple, TypedDict, Optional
 
 from yutto.media.codec import AudioCodec, VideoCodec
 from yutto.media.quality import AudioQuality, VideoQuality
 from yutto.utils.danmaku import DanmakuData
 from yutto.utils.subtitle import SubtitleData
+from yutto.utils.metadata import MetaData
 
 
 class BilibiliId(NamedTuple):
@@ -108,26 +109,15 @@ class MultiLangSubtitle(TypedDict):
     lines: SubtitleData
 
 
-class MetadataInfo(TypedDict):
-    title: str
-    show_title: str
-    plot: str
-    thumb: str
-    premiered: str
-    dataadded: str
-    source: str
-    original_filename: str
-
-
 class EpisodeData(TypedDict):
     videos: list[VideoUrlMeta]
     audios: list[AudioUrlMeta]
     subtitles: list[MultiLangSubtitle]
+    metadata: Optional[MetaData]
     danmaku: DanmakuData
     output_dir: str
     tmp_dir: str
     filename: str
-    metadata: MetadataInfo
 
 
 class DownloaderOptions(TypedDict):
@@ -147,9 +137,6 @@ class DownloaderOptions(TypedDict):
 class FavouriteMetaData(TypedDict):
     fid: FId
     title: str
-
-
-metadata_type: list[str] = ["nfo"]
 
 
 if __name__ == "__main__":
