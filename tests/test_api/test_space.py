@@ -14,6 +14,7 @@ from yutto.utils.functiontools.sync import sync
 
 
 @pytest.mark.api
+@pytest.mark.ci_skip
 @sync
 async def test_get_uploader_space_all_videos_avids():
     mid = MId("100969474")
