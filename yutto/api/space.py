@@ -1,5 +1,4 @@
 import math
-import random
 
 from aiohttp import ClientSession
 
