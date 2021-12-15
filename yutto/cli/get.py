@@ -29,7 +29,7 @@ from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functiontools.sync import sync
+from yutto.utils.functiontools import sync
 
 
 async def fetch_bangumi_data(

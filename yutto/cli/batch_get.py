@@ -34,7 +34,7 @@ from yutto.processor.urlparser import (
 from yutto.typing import AId, BvId, EpisodeData, EpisodeId, FId, MediaId, MId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functiontools.sync import sync
+from yutto.utils.functiontools import sync
 
 
 @sync

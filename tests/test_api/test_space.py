@@ -10,11 +10,10 @@ from yutto.api.space import (
 )
 from yutto.typing import AId, BvId, FId, MId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functiontools.sync import sync
+from yutto.utils.functiontools import sync
 
 
 @pytest.mark.api
-@pytest.mark.ci_skip
 @sync
 async def test_get_uploader_space_all_videos_avids():
     mid = MId("100969474")

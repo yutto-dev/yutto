@@ -8,7 +8,7 @@ from yutto.processor.downloader import slice_blocks
 from yutto.utils.asynclib import parallel_with_limit
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.functiontools.sync import sync
+from yutto.utils.functiontools import sync
 
 
 @pytest.mark.downloader
@@ -19,25 +19,25 @@ async def test_1_5_M_downloader():
     video_path = os.path.join(test_dir, "test_1_5_M.mp4")
     if not os.path.exists(test_dir):
         os.mkdir(test_dir)
-    buffer = await AsyncFileBuffer.create(video_path, overwrite=False)
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
-    ) as session:
-        size = await Fetcher.get_size(session, url)
-        task_funcs = [
-            Fetcher.download_file_with_offset(session, url, [], buffer, offset, block_size)
-            for offset, block_size in slice_blocks(buffer.written_size, size, 1 * 1024 * 1024)
-        ]
+    async with await AsyncFileBuffer(video_path, overwrite=False) as buffer:
+        async with aiohttp.ClientSession(
+            headers=Fetcher.headers,
+            cookies=Fetcher.cookies,
+            trust_env=Fetcher.trust_env,
+            timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+        ) as session:
+            size = await Fetcher.get_size(session, url)
+            task_funcs = [
+                Fetcher.download_file_with_offset(session, url, [], buffer, offset, block_size)
+                for offset, block_size in slice_blocks(buffer.written_size, size, 1 * 1024 * 1024)
+            ]
 
-        tasks = parallel_with_limit(task_funcs, num_workers=4)
-        print("开始下载……")
-        for task in tasks:
-            await task
-        print("下载完成！")
-        assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
+            tasks = parallel_with_limit(task_funcs, num_workers=4)
+            print("开始下载……")
+            for task in tasks:
+                await task
+            print("下载完成！")
+            assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
     shutil.rmtree(test_dir)
 
 
@@ -49,20 +49,20 @@ async def test_1_5_M_no_slice_downloader():
     video_path = os.path.join(test_dir, "test_1_5_M.mp4")
     if not os.path.exists(test_dir):
         os.mkdir(test_dir)
-    buffer = await AsyncFileBuffer.create(video_path, overwrite=False)
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
-    ) as session:
-        size = await Fetcher.get_size(session, url)
-        task_funcs = [Fetcher.download_file_with_offset(session, url, [], buffer, 0, size)]
+    async with await AsyncFileBuffer(video_path, overwrite=False) as buffer:
+        async with aiohttp.ClientSession(
+            headers=Fetcher.headers,
+            cookies=Fetcher.cookies,
+            trust_env=Fetcher.trust_env,
+            timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+        ) as session:
+            size = await Fetcher.get_size(session, url)
+            task_funcs = [Fetcher.download_file_with_offset(session, url, [], buffer, 0, size)]
 
-        tasks = parallel_with_limit(task_funcs, num_workers=4)
-        print("开始下载……")
-        for task in tasks:
-            await task
-        print("下载完成！")
-        assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
+            tasks = parallel_with_limit(task_funcs, num_workers=4)
+            print("开始下载……")
+            for task in tasks:
+                await task
+            print("下载完成！")
+            assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
     shutil.rmtree(test_dir)

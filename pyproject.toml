@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "yutto"
 version = "2.0.0-beta.6"
-description = "yutto 一个可爱且任性的 B 站视频下载器"
+description = "🧊 一个可爱且任性的 B 站视频下载器"
 authors = ["Nyakku Shigure <sigure.qaq@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"

@@ -1,9 +1,12 @@
 import heapq
 import os
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Type
+from yutto.utils.functiontools import aobject
 
 import aiofiles
+from types import TracebackType
+
 
 from yutto.utils.console.logger import Logger
 
@@ -14,22 +17,38 @@ class BufferChunk:
     data: bytes = field(compare=False)
 
 
-class AsyncFileBuffer:
-    def __init__(self):
-        self.file_path = ""
-        self.file_obj: Optional[aiofiles.threadpool.binary.AsyncBufferedIOBase] = None
-        self.buffer = list[BufferChunk]()
-        self.written_size = 0
+class AsyncFileBuffer(aobject):
+    """异步文件缓冲区
 
-    @classmethod
-    async def create(cls, file_path: str, overwrite: bool = False):
-        self = cls()
+    Args:
+        file_path (str): 所需存储文件位置
+        overwrite (bool): 是否直接覆盖原文件
+
+    Examples:
+        .. code-block:: python
+
+            async def afunc():
+                buffer = await AsyncFileBuffer("/path/to/file", True)
+                for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
+                    await buffer.write(chunk, i)
+                await buffer.close()
+
+                # 或者使用 async with（注意后面要有 await，因为 AsyncFileBuffer 的初始化是异步的）
+
+                async with await AsyncFileBuffer("/path/to/file", True) as buffer:
+                    for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
+                        await buffer.write(chunk, i)
+                await buffer.close()
+    """
+
+    # pyright: reportIncompatibleMethodOverride=false
+    async def __ainit__(self, file_path: str, overwrite: bool = False):
         self.file_path = file_path
         if overwrite and os.path.exists(file_path):
             os.remove(file_path)
+        self.buffer = list[BufferChunk]()
         self.written_size = os.path.getsize(file_path) if not overwrite and os.path.exists(file_path) else 0
-        self.file_obj = await aiofiles.open(file_path, "ab")
-        return self
+        self.file_obj: Optional[aiofiles.threadpool.binary.AsyncBufferedIOBase] = await aiofiles.open(file_path, "ab")
 
     async def write(self, chunk: bytes, offset: int):
         buffer_chunk = BufferChunk(offset, chunk)
@@ -51,3 +70,26 @@ class AsyncFileBuffer:
             await self.file_obj.close()
         else:
             Logger.error("未预期的结果：未曾创建文件对象")
+
+    def __enter__(self) -> None:
+        raise TypeError("Use async with instead")
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> None:
+        # __exit__ should exist in pair with __enter__ but never executed
+        ...
+
+    async def __aenter__(self) -> "AsyncFileBuffer":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> None:
+        await self.close()

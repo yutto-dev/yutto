@@ -120,7 +120,7 @@ async def download_video_and_audio(
     sizes: list[Optional[int]] = [None, None]
     task_funcs: list[list[CoroutineTask]] = []
     if video is not None:
-        vbuf = await AsyncFileBuffer.create(video_path, overwrite=options["overwrite"])
+        vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await Fetcher.get_size(session, video["url"])
         vtask_funcs = [
             Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
@@ -130,7 +130,7 @@ async def download_video_and_audio(
         buffers[0], sizes[0] = vbuf, vsize
 
     if audio is not None:
-        abuf = await AsyncFileBuffer.create(audio_path, overwrite=options["overwrite"])
+        abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
         asize = await Fetcher.get_size(session, audio["url"])
         atask_funcs = [
             Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
