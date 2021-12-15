@@ -8,10 +8,12 @@ from yutto.utils.fetcher import Fetcher
 
 
 async def get_uploader_space_all_videos_avids(session: ClientSession, mid: MId) -> list[AvId]:
-    ps: int = random.randint(3, 6) * 10
     space_videos_api = (
         "https://api.bilibili.com/x/space/arc/search?mid={mid}&ps={ps}&tid=0&pn={pn}&order=pubdate&jsonp=jsonp"
     )
+    # ps 随机设置有时会出现错误，因此暂时固定在 30
+    # ps: int = random.randint(3, 6) * 10
+    ps = 30
     pn = 1
     total = 1
     all_avid: list[AvId] = []
