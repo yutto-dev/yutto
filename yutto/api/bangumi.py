@@ -97,7 +97,7 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[
 async def get_bangumi_playurl(
     session: ClientSession, avid: AvId, episode_id: EpisodeId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=125&fnver=0&fnval=16&fourk=1"
+    play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=127&fnver=0&fnval=16&fourk=1"
     codecid_map: dict[Literal[7, 12], VideoCodec] = {7: "avc", 12: "hevc"}
 
     async with session.get(

@@ -39,7 +39,7 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVide
 async def get_acg_video_playurl(
     session: ClientSession, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=125&type=&otype=json&fnver=0&fnval=80&fourk=1"
+    play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&type=&otype=json&fnver=0&fnval=2000&fourk=1&eightk=1"
     codecid_map: dict[Literal[7, 12], VideoCodec] = {7: "avc", 12: "hevc"}
 
     async with session.get(play_api.format(**avid.to_dict(), cid=cid), proxy=Fetcher.proxy) as resp:

@@ -12,7 +12,7 @@ from yutto.utils.console.logger import Logger
 def select_video(
     videos: list[VideoUrlMeta],
     require_video: bool = True,
-    video_quality: VideoQuality = 125,
+    video_quality: VideoQuality = 127,
     video_codec: VideoCodec = "hevc",
 ) -> Optional[VideoUrlMeta]:
     if not require_video:

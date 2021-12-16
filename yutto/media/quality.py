@@ -7,13 +7,18 @@ class Media(Enum):
     AUDIO = 30200
 
 
-VideoQuality = Literal[125, 120, 116, 112, 80, 74, 64, 32, 16]
+VideoQuality = Literal[127, 125, 120, 116, 112, 80, 74, 64, 32, 16]
 AudioQuality = Literal[30280, 30232, 30216]
 
-video_quality_priority_default: list[VideoQuality] = [125, 120, 116, 112, 80, 74, 64, 32, 16]
+video_quality_priority_default: list[VideoQuality] = [127, 125, 120, 116, 112, 80, 74, 64, 32, 16]
 audio_quality_priority_default: list[AudioQuality] = [30280, 30232, 30216]
 
 video_quality_map = {
+    127: {
+        "description": "8K 超高清",
+        "width": 8192,
+        "height": 4320,
+    },
     125: {
         "description": "HDR 真彩",
         "width": 3840,
