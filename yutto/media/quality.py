@@ -7,61 +7,66 @@ class Media(Enum):
     AUDIO = 30200
 
 
-VideoQuality = Literal[127, 125, 120, 116, 112, 80, 74, 64, 32, 16]
+VideoQuality = Literal[127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
 AudioQuality = Literal[30280, 30232, 30216]
 
-video_quality_priority_default: list[VideoQuality] = [127, 125, 120, 116, 112, 80, 74, 64, 32, 16]
+video_quality_priority_default: list[VideoQuality] = [127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
 audio_quality_priority_default: list[AudioQuality] = [30280, 30232, 30216]
 
 video_quality_map = {
     127: {
         "description": "8K 超高清",
-        "width": 8192,
+        "width": 7680,
         "height": 4320,
-    },
+    },  # Example: BV1KS4y197BN
+    126: {
+        "description": "杜比视界",
+        "width": 3840,
+        "height": 2160,
+    },  # Example: BV1eV411W7tt
     125: {
         "description": "HDR 真彩",
         "width": 3840,
-        "height": 1920,
+        "height": 2160,
     },
     120: {
         "description": "4K 超清",
         "width": 3840,
-        "height": 1920,
+        "height": 2160,
     },
     116: {
         "description": "1080P 60帧",
-        "width": 2160,
+        "width": 1920,
         "height": 1080,
     },
     112: {
         "description": "1080P 高码率",
-        "width": 2160,
+        "width": 1920,
         "height": 1080,
     },
     80: {
         "description": "1080P 高清",
-        "width": 2160,
+        "width": 1920,
         "height": 1080,
     },
     74: {
         "description": "720P 60帧",
-        "width": 1440,
+        "width": 1280,
         "height": 720,
     },
     64: {
         "description": "720P 高清",
-        "width": 1440,
+        "width": 1280,
         "height": 720,
     },
     32: {
         "description": "480P 清晰",
-        "width": 960,
+        "width": 852,
         "height": 480,
     },
     16: {
         "description": "360P 流畅",
-        "width": 720,
+        "width": 640,
         "height": 360,
     },
 }

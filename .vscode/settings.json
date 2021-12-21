@@ -1,5 +1,5 @@
 {
-  "python.pythonPath": "${workspaceFolder}/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
   "python.formatting.provider": "black",
   "python.formatting.blackArgs": ["--line-length", "120"],
   "python.analysis.typeCheckingMode": "strict"
