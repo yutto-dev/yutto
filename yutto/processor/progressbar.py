@@ -7,6 +7,7 @@ from yutto.utils.console.colorful import colored_string, Color, RGBColor, Style
 from yutto.utils.console.formatter import size_format
 from yutto.utils.console.logger import Logger
 from yutto.utils.file_buffer import AsyncFileBuffer
+from yutto.utils.console.attributes import get_terminal_size
 
 
 class ProgressBar:
@@ -25,10 +26,12 @@ class ProgressBar:
         bar_back_color: Optional[Color] = None,
         remaining_bar_fore_color: Optional[Color] = None,
         remaining_bar_back_color: Optional[Color] = None,
+        width: Optional[int] = None,  # 如果需要实时调整宽度，可通过此传入
     ) -> str:
+        width = width or self.width
         if data == 1:
-            return self.symbols[-1] * self.width
-        length: float = self.width * data
+            return self.symbols[-1] * width
+        length: float = width * data
         length_int: int = int(length)
         length_float: float = length - length_int
 
@@ -37,7 +40,7 @@ class ProgressBar:
             fore=bar_fore_color,
             back=bar_back_color,
         ) + colored_string(
-            (self.width - length_int - 1) * self.remaining_symbol,
+            (width - length_int - 1) * self.remaining_symbol,
             fore=remaining_bar_fore_color,
             back=remaining_bar_back_color,
         )
@@ -48,6 +51,7 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
     t = time.time()
     size = sum([file_buffer.written_size for file_buffer in file_buffers])
     progress_bar = ProgressBar("╸━", "━")
+    bar_min_width, bar_max_width = 15, 50
     while True:
         size_in_buffer: int = sum(
             [sum([len(chunk.data) for chunk in file_buffer.buffer]) for file_buffer in file_buffers]
@@ -65,8 +69,13 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         speed_threshold = 8 * 1024 * 1024
         is_fast = speed >= speed_threshold
         bar_color = "red" if num_blocks_in_buffer > 2048 else ("green" if is_fast else "cyan")
+        # 40：后面还有至少 37 个字符，因此这里取 40
+        bar_width = max(min(get_terminal_size()[0] - 40, bar_max_width), bar_min_width)
         bar = progress_bar.render(
-            size_now / total_size, bar_fore_color=bar_color, remaining_bar_fore_color=RGBColor(64, 64, 64)
+            size_now / total_size,
+            bar_fore_color=bar_color,
+            remaining_bar_fore_color=RGBColor(64, 64, 64),
+            width=bar_width,
         )
         # 速度文本同时也使用绿色与青色作为速度标志
         speed_text_color: Color = "green" if is_fast else "cyan"
