@@ -467,7 +467,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 ### 名字的由来
 
-[《転スラ日記》第一话](https://www.bilibili.com/bangumi/play/ep395211) 00:25
+[《転スラ日記》第一话 00:24](https://www.bilibili.com/bangumi/play/ep395211?t=24)
 
 ### yutto 会很快替代 bilili 吗
 
