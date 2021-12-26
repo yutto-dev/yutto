@@ -2,11 +2,12 @@ import argparse
 import re
 import os
 import copy
+import sys
 
 from yutto.__version__ import VERSION as yutto_version
 from yutto.cli import batch_get, checker, get
+from yutto.exceptions import ErrorCode
 from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
-
 from yutto.processor.urlparser import alias_parser, file_scheme_parser, bare_name_parser
 from yutto.utils.console.logger import Logger, Badge
 
@@ -77,15 +78,19 @@ def main():
     args_list = flatten_args(args, parser)
     if len(args_list) > 1:
         Logger.info(f"列表共 {len(args_list)} 项")
-    for i, args in enumerate(args_list):
-        if len(args_list) > 1:
-            Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
-        if not args.batch:
-            get.run(args)
-        else:
-            checker.check_batch_argments(args)
-            batch_get.run(args)
-        Logger.print("")
+    try:
+        for i, args in enumerate(args_list):
+            if len(args_list) > 1:
+                Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
+            if not args.batch:
+                get.run(args)
+            else:
+                checker.check_batch_argments(args)
+                batch_get.run(args)
+            Logger.print("")
+    except (SystemExit, KeyboardInterrupt):
+        Logger.info("已终止下载，再次运行即可继续下载～")
+        sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
 
 
 def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[argparse.Namespace]:

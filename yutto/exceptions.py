@@ -5,7 +5,7 @@ from typing import Union, Type
 
 
 class ErrorCode(Enum):
-
+    # 发生错误
     UNSUPPORTED_PYTHON_VERSION_ERROR = 9
     HTTP_STATUS_ERROR = 10
     NO_ACCESS_PERMISSION_ERROR = 11
@@ -15,6 +15,9 @@ class ErrorCode(Enum):
     EPISODE_NOT_FOUND_ERROR = 15
     MAX_RETRY_ERROR = 16
     NOT_FOUND_ERROR = 17
+
+    # 异常状况，但并不算错误
+    PAUSED_DOWNLOAD = 101
 
 
 class SuccessCode(Enum):
