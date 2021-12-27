@@ -51,7 +51,7 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
     t = time.time()
     size = sum([file_buffer.written_size for file_buffer in file_buffers])
     progress_bar = ProgressBar("╸━", "━")
-    bar_min_width, bar_max_width = 15, 50
+    bar_min_width, bar_max_width = 10, 50
     while True:
         size_in_buffer: int = sum(
             [sum([len(chunk.data) for chunk in file_buffer.buffer]) for file_buffer in file_buffers]
@@ -70,21 +70,24 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         is_fast = speed >= speed_threshold
         bar_color = "red" if num_blocks_in_buffer > 2048 else ("green" if is_fast else "cyan")
         # 40：后面还有至少 37 个字符，因此这里取 40
-        bar_width = max(min(get_terminal_size()[0] - 40, bar_max_width), bar_min_width)
-        bar = progress_bar.render(
-            size_now / total_size,
-            bar_fore_color=bar_color,
-            remaining_bar_fore_color=RGBColor(64, 64, 64),
-            width=bar_width,
-        )
+        bar_width = min(get_terminal_size()[0] - 40, bar_max_width)
+        if bar_width < bar_min_width:
+            bar = ""
+        else:
+            bar = progress_bar.render(
+                size_now / total_size,
+                bar_fore_color=bar_color,
+                remaining_bar_fore_color=RGBColor(64, 64, 64),
+                width=bar_width,
+            )
         # 速度文本同时也使用绿色与青色作为速度标志
         speed_text_color: Color = "green" if is_fast else "cyan"
         speed_text_style: Optional[list[Style]] = ["bold"] if is_fast else None
         speed_text_suffix: str = "/⚡" if is_fast else "/s"
 
         Logger.status.set(
-            "{} {:>10}/{:>10} {:>12}  ".format(
-                bar,
+            "{}{:>10}/{:>10} {:>12}  ".format(
+                bar + " " if bar else bar,
                 size_format(size_now),
                 size_format(total_size),
                 colored_string(size_format(speed) + speed_text_suffix, fore=speed_text_color, style=speed_text_style),
