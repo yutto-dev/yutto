@@ -175,7 +175,7 @@ def merge_video_and_audio(
         ["-i", video_path] if video is not None else [],
         ["-i", audio_path] if audio is not None else [],
         ["-vcodec", options["video_save_codec"]] if video is not None else [],
-        ["-acodec", options["audio_save_codec"]] if video is not None else [],
+        ["-acodec", options["audio_save_codec"]] if audio is not None else [],
         ["-y", output_path],
     ]
 
