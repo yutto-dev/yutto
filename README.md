@@ -46,7 +46,7 @@ pip install ./dist/yutto-*.whl
 |-|-|-|
 |投稿视频|:x:|`{title}`|
 |投稿视频|:white_check_mark:|`{title}/{name}`|
-|番剧|:x:|`{name}`|`{title}/{name}`|
+|番剧|:x:|`{name}`|
 |番剧|:white_check_mark:|`{title}/{name}`|
 |用户指定收藏夹|:white_check_mark:|`{username}的收藏夹/{fav_title}/{title}/{name}`|
 |用户全部收藏夹|:white_check_mark:|`{username}的收藏夹/{fav_title}/{title}/{name}`|
