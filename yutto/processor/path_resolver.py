@@ -5,7 +5,7 @@ from typing import Literal, Union
 from yutto.utils.console.logger import Logger
 
 path_template_variables = ["title", "id", "name", "username"]
-PathTemplateVariable = Literal["title", "id", "name", "username", "fav_title"]
+PathTemplateVariable = Literal["title", "id", "name", "username", "fav_title", "pubdate"]
 PathTemplateVariableDict = dict[PathTemplateVariable, Union[int, str]]
 UNKNOWN: str = ""
 

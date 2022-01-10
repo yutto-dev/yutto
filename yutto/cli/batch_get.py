@@ -3,7 +3,7 @@ import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_title, get_acg_video_pubdate
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_title,
@@ -183,13 +183,14 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
                     title = await get_acg_video_title(session, acg_video_item["avid"])
+                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
                         i + 1,
                         acg_video_item,
                         args,
-                        {"title": title, "username": username},
+                        {"title": title, "username": username, "pubdate": pubdate},
                         "{username}的全部投稿视频/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:

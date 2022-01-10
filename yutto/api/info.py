@@ -1,3 +1,4 @@
+import time
 from typing import TypedDict
 
 from aiohttp import ClientSession
@@ -17,6 +18,7 @@ class VideoInfo(TypedDict):
     cid: CId
     picture: str
     title: str
+    pubdate: str
 
 
 async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
@@ -38,6 +40,7 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
         "cid": CId(str(res_json_data["cid"])),
         "picture": res_json_data["pic"],
         "title": res_json_data["title"],
+        "pubdate": time.strftime("%Y-%m-%d", time.localtime(res_json_data["pubdate"])),
     }
 
 
