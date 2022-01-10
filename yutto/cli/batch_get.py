@@ -89,6 +89,7 @@ async def run(args: argparse.Namespace):
             else:
                 avid = BvId(match_obj.group("bvid"))
             title = await get_acg_video_title(session, avid)
+            pubdate = await get_acg_video_pubdate(session, avid)
             Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
             acg_video_list = await get_acg_video_list(session, avid)
             # 选集过滤
@@ -98,7 +99,13 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
                     episode_data = await fetch_acg_video_data(
-                        session, avid, i + 1, acg_video_item, args, {"title": title}, "{title}/{name}"
+                        session,
+                        avid,
+                        i + 1,
+                        acg_video_item,
+                        args,
+                        {"title": title, "pubdate": pubdate},
+                        "{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)
@@ -122,13 +129,19 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
                     title = await get_acg_video_title(session, acg_video_item["avid"])
+                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
                         i + 1,
                         acg_video_item,
                         args,
-                        {"title": title, "username": username, "fav_title": favourite_info["title"]},
+                        {
+                            "title": title,
+                            "username": username,
+                            "fav_title": favourite_info["title"],
+                            "pubdate": pubdate,
+                        },
                         "{username}的收藏夹/{fav_title}/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
@@ -151,6 +164,7 @@ async def run(args: argparse.Namespace):
 
             for i, (acg_video_item, fav_title) in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+                pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                 try:
                     title = await get_acg_video_title(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
@@ -159,7 +173,7 @@ async def run(args: argparse.Namespace):
                         i + 1,
                         acg_video_item,
                         args,
-                        {"title": title, "username": username, "fav_title": fav_title},
+                        {"title": title, "username": username, "fav_title": fav_title, "pubdate": pubdate},
                         "{username}的收藏夹/{fav_title}/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:

@@ -9,6 +9,7 @@ from yutto.api.acg_video import (
     AcgVideoListItem,
     get_acg_video_list,
     get_acg_video_playurl,
+    get_acg_video_pubdate,
     get_acg_video_subtitles,
     get_acg_video_title,
 )
@@ -21,9 +22,9 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
 )
 from yutto.api.danmaku import get_danmaku
-from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, UnSupportedTypeError, NotFoundError
+from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.processor.downloader import process_video_download
-from yutto.processor.path_resolver import PathTemplateVariableDict, resolve_path_template
+from yutto.processor.path_resolver import UNKNOWN, PathTemplateVariableDict, resolve_path_template
 from yutto.processor.urlparser import regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
 from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId
 from yutto.utils.console.logger import Badge, Logger
@@ -62,8 +63,10 @@ async def fetch_bangumi_data(
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
-        "title": "",
-        "username": "",
+        "title": UNKNOWN,
+        "username": UNKNOWN,
+        "fav_title": UNKNOWN,
+        "pubdate": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)
     subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
@@ -105,8 +108,10 @@ async def fetch_acg_video_data(
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
-        "title": "",
-        "username": "",
+        "title": UNKNOWN,
+        "username": UNKNOWN,
+        "fav_title": UNKNOWN,
+        "pubdate": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)
     subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
@@ -157,6 +162,7 @@ async def run(args: argparse.Namespace):
                 page = int(match_obj.group("page"))
             try:
                 title = await get_acg_video_title(session, avid)
+                pubdate = await get_acg_video_pubdate(session, avid)
                 Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
                 episode_data = await fetch_acg_video_data(
                     session,
@@ -164,7 +170,7 @@ async def run(args: argparse.Namespace):
                     page,
                     None,
                     args,
-                    {"title": title},
+                    {"title": title, "pubdate": pubdate},
                     "{title}",
                 )
             except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
