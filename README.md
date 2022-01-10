@@ -207,7 +207,7 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动�
 #### 存放子路径模板
 
 -  参数 `-tp` 或 `--subpath-template`
--  可选参数变量 `title | id | name | username | fav_title` （以后可能会有更多）
+-  可选参数变量 `title | id | name | username | fav_title | pubdate` （以后可能会有更多）
 -  默认值 `"{auto}"`
 
 通过配置子路径模板可以灵活地控制视频存放位置。

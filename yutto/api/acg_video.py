@@ -22,6 +22,10 @@ async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
     return (await get_video_info(session, avid))["title"]
 
 
+async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
+    return (await get_video_info(session, avid))["pubdate"]
+
+
 async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVideoListItem]:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
