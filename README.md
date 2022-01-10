@@ -42,17 +42,15 @@ pip install ./dist/yutto-*.whl
 ### 已支持的下载类型
 
 <!-- prettier-ignore -->
-|type|batch|path template|
-|-|-|-|
-|投稿视频|:x:|`{title}`|
-|投稿视频|:white_check_mark:|`{title}/{name}`|
-|番剧|:x:|`{name}`|
-|番剧|:white_check_mark:|`{title}/{name}`|
-|用户指定收藏夹|:white_check_mark:|`{username}的收藏夹/{fav_title}/{title}/{name}`|
-|用户全部收藏夹|:white_check_mark:|`{username}的收藏夹/{fav_title}/{title}/{name}`|
-|UP 主个人空间|:white_check_mark:|`{username}的全部投稿视频/{title}/{name}`|
-
-<!-- TODO: 展示更多细节 -->
+|Type|Batch|Example url|Path template|
+|-|-|-|-|
+|投稿视频|:x:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}`|
+|投稿视频|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
+|番剧|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
+|番剧|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
+|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
+|用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
+|UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的全部投稿视频/{title}/{name}`|
 
 ### 基本命令
 
