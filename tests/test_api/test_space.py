@@ -5,10 +5,12 @@ from yutto.api.space import (
     get_all_favourites,
     get_favourite_avids,
     get_favourite_info,
+    get_medialist_avids,
+    get_medialist_title,
     get_uploader_name,
     get_uploader_space_all_videos_avids,
 )
-from yutto.typing import AId, BvId, FId, MId
+from yutto.typing import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools import sync
 
@@ -83,3 +85,31 @@ async def test_all_favourites():
     ) as session:
         fav_list = await get_all_favourites(session, mid=mid)
         assert {"fid": FId("1306978874"), "title": "Test"} in fav_list
+
+
+@pytest.mark.api
+@sync
+async def test_get_medialist_avids():
+    series_id = SeriesId("1947439")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        avids = await get_medialist_avids(session, series_id=series_id)
+        assert avids == [BvId("BV1Y441167U2"), BvId("BV1vZ4y1M7mQ")]
+
+
+@pytest.mark.api
+@sync
+async def test_get_medialist_title():
+    series_id = SeriesId("1947439")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        title = await get_medialist_title(session, series_id=series_id)
+        assert title == "一个小合集～"

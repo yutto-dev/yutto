@@ -65,6 +65,7 @@ async def fetch_bangumi_data(
         "name": name,
         "title": UNKNOWN,
         "username": UNKNOWN,
+        "series_title": UNKNOWN,
         "fav_title": UNKNOWN,
         "pubdate": UNKNOWN,
     }
@@ -110,6 +111,7 @@ async def fetch_acg_video_data(
         "name": name,
         "title": UNKNOWN,
         "username": UNKNOWN,
+        "series_title": UNKNOWN,
         "fav_title": UNKNOWN,
         "pubdate": UNKNOWN,
     }

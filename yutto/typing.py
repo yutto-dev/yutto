@@ -86,6 +86,13 @@ class FId(BilibiliId):
         return {"fid": self.value}
 
 
+class SeriesId(BilibiliId):
+    """视频合集 ID"""
+
+    def to_dict(self):
+        return {"series_id": self.value}
+
+
 class VideoUrlMeta(TypedDict):
     url: str
     mirrors: list[str]

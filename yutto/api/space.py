@@ -2,7 +2,7 @@ import math
 
 from aiohttp import ClientSession
 
-from yutto.typing import AvId, BvId, FavouriteMetaData, FId, MId
+from yutto.typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
 
 
@@ -51,3 +51,17 @@ async def get_all_favourites(session: ClientSession, mid: MId) -> list[Favourite
     if not json_data["data"]:
         return []
     return [FavouriteMetaData(title=data["title"], fid=FId(str(data["id"]))) for data in json_data["data"]["list"]]
+
+
+async def get_medialist_avids(session: ClientSession, series_id: SeriesId) -> list[AvId]:
+    api = "https://api.bilibili.com/x/v2/medialist/resource/list?type=5&otype=2&biz_id={series_id}"
+    json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
+    if not json_data["data"]:
+        return []
+    return [BvId(video_info["bv_id"]) for video_info in json_data["data"]["media_list"]]
+
+
+async def get_medialist_title(session: ClientSession, series_id: SeriesId) -> str:
+    api = "https://api.bilibili.com/x/v1/medialist/info?type=5&biz_id={series_id}"
+    json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
+    return json_data["data"]["title"]

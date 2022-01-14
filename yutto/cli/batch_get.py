@@ -3,7 +3,7 @@ import sys
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_title, get_acg_video_pubdate
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_title,
@@ -14,6 +14,8 @@ from yutto.api.space import (
     get_all_favourites,
     get_favourite_avids,
     get_favourite_info,
+    get_medialist_avids,
+    get_medialist_title,
     get_uploader_name,
     get_uploader_space_all_videos_avids,
 )
@@ -29,9 +31,11 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ss,
     regexp_favourite,
     regexp_favourite_all,
+    regexp_medialist,
+    regexp_series,
     regexp_space_all,
 )
-from yutto.typing import AId, BvId, EpisodeData, EpisodeId, FId, MediaId, MId, SeasonId
+from yutto.typing import AId, BvId, EpisodeData, EpisodeId, FId, MediaId, MId, SeasonId, SeriesId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functiontools import sync
@@ -175,6 +179,43 @@ async def run(args: argparse.Namespace):
                         args,
                         {"title": title, "username": username, "fav_title": fav_title, "pubdate": pubdate},
                         "{username}的收藏夹/{fav_title}/{title}/{name}",
+                    )
+                except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
+                    Logger.error(e.message)
+                    continue
+                download_list.append(episode_data)
+
+        # 匹配为视频合集
+        elif (match_obj := regexp_medialist.match(url)) or (match_obj := regexp_series.match(url)):
+            mid = MId(match_obj.group("mid"))
+            series_id = SeriesId(match_obj.group("series_id"))
+            username = await get_uploader_name(session, mid)
+            series_title = await get_medialist_title(session, series_id)
+            Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
+
+            acg_video_list = [
+                acg_video_item
+                for avid in await get_medialist_avids(session, series_id)
+                for acg_video_item in await get_acg_video_list(session, avid)
+            ]
+            for i, acg_video_item in enumerate(acg_video_list):
+                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+                try:
+                    title = await get_acg_video_title(session, acg_video_item["avid"])
+                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
+                    episode_data = await fetch_acg_video_data(
+                        session,
+                        acg_video_item["avid"],
+                        i + 1,
+                        acg_video_item,
+                        args,
+                        {
+                            "series_title": series_title,
+                            "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
+                            "title": title,
+                            "pubdate": pubdate,
+                        },
+                        "{series_title}/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
