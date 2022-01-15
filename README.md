@@ -48,9 +48,9 @@ pip install ./dist/yutto-*.whl
 |投稿视频|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
 |番剧|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
 |番剧|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
-|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
+|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
 |用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
-|UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的全部投稿视频/{title}/{name}`|
+|UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
 |视频合集|:white_check_mark:|`https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439`|`{series_title}/{title}/{name}`|
 
 ### 基本命令
