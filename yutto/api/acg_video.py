@@ -54,7 +54,6 @@ async def get_acg_video_playurl(
             raise NoAccessPermissionError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
         if resp_json["data"].get("dash") is None:
             raise UnSupportedTypeError("该视频（cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
-        print([video["codecid"] for video in resp_json["data"]["dash"]["video"]])
         return (
             [
                 {

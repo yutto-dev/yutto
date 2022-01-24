@@ -41,6 +41,7 @@ class Badge:
 WARNING_BADGE = Badge("WARN", fore="yellow")
 ERROR_BADGE = Badge("ERROR", fore="red", style=["bold"])
 INFO_BADGE = Badge("INFO", fore="bright_blue")
+DEPRECATED_BADGE = Badge("DEPRECATED", fore="black", back="yellow")
 DEBUG_BADGE = Badge("DEBUG", fore="green")
 
 
@@ -71,6 +72,10 @@ class Logger:
         Logger.custom(string, INFO_BADGE, *print_args, **print_kwargs)
 
     @classmethod
+    def deprecated_warning(cls, string: Any, *print_args: Any, **print_kwargs: Any):
+        Logger.custom(string, DEPRECATED_BADGE, *print_args, **print_kwargs)
+
+    @classmethod
     def debug(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         if not _logger_debug:
             return
@@ -96,6 +101,10 @@ class Logger:
     @classmethod
     def info_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         Logger.custom_multiline(string, INFO_BADGE, *print_args, **print_kwargs)
+
+    @classmethod
+    def deprecated_warning_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
+        Logger.custom_multiline(string, DEPRECATED_BADGE, *print_args, **print_kwargs)
 
     @classmethod
     def debug_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):

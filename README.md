@@ -48,8 +48,8 @@ pip install ./dist/yutto-*.whl
 |投稿视频|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
 |番剧|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
 |番剧|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
-|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
-|用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{fav_title}/{title}/{name}`|
+|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的收藏夹/{series_title}/{title}/{name}`|
+|用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
 |UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
 |视频合集|:white_check_mark:|`https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439`|`{series_title}/{title}/{name}`|
 
@@ -224,7 +224,7 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动�
 #### 存放子路径模板
 
 -  参数 `-tp` 或 `--subpath-template`
--  可选参数变量 `title | id | name | username | fav_title | pubdate` （以后可能会有更多）
+-  可选参数变量 `title | id | name | username | series_title | pubdate` （以后可能会有更多）
 -  默认值 `"{auto}"`
 
 通过配置子路径模板可以灵活地控制视频存放位置。
@@ -242,8 +242,7 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动�
 |id|系列视频单 p 顺序标号|全部|
 |name|系列视频单 p 标题|全部|
 |username|UP 主用户名|个人空间、收藏夹、合集下载|
-|fav_title|收藏夹标题|收藏夹下载|
-|series_title|合集标题|视频合集下载|
+|series_title|合集标题|收藏夹、视频合集下载|
 |pubdate|投稿日期|仅投稿视频|
 
 > 未来可能会对路径变量及默认路径模板进行调整

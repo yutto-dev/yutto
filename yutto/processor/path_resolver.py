@@ -5,7 +5,7 @@ from typing import Literal, Union
 from yutto.utils.console.logger import Logger
 
 path_template_variables = ["title", "id", "name", "username"]
-PathTemplateVariable = Literal["title", "id", "name", "username", "fav_title", "series_title", "pubdate"]
+PathTemplateVariable = Literal["title", "id", "name", "username", "series_title", "pubdate"]
 PathTemplateVariableDict = dict[PathTemplateVariable, Union[int, str]]
 UNKNOWN: str = "unknown_variable"
 
@@ -50,6 +50,10 @@ def repair_filename(filename: str) -> str:
 def resolve_path_template(
     path_template: str, auto_path_template: str, subpath_variables: PathTemplateVariableDict
 ) -> str:
+    # fav_title 已经被 series_title 取代
+    if "{fav_title}" in path_template:
+        Logger.deprecated_warning("路径变量 fav_title 已经被废除，已自动使用 series_title 替代（2.0.0 后将会彻底废除 fav_title）")
+        path_template = path_template.replace("{fav_title}", "{series_title}")
     # 保证所有传进来的值都满足路径要求
     for key, value in subpath_variables.items():
         # 只对字符串值修改，int 型不修改以适配高级模板

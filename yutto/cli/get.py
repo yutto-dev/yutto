@@ -66,7 +66,6 @@ async def fetch_bangumi_data(
         "title": UNKNOWN,
         "username": UNKNOWN,
         "series_title": UNKNOWN,
-        "fav_title": UNKNOWN,
         "pubdate": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)
@@ -112,7 +111,6 @@ async def fetch_acg_video_data(
         "title": UNKNOWN,
         "username": UNKNOWN,
         "series_title": UNKNOWN,
-        "fav_title": UNKNOWN,
         "pubdate": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)

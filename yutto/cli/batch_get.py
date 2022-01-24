@@ -143,10 +143,10 @@ async def run(args: argparse.Namespace):
                         {
                             "title": title,
                             "username": username,
-                            "fav_title": favourite_info["title"],
+                            "series_title": favourite_info["title"],
                             "pubdate": pubdate,
                         },
-                        "{username}的收藏夹/{fav_title}/{title}/{name}",
+                        "{username}的收藏夹/{series_title}/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
@@ -166,7 +166,7 @@ async def run(args: argparse.Namespace):
                 for acg_video_item in await get_acg_video_list(session, avid)
             ]
 
-            for i, (acg_video_item, fav_title) in enumerate(acg_video_list):
+            for i, (acg_video_item, series_title) in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                 try:
@@ -177,8 +177,8 @@ async def run(args: argparse.Namespace):
                         i + 1,
                         acg_video_item,
                         args,
-                        {"title": title, "username": username, "fav_title": fav_title, "pubdate": pubdate},
-                        "{username}的收藏夹/{fav_title}/{title}/{name}",
+                        {"title": title, "username": username, "series_title": series_title, "pubdate": pubdate},
+                        "{username}的收藏夹/{series_title}/{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
