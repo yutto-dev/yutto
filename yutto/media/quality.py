@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import Any, Literal
+from typing import Literal
+
+from yutto.utils.priority import gen_priority_sequence
 
 
 class Media(Enum):
@@ -84,21 +86,24 @@ audio_quality_map = {
         "description": "64kbps",
         "bitrate": 64,
     },
-    0: {"description": "Unknown", "bitrate": 0},
+    0: {
+        "description": "Unknown",
+        "bitrate": 0,
+    },
 }
 
 
-def gen_quality_priority(quality: Any, quality_priority: list[Any]) -> list[Any]:
-    """根据默认先降后升的清晰度机制生成清晰度序列"""
-
-    return quality_priority[quality_priority.index(quality) :] + list(
-        reversed(quality_priority[: quality_priority.index(quality)])
-    )
+def gen_video_quality_priority(quality: VideoQuality) -> list[VideoQuality]:
+    choice = video_quality_priority_default.index(quality)
+    return [
+        video_quality_priority_default[idx]
+        for idx in gen_priority_sequence(choice, len(video_quality_priority_default))
+    ]
 
 
 def gen_audio_quality_priority(quality: AudioQuality) -> list[AudioQuality]:
-    return gen_quality_priority(quality, audio_quality_priority_default)
-
-
-def gen_video_quality_priority(quality: VideoQuality) -> list[VideoQuality]:
-    return gen_quality_priority(quality, video_quality_priority_default)
+    choice = audio_quality_priority_default.index(quality)
+    return [
+        audio_quality_priority_default[idx]
+        for idx in gen_priority_sequence(choice, len(audio_quality_priority_default))
+    ]

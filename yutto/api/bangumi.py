@@ -1,21 +1,11 @@
 import re
-from typing import Any, Literal, TypedDict
+from typing import Any, TypedDict
 
 from aiohttp import ClientSession
 
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
-from yutto.media.codec import VideoCodec
-from yutto.typing import (
-    AudioUrlMeta,
-    AvId,
-    BvId,
-    CId,
-    EpisodeId,
-    MediaId,
-    MultiLangSubtitle,
-    SeasonId,
-    VideoUrlMeta,
-)
+from yutto.media.codec import audio_codec_map, video_codec_map
+from yutto.typing import AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData
@@ -98,7 +88,6 @@ async def get_bangumi_playurl(
     session: ClientSession, avid: AvId, episode_id: EpisodeId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=127&fnver=0&fnval=16&fourk=1"
-    codecid_map: dict[Literal[7, 12], VideoCodec] = {7: "avc", 12: "hevc"}
 
     async with session.get(
         play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id), proxy=Fetcher.proxy
@@ -117,7 +106,7 @@ async def get_bangumi_playurl(
                 {
                     "url": video["base_url"],
                     "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
-                    "codec": codecid_map[video["codecid"]],
+                    "codec": video_codec_map[video["codecid"]],
                     "width": video["width"],
                     "height": video["height"],
                     "quality": video["id"],
@@ -128,7 +117,7 @@ async def get_bangumi_playurl(
                 {
                     "url": audio["base_url"],
                     "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
-                    "codec": "mp4a",
+                    "codec": audio_codec_map[audio["codecid"]],
                     "width": 0,
                     "height": 0,
                     "quality": audio["id"],
