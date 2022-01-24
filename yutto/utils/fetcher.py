@@ -23,8 +23,8 @@ class MaxRetry:
             while retry:
                 try:
                     return await connect_once(*args, **kwargs)
-                except asyncio.TimeoutError as e:
-                    Logger.warning("抓取超时，正在重试")
+                except asyncio.TimeoutError:
+                    Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 finally:
                     retry -= 1
             raise MaxRetryError("超出最大重试次数！")
