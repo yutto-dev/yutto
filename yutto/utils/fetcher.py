@@ -36,7 +36,7 @@ class Fetcher:
     proxy: Optional[str] = None
     trust_env: bool = True
     headers: dict[str, str] = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36",
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
@@ -104,6 +104,16 @@ class Fetcher:
                 return None
 
     @classmethod
+    @MaxRetry(2)
+    async def touch_url(cls, session: ClientSession, url: str):
+        async with session.get(
+            url,
+            proxy=Fetcher.proxy,
+            ssl=False,
+        ) as resp:
+            resp.close()
+
+    @classmethod
     async def download_file_with_offset(
         cls,
         session: ClientSession,
@@ -150,12 +160,12 @@ class Fetcher:
                 # TODO: 是否需要校验总大小
                 done = True
 
-            except asyncio.TimeoutError as e:
-                Logger.warning("文件 {} 下载超时，尝试重新连接...".format(file_buffer.file_path))
-
             except (
                 aiohttp.client_exceptions.ClientPayloadError,
                 aiohttp.client_exceptions.ServerDisconnectedError,
-            ) as e:
+            ):
                 await asyncio.sleep(0.5)
                 Logger.warning("文件 {} 下载出错，尝试重新连接...".format(file_buffer.file_path))
+
+            except asyncio.TimeoutError:
+                Logger.warning("文件 {} 下载超时，尝试重新连接...".format(file_buffer.file_path))

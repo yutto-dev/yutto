@@ -26,12 +26,18 @@ class AvId(BilibiliId):
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
 
+    def to_url(self) -> str:
+        raise NotImplementedError("请不要直接使用 AvId")
+
 
 class AId(AvId):
     """AID"""
 
     def to_dict(self):
         return {"aid": self.value, "bvid": ""}
+
+    def to_url(self) -> str:
+        return f"https://www.bilibili.com/video/av{self.value}"
 
 
 class BvId(AvId):
@@ -42,6 +48,9 @@ class BvId(AvId):
             "aid": "",
             "bvid": self.value,
         }
+
+    def to_url(self) -> str:
+        return f"https://www.bilibili.com/video/{self.value}"
 
 
 class CId(BilibiliId):

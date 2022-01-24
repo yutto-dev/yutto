@@ -132,6 +132,8 @@ async def run(args: argparse.Namespace):
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
+                    # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
+                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
                     title = await get_acg_video_title(session, acg_video_item["avid"])
                     pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
@@ -170,6 +172,7 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                 try:
+                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
                     title = await get_acg_video_title(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
                         session,
@@ -201,6 +204,7 @@ async def run(args: argparse.Namespace):
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
+                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
                     title = await get_acg_video_title(session, acg_video_item["avid"])
                     pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
@@ -237,6 +241,7 @@ async def run(args: argparse.Namespace):
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
+                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
                     title = await get_acg_video_title(session, acg_video_item["avid"])
                     pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                     episode_data = await fetch_acg_video_data(
