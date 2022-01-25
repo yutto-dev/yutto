@@ -7,7 +7,7 @@ from typing import Optional, Type
 import aiofiles
 
 from yutto.utils.console.logger import Logger
-from yutto.utils.functiontools import aobject
+from yutto.utils.functools import aobject
 
 
 @dataclass(order=True)

@@ -8,7 +8,7 @@ from yutto.processor.downloader import slice_blocks
 from yutto.utils.asynclib import parallel_with_limit
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.functiontools import sync
+from yutto.utils.functools import sync
 
 
 @pytest.mark.downloader

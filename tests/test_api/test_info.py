@@ -4,7 +4,7 @@ import pytest
 from yutto.api.info import get_video_info, is_vip
 from yutto.typing import AId, BvId, CId, EpisodeId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functiontools import sync
+from yutto.utils.functools import sync
 
 
 @pytest.mark.api

@@ -11,7 +11,7 @@ from yutto.api.bangumi import (
 )
 from yutto.typing import BvId, CId, MediaId, SeasonId, EpisodeId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functiontools import sync
+from yutto.utils.functools import sync
 
 
 @pytest.mark.api

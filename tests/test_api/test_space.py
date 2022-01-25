@@ -12,7 +12,7 @@ from yutto.api.space import (
 )
 from yutto.typing import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functiontools import sync
+from yutto.utils.functools import sync
 
 
 @pytest.mark.api
