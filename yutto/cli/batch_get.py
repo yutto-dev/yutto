@@ -281,6 +281,7 @@ async def run(args: argparse.Namespace):
                     "overwrite": args.overwrite,
                     "block_size": int(args.block_size * 1024 * 1024),
                     "num_workers": args.num_workers,
+                    "require_cover": args.require_cover,
                 },
             )
             Logger.print("")

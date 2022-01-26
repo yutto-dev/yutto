@@ -12,6 +12,7 @@ from yutto.api.acg_video import (
     get_acg_video_pubdate,
     get_acg_video_subtitles,
     get_acg_video_title,
+    get_acg_video_cover,
 )
 from yutto.api.bangumi import (
     BangumiListItem,
@@ -80,6 +81,7 @@ async def fetch_bangumi_data(
         output_dir=output_dir,
         tmp_dir=args.tmp_dir or output_dir,
         filename=filename,
+        cover="",
     )
 
 
@@ -105,6 +107,7 @@ async def fetch_acg_video_data(
     if args.with_metadata:
         Logger.warning("目前仅支持番剧 metadata 生成")
     metadata = None
+    cover = await get_acg_video_cover(session, avid) if args.require_cover else ""
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
@@ -125,6 +128,7 @@ async def fetch_acg_video_data(
         output_dir=output_dir,
         tmp_dir=args.tmp_dir or output_dir,
         filename=filename,
+        cover=cover,
     )
 
 
@@ -196,5 +200,6 @@ async def run(args: argparse.Namespace):
                 "overwrite": args.overwrite,
                 "block_size": int(args.block_size * 1024 * 1024),
                 "num_workers": args.num_workers,
+                "require_cover": args.require_cover,
             },
         )

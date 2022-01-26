@@ -134,6 +134,7 @@ class EpisodeData(TypedDict):
     output_dir: str
     tmp_dir: str
     filename: str
+    cover: str
 
 
 class DownloaderOptions(TypedDict):
@@ -148,6 +149,7 @@ class DownloaderOptions(TypedDict):
     overwrite: bool
     block_size: int
     num_workers: int
+    require_cover: bool
 
 
 class FavouriteMetaData(TypedDict):

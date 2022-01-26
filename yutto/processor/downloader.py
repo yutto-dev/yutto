@@ -188,6 +188,13 @@ def merge_video_and_audio(
         os.remove(audio_path)
 
 
+async def write_cover(session: aiohttp.ClientSession, cover: str, cover_path: str):
+    """下载视频封面"""
+    content = await Fetcher.fetch_bin(session, cover)
+    with open(cover_path, "wb") as f:
+        f.write(content)
+
+
 async def process_video_download(
     session: aiohttp.ClientSession,
     episode_data: EpisodeData,
@@ -203,6 +210,7 @@ async def process_video_download(
     output_dir = episode_data["output_dir"]
     tmp_dir = episode_data["tmp_dir"]
     filename = episode_data["filename"]
+    cover = episode_data["cover"]
 
     Logger.info("开始处理视频 {}".format(filename))
     if not os.path.isdir(tmp_dir):
@@ -223,6 +231,12 @@ async def process_video_download(
     output_path_no_ext = os.path.join(output_dir, filename)
     output_format = ".mp4" if video is not None else ".aac"
     output_path = output_path_no_ext + output_format
+
+    # 下载封面
+    if options["require_cover"] and cover:
+        cover_path = output_path_no_ext + os.path.splitext(cover)[1]
+        await write_cover(session, cover, cover_path)
+
     if os.path.exists(output_path):
         if not options["overwrite"]:
             Logger.info("文件 {} 已存在".format(filename))
