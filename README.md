@@ -11,23 +11,42 @@
 
 yutto，一个可爱且任性的 B 站下载器（CLI）
 
+当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/SigureMo/yutto/discussions) 提出～～～
+
 ## 版本号为什么是 2.0
 
 因为 yutto 是 bilili 的後輩呀～
 
-## 安装预览版
+## 从安装开始～
 
-在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
+### 包管理器一键安装啦 <sup>测试中</sup>
 
-当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/SigureMo/yutto/discussions) 提出～～～
+目前 yutto 已经可以通过部分包管理器直接安装～
+
+使用 Homebrew 的用户可以尝试下下面的命令：
+
+```bash
+brew tap siguremo/tap
+brew install yutto
+```
+
+使用 yay（Arch 上的 AUR 包管理器）的用户可以尝试下这样的命令（感谢 @ouuan）：
+
+```bash
+yay -S yutto
+```
 
 ### pip 安装
+
+在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
 
 ```bash
 pip install --pre yutto
 ```
 
-### git clone
+### 从 GitHub 获取最新源码手动安装
+
+这同样要求你自行配置 Python 和 FFmpeg 环境
 
 ```bash
 git clone https://github.com/SigureMo/yutto.git
@@ -36,6 +55,8 @@ pip install poetry
 poetry build
 pip install ./dist/yutto-*.whl
 ```
+
+// TODO: Dockerfile
 
 ## 主要功能
 
@@ -517,7 +538,7 @@ yutto 现在也还不是非常稳定，需要稳定的体验的话请继续使�
 ### 2.0.0
 
 -  [ ] feat: 投稿视频描述文件支持
--  [ ] refactor: 整理路径变量名
+-  [x] refactor: 整理路径变量名
 -  [ ] docs: 可爱的 logo（呜呜呜，有谁会做 logo 嘛？）
 -  [ ] docs: 可爱的静态文档（可能需要 VitePress 到 1.0）
 
