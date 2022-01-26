@@ -42,6 +42,7 @@ def main():
     )
     group_common.add_argument("--video-only", dest="require_audio", action="store_false", help="只下载视频")
     group_common.add_argument("--audio-only", dest="require_video", action="store_false", help="只下载音频")
+    group_common.add_argument("--require-cover", dest="require_cover", action="store_true", help="下载封面")
     group_common.add_argument("-df", "--danmaku-format", default="ass", choices=["xml", "ass", "protobuf"], help="弹幕类型")
     group_common.add_argument("-bs", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB")
     group_common.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
