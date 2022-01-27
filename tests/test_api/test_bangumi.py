@@ -10,7 +10,7 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
 )
 from yutto.typing import BvId, CId, MediaId, SeasonId, EpisodeId
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import T, Fetcher
 from yutto.utils.functools import sync
 
 
@@ -68,14 +68,18 @@ async def test_get_bangumi_list():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        bangumi_list = await get_bangumi_list(session, season_id)
+        bangumi_list = await get_bangumi_list(session, season_id, with_metadata=True)
         assert bangumi_list[0]["id"] == 1
         assert bangumi_list[0]["name"] == "第1话 "
         assert bangumi_list[0]["cid"] == CId("144541892")
+        assert bangumi_list[0]["metadata"] is not None
+        assert bangumi_list[0]["metadata"]["show_title"] == "《我的三体之章北海传》第1话 "
 
         assert bangumi_list[8]["id"] == 9
         assert bangumi_list[8]["name"] == "第9话 "
         assert bangumi_list[8]["cid"] == CId("162395026")
+        assert bangumi_list[8]["metadata"] is not None
+        assert bangumi_list[8]["metadata"]["show_title"] == "《我的三体之章北海传》第9话 "
 
 
 @pytest.mark.api
