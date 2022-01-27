@@ -95,7 +95,7 @@ async def run(args: argparse.Namespace):
             title = await get_acg_video_title(session, avid)
             pubdate = await get_acg_video_pubdate(session, avid)
             Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
-            acg_video_list = await get_acg_video_list(session, avid)
+            acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             # 选集过滤
             episodes = parse_episodes(args.episodes, len(acg_video_list))
             acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
@@ -127,7 +127,7 @@ async def run(args: argparse.Namespace):
             acg_video_list = [
                 acg_video_item
                 for avid in await get_favourite_avids(session, fid)
-                for acg_video_item in await get_acg_video_list(session, avid)
+                for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
@@ -165,7 +165,7 @@ async def run(args: argparse.Namespace):
                 (acg_video_item, fav["title"])
                 for fav in await get_all_favourites(session, mid)
                 for avid in await get_favourite_avids(session, fav["fid"])
-                for acg_video_item in await get_acg_video_list(session, avid)
+                for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
 
             for i, (acg_video_item, series_title) in enumerate(acg_video_list):
@@ -199,7 +199,7 @@ async def run(args: argparse.Namespace):
             acg_video_list = [
                 acg_video_item
                 for avid in await get_medialist_avids(session, series_id)
-                for acg_video_item in await get_acg_video_list(session, avid)
+                for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
@@ -235,7 +235,7 @@ async def run(args: argparse.Namespace):
             acg_video_list = [
                 acg_video_item
                 for avid in await get_uploader_space_all_videos_avids(session, mid)
-                for acg_video_item in await get_acg_video_list(session, avid)
+                for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
 
             for i, acg_video_item in enumerate(acg_video_list):

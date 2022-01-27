@@ -1,6 +1,6 @@
 import json
 import re
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from aiohttp import ClientSession
 
@@ -9,6 +9,8 @@ from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, VideoUrlMeta
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.metadata import MetaData
+from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
 
 
 class AcgVideoListItem(TypedDict):
@@ -16,6 +18,7 @@ class AcgVideoListItem(TypedDict):
     name: str
     avid: AvId
     cid: CId
+    metadata: Optional[MetaData]
 
 
 async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
@@ -26,18 +29,26 @@ async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
     return (await get_video_info(session, avid))["pubdate"]
 
 
-async def get_acg_video_list(session: ClientSession, avid: AvId) -> list[AcgVideoListItem]:
+async def get_acg_video_list(session: ClientSession, avid: AvId, with_metadata: bool = False) -> list[AcgVideoListItem]:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
-    return [
+    acg_video_info: list[AcgVideoListItem] = [
         {
             "id": i + 1,
             "name": item["part"],
             "avid": avid,
             "cid": CId(str(item["cid"])),
+            "metadata": None,
         }
         for i, item in enumerate(res_json["data"])
     ]
+
+    if with_metadata:
+        metadata_list = await get_acg_video_metadata(session, avid)
+        assert len(metadata_list) == len(acg_video_info)
+        for info, metadata in zip(acg_video_info, metadata_list):
+            info["metadata"] = metadata
+    return acg_video_info
 
 
 async def get_acg_video_playurl(
@@ -99,3 +110,22 @@ async def get_acg_video_subtitles(session: ClientSession, avid: AvId, cid: CId) 
         ]
     else:
         return []
+
+
+async def get_acg_video_metadata(session: ClientSession, avid: AvId) -> list[MetaData]:
+    web_interface_api = "https://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
+    web_interface_url = web_interface_api.format(**avid.to_dict())
+    res_json = await Fetcher.fetch_json(session, web_interface_url)
+    return [
+        MetaData(
+            title=page_info["part"],
+            show_title=page_info["part"],
+            plot=res_json["data"]["desc"],
+            thumb=page_info["first_frame"] if page_info.get("first_frame") else res_json["data"]["pic"],
+            premiered=get_time_str_by_stamp(res_json["data"]["pubdate"]),
+            dataadded=get_time_str_by_now(),
+            source="",  # TODO
+            original_filename="",  # TODO
+        )
+        for page_info in res_json["data"]["pages"]
+    ]

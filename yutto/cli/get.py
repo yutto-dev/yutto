@@ -92,7 +92,7 @@ async def fetch_acg_video_data(
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
 ) -> EpisodeData:
-    acg_video_list = await get_acg_video_list(session, avid)
+    acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
     if acg_video_info is None:
         acg_video_info = acg_video_list[page - 1]
     cid = acg_video_info["cid"]
@@ -101,10 +101,7 @@ async def fetch_acg_video_data(
     videos, audios = await get_acg_video_playurl(session, avid, cid)
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    # TODO: 支持投稿视频的 metadata 文件生成
-    if args.with_metadata:
-        Logger.warning("目前仅支持番剧 metadata 生成")
-    metadata = None
+    metadata = acg_video_info["metadata"]
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
