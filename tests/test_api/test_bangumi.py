@@ -70,16 +70,16 @@ async def test_get_bangumi_list():
     ) as session:
         bangumi_list = await get_bangumi_list(session, season_id, with_metadata=True)
         assert bangumi_list[0]["id"] == 1
-        assert bangumi_list[0]["name"] == "第1话 "
+        assert bangumi_list[0]["name"] == "第1话"
         assert bangumi_list[0]["cid"] == CId("144541892")
         assert bangumi_list[0]["metadata"] is not None
-        assert bangumi_list[0]["metadata"]["show_title"] == "《我的三体之章北海传》第1话 "
+        assert bangumi_list[0]["metadata"]["title"] == "第1话"
 
         assert bangumi_list[8]["id"] == 9
-        assert bangumi_list[8]["name"] == "第9话 "
+        assert bangumi_list[8]["name"] == "第9话"
         assert bangumi_list[8]["cid"] == CId("162395026")
         assert bangumi_list[8]["metadata"] is not None
-        assert bangumi_list[8]["metadata"]["show_title"] == "《我的三体之章北海传》第9话 "
+        assert bangumi_list[8]["metadata"]["title"] == "第9话"
 
 
 @pytest.mark.api

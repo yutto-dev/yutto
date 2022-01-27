@@ -67,15 +67,11 @@ async def get_bangumi_list(
     section_episodes = []
     for section in result.get("section", []):
         section_episodes += section["episodes"]
+    print(result["episodes"][0])
     return [
         {
             "id": i + 1,
-            "name": " ".join(
-                [
-                    "第{}话".format(item["title"]) if re.match(r"^\d*\.?\d*$", item["title"]) else item["title"],
-                    item["long_title"],
-                ]
-            ),
+            "name": _bangumi_episode_title(item["title"], item["long_title"]),
             "cid": CId(str(item["cid"])),
             "episode_id": EpisodeId(str(item["id"])),
             "avid": BvId(item["bvid"]),
@@ -142,10 +138,23 @@ async def get_bangumi_subtitles(session: ClientSession, avid: AvId, cid: CId) ->
     ]
 
 
+def _bangumi_episode_title(title: str, extra_title: str) -> str:
+    title_parts: list[str] = []
+    if re.match(r"^\d*\.?\d*$", title):
+        title_parts.append(f"第{title}话")
+    else:
+        title_parts.append(title)
+
+    if extra_title:
+        title_parts.append(extra_title)
+
+    return " ".join(title_parts)
+
+
 def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
 
     return MetaData(
-        title=item["long_title"],
+        title=_bangumi_episode_title(item["title"], item["long_title"]),
         show_title=item["share_copy"],
         plot=item["share_copy"],
         thumb=item["cover"],
