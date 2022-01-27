@@ -69,7 +69,7 @@ async def run(args: argparse.Namespace):
                 season_id = await get_season_id_by_media_id(session, media_id)
             title = await get_bangumi_title(session, season_id)
             Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
-            bangumi_list = await get_bangumi_list(session, season_id)
+            bangumi_list = await get_bangumi_list(session, season_id, with_metadata=args.with_metadata)
             # 如果没有 with_section 则不需要专区内容
             bangumi_list = list(filter(lambda item: args.with_section or not item["is_section"], bangumi_list))
             # 选集过滤

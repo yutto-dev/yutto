@@ -44,7 +44,7 @@ async def fetch_bangumi_data(
     season_id = await get_season_id_by_episode_id(session, episode_id)
     # 如果不包含详细信息，需从列表中解析
     if bangumi_info is None:
-        bangumi_list = await get_bangumi_list(session, season_id)
+        bangumi_list = await get_bangumi_list(session, season_id, with_metadata=args.with_metadata)
         for bangumi_item in bangumi_list:
             if bangumi_item["episode_id"] == episode_id:
                 bangumi_info = bangumi_item
@@ -59,7 +59,7 @@ async def fetch_bangumi_data(
     videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
     subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    metadata = bangumi_info["metadata"] if args.with_metadata else None
+    metadata = bangumi_info["metadata"]
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
