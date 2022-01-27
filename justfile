@@ -44,3 +44,9 @@ clean-builds:
   rm -rf build/
   rm -rf dist/
   rm -rf yutto.egg-info/
+
+build-docker:
+  docker build -t {{DOCKER_NAME}} .
+
+publish-docker:
+  docker buildx build --platform=linux/amd64,linux/arm64 -t {{DOCKER_NAME}} . --push

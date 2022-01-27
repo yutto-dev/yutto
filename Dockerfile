@@ -1,14 +1,16 @@
-FROM ubuntu:20.04
+FROM alpine:latest
 LABEL maintainer="siguremo" \
-      version="0.1" \
-      description="yutto container"
+      version="2.0.0-beta.9" \
+      description="yutto light-weight container based on alpine"
 
-# Install deps
 RUN set -x \
-    && apt update \
-    && apt install -y ffmpeg python3.9 python3-pip \
-    && rm -rf /var/lib/apt/lists/* \
-    && python3.9 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
-    && python3.9 -m pip install --no-cache-dir yutto[uvloop]
+    && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
+    && apk add -q --progress --update --no-cache --virtual .build-deps gcc g++ build-base \
+    && apk add -q --progress --update --no-cache ffmpeg python3 python3-dev py-pip linux-headers libffi-dev openssl-dev \
+    && python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    && python3 -m pip install --no-cache-dir --pre yutto[uvloop] \
+    && apk del .build-deps
 
-CMD [ "bash" ]
+WORKDIR /app
+
+ENTRYPOINT ["yutto", "-d", "/app"]
