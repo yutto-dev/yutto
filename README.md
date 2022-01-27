@@ -36,6 +36,16 @@ brew install yutto
 yay -S yutto
 ```
 
+### 使用 Docker <sup>测试中</sup>
+
+你也可以尝试使用 docker 直接运行 yutto（具体如何运行需要参考下后面的内容～）
+
+```bash
+docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
+```
+
+与直接运行 yutto 不同的是，这里的下载目标路径是通过 `-v <path>:/app` 指定的，也就是说 docker 里的 yutto 会将内容下载到 docker 里的 `/app` 目录下，而你绑定的外部路径 `<path>` 就是下载路径。你也可以直接绑定 `$(pwd)`，此时就和本机 yutto 的默认行为一致啦，也是下载到当前目录下～
+
 ### pip 安装
 
 在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
@@ -55,8 +65,6 @@ pip install poetry
 poetry build
 pip install ./dist/yutto-*.whl
 ```
-
-// TODO: Dockerfile
 
 ## 主要功能
 
@@ -523,8 +531,6 @@ yutto file:///path/to/list --vcodec="avc:copy"
 ### yutto 会很快替代 bilili 吗
 
 短期内不会，bilili 并不会消失，在一段时间内 bilili 仍会做纠错性维护，只是不会提供新特性了。
-
-yutto 现在也还不是非常稳定，需要稳定的体验的话请继续使用 bilili ～
 
 ## Roadmap
 

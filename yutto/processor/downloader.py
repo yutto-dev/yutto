@@ -176,6 +176,7 @@ def merge_video_and_audio(
         ["-i", audio_path] if audio is not None else [],
         ["-vcodec", options["video_save_codec"]] if video is not None else [],
         ["-acodec", options["audio_save_codec"]] if audio is not None else [],
+        ["-threads", str(os.cpu_count())],
         ["-y", output_path],
     ]
 
