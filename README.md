@@ -351,6 +351,8 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 -  参数 `--with-metadata`
 -  默认值 `False`
 
+目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
+
 </details>
 
 ### 批量参数
@@ -543,7 +545,7 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 ### 2.0.0
 
--  [ ] feat: 投稿视频描述文件支持
+-  [x] feat: 投稿视频描述文件支持
 -  [x] refactor: 整理路径变量名
 -  [ ] docs: 可爱的 logo（呜呜呜，有谁会做 logo 嘛？）
 -  [ ] docs: 可爱的静态文档（可能需要 VitePress 到 1.0）

@@ -31,14 +31,18 @@ async def test_get_acg_video_list():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        acg_video_list = await get_acg_video_list(session, avid)
+        acg_video_list = await get_acg_video_list(session, avid, with_metadata=True)
         assert acg_video_list[0]["id"] == 1
         assert acg_video_list[0]["name"] == "bilili 特性以及使用方法简单介绍"
         assert acg_video_list[0]["cid"] == CId("222190584")
+        assert acg_video_list[0]["metadata"] is not None
+        assert acg_video_list[0]["metadata"]["title"] == "bilili 特性以及使用方法简单介绍"
 
         assert acg_video_list[1]["id"] == 2
         assert acg_video_list[1]["name"] == "bilili 环境配置方法"
         assert acg_video_list[1]["cid"] == CId("222200470")
+        assert acg_video_list[1]["metadata"] is not None
+        assert acg_video_list[1]["metadata"]["title"] == "bilili 环境配置方法"
 
 
 @pytest.mark.api

@@ -1,5 +1,5 @@
 import re
-from typing import Any, TypedDict
+from typing import Any, Optional, TypedDict
 
 from aiohttp import ClientSession
 
@@ -19,7 +19,7 @@ class BangumiListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
-    metadata: MetaData
+    metadata: Optional[MetaData]
 
 
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
@@ -58,27 +58,25 @@ async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonI
     return title
 
 
-async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[BangumiListItem]:
+async def get_bangumi_list(
+    session: ClientSession, season_id: SeasonId, with_metadata: bool = False
+) -> list[BangumiListItem]:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
     resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
     result = resp_json["result"]
     section_episodes = []
     for section in result.get("section", []):
         section_episodes += section["episodes"]
+    print(result["episodes"][0])
     return [
         {
             "id": i + 1,
-            "name": " ".join(
-                [
-                    "第{}话".format(item["title"]) if re.match(r"^\d*\.?\d*$", item["title"]) else item["title"],
-                    item["long_title"],
-                ]
-            ),
+            "name": _bangumi_episode_title(item["title"], item["long_title"]),
             "cid": CId(str(item["cid"])),
             "episode_id": EpisodeId(str(item["id"])),
             "avid": BvId(item["bvid"]),
             "is_section": i >= len(result["episodes"]),
-            "metadata": _parse_bangumi_metadata(item),
+            "metadata": _parse_bangumi_metadata(item) if with_metadata else None,
         }
         for i, item in enumerate(result["episodes"] + section_episodes)
     ]
@@ -140,10 +138,23 @@ async def get_bangumi_subtitles(session: ClientSession, avid: AvId, cid: CId) ->
     ]
 
 
+def _bangumi_episode_title(title: str, extra_title: str) -> str:
+    title_parts: list[str] = []
+    if re.match(r"^\d*\.?\d*$", title):
+        title_parts.append(f"第{title}话")
+    else:
+        title_parts.append(title)
+
+    if extra_title:
+        title_parts.append(extra_title)
+
+    return " ".join(title_parts)
+
+
 def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
 
     return MetaData(
-        title=item["long_title"],
+        title=_bangumi_episode_title(item["title"], item["long_title"]),
         show_title=item["share_copy"],
         plot=item["share_copy"],
         thumb=item["cover"],

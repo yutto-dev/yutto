@@ -44,7 +44,7 @@ async def fetch_bangumi_data(
     season_id = await get_season_id_by_episode_id(session, episode_id)
     # 如果不包含详细信息，需从列表中解析
     if bangumi_info is None:
-        bangumi_list = await get_bangumi_list(session, season_id)
+        bangumi_list = await get_bangumi_list(session, season_id, with_metadata=args.with_metadata)
         for bangumi_item in bangumi_list:
             if bangumi_item["episode_id"] == episode_id:
                 bangumi_info = bangumi_item
@@ -59,7 +59,7 @@ async def fetch_bangumi_data(
     videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
     subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    metadata = bangumi_info["metadata"] if args.with_metadata else None
+    metadata = bangumi_info["metadata"]
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
@@ -92,7 +92,7 @@ async def fetch_acg_video_data(
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
 ) -> EpisodeData:
-    acg_video_list = await get_acg_video_list(session, avid)
+    acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
     if acg_video_info is None:
         acg_video_info = acg_video_list[page - 1]
     cid = acg_video_info["cid"]
@@ -101,10 +101,7 @@ async def fetch_acg_video_data(
     videos, audios = await get_acg_video_playurl(session, avid, cid)
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    # TODO: 支持投稿视频的 metadata 文件生成
-    if args.with_metadata:
-        Logger.warning("目前仅支持番剧 metadata 生成")
-    metadata = None
+    metadata = acg_video_info["metadata"]
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
