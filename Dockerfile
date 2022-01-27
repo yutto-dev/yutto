@@ -9,6 +9,6 @@ RUN set -x \
     && apt install -y ffmpeg python3.9 python3-pip \
     && rm -rf /var/lib/apt/lists/* \
     && python3.9 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
-    && python3.9 -m pip install yutto[uvloop]
+    && python3.9 -m pip install --no-cache-dir yutto[uvloop]
 
 CMD [ "bash" ]
