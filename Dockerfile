@@ -1,7 +1,7 @@
 FROM alpine:3.15
 LABEL maintainer="siguremo" \
       version="2.0.0-beta.9" \
-      description="yutto light-weight container based on alpine"
+      description="light-weight container based on alpine for yutto"
 
 RUN set -x \
     && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
