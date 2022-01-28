@@ -5,11 +5,11 @@ LABEL maintainer="siguremo" \
 
 RUN set -x \
     && sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories \
-    && apk add -q --progress --update --no-cache --virtual .build-deps gcc g++ build-base \
-    && apk add -q --progress --update --no-cache ffmpeg python3 python3-dev py-pip linux-headers libffi-dev openssl-dev \
-    && python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
-    && python3 -m pip install --no-cache-dir --pre yutto[uvloop] \
-    && apk del .build-deps
+    && apk add -q --progress --update --no-cache --virtual .build-deps gcc g++ build-base python3-dev libffi-dev \
+    && apk add -q --progress --update --no-cache ffmpeg python3 py-pip tzdata \
+    && python3 -m pip install --no-cache-dir --pre yutto[uvloop] -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && apk del --purge .build-deps
 
 WORKDIR /app
 

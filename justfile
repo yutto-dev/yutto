@@ -1,5 +1,5 @@
 VERSION := `poetry run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
-DOCKER_NAME := "siguremo/yutto:latest"
+DOCKER_NAME := "siguremo/yutto"
 
 run:
   poetry run python -m yutto
@@ -47,7 +47,7 @@ clean-builds:
   rm -rf yutto.egg-info/
 
 build-docker:
-  docker build -t {{DOCKER_NAME}} .
+  docker build -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" .
 
 publish-docker:
-  docker buildx build --platform=linux/amd64,linux/arm64 -t {{DOCKER_NAME}} . --push
+  docker buildx build --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
