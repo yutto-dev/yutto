@@ -67,7 +67,6 @@ async def get_bangumi_list(
     section_episodes = []
     for section in result.get("section", []):
         section_episodes += section["episodes"]
-    print(result["episodes"][0])
     return [
         {
             "id": i + 1,
