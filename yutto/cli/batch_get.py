@@ -54,8 +54,8 @@ async def run(args: argparse.Namespace):
     ) as session:
         url: str = args.url
         url = await Fetcher.get_redirected_url(session, url)
-        download_list: list[EpisodeData] = []
-        coroutine_list: list[Coroutine[Any, Any, Optional[EpisodeData]]]
+        download_list: list[tuple[int, EpisodeData]] = []
+        coroutine_list: list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]
         num_videos: int
 
         # 匹配为番剧
@@ -85,22 +85,28 @@ async def run(args: argparse.Namespace):
             num_videos = len(bangumi_list)
 
             async def _parse_episodes_data_bangumi(
+                i: int,
                 bangumi_item: BangumiListItem,
-            ) -> Optional[EpisodeData]:
+            ) -> Optional[tuple[int, EpisodeData]]:
                 try:
-                    return await fetch_bangumi_data(
-                        session,
-                        bangumi_item["episode_id"],
-                        bangumi_item,
-                        args,
-                        {"title": title},
-                        "{title}/{name}",
+                    return (
+                        i,
+                        await fetch_bangumi_data(
+                            session,
+                            bangumi_item["episode_id"],
+                            bangumi_item,
+                            args,
+                            {"title": title},
+                            "{title}/{name}",
+                        ),
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)
                     return None
 
-            coroutine_list = [_parse_episodes_data_bangumi(bangumi_item) for bangumi_item in bangumi_list]
+            coroutine_list = [
+                _parse_episodes_data_bangumi(i, bangumi_item) for i, bangumi_item in enumerate(bangumi_list)
+            ]
 
         # 匹配为投稿视频
         elif (match_obj := regexp_acg_video_av.match(url)) or (match_obj := regexp_acg_video_bv.match(url)):
@@ -122,16 +128,19 @@ async def run(args: argparse.Namespace):
             async def _parse_episodes_data_acg_video(
                 i: int,
                 acg_video_item: AcgVideoListItem,
-            ) -> Optional[EpisodeData]:
+            ) -> Optional[tuple[int, EpisodeData]]:
                 try:
-                    return await fetch_acg_video_data(
-                        session,
-                        avid,
-                        i + 1,
-                        acg_video_item,
-                        args,
-                        {"title": title, "pubdate": pubdate},
-                        "{title}/{name}",
+                    return (
+                        i,
+                        await fetch_acg_video_data(
+                            session,
+                            avid,
+                            i + 1,
+                            acg_video_item,
+                            args,
+                            {"title": title, "pubdate": pubdate},
+                            "{title}/{name}",
+                        ),
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)
@@ -160,7 +169,7 @@ async def run(args: argparse.Namespace):
             async def _parse_episodes_data_favourite(
                 i: int,
                 acg_video_item: AcgVideoListItem,
-            ) -> Optional[EpisodeData]:
+            ) -> Optional[tuple[int, EpisodeData]]:
                 try:
                     # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
                     # 至于为什么前面那俩（投稿视频页和番剧页）不需要额外 touch，因为在 get_redirected_url 阶段连接过了呀
@@ -169,19 +178,22 @@ async def run(args: argparse.Namespace):
                         get_acg_video_title(session, acg_video_item["avid"]),
                         get_acg_video_pubdate(session, acg_video_item["avid"]),
                     )
-                    return await fetch_acg_video_data(
-                        session,
-                        acg_video_item["avid"],
-                        i + 1,
-                        acg_video_item,
-                        args,
-                        {
-                            "title": title,
-                            "username": username,
-                            "series_title": favourite_info["title"],
-                            "pubdate": pubdate,
-                        },
-                        "{username}的收藏夹/{series_title}/{title}/{name}",
+                    return (
+                        i,
+                        await fetch_acg_video_data(
+                            session,
+                            acg_video_item["avid"],
+                            i + 1,
+                            acg_video_item,
+                            args,
+                            {
+                                "title": title,
+                                "username": username,
+                                "series_title": favourite_info["title"],
+                                "pubdate": pubdate,
+                            },
+                            "{username}的收藏夹/{series_title}/{title}/{name}",
+                        ),
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
@@ -209,21 +221,24 @@ async def run(args: argparse.Namespace):
                 i: int,
                 acg_video_item: AcgVideoListItem,
                 series_title: str,
-            ) -> Optional[EpisodeData]:
+            ) -> Optional[tuple[int, EpisodeData]]:
                 pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                 try:
                     _, title = await asyncio.gather(
                         Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
                         get_acg_video_title(session, acg_video_item["avid"]),
                     )
-                    return await fetch_acg_video_data(
-                        session,
-                        acg_video_item["avid"],
-                        i + 1,
-                        acg_video_item,
-                        args,
-                        {"title": title, "username": username, "series_title": series_title, "pubdate": pubdate},
-                        "{username}的收藏夹/{series_title}/{title}/{name}",
+                    return (
+                        i,
+                        await fetch_acg_video_data(
+                            session,
+                            acg_video_item["avid"],
+                            i + 1,
+                            acg_video_item,
+                            args,
+                            {"title": title, "username": username, "series_title": series_title, "pubdate": pubdate},
+                            "{username}的收藏夹/{series_title}/{title}/{name}",
+                        ),
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
@@ -253,26 +268,29 @@ async def run(args: argparse.Namespace):
             async def _parse_episodes_data_series(
                 i: int,
                 acg_video_item: AcgVideoListItem,
-            ) -> Optional[EpisodeData]:
+            ) -> Optional[tuple[int, EpisodeData]]:
                 try:
                     _, title, pubdate = await asyncio.gather(
                         Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
                         get_acg_video_title(session, acg_video_item["avid"]),
                         get_acg_video_pubdate(session, acg_video_item["avid"]),
                     )
-                    return await fetch_acg_video_data(
-                        session,
-                        acg_video_item["avid"],
-                        i + 1,
-                        acg_video_item,
-                        args,
-                        {
-                            "series_title": series_title,
-                            "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
-                            "title": title,
-                            "pubdate": pubdate,
-                        },
-                        "{series_title}/{title}/{name}",
+                    return (
+                        i,
+                        await fetch_acg_video_data(
+                            session,
+                            acg_video_item["avid"],
+                            i + 1,
+                            acg_video_item,
+                            args,
+                            {
+                                "series_title": series_title,
+                                "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
+                                "title": title,
+                                "pubdate": pubdate,
+                            },
+                            "{series_title}/{title}/{name}",
+                        ),
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
@@ -298,21 +316,24 @@ async def run(args: argparse.Namespace):
             async def _parse_episodes_data_space(
                 i: int,
                 acg_video_item: AcgVideoListItem,
-            ) -> Optional[EpisodeData]:
+            ) -> Optional[tuple[int, EpisodeData]]:
                 try:
                     _, title, pubdate = await asyncio.gather(
                         Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
                         get_acg_video_title(session, acg_video_item["avid"]),
                         get_acg_video_pubdate(session, acg_video_item["avid"]),
                     )
-                    return await fetch_acg_video_data(
-                        session,
-                        acg_video_item["avid"],
-                        i + 1,
-                        acg_video_item,
-                        args,
-                        {"title": title, "username": username, "pubdate": pubdate},
-                        "{username}的全部投稿视频/{title}/{name}",
+                    return (
+                        i,
+                        await fetch_acg_video_data(
+                            session,
+                            acg_video_item["avid"],
+                            i + 1,
+                            acg_video_item,
+                            args,
+                            {"title": title, "username": username, "pubdate": pubdate},
+                            "{username}的全部投稿视频/{title}/{name}",
+                        ),
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
@@ -329,12 +350,15 @@ async def run(args: argparse.Namespace):
         # 先解析各种资源链接
         for i, coro in enumerate(asyncio.as_completed(coroutine_list)):
             Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, num_videos))
-            episode_data = await coro
-            if episode_data is not None:
-                download_list.append(episode_data)
+            results = await coro
+            if results is not None:
+                download_list.append(results)
+
+        # 由于 asyncio.as_completed 的顺序是按照完成顺序的，所以需要重新排序下
+        download_list.sort(key=lambda x: x[0])
 
         # 然后就可以下载啦～
-        for i, episode_data in enumerate(download_list):
+        for i, (_, episode_data) in enumerate(download_list):
             Logger.custom(
                 f"{episode_data['filename']}", Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan")
             )
