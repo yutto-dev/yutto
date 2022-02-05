@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import os
 import sys
 from typing import Optional
@@ -27,6 +28,7 @@ from yutto.processor.downloader import process_video_download
 from yutto.processor.path_resolver import UNKNOWN, PathTemplateVariableDict, resolve_path_template
 from yutto.processor.urlparser import regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
 from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId
+from yutto.utils.asynclib import awaited_value
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
@@ -98,6 +100,11 @@ async def fetch_acg_video_data(
     cid = acg_video_info["cid"]
     name = acg_video_info["name"]
     id = acg_video_info["id"]
+    # (videos, audios), subtitles, danmaku = await asyncio.gather(
+    #     get_acg_video_playurl(session, avid, cid),
+    #     get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else awaited_value([]),
+    #     get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else awaited_value(EmptyDanmakuData),
+    # )
     videos, audios = await get_acg_video_playurl(session, avid, cid)
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
@@ -158,8 +165,9 @@ async def run(args: argparse.Namespace):
             if match_obj.group("page") is not None:
                 page = int(match_obj.group("page"))
             try:
-                title = await get_acg_video_title(session, avid)
-                pubdate = await get_acg_video_pubdate(session, avid)
+                title, pubdate = await asyncio.gather(
+                    get_acg_video_title(session, avid), get_acg_video_pubdate(session, avid)
+                )
                 Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
                 episode_data = await fetch_acg_video_data(
                     session,

@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import sys
 
 import aiohttp
@@ -92,10 +93,12 @@ async def run(args: argparse.Namespace):
                 avid = AId(match_obj.group("aid"))
             else:
                 avid = BvId(match_obj.group("bvid"))
-            title = await get_acg_video_title(session, avid)
-            pubdate = await get_acg_video_pubdate(session, avid)
+            title, pubdate, acg_video_list = await asyncio.gather(
+                get_acg_video_title(session, avid),
+                get_acg_video_pubdate(session, avid),
+                get_acg_video_list(session, avid, with_metadata=args.with_metadata),
+            )
             Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
-            acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             # 选集过滤
             episodes = parse_episodes(args.episodes, len(acg_video_list))
             acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
@@ -120,8 +123,9 @@ async def run(args: argparse.Namespace):
         elif match_obj := regexp_favourite.match(url):
             mid = MId(match_obj.group("mid"))
             fid = FId(match_obj.group("fid"))
-            username = await get_uploader_name(session, mid)
-            favourite_info = await get_favourite_info(session, fid)
+            username, favourite_info = await asyncio.gather(
+                get_uploader_name(session, mid), get_favourite_info(session, fid)
+            )
             Logger.custom(favourite_info["title"], Badge("收藏夹", fore="black", back="cyan"))
 
             acg_video_list = [
@@ -133,9 +137,11 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
                     # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
+                    _, title, pubdate = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                        get_acg_video_pubdate(session, acg_video_item["avid"]),
+                    )
                     episode_data = await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
@@ -172,8 +178,10 @@ async def run(args: argparse.Namespace):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                 try:
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
+                    _, title = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                    )
                     episode_data = await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
@@ -192,8 +200,9 @@ async def run(args: argparse.Namespace):
         elif (match_obj := regexp_medialist.match(url)) or (match_obj := regexp_series.match(url)):
             mid = MId(match_obj.group("mid"))
             series_id = SeriesId(match_obj.group("series_id"))
-            username = await get_uploader_name(session, mid)
-            series_title = await get_medialist_title(session, series_id)
+            username, series_title = await asyncio.gather(
+                get_uploader_name(session, mid), get_medialist_title(session, series_id)
+            )
             Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
 
             acg_video_list = [
@@ -204,9 +213,11 @@ async def run(args: argparse.Namespace):
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
+                    _, title, pubdate = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                        get_acg_video_pubdate(session, acg_video_item["avid"]),
+                    )
                     episode_data = await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
@@ -241,9 +252,11 @@ async def run(args: argparse.Namespace):
             for i, acg_video_item in enumerate(acg_video_list):
                 Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
                 try:
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
+                    _, title, pubdate = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                        get_acg_video_pubdate(session, acg_video_item["avid"]),
+                    )
                     episode_data = await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],

@@ -1,7 +1,7 @@
 import asyncio
 import functools
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Coroutine, TypeVar
 
 import aiohttp
 
@@ -9,6 +9,7 @@ from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import filter_none_value, select_audio, select_video
 from yutto.processor.progressbar import show_progress
 from yutto.typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
+
 from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
@@ -47,7 +48,10 @@ def slice_blocks(
     return offset_list
 
 
-def mix_list(*l_list: list[Any]) -> list[Any]:
+T = TypeVar("T")
+
+
+def mix_list(*l_list: list[T]) -> list[T]:
     """将多个 list 「均匀」地合并到一个 list
 
     # example
@@ -62,7 +66,7 @@ def mix_list(*l_list: list[Any]) -> list[Any]:
     # [1, 6, 9, 2, 7, 10, 3, 8, 11, 4, 12, 5]
     ```
     """
-    results: list[Any] = []
+    results: list[T] = []
     for i in range(max([len(l) for l in l_list])):
         for l in l_list:
             if i < len(l):
@@ -119,6 +123,7 @@ async def download_video_and_audio(
     buffers: list[Optional[AsyncFileBuffer]] = [None, None]
     sizes: list[Optional[int]] = [None, None]
     task_funcs: list[list[CoroutineTask]] = []
+    # task_funcs: list[list[Coroutine[Any, Any, None]]] = []
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await Fetcher.get_size(session, video["url"])
@@ -138,6 +143,17 @@ async def download_video_and_audio(
         ]
         task_funcs.append(atask_funcs)
         buffers[1], sizes[1] = abuf, asize
+
+    # tasks = mix_list(*task_funcs)
+    # tasks.insert(0, show_progress(filter_none_value(buffers), sum(filter_none_value(sizes))))
+    # num_tasks = len(tasks)
+    # Logger.info("开始下载……")
+    # async with asyncio.Semaphore(options["num_workers"]):
+    #     for i, task in enumerate(asyncio.as_completed(tasks)):
+    #         await task
+    #         # print(f"{i}/{num_tasks}")
+
+    # Logger.info("下载完成！")
 
     tasks = parallel_with_limit(mix_list(*task_funcs), num_workers=options["num_workers"])
     tasks.append(asyncio.create_task(show_progress(filter_none_value(buffers), sum(filter_none_value(sizes)))))

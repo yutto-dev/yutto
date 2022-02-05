@@ -1,10 +1,11 @@
 import asyncio
 import platform
-from typing import Any, Coroutine, Iterable
+from typing import Any, Coroutine, Iterable, TypeVar
 
 from yutto.utils.console.logger import Logger
 
 CoroutineTask = Coroutine[Any, Any, Any]
+T = TypeVar("T")
 
 
 def initial_async_policy():
@@ -21,6 +22,10 @@ def install_uvloop():
     else:
         uvloop.install()
         Logger.info("成功使用 uvloop 加速协程")
+
+
+async def awaited_value(value: T) -> T:
+    return value
 
 
 def parallel(funcs: Iterable[CoroutineTask]):
