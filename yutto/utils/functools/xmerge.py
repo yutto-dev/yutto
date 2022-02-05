@@ -7,7 +7,7 @@ T = TypeVar("T")
 
 
 def xmerge(*multi_list: Iterable[T]) -> Iterable[T]:
-    """将多个 list 「均匀」地合并到一个 list
+    """将多个 list 交错地合并到一个 list
 
     # Example
 

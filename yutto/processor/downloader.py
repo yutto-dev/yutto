@@ -9,7 +9,6 @@ from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import select_audio, select_video
 from yutto.processor.progressbar import show_progress
 from yutto.typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
-from yutto.utils.asynclib import with_semaphore
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
@@ -97,14 +96,12 @@ async def download_video_and_audio(
     buffers: list[Optional[AsyncFileBuffer]] = [None, None]
     sizes: list[Optional[int]] = [None, None]
     coroutines_list: list[list[Coroutine[Any, Any, None]]] = []
-    sem = asyncio.Semaphore(options["num_workers"])
+    Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await Fetcher.get_size(session, video["url"])
         video_coroutines = [
-            with_semaphore(Fetcher.download_file_with_offset, sem)(
-                session, video["url"], video["mirrors"], vbuf, offset, block_size
-            )
+            Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
         ]
         coroutines_list.append(video_coroutines)
@@ -114,9 +111,7 @@ async def download_video_and_audio(
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
         asize = await Fetcher.get_size(session, audio["url"])
         audio_coroutines = [
-            with_semaphore(Fetcher.download_file_with_offset, sem)(
-                session, audio["url"], audio["mirrors"], abuf, offset, block_size
-            )
+            Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
         ]
         coroutines_list.append(audio_coroutines)

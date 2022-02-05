@@ -43,6 +43,9 @@ def initial_check(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     Fetcher.set_proxy(args.proxy)
 
+    # 设置并行限制信号量（开始时以一个较小值进行抓取，下载时切换为 num_workers）
+    Fetcher.set_semaphore(8)
+
     # 大会员身份校验
     if not args.sessdata:
         Logger.info("未提供 SESSDATA，无法下载会员专享剧集")

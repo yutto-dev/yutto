@@ -34,7 +34,7 @@ def select_video(
             if video["quality"] == vqn and video["codec"] == vcodec:
                 # TODO: Dolby Support
                 if video["quality"] == 126:
-                    Logger.warning("目前仅支持杜比视界音视频流下载，并无法正确混流")
+                    Logger.warning("目前仅支持杜比视界视频流下载，但可能无法达到在线观看的效果")
                 return video
     return None
 
