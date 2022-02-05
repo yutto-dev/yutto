@@ -1,10 +1,13 @@
 import argparse
+import asyncio
 import sys
+from typing import Any, Optional, Coroutine
 
 import aiohttp
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
+from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
 from yutto.api.bangumi import (
+    BangumiListItem,
     get_bangumi_list,
     get_bangumi_title,
     get_season_id_by_episode_id,
@@ -52,6 +55,8 @@ async def run(args: argparse.Namespace):
         url: str = args.url
         url = await Fetcher.get_redirected_url(session, url)
         download_list: list[EpisodeData] = []
+        coroutine_list: list[Coroutine[Any, Any, Optional[EpisodeData]]]
+        num_videos: int
 
         # 匹配为番剧
         if (
@@ -67,24 +72,35 @@ async def run(args: argparse.Namespace):
             else:
                 media_id = MediaId(match_obj.group("media_id"))
                 season_id = await get_season_id_by_media_id(session, media_id)
-            title = await get_bangumi_title(session, season_id)
+            title, bangumi_list = await asyncio.gather(
+                get_bangumi_title(session, season_id),
+                get_bangumi_list(session, season_id, with_metadata=args.with_metadata),
+            )
             Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
-            bangumi_list = await get_bangumi_list(session, season_id, with_metadata=args.with_metadata)
             # 如果没有 with_section 则不需要专区内容
             bangumi_list = list(filter(lambda item: args.with_section or not item["is_section"], bangumi_list))
             # 选集过滤
             episodes = parse_episodes(args.episodes, len(bangumi_list))
             bangumi_list = list(filter(lambda item: item["id"] in episodes, bangumi_list))
-            for i, bangumi_item in enumerate(bangumi_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(bangumi_list)))
+            num_videos = len(bangumi_list)
+
+            async def _parse_episodes_data_bangumi(
+                bangumi_item: BangumiListItem,
+            ) -> Optional[EpisodeData]:
                 try:
-                    episode_data = await fetch_bangumi_data(
-                        session, bangumi_item["episode_id"], bangumi_item, args, {"title": title}, "{title}/{name}"
+                    return await fetch_bangumi_data(
+                        session,
+                        bangumi_item["episode_id"],
+                        bangumi_item,
+                        args,
+                        {"title": title},
+                        "{title}/{name}",
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)
-                    continue
-                download_list.append(episode_data)
+                    return None
+
+            coroutine_list = [_parse_episodes_data_bangumi(bangumi_item) for bangumi_item in bangumi_list]
 
         # 匹配为投稿视频
         elif (match_obj := regexp_acg_video_av.match(url)) or (match_obj := regexp_acg_video_bv.match(url)):
@@ -92,17 +108,23 @@ async def run(args: argparse.Namespace):
                 avid = AId(match_obj.group("aid"))
             else:
                 avid = BvId(match_obj.group("bvid"))
-            title = await get_acg_video_title(session, avid)
-            pubdate = await get_acg_video_pubdate(session, avid)
+            title, pubdate, acg_video_list = await asyncio.gather(
+                get_acg_video_title(session, avid),
+                get_acg_video_pubdate(session, avid),
+                get_acg_video_list(session, avid, with_metadata=args.with_metadata),
+            )
             Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
-            acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             # 选集过滤
             episodes = parse_episodes(args.episodes, len(acg_video_list))
             acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
-            for i, acg_video_item in enumerate(acg_video_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+            num_videos = len(acg_video_list)
+
+            async def _parse_episodes_data_acg_video(
+                i: int,
+                acg_video_item: AcgVideoListItem,
+            ) -> Optional[EpisodeData]:
                 try:
-                    episode_data = await fetch_acg_video_data(
+                    return await fetch_acg_video_data(
                         session,
                         avid,
                         i + 1,
@@ -113,15 +135,19 @@ async def run(args: argparse.Namespace):
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
                     Logger.error(e.message)
-                    continue
-                download_list.append(episode_data)
+                    return None
+
+            coroutine_list = [
+                _parse_episodes_data_acg_video(i, acg_video_item) for i, acg_video_item in enumerate(acg_video_list)
+            ]
 
         # 匹配为收藏
         elif match_obj := regexp_favourite.match(url):
             mid = MId(match_obj.group("mid"))
             fid = FId(match_obj.group("fid"))
-            username = await get_uploader_name(session, mid)
-            favourite_info = await get_favourite_info(session, fid)
+            username, favourite_info = await asyncio.gather(
+                get_uploader_name(session, mid), get_favourite_info(session, fid)
+            )
             Logger.custom(favourite_info["title"], Badge("收藏夹", fore="black", back="cyan"))
 
             acg_video_list = [
@@ -129,14 +155,21 @@ async def run(args: argparse.Namespace):
                 for avid in await get_favourite_avids(session, fid)
                 for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
-            for i, acg_video_item in enumerate(acg_video_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+            num_videos = len(acg_video_list)
+
+            async def _parse_episodes_data_favourite(
+                i: int,
+                acg_video_item: AcgVideoListItem,
+            ) -> Optional[EpisodeData]:
                 try:
                     # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
-                    episode_data = await fetch_acg_video_data(
+                    # 至于为什么前面那俩（投稿视频页和番剧页）不需要额外 touch，因为在 get_redirected_url 阶段连接过了呀
+                    _, title, pubdate = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                        get_acg_video_pubdate(session, acg_video_item["avid"]),
+                    )
+                    return await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
                         i + 1,
@@ -152,8 +185,11 @@ async def run(args: argparse.Namespace):
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
-                    continue
-                download_list.append(episode_data)
+                    return None
+
+            coroutine_list = [
+                _parse_episodes_data_favourite(i, acg_video_item) for i, acg_video_item in enumerate(acg_video_list)
+            ]
 
         # 匹配为用户全部收藏
         elif match_obj := regexp_favourite_all.match(url):
@@ -167,14 +203,20 @@ async def run(args: argparse.Namespace):
                 for avid in await get_favourite_avids(session, fav["fid"])
                 for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
+            num_videos = len(acg_video_list)
 
-            for i, (acg_video_item, series_title) in enumerate(acg_video_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+            async def _parse_episodes_data_all_favourites(
+                i: int,
+                acg_video_item: AcgVideoListItem,
+                series_title: str,
+            ) -> Optional[EpisodeData]:
                 pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
                 try:
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    episode_data = await fetch_acg_video_data(
+                    _, title = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                    )
+                    return await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
                         i + 1,
@@ -185,15 +227,20 @@ async def run(args: argparse.Namespace):
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
-                    continue
-                download_list.append(episode_data)
+                    return None
+
+            coroutine_list = [
+                _parse_episodes_data_all_favourites(i, acg_video_item, series_title)
+                for i, (acg_video_item, series_title) in enumerate(acg_video_list)
+            ]
 
         # 匹配为视频合集
         elif (match_obj := regexp_medialist.match(url)) or (match_obj := regexp_series.match(url)):
             mid = MId(match_obj.group("mid"))
             series_id = SeriesId(match_obj.group("series_id"))
-            username = await get_uploader_name(session, mid)
-            series_title = await get_medialist_title(session, series_id)
+            username, series_title = await asyncio.gather(
+                get_uploader_name(session, mid), get_medialist_title(session, series_id)
+            )
             Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
 
             acg_video_list = [
@@ -201,13 +248,19 @@ async def run(args: argparse.Namespace):
                 for avid in await get_medialist_avids(session, series_id)
                 for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
-            for i, acg_video_item in enumerate(acg_video_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+            num_videos = len(acg_video_list)
+
+            async def _parse_episodes_data_series(
+                i: int,
+                acg_video_item: AcgVideoListItem,
+            ) -> Optional[EpisodeData]:
                 try:
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
-                    episode_data = await fetch_acg_video_data(
+                    _, title, pubdate = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                        get_acg_video_pubdate(session, acg_video_item["avid"]),
+                    )
+                    return await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
                         i + 1,
@@ -223,8 +276,11 @@ async def run(args: argparse.Namespace):
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
-                    continue
-                download_list.append(episode_data)
+                    return None
+
+            coroutine_list = [
+                _parse_episodes_data_series(i, acg_video_item) for i, acg_video_item in enumerate(acg_video_list)
+            ]
 
         # 匹配为 UP 主个人空间
         elif match_obj := regexp_space_all.match(url):
@@ -237,14 +293,19 @@ async def run(args: argparse.Namespace):
                 for avid in await get_uploader_space_all_videos_avids(session, mid)
                 for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
             ]
+            num_videos = len(acg_video_list)
 
-            for i, acg_video_item in enumerate(acg_video_list):
-                Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, len(acg_video_list)))
+            async def _parse_episodes_data_space(
+                i: int,
+                acg_video_item: AcgVideoListItem,
+            ) -> Optional[EpisodeData]:
                 try:
-                    await Fetcher.touch_url(session, acg_video_item["avid"].to_url())
-                    title = await get_acg_video_title(session, acg_video_item["avid"])
-                    pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
-                    episode_data = await fetch_acg_video_data(
+                    _, title, pubdate = await asyncio.gather(
+                        Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
+                        get_acg_video_title(session, acg_video_item["avid"]),
+                        get_acg_video_pubdate(session, acg_video_item["avid"]),
+                    )
+                    return await fetch_acg_video_data(
                         session,
                         acg_video_item["avid"],
                         i + 1,
@@ -255,13 +316,24 @@ async def run(args: argparse.Namespace):
                     )
                 except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
                     Logger.error(e.message)
-                    continue
-                download_list.append(episode_data)
+                    return None
+
+            coroutine_list = [
+                _parse_episodes_data_space(i, acg_video_item) for i, acg_video_item in enumerate(acg_video_list)
+            ]
 
         else:
             Logger.error("url 不正确～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
+        # 先解析各种资源链接
+        for i, coro in enumerate(asyncio.as_completed(coroutine_list)):
+            Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, num_videos))
+            episode_data = await coro
+            if episode_data is not None:
+                download_list.append(episode_data)
+
+        # 然后就可以下载啦～
         for i, episode_data in enumerate(download_list):
             Logger.custom(
                 f"{episode_data['filename']}", Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan")

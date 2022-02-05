@@ -23,6 +23,12 @@ class MaxRetry:
             while retry:
                 try:
                     return await connect_once(*args, **kwargs)
+                except (
+                    aiohttp.client_exceptions.ClientPayloadError,
+                    aiohttp.client_exceptions.ServerDisconnectedError,
+                ):
+                    await asyncio.sleep(0.5)
+                    Logger.warning(f"抓取失败，正在重试，剩余 {retry - 1} 次")
                 except asyncio.TimeoutError:
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 finally:
@@ -40,6 +46,7 @@ class Fetcher:
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
+    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)  # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
 
     @classmethod
     def set_proxy(cls, proxy: Union[Literal["no", "auto"], str]):
@@ -60,22 +67,29 @@ class Fetcher:
         Fetcher.cookies = {"SESSDATA": quote(unquote(sessdata))}
 
     @classmethod
+    def set_semaphore(cls, num_workers: int):
+        Fetcher.semaphore = asyncio.Semaphore(num_workers)
+
+    @classmethod
     @MaxRetry(2)
     async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
-        async with session.get(url, proxy=Fetcher.proxy) as resp:
-            return await resp.text(encoding=encoding)
+        async with cls.semaphore:
+            async with session.get(url, proxy=Fetcher.proxy) as resp:
+                return await resp.text(encoding=encoding)
 
     @classmethod
     @MaxRetry(2)
     async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
-        async with session.get(url, proxy=Fetcher.proxy) as resp:
-            return await resp.read()
+        async with cls.semaphore:
+            async with session.get(url, proxy=Fetcher.proxy) as resp:
+                return await resp.read()
 
     @classmethod
     @MaxRetry(2)
     async def fetch_json(cls, session: ClientSession, url: str) -> Any:
-        async with session.get(url, proxy=Fetcher.proxy) as resp:
-            return await resp.json()
+        async with cls.semaphore:
+            async with session.get(url, proxy=Fetcher.proxy) as resp:
+                return await resp.json()
 
     @classmethod
     @MaxRetry(2)
@@ -85,7 +99,8 @@ class Fetcher:
             proxy=Fetcher.proxy,
             ssl=False,
         ) as resp:
-            return str(resp.url)
+            async with cls.semaphore:
+                return str(resp.url)
 
     @classmethod
     @MaxRetry(2)
@@ -98,10 +113,11 @@ class Fetcher:
             proxy=Fetcher.proxy,
             ssl=False,
         ) as resp:
-            if resp.status == 206:
-                return int(resp.headers["Content-Range"].split("/")[-1])
-            else:
-                return None
+            async with cls.semaphore:
+                if resp.status == 206:
+                    return int(resp.headers["Content-Range"].split("/")[-1])
+                else:
+                    return None
 
     @classmethod
     @MaxRetry(2)
@@ -111,7 +127,8 @@ class Fetcher:
             proxy=Fetcher.proxy,
             ssl=False,
         ) as resp:
-            resp.close()
+            async with cls.semaphore:
+                resp.close()
 
     @classmethod
     async def download_file_with_offset(
@@ -124,48 +141,49 @@ class Fetcher:
         size: Optional[int],
         stream: bool = True,
     ) -> None:
-        done = False
-        headers = session.headers.copy()
-        url_pool = [url] + mirrors
-        block_offset = 0
-        while not done:
-            try:
-                url = random.choice(url_pool)
-                headers["Range"] = "bytes={}-{}".format(
-                    offset + block_offset, offset + size - 1 if size is not None else ""
-                )
-                async with session.get(
-                    url,
-                    headers=headers,
-                    timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
-                    proxy=Fetcher.proxy,
-                    ssl=False,
-                ) as resp:
-                    if stream:
-                        while True:
-                            # 如果直接用 1KiB 的话，会产生大量的块，消耗大量的 CPU 资源，
-                            # 反而使得协程的优势不明显
-                            # 而使用 1MiB 以上或者不使用流式下载方式时，由于分块太大，
-                            # 导致进度条显示的实时速度并不准，波动太大，用户体验不佳，
-                            # 因此取两者折中
-                            chunk = await resp.content.read(2 ** 15)
-                            if not chunk:
-                                break
+        async with cls.semaphore:
+            done = False
+            headers = session.headers.copy()
+            url_pool = [url] + mirrors
+            block_offset = 0
+            while not done:
+                try:
+                    url = random.choice(url_pool)
+                    headers["Range"] = "bytes={}-{}".format(
+                        offset + block_offset, offset + size - 1 if size is not None else ""
+                    )
+                    async with session.get(
+                        url,
+                        headers=headers,
+                        timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+                        proxy=Fetcher.proxy,
+                        ssl=False,
+                    ) as resp:
+                        if stream:
+                            while True:
+                                # 如果直接用 1KiB 的话，会产生大量的块，消耗大量的 CPU 资源，
+                                # 反而使得协程的优势不明显
+                                # 而使用 1MiB 以上或者不使用流式下载方式时，由于分块太大，
+                                # 导致进度条显示的实时速度并不准，波动太大，用户体验不佳，
+                                # 因此取两者折中
+                                chunk = await resp.content.read(2 ** 15)
+                                if not chunk:
+                                    break
+                                await file_buffer.write(chunk, offset + block_offset)
+                                block_offset += len(chunk)
+                        else:
+                            chunk = await resp.read()
                             await file_buffer.write(chunk, offset + block_offset)
                             block_offset += len(chunk)
-                    else:
-                        chunk = await resp.read()
-                        await file_buffer.write(chunk, offset + block_offset)
-                        block_offset += len(chunk)
-                # TODO: 是否需要校验总大小
-                done = True
+                    # TODO: 是否需要校验总大小
+                    done = True
 
-            except (
-                aiohttp.client_exceptions.ClientPayloadError,
-                aiohttp.client_exceptions.ServerDisconnectedError,
-            ):
-                await asyncio.sleep(0.5)
-                Logger.warning("文件 {} 下载出错，尝试重新连接...".format(file_buffer.file_path))
+                except (
+                    aiohttp.client_exceptions.ClientPayloadError,
+                    aiohttp.client_exceptions.ServerDisconnectedError,
+                ):
+                    await asyncio.sleep(0.5)
+                    Logger.warning("文件 {} 下载出错，尝试重新连接...".format(file_buffer.file_path))
 
-            except asyncio.TimeoutError:
-                Logger.warning("文件 {} 下载超时，尝试重新连接...".format(file_buffer.file_path))
+                except asyncio.TimeoutError:
+                    Logger.warning("文件 {} 下载超时，尝试重新连接...".format(file_buffer.file_path))

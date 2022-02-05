@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 
@@ -5,7 +6,6 @@ import aiohttp
 import pytest
 
 from yutto.processor.downloader import slice_blocks
-from yutto.utils.asynclib import parallel_with_limit
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functools import sync
@@ -26,16 +26,15 @@ async def test_1_5_M_downloader():
             trust_env=Fetcher.trust_env,
             timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
         ) as session:
+            Fetcher.set_semaphore(4)
             size = await Fetcher.get_size(session, url)
-            task_funcs = [
+            coroutines = [
                 Fetcher.download_file_with_offset(session, url, [], buffer, offset, block_size)
                 for offset, block_size in slice_blocks(buffer.written_size, size, 1 * 1024 * 1024)
             ]
 
-            tasks = parallel_with_limit(task_funcs, num_workers=4)
             print("开始下载……")
-            for task in tasks:
-                await task
+            await asyncio.gather(*coroutines)
             print("下载完成！")
             assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
     shutil.rmtree(test_dir)
@@ -56,13 +55,12 @@ async def test_1_5_M_no_slice_downloader():
             trust_env=Fetcher.trust_env,
             timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
         ) as session:
+            Fetcher.set_semaphore(4)
             size = await Fetcher.get_size(session, url)
-            task_funcs = [Fetcher.download_file_with_offset(session, url, [], buffer, 0, size)]
+            coroutines = [Fetcher.download_file_with_offset(session, url, [], buffer, 0, size)]
 
-            tasks = parallel_with_limit(task_funcs, num_workers=4)
             print("开始下载……")
-            for task in tasks:
-                await task
+            await asyncio.gather(*coroutines)
             print("下载完成！")
             assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
     shutil.rmtree(test_dir)

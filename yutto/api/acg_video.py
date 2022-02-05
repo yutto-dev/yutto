@@ -8,6 +8,7 @@ from yutto.api.info import get_video_info
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, VideoUrlMeta
+from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
@@ -32,6 +33,9 @@ async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
 async def get_acg_video_list(session: ClientSession, avid: AvId, with_metadata: bool = False) -> list[AcgVideoListItem]:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
+    if res_json.get("data") is None:
+        Logger.warning(f"啊叻？视频 {avid} 不见了诶")
+        return []
     acg_video_info: list[AcgVideoListItem] = [
         {
             "id": i + 1,
@@ -65,7 +69,7 @@ async def get_acg_video_playurl(
             raise NoAccessPermissionError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
         if resp_json["data"].get("dash") is None:
             raise UnSupportedTypeError("该视频（cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
-        # TODO: 处理 resp_json["dolby"]，应当是 Dolby 的音频流
+        # TODO: 处理 resp_json["data"]["dash"]["dolby"]，应当是 Dolby 的音频流
         return (
             [
                 {

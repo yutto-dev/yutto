@@ -1,10 +1,12 @@
 import asyncio
 import platform
-from typing import Any, Coroutine, Iterable
+from typing import Any, Coroutine, TypeVar, Callable
+from functools import wraps
+
 
 from yutto.utils.console.logger import Logger
 
-CoroutineTask = Coroutine[Any, Any, Any]
+T = TypeVar("T")
 
 
 def initial_async_policy():
@@ -23,21 +25,16 @@ def install_uvloop():
         Logger.info("成功使用 uvloop 加速协程")
 
 
-def parallel(funcs: Iterable[CoroutineTask]):
-    return [asyncio.create_task(func) for func in funcs]
+async def awaited_value(value: T) -> T:
+    return value
 
 
-def parallel_with_limit(funcs: Iterable[CoroutineTask], num_workers: int = 4):
-    tasks = asyncio.Queue[CoroutineTask]()
-    for func in funcs:
-        tasks.put_nowait(func)
+def with_semaphore(
+    func: Callable[..., Coroutine[Any, Any, T]], sem: asyncio.Semaphore
+) -> Callable[..., Coroutine[Any, Any, T]]:
+    @wraps(func)
+    async def limited_func(*args: Any, **kwargs: Any) -> T:
+        async with sem:
+            return await func(*args, **kwargs)
 
-    async def worker():
-        while True:
-            if not tasks.empty():
-                task = await tasks.get()
-                await task
-            else:
-                break
-
-    return [asyncio.create_task(worker()) for _ in range(num_workers)]
+    return limited_func
