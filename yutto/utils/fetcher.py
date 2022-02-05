@@ -46,7 +46,7 @@ class Fetcher:
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
-    semaphore: Optional[asyncio.Semaphore] = None
+    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)  # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
 
     @classmethod
     def set_proxy(cls, proxy: Union[Literal["no", "auto"], str]):
@@ -73,7 +73,6 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
-        assert cls.semaphore is not None
         async with cls.semaphore:
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.text(encoding=encoding)
@@ -81,7 +80,6 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
-        assert cls.semaphore is not None
         async with cls.semaphore:
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.read()
@@ -89,7 +87,6 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_json(cls, session: ClientSession, url: str) -> Any:
-        assert cls.semaphore is not None
         async with cls.semaphore:
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.json()
@@ -102,7 +99,6 @@ class Fetcher:
             proxy=Fetcher.proxy,
             ssl=False,
         ) as resp:
-            assert cls.semaphore is not None
             async with cls.semaphore:
                 return str(resp.url)
 
@@ -117,7 +113,6 @@ class Fetcher:
             proxy=Fetcher.proxy,
             ssl=False,
         ) as resp:
-            assert cls.semaphore is not None
             async with cls.semaphore:
                 if resp.status == 206:
                     return int(resp.headers["Content-Range"].split("/")[-1])
@@ -132,7 +127,6 @@ class Fetcher:
             proxy=Fetcher.proxy,
             ssl=False,
         ) as resp:
-            assert cls.semaphore is not None
             async with cls.semaphore:
                 resp.close()
 
@@ -147,7 +141,6 @@ class Fetcher:
         size: Optional[int],
         stream: bool = True,
     ) -> None:
-        assert cls.semaphore is not None
         async with cls.semaphore:
             done = False
             headers = session.headers.copy()
