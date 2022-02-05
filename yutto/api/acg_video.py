@@ -8,6 +8,7 @@ from yutto.api.info import get_video_info
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, VideoUrlMeta
+from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
@@ -32,6 +33,9 @@ async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
 async def get_acg_video_list(session: ClientSession, avid: AvId, with_metadata: bool = False) -> list[AcgVideoListItem]:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
+    if res_json.get("data") is None:
+        Logger.warning(f"啊叻？视频 {avid} 不见了诶")
+        return []
     acg_video_info: list[AcgVideoListItem] = [
         {
             "id": i + 1,
