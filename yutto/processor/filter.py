@@ -1,6 +1,6 @@
 import re
 import sys
-from typing import Optional, TypeVar
+from typing import Optional
 
 from yutto.api.acg_video import AudioUrlMeta, VideoUrlMeta
 from yutto.exceptions import ErrorCode
@@ -64,19 +64,6 @@ def select_audio(
             if audio["quality"] == aqn and audio["codec"] == acodec:
                 return audio
     return None
-
-
-T = TypeVar("T")
-
-
-def filter_none_value(l: list[Optional[T]]) -> list[T]:
-    result: list[T] = []
-    for item in l:
-        if item is not None:
-            result.append(item)
-    return result
-    # ? 不清楚直接这么写为什么类型不匹配
-    # return list(filter(lambda x: x is not None, l))
 
 
 def check_episodes(episodes_str: str) -> bool:

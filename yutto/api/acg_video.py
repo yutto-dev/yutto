@@ -69,7 +69,7 @@ async def get_acg_video_playurl(
             raise NoAccessPermissionError("无法下载该视频（cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message")))
         if resp_json["data"].get("dash") is None:
             raise UnSupportedTypeError("该视频（cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
-        # TODO: 处理 resp_json["dolby"]，应当是 Dolby 的音频流
+        # TODO: 处理 resp_json["data"]["dash"]["dolby"]，应当是 Dolby 的音频流
         return (
             [
                 {

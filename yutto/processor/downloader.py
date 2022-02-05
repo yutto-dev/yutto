@@ -1,22 +1,22 @@
 import asyncio
 import functools
 import os
-from typing import Any, Optional, Coroutine, TypeVar
+from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto.media.quality import audio_quality_map, video_quality_map
-from yutto.processor.filter import filter_none_value, select_audio, select_video
+from yutto.processor.filter import select_audio, select_video
 from yutto.processor.progressbar import show_progress
 from yutto.typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
-
-from yutto.utils.asynclib import CoroutineTask, parallel_with_limit
+from yutto.utils.asynclib import with_semaphore
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
+from yutto.utils.functools import filter_none_value, xmerge
 from yutto.utils.metadata import write_metadata
 from yutto.utils.subtitle import write_subtitle
 
@@ -46,32 +46,6 @@ def slice_blocks(
             total_size - start - (total_size - start) // block_size * block_size,
         )
     return offset_list
-
-
-T = TypeVar("T")
-
-
-def mix_list(*l_list: list[T]) -> list[T]:
-    """将多个 list 「均匀」地合并到一个 list
-
-    # example
-
-    ```
-    l_list = [
-        [1, 2, 3, 4, 5],
-        [6, 7, 8],
-        [9, 10, 11, 12]
-    ]
-    mix_list(l_list)
-    # [1, 6, 9, 2, 7, 10, 3, 8, 11, 4, 12, 5]
-    ```
-    """
-    results: list[T] = []
-    for i in range(max([len(l) for l in l_list])):
-        for l in l_list:
-            if i < len(l):
-                results.append(l[i])
-    return results
 
 
 def show_videos_info(videos: list[VideoUrlMeta], selected: int):
@@ -122,51 +96,42 @@ async def download_video_and_audio(
 
     buffers: list[Optional[AsyncFileBuffer]] = [None, None]
     sizes: list[Optional[int]] = [None, None]
-    task_funcs: list[list[CoroutineTask]] = []
-    # task_funcs: list[list[Coroutine[Any, Any, None]]] = []
+    coroutines_list: list[list[Coroutine[Any, Any, None]]] = []
+    sem = asyncio.Semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await Fetcher.get_size(session, video["url"])
-        vtask_funcs = [
-            Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
+        video_coroutines = [
+            with_semaphore(Fetcher.download_file_with_offset, sem)(
+                session, video["url"], video["mirrors"], vbuf, offset, block_size
+            )
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
         ]
-        task_funcs.append(vtask_funcs)
+        coroutines_list.append(video_coroutines)
         buffers[0], sizes[0] = vbuf, vsize
 
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
         asize = await Fetcher.get_size(session, audio["url"])
-        atask_funcs = [
-            Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
+        audio_coroutines = [
+            with_semaphore(Fetcher.download_file_with_offset, sem)(
+                session, audio["url"], audio["mirrors"], abuf, offset, block_size
+            )
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
         ]
-        task_funcs.append(atask_funcs)
+        coroutines_list.append(audio_coroutines)
         buffers[1], sizes[1] = abuf, asize
 
-    # tasks = mix_list(*task_funcs)
-    # tasks.insert(0, show_progress(filter_none_value(buffers), sum(filter_none_value(sizes))))
-    # num_tasks = len(tasks)
-    # Logger.info("开始下载……")
-    # async with asyncio.Semaphore(options["num_workers"]):
-    #     for i, task in enumerate(asyncio.as_completed(tasks)):
-    #         await task
-    #         # print(f"{i}/{num_tasks}")
-
-    # Logger.info("下载完成！")
-
-    tasks = parallel_with_limit(mix_list(*task_funcs), num_workers=options["num_workers"])
-    tasks.append(asyncio.create_task(show_progress(filter_none_value(buffers), sum(filter_none_value(sizes)))))
-
+    # 为保证音频流和视频流尽可能并行，因此将两者混合一下～
+    coroutines = list(xmerge(*coroutines_list))
+    coroutines.insert(0, show_progress(list(filter_none_value(buffers)), sum(filter_none_value(sizes))))
     Logger.info("开始下载……")
-    for task in tasks:
-        await task
+    await asyncio.gather(*coroutines)
     Logger.info("下载完成！")
 
-    if video is not None:
-        await vbuf.close()
-    if audio is not None:
-        await abuf.close()
+    for buffer in buffers:
+        if buffer is not None:
+            await buffer.close()
 
 
 def merge_video_and_audio(
