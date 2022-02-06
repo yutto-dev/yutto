@@ -24,8 +24,8 @@ class MaxRetry:
                 try:
                     return await connect_once(*args, **kwargs)
                 except (
-                    aiohttp.client_exceptions.ClientPayloadError,
-                    aiohttp.client_exceptions.ServerDisconnectedError,
+                    aiohttp.client_exceptions.ClientPayloadError,  # type: ignore
+                    aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
                 ):
                     await asyncio.sleep(0.5)
                     Logger.warning(f"抓取失败，正在重试，剩余 {retry - 1} 次")
@@ -179,8 +179,8 @@ class Fetcher:
                     done = True
 
                 except (
-                    aiohttp.client_exceptions.ClientPayloadError,
-                    aiohttp.client_exceptions.ServerDisconnectedError,
+                    aiohttp.client_exceptions.ClientPayloadError,  # type: ignore
+                    aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
                 ):
                     await asyncio.sleep(0.5)
                     Logger.warning("文件 {} 下载出错，尝试重新连接...".format(file_buffer.file_path))

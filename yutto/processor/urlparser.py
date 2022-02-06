@@ -70,7 +70,7 @@ def alias_parser(f_alias: Optional[TextIO]) -> dict[str, str]:
 
 
 def file_scheme_parser(url: str) -> list[str]:
-    file_url: str = urllib.parse.urlparse(url).path
+    file_url: str = urllib.parse.urlparse(url).path  # type: ignore
     file_path: str = urllib.request.url2pathname(file_url)
     Logger.info("解析下载列表 {} 中...".format(file_path))
     result: list[str] = []
