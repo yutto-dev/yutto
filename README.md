@@ -44,7 +44,7 @@ yay -S yutto
 docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 ```
 
-与直接运行 yutto 不同的是，这里的下载目标路径是通过 `-v <path>:/app` 指定的，也就是说 docker 里的 yutto 会将内容下载到 docker 里的 `/app` 目录下，而你绑定的外部路径 `<path>` 就是下载路径。你也可以直接绑定 `$(pwd)`，此时就和本机 yutto 的默认行为一致啦，也是下载到当前目录下～
+与直接运行 yutto 不同的是，这里的下载目标路径是通过 `-v <path>:/app` 指定的，也就是说 docker 里的 yutto 会将内容下载到 docker 里的 `/app` 目录下，与之相对应的挂载点 `<path>` 就是下载路径。你也可以直接挂载到 `$(pwd)`，此时就和本机 yutto 的默认行为一致啦，也是下载到当前目录下～
 
 ### pip 安装
 
