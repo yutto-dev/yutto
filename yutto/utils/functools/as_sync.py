@@ -6,7 +6,7 @@ from functools import wraps
 T = TypeVar("T")
 
 
-def sync(async_func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
+def as_sync(async_func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
     """将异步函数变成同步函数，避免在调用时需要显式使用 asyncio.run
 
     # Usage
@@ -19,7 +19,7 @@ def sync(async_func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
     s: str = asyncio.run(itoa(1))
 
     # 使用 sync
-    @sync
+    @as_sync
     async def itoa(a: int) -> str:
         return str(a)
     s: str = itoa(1)
@@ -35,7 +35,7 @@ def sync(async_func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
 
 if __name__ == "__main__":
 
-    @sync
+    @as_sync
     async def run(a: int) -> int:
         return a
 

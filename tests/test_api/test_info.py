@@ -4,12 +4,12 @@ import pytest
 from yutto.api.info import get_video_info, is_vip
 from yutto.typing import AId, BvId, CId, EpisodeId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
 @pytest.mark.api
 @pytest.mark.ci_skip
-@sync
+@as_sync
 async def test_get_video_info():
     bvid = BvId("BV1q7411v7Vd")
     aid = AId("84271171")
@@ -32,7 +32,7 @@ async def test_get_video_info():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_is_vip():
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,

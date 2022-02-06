@@ -28,11 +28,10 @@ from yutto.processor.downloader import process_video_download
 from yutto.processor.path_resolver import UNKNOWN, PathTemplateVariableDict, resolve_path_template
 from yutto.processor.urlparser import regexp_acg_video_av, regexp_acg_video_bv, regexp_bangumi_ep
 from yutto.typing import AId, AvId, BvId, EpisodeData, EpisodeId
-from yutto.utils.asynclib import awaited_value
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
 async def fetch_bangumi_data(
@@ -132,7 +131,7 @@ async def fetch_acg_video_data(
     )
 
 
-@sync
+@as_sync
 async def run(args: argparse.Namespace):
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,

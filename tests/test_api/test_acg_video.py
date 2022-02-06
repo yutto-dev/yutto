@@ -4,11 +4,11 @@ import pytest
 from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles, get_acg_video_title
 from yutto.typing import BvId, CId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_acg_video_title():
     avid = BvId("BV1vZ4y1M7mQ")
     async with aiohttp.ClientSession(
@@ -22,7 +22,7 @@ async def test_get_acg_video_title():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_acg_video_list():
     avid = BvId("BV1vZ4y1M7mQ")
     async with aiohttp.ClientSession(
@@ -46,7 +46,7 @@ async def test_get_acg_video_list():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_acg_video_playurl():
     avid = BvId("BV1vZ4y1M7mQ")
     cid = CId("222190584")
@@ -62,7 +62,7 @@ async def test_get_acg_video_playurl():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_acg_video_subtitles():
     avid = BvId("BV1Ra411A7kN")
     cid = CId("253246252")

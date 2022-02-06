@@ -8,11 +8,11 @@ import pytest
 from yutto.processor.downloader import slice_blocks
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
 @pytest.mark.downloader
-@sync
+@as_sync
 async def test_1_5_M_downloader():
     test_dir = "./downloader_test/"
     url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
@@ -41,7 +41,7 @@ async def test_1_5_M_downloader():
 
 
 @pytest.mark.downloader
-@sync
+@as_sync
 async def test_1_5_M_no_slice_downloader():
     test_dir = "./downloader_test/"
     url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"

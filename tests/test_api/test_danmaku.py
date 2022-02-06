@@ -4,11 +4,11 @@ import pytest
 from yutto.api.danmaku import get_danmaku, get_protobuf_danmaku, get_xml_danmaku
 from yutto.typing import CId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_xml_danmaku():
     cid = CId("144541892")
     async with aiohttp.ClientSession(
@@ -22,7 +22,7 @@ async def test_xml_danmaku():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_protobuf_danmaku():
     cid = CId("144541892")
     async with aiohttp.ClientSession(
@@ -36,7 +36,7 @@ async def test_protobuf_danmaku():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_danmaku():
     cid = CId("144541892")
     async with aiohttp.ClientSession(

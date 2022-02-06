@@ -41,10 +41,10 @@ from yutto.processor.urlparser import (
 from yutto.typing import AId, BvId, EpisodeData, EpisodeId, FId, MediaId, MId, SeasonId, SeriesId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
-@sync
+@as_sync
 async def run(args: argparse.Namespace):
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,

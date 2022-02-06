@@ -12,11 +12,11 @@ from yutto.api.space import (
 )
 from yutto.typing import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import sync
+from yutto.utils.functools import as_sync
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_uploader_space_all_videos_avids():
     mid = MId("100969474")
     async with aiohttp.ClientSession(
@@ -31,7 +31,7 @@ async def test_get_uploader_space_all_videos_avids():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_uploader_name():
     mid = MId("100969474")
     async with aiohttp.ClientSession(
@@ -45,7 +45,7 @@ async def test_get_uploader_name():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_favourite_info():
     fid = FId("1306978874")
     async with aiohttp.ClientSession(
@@ -60,7 +60,7 @@ async def test_get_favourite_info():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_favourite_avids():
     fid = FId("1306978874")
     async with aiohttp.ClientSession(
@@ -74,7 +74,7 @@ async def test_get_favourite_avids():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_all_favourites():
     mid = MId("100969474")
     async with aiohttp.ClientSession(
@@ -88,7 +88,7 @@ async def test_all_favourites():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_medialist_avids():
     series_id = SeriesId("1947439")
     async with aiohttp.ClientSession(
@@ -102,7 +102,7 @@ async def test_get_medialist_avids():
 
 
 @pytest.mark.api
-@sync
+@as_sync
 async def test_get_medialist_title():
     series_id = SeriesId("1947439")
     async with aiohttp.ClientSession(
