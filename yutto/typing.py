@@ -1,7 +1,7 @@
 from typing import NamedTuple, TypedDict, Optional
 
-from yutto.media.codec import AudioCodec, VideoCodec
-from yutto.media.quality import AudioQuality, VideoQuality
+from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
+from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
 from yutto.utils.danmaku import DanmakuData
 from yutto.utils.subtitle import SubtitleData
 from yutto.utils.metadata import MetaData

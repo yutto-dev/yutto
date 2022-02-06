@@ -7,7 +7,7 @@ import sys
 from yutto.__version__ import VERSION as yutto_version
 from yutto.cli import batch_get, checker, get
 from yutto.exceptions import ErrorCode
-from yutto.media.quality import audio_quality_priority_default, video_quality_priority_default
+from yutto.bilibili_typing.quality import audio_quality_priority_default, video_quality_priority_default
 from yutto.processor.urlparser import alias_parser, file_scheme_parser, bare_name_parser
 from yutto.utils.console.logger import Logger, Badge
 

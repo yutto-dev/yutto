@@ -5,7 +5,7 @@ from typing import Any, Coroutine, Optional
 
 import aiohttp
 
-from yutto.media.quality import audio_quality_map, video_quality_map
+from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import select_audio, select_video
 from yutto.processor.progressbar import show_progress
 from yutto.typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
