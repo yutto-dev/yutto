@@ -2,7 +2,7 @@ import aiohttp
 import pytest
 
 from yutto.api.danmaku import get_danmaku, get_protobuf_danmaku, get_xml_danmaku
-from yutto.typing import CId
+from yutto._typing import CId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 

@@ -1,18 +1,45 @@
 import argparse
-import re
-import os
 import copy
+import os
+import re
 import sys
 
+import aiohttp
+
+from yutto.validator import initial_validate, validate_basic_arguments, validate_batch_argments
 from yutto.__version__ import VERSION as yutto_version
-from yutto.cli import batch_get, checker, get
-from yutto.exceptions import ErrorCode
 from yutto.bilibili_typing.quality import audio_quality_priority_default, video_quality_priority_default
-from yutto.processor.urlparser import alias_parser, file_scheme_parser, bare_name_parser
-from yutto.utils.console.logger import Logger, Badge
+from yutto.exceptions import ErrorCode
+from yutto.extractor import (
+    AcgVideoBatchExtractor,
+    AcgVideoExtractor,
+    BangumiBatchExtractor,
+    BangumiExtractor,
+    FavouritesAllExtractor,
+    FavouritesExtractor,
+    SeriesExtractor,
+    UploaderAllVideosExtractor,
+)
+from yutto.processor.downloader import start_downloader
+from yutto.processor.urlparser import alias_parser, bare_name_parser, file_scheme_parser
+from yutto.utils.console.logger import Badge, Logger
+from yutto.utils.fetcher import Fetcher
+from yutto.utils.functools import as_sync
 
 
 def main():
+    parser = cli()
+    args = parser.parse_args()
+    initial_validate(args)
+    args_list = flatten_args(args, parser)
+    try:
+        run(args_list)
+    except (SystemExit, KeyboardInterrupt):
+        Logger.info("已终止下载，再次运行即可继续下载～")
+        sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
+
+
+def cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {yutto_version}")
     parser.add_argument("url", help="视频主页 url 或 url 列表（需使用 file scheme）")
@@ -72,31 +99,92 @@ def main():
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
     group_batch_file.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
 
-    # 执行各自的 run
-    args = parser.parse_args()
-    checker.initial_check(args)
-    args_list = flatten_args(args, parser)
-    if len(args_list) > 1:
-        Logger.info(f"列表里共检测到 {len(args_list)} 项")
-    try:
+    return parser
+
+
+@as_sync
+async def run(args_list: list[argparse.Namespace]):
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        if len(args_list) > 1:
+            Logger.info(f"列表里共检测到 {len(args_list)} 项")
+
         for i, args in enumerate(args_list):
             if len(args_list) > 1:
                 Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
+            # 重定向到可识别的 url
+            url: str = args.url
+            url = await Fetcher.get_redirected_url(session, url)
+            # 提取链接～
             if not args.batch:
-                get.run(args)
+                # 非批量下载
+                extractors = [
+                    AcgVideoExtractor(),
+                    BangumiExtractor(),
+                ]
+                for extractor in extractors:
+                    if extractor.match(url):
+                        download_list = await extractor(session, args)
+                        break
+                else:
+                    Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
+                    sys.exit(ErrorCode.WRONG_URL_ERROR.value)
             else:
-                checker.check_batch_argments(args)
-                batch_get.run(args)
+                # 批量下载
+                validate_batch_argments(args)
+                extractors = [
+                    AcgVideoBatchExtractor(),
+                    BangumiBatchExtractor(),
+                    FavouritesExtractor(),
+                    FavouritesAllExtractor(),
+                    SeriesExtractor(),
+                    UploaderAllVideosExtractor(),
+                ]
+                for extractor in extractors:
+                    if extractor.match(url):
+                        download_list = await extractor(session, args)
+                        break
+                else:
+                    # TODO: 指向文档中受支持的列表部分
+                    Logger.error("url 不正确呦～")
+                    sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+
+            # 下载～
+            for i, episode_data in enumerate(download_list):
+                if args.batch:
+                    Logger.custom(
+                        f"{episode_data['filename']}",
+                        Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
+                    )
+                await start_downloader(
+                    session,
+                    episode_data,
+                    {
+                        "require_video": args.require_video,
+                        "video_quality": args.video_quality,
+                        "video_download_codec": args.vcodec.split(":")[0],
+                        "video_save_codec": args.vcodec.split(":")[1],
+                        "require_audio": args.require_audio,
+                        "audio_quality": args.audio_quality,
+                        "audio_download_codec": args.acodec.split(":")[0],
+                        "audio_save_codec": args.acodec.split(":")[1],
+                        "overwrite": args.overwrite,
+                        "block_size": int(args.block_size * 1024 * 1024),
+                        "num_workers": args.num_workers,
+                    },
+                )
+                Logger.new_line()
             Logger.new_line()
-    except (SystemExit, KeyboardInterrupt):
-        Logger.info("已终止下载，再次运行即可继续下载～")
-        sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
 
 
 def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[argparse.Namespace]:
     """递归展平列表参数"""
     args = copy.copy(args)
-    checker.check_basic_arguments(args)
+    validate_basic_arguments(args)
     # 查看是否存在于 alias 中
     alias_map = alias_parser(args.alias_file)
     if args.url in alias_map:

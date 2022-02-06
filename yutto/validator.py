@@ -17,7 +17,7 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 
 
-def initial_check(args: argparse.Namespace):
+def initial_validate(args: argparse.Namespace):
     """初始化检查，仅执行一次"""
 
     Logger.enable_statusbar()
@@ -48,13 +48,13 @@ def initial_check(args: argparse.Namespace):
         Logger.info("未提供 SESSDATA，无法下载会员专享剧集哟～")
     else:
         Fetcher.set_sessdata(args.sessdata)
-        if asyncio.run(check_is_vip(args.sessdata)):
+        if asyncio.run(vip_validate()):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
 
 
-def check_basic_arguments(args: argparse.Namespace):
+def validate_basic_arguments(args: argparse.Namespace):
     """检查 argparse 无法检查的选项，并设置某些全局的状态"""
 
     ffmpeg = FFmpeg()
@@ -137,7 +137,7 @@ def check_basic_arguments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-def check_batch_argments(args: argparse.Namespace):
+def validate_batch_argments(args: argparse.Namespace):
     """检查批量下载相关选项"""
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
     if not check_episodes(args.episodes):
@@ -146,7 +146,7 @@ def check_batch_argments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-async def check_is_vip(sessdata: str = "") -> bool:
+async def vip_validate() -> bool:
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,

@@ -1,6 +1,6 @@
 import aiohttp
 
-from yutto.typing import CId
+from yutto._typing import CId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
 

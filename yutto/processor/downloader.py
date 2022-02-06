@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import functools
 import os
@@ -5,10 +6,10 @@ from typing import Any, Coroutine, Optional
 
 import aiohttp
 
+from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
 from yutto.processor.filter import select_audio, select_video
 from yutto.processor.progressbar import show_progress
-from yutto.typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
@@ -165,7 +166,7 @@ def merge_video_and_audio(
         os.remove(audio_path)
 
 
-async def process_video_download(
+async def start_downloader(
     session: aiohttp.ClientSession,
     episode_data: EpisodeData,
     options: DownloaderOptions,

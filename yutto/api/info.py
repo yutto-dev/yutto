@@ -5,7 +5,7 @@ from aiohttp import ClientSession
 
 from yutto.exceptions import NotFoundError
 from yutto.processor.urlparser import regexp_bangumi_ep
-from yutto.typing import AId, AvId, BvId, CId, EpisodeId
+from yutto._typing import AId, AvId, BvId, CId, EpisodeId
 from yutto.utils.fetcher import Fetcher
 
 

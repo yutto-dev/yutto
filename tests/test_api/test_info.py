@@ -2,7 +2,7 @@ import aiohttp
 import pytest
 
 from yutto.api.info import get_video_info, is_vip
-from yutto.typing import AId, BvId, CId, EpisodeId
+from yutto._typing import AId, BvId, CId, EpisodeId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 

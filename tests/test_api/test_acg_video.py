@@ -2,7 +2,7 @@ import aiohttp
 import pytest
 
 from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles, get_acg_video_title
-from yutto.typing import BvId, CId
+from yutto._typing import BvId, CId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 

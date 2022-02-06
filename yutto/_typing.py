@@ -1,10 +1,10 @@
-from typing import NamedTuple, TypedDict, Optional
+from typing import NamedTuple, Optional, TypedDict
 
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
 from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
 from yutto.utils.danmaku import DanmakuData
-from yutto.utils.subtitle import SubtitleData
 from yutto.utils.metadata import MetaData
+from yutto.utils.subtitle import SubtitleData
 
 
 class BilibiliId(NamedTuple):
