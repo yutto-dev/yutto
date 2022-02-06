@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import sys
-from typing import Any, Optional, Coroutine
+from typing import Any, Coroutine, Optional
 
 import aiohttp
 
@@ -15,6 +15,8 @@ from yutto.api.bangumi import (
 )
 from yutto.api.space import (
     get_all_favourites,
+    get_collection_avids,
+    get_collection_title,
     get_favourite_avids,
     get_favourite_info,
     get_medialist_avids,
@@ -32,6 +34,7 @@ from yutto.processor.urlparser import (
     regexp_bangumi_ep,
     regexp_bangumi_md,
     regexp_bangumi_ss,
+    regexp_collection,
     regexp_favourite,
     regexp_favourite_all,
     regexp_medialist,
@@ -249,20 +252,36 @@ async def run(args: argparse.Namespace):
                 for i, (acg_video_item, series_title) in enumerate(acg_video_list)
             ]
 
-        # 匹配为视频合集
-        elif (match_obj := regexp_medialist.match(url)) or (match_obj := regexp_series.match(url)):
+        # 匹配为合集/视频列表
+        elif (match_obj := regexp_medialist.match(url)) or (
+            match_obj := regexp_series.match(url) or (match_obj := regexp_collection.match(url))
+        ):
             mid = MId(match_obj.group("mid"))
             series_id = SeriesId(match_obj.group("series_id"))
-            username, series_title = await asyncio.gather(
-                get_uploader_name(session, mid), get_medialist_title(session, series_id)
-            )
-            Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
+            # 视频合集
+            if regexp_collection.match(url):
+                username, series_title = await asyncio.gather(
+                    get_uploader_name(session, mid), get_collection_title(session, series_id)
+                )
+                Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
 
-            acg_video_list = [
-                acg_video_item
-                for avid in await get_medialist_avids(session, series_id)
-                for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
-            ]
+                acg_video_list = [
+                    acg_video_item
+                    for avid in await get_collection_avids(session, series_id)
+                    for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
+                ]
+            # 视频列表
+            else:
+                username, series_title = await asyncio.gather(
+                    get_uploader_name(session, mid), get_medialist_title(session, series_id)
+                )
+                Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
+
+                acg_video_list = [
+                    acg_video_item
+                    for avid in await get_medialist_avids(session, series_id)
+                    for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
+                ]
             num_videos = len(acg_video_list)
 
             async def _parse_episodes_data_series(

@@ -9,6 +9,8 @@ from yutto.api.space import (
     get_medialist_title,
     get_uploader_name,
     get_uploader_space_all_videos_avids,
+    get_collection_title,
+    get_collection_avids,
 )
 from yutto.typing import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
@@ -113,3 +115,34 @@ async def test_get_medialist_title():
     ) as session:
         title = await get_medialist_title(session, series_id=series_id)
         assert title == "一个小合集～"
+
+
+@pytest.mark.api
+@as_sync
+async def test_get_collection_avids():
+    # 测试页面：https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195&ctype=0
+    series_id = SeriesId("23195")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        avids = await get_collection_avids(session, series_id=series_id)
+        assert BvId("BV1xy4y1G7tz") in avids
+        assert BvId("BV1k34y1S71P") in avids
+
+
+@pytest.mark.api
+@as_sync
+async def test_get_collection_title():
+    # 测试页面：https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195&ctype=0
+    series_id = SeriesId("23195")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        title = await get_collection_title(session, series_id=series_id)
+        assert title == "算法入门【Go语言】"
