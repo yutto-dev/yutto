@@ -117,5 +117,9 @@ class Logger:
         print(string, *print_args, **print_kwargs)
 
     @classmethod
+    def new_line(cls):
+        cls.print("")
+
+    @classmethod
     def is_debug(cls) -> bool:
         return _logger_debug

@@ -89,7 +89,7 @@ def parse_episodes(episodes_str: str, total: int) -> list[int]:
         return value if value > 0 else value + total + 1
 
     # 解析字符串为列表
-    Logger.info("全 {} 话".format(total))
+    Logger.info(f"全 {total} 话")
     if check_episodes(episodes_str):
         episodes_str = episodes_str.replace("^", "1")
         episodes_str = episodes_str.replace("$", "-1")

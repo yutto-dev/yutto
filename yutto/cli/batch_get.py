@@ -363,12 +363,13 @@ async def run(args: argparse.Namespace):
             ]
 
         else:
-            Logger.error("url 不正确～")
+            # TODO: 指向文档中受支持的列表部分
+            Logger.error("url 不正确呦～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
         # 先解析各种资源链接
         for i, coro in enumerate(asyncio.as_completed(coroutine_list)):
-            Logger.status.set("正在努力解析第 {}/{} 个视频".format(i + 1, num_videos))
+            Logger.status.set(f"正在努力解析第 {i+1}/{num_videos} 个视频")
             results = await coro
             if results is not None:
                 download_list.append(results)
@@ -398,4 +399,4 @@ async def run(args: argparse.Namespace):
                     "num_workers": args.num_workers,
                 },
             )
-            Logger.print("")
+            Logger.new_line()

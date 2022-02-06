@@ -37,7 +37,7 @@ def slice_blocks(
         return [(0, None)]
     if block_size is None:
         return [(0, total_size - 1)]
-    assert start <= total_size, "起始地址（{}）大于总地址（{}）".format(start, total_size)
+    assert start <= total_size, f"起始地址（{start}）大于总地址（{total_size}）"
     offset_list: list[tuple[int, Optional[int]]] = [(i, block_size) for i in range(start, total_size, block_size)]
     if (total_size - start) % block_size != 0:
         offset_list[-1] = (
@@ -181,7 +181,7 @@ async def process_video_download(
     tmp_dir = episode_data["tmp_dir"]
     filename = episode_data["filename"]
 
-    Logger.info("开始处理视频 {}".format(filename))
+    Logger.info(f"开始处理视频 {filename}")
     if not os.path.isdir(tmp_dir):
         os.makedirs(tmp_dir)
     tmp_path_no_ext = os.path.join(tmp_dir, filename)
@@ -202,7 +202,7 @@ async def process_video_download(
     output_path = output_path_no_ext + output_format
     if os.path.exists(output_path):
         if not options["overwrite"]:
-            Logger.info("文件 {} 已存在".format(filename))
+            Logger.info(f"文件 {filename} 已存在")
             return
         else:
             Logger.info("文件已存在，因启用 overwrite 选项强制删除……")

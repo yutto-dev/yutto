@@ -42,7 +42,7 @@ def repair_filename(filename: str) -> str:
     filename = filename.strip()
     filename = regex_dots.sub("……", filename)
     if not filename:
-        filename = "未命名文件_{:04}".format(_count)
+        filename = f"未命名文件_{_count:04}"
         _count += 1
     return filename
 

@@ -57,7 +57,7 @@ class AsyncFileBuffer(aobject):
             assert self.file_obj is not None
             ready_to_write_chunk = heapq.heappop(self.buffer)
             if ready_to_write_chunk.offset < self.written_size:
-                Logger.error("交叠的块范围 {} < {}，舍弃！".format(ready_to_write_chunk.offset, self.written_size))
+                Logger.error(f"交叠的块范围 {ready_to_write_chunk.offset} < {self.written_size}，舍弃！")
                 continue
             await self.file_obj.write(ready_to_write_chunk.data)
             self.written_size += len(ready_to_write_chunk.data)

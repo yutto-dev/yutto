@@ -40,7 +40,7 @@ class Subtitle:
 def write_subtitle(subtitle_data: SubtitleData, video_path: str, lang: str):
     sub = Subtitle()
     video_path_no_ext = os.path.splitext(video_path)[0]
-    subtitle_path = "{}_{}.srt".format(video_path_no_ext, lang)
+    subtitle_path = f"{video_path_no_ext}_{lang}.srt"
     for subline in subtitle_data:
         sub.write_subtitle(subline)
     with open(subtitle_path, "w", encoding="utf-8") as f:

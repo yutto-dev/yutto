@@ -14,7 +14,7 @@ from yutto.utils.console.logger import Logger, Badge
 
 def main():
     parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
-    parser.add_argument("-v", "--version", action="version", version="%(prog)s {}".format(yutto_version))
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {yutto_version}")
     parser.add_argument("url", help="视频主页 url 或 url 列表（需使用 file scheme）")
     group_common = parser.add_argument_group("common", "通用参数")
     group_common.add_argument("-n", "--num-workers", type=int, default=8, help="同时用于下载的最大 Worker 数")
@@ -77,7 +77,7 @@ def main():
     checker.initial_check(args)
     args_list = flatten_args(args, parser)
     if len(args_list) > 1:
-        Logger.info(f"列表共 {len(args_list)} 项")
+        Logger.info(f"列表里共检测到 {len(args_list)} 项")
     try:
         for i, args in enumerate(args_list):
             if len(args_list) > 1:
@@ -87,7 +87,7 @@ def main():
             else:
                 checker.check_batch_argments(args)
                 batch_get.run(args)
-            Logger.print("")
+            Logger.new_line()
     except (SystemExit, KeyboardInterrupt):
         Logger.info("已终止下载，再次运行即可继续下载～")
         sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
@@ -111,7 +111,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
             local_args = parser.parse_args(line.split(), args)
             if local_args.no_inherit:
                 local_args = parser.parse_args(line.split())
-            Logger.debug("列表参数: {}".format(local_args))
+            Logger.debug(f"列表参数: {local_args}")
             args_list += flatten_args(local_args, parser)
         return args_list
     else:

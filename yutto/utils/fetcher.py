@@ -183,7 +183,7 @@ class Fetcher:
                     aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
                 ):
                     await asyncio.sleep(0.5)
-                    Logger.warning("文件 {} 下载出错，尝试重新连接...".format(file_buffer.file_path))
+                    Logger.warning(f"文件 {file_buffer.file_path} 下载出错，尝试重新连接...")
 
                 except asyncio.TimeoutError:
-                    Logger.warning("文件 {} 下载超时，尝试重新连接...".format(file_buffer.file_path))
+                    Logger.warning(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...")
