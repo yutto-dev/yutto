@@ -12,7 +12,7 @@ from yutto.api.space import (
     get_collection_title,
     get_collection_avids,
 )
-from yutto.typing import AId, BvId, FId, MId, SeriesId
+from yutto._typing import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 

@@ -1,11 +1,11 @@
+import re
 import time
 from typing import TypedDict
 
 from aiohttp import ClientSession
 
+from yutto._typing import AId, AvId, BvId, CId, EpisodeId
 from yutto.exceptions import NotFoundError
-from yutto.processor.urlparser import regexp_bangumi_ep
-from yutto.typing import AId, AvId, BvId, CId, EpisodeId
 from yutto.utils.fetcher import Fetcher
 
 
@@ -22,6 +22,7 @@ class VideoInfo(TypedDict):
 
 
 async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
+    regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
     res_json = await Fetcher.fetch_json(session, info_api.format(**avid.to_dict()))
     res_json_data = res_json.get("data")
@@ -29,7 +30,7 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
     assert res_json_data is not None, "响应数据无 data 域"
     episode_id = EpisodeId("")
-    if res_json_data.get("redirect_url") and (ep_match := regexp_bangumi_ep.match(res_json_data["redirect_url"])):
+    if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
         episode_id = EpisodeId(ep_match.group("episode_id"))
     return {
         "avid": BvId(res_json_data["bvid"]),

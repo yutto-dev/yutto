@@ -9,7 +9,7 @@ from yutto.api.bangumi import (
     get_season_id_by_media_id,
     get_season_id_by_episode_id,
 )
-from yutto.typing import BvId, CId, MediaId, SeasonId, EpisodeId
+from yutto._typing import BvId, CId, MediaId, SeasonId, EpisodeId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 

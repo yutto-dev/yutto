@@ -2,7 +2,7 @@ import math
 
 from aiohttp import ClientSession
 
-from yutto.typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
+from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
 
 
