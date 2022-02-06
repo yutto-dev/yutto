@@ -1,24 +1,36 @@
 import argparse
+import re
 from typing import Optional
 
 import aiohttp
 
+from yutto._typing import EpisodeData, EpisodeId
 from yutto.api.bangumi import get_bangumi_title, get_season_id_by_episode_id
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_bangumi_data
-from yutto.processor.urlparser import regexp_bangumi_ep
-from yutto._typing import EpisodeData, EpisodeId
 from yutto.utils.console.logger import Badge, Logger
 
 
 class BangumiExtractor(SingleExtractor):
     """番剧单话"""
 
+    REGEX_EP = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
+
+    REGEX_EP_ID = re.compile(r"ep(?P<episode_id>\d+)")
+
     episode_id: EpisodeId
 
+    def resolve_shortcut(self, id: str) -> tuple[bool, str]:
+        matched = False
+        url = id
+        if match_obj := self.REGEX_EP_ID.match(id):
+            url = f"https://www.bilibili.com/bangumi/play/ep{match_obj.group('episode_id')}"
+            matched = True
+        return matched, url
+
     def match(self, url: str) -> bool:
-        if match_obj := regexp_bangumi_ep.match(url):
+        if match_obj := self.REGEX_EP.match(url):
             self.episode_id = EpisodeId(match_obj.group("episode_id"))
             return True
         else:

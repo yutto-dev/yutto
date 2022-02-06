@@ -1,17 +1,17 @@
 import argparse
 import asyncio
+import re
 from typing import Any, Coroutine, Optional
 
 import aiohttp
 
+from yutto._typing import EpisodeData, FavouriteMetaData, FId, MId
 from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
 from yutto.api.space import get_favourite_avids, get_favourite_info, get_uploader_name
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_acg_video_data
 from yutto.processor.filter import parse_episodes
-from yutto.processor.urlparser import regexp_favourite
-from yutto._typing import EpisodeData, FavouriteMetaData, FId, MId
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -19,11 +19,13 @@ from yutto.utils.fetcher import Fetcher
 class FavouritesExtractor(BatchExtractor):
     """用户所有收藏夹"""
 
+    REGEX_FAV = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<fid>\d+)")
+
     mid: MId
     fid: FId
 
     def match(self, url: str) -> bool:
-        if match_obj := regexp_favourite.match(url):
+        if match_obj := self.REGEX_FAV.match(url):
             self.mid = MId(match_obj.group("mid"))
             self.fid = FId(match_obj.group("fid"))
             return True

@@ -9,6 +9,11 @@ from yutto.utils.console.logger import Logger
 
 
 class Extractor:
+    def resolve_shortcut(self, id: str) -> tuple[bool, str]:
+        matched = False
+        url = id
+        return (matched, url)
+
     def match(self, url: str) -> bool:
         raise NotImplementedError
 

@@ -21,7 +21,7 @@ from yutto.extractor import (
     UploaderAllVideosExtractor,
 )
 from yutto.processor.downloader import start_downloader
-from yutto.processor.urlparser import alias_parser, bare_name_parser, file_scheme_parser
+from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
@@ -116,42 +116,54 @@ async def run(args_list: list[argparse.Namespace]):
         for i, args in enumerate(args_list):
             if len(args_list) > 1:
                 Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
-            # 重定向到可识别的 url
-            url: str = args.url
-            url = await Fetcher.get_redirected_url(session, url)
-            # 提取链接～
-            if not args.batch:
-                # 非批量下载
-                extractors = [
-                    AcgVideoExtractor(),
-                    BangumiExtractor(),
-                ]
-                for extractor in extractors:
-                    if extractor.match(url):
-                        download_list = await extractor(session, args)
-                        break
-                else:
-                    Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
-                    sys.exit(ErrorCode.WRONG_URL_ERROR.value)
-            else:
-                # 批量下载
+
+            # 验证批量参数
+            if args.batch:
                 validate_batch_argments(args)
-                extractors = [
-                    AcgVideoBatchExtractor(),
-                    BangumiBatchExtractor(),
-                    FavouritesExtractor(),
-                    FavouritesAllExtractor(),
-                    SeriesExtractor(),
-                    UploaderAllVideosExtractor(),
+
+            # 初始化各种提取器
+            extractors = (
+                [
+                    AcgVideoBatchExtractor(),  # 投稿全集
+                    BangumiBatchExtractor(),  # 番剧全集
+                    FavouritesExtractor(),  # 用户单一收藏
+                    FavouritesAllExtractor(),  # 用户全部收藏
+                    SeriesExtractor(),  # 视频合集、视频列表
+                    UploaderAllVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
                 ]
-                for extractor in extractors:
-                    if extractor.match(url):
-                        download_list = await extractor(session, args)
-                        break
-                else:
+                if args.batch
+                else [
+                    AcgVideoExtractor(),  # 投稿单集
+                    BangumiExtractor(),  # 番剧单话
+                ]
+            )
+
+            url: str = args.url
+            # 将 shortcut 转为完整 url
+            for extractor in extractors:
+                matched, url = extractor.resolve_shortcut(url)
+                if matched:
+                    break
+
+            # 重定向到可识别的 url
+            try:
+                url = await Fetcher.get_redirected_url(session, url)
+            except aiohttp.client_exceptions.InvalidURL:  # type: ignore
+                Logger.error("无效的 url～请检查一下链接是否正确～")
+                sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+
+            # 提取链接～
+            for extractor in extractors:
+                if extractor.match(url):
+                    download_list = await extractor(session, args)
+                    break
+            else:
+                if args.batch:
                     # TODO: 指向文档中受支持的列表部分
                     Logger.error("url 不正确呦～")
-                    sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+                else:
+                    Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
+                sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
             # 下载～
             for i, episode_data in enumerate(download_list):
@@ -189,7 +201,6 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
     alias_map = alias_parser(args.alias_file)
     if args.url in alias_map:
         args.url = alias_map[args.url]
-    args.url = bare_name_parser(args.url)
 
     # 是否为下载列表
     if re.match(r"file://", args.url) or os.path.isfile(args.url):

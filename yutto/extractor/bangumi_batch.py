@@ -16,7 +16,6 @@ from yutto.exceptions import HttpStatusError, NoAccessPermissionError, UnSupport
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
 from yutto.processor.filter import parse_episodes
-from yutto.processor.urlparser import regexp_bangumi_ep, regexp_bangumi_md, regexp_bangumi_ss
 from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
 
@@ -24,14 +23,36 @@ from yutto.utils.console.logger import Badge, Logger
 class BangumiBatchExtractor(BatchExtractor):
     """番剧全集"""
 
+    REGEX_MD = re.compile(r"https?://www\.bilibili\.com/bangumi/media/md(?P<media_id>\d+)")
+    REGEX_EP = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
+    REGEX_SS = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ss(?P<season_id>\d+)")
+
+    REGEX_MD_ID = re.compile(r"md(?P<media_id>\d+)")
+    REGEX_EP_ID = re.compile(r"ep(?P<episode_id>\d+)")
+    REGEX_SS_ID = re.compile(r"ss(?P<season_id>\d+)")
+
     _match_result: re.Match[Any]
     season_id: SeasonId
 
+    def resolve_shortcut(self, id: str) -> tuple[bool, str]:
+        matched = False
+        url = id
+        if match_obj := self.REGEX_MD_ID.match(id):
+            url = f"https://www.bilibili.com/bangumi/media/md{match_obj.group('media_id')}"
+            matched = True
+        elif match_obj := self.REGEX_EP_ID.match(id):
+            url = f"https://www.bilibili.com/bangumi/play/ep{match_obj.group('episode_id')}"
+            matched = True
+        elif match_obj := self.REGEX_SS_ID.match(id):
+            url = f"https://www.bilibili.com/bangumi/play/ss{match_obj.group('season_id')}"
+            matched = True
+        return matched, url
+
     def match(self, url: str) -> bool:
         if (
-            (match_obj := regexp_bangumi_ep.match(url))
-            or (match_obj := regexp_bangumi_ss.match(url))
-            or (match_obj := regexp_bangumi_md.match(url))
+            (match_obj := self.REGEX_MD.match(url))
+            or (match_obj := self.REGEX_SS.match(url))
+            or (match_obj := self.REGEX_EP.match(url))
         ):
             self._match_result = match_obj
             return True
