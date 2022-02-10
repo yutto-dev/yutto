@@ -39,4 +39,4 @@ class StatusBar:
     def set_wait(cls):
         cls.set(cls._snippers[cls._count] + " " + cls.tip)
         cls._count += 1
-        cls._count %= cls._count % len(cls._snippers)
+        cls._count %= len(cls._snippers)

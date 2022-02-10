@@ -31,6 +31,8 @@ async def extract_bangumi_data(
 ) -> EpisodeData:
     season_id = await get_season_id_by_episode_id(session, episode_id)
     # 如果不包含详细信息，需从列表中解析
+    # 在批量解析时会事先获取到该信息，为避免重复解析因此直接传入该值即可
+    # 但如果是单视频解析的话，就需要在这里自行获取了
     if bangumi_info is None:
         bangumi_list = await get_bangumi_list(session, season_id, with_metadata=args.with_metadata)
         for bangumi_item in bangumi_list:
@@ -80,8 +82,8 @@ async def extract_acg_video_data(
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
 ) -> EpisodeData:
-    acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
     if acg_video_info is None:
+        acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
         acg_video_info = acg_video_list[page - 1]
     cid = acg_video_info["cid"]
     name = acg_video_info["name"]

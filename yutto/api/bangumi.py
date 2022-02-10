@@ -90,16 +90,14 @@ async def get_bangumi_playurl(
         play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id), proxy=Fetcher.proxy
     ) as resp:
         if not resp.ok:
-            raise NoAccessPermissionError("无法下载该视频（avid: {avid}, cid: {cid}）".format(cid=cid))
+            raise NoAccessPermissionError(f"无法下载该视频（avid: {avid}, cid: {cid}）")
         resp_json = await resp.json()
         if resp_json.get("result") is None:
-            raise NoAccessPermissionError(
-                "无法下载该视频（avid: {avid}, cid: {cid}），原因：{msg}".format(cid=cid, msg=resp_json.get("message"))
-            )
+            raise NoAccessPermissionError(f"无法下载该视频（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}")
         if resp_json["result"]["is_preview"] == 1:
-            Logger.warning("视频（cid: {cid}）是预览视频（疑似未登录或非大会员用户）".format(cid=cid))
+            Logger.warning(f"视频（cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
         if resp_json["result"].get("dash") is None:
-            raise UnSupportedTypeError("该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式".format(cid=cid))
+            raise UnSupportedTypeError(f"该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式")
         return (
             [
                 {

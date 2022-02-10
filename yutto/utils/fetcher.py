@@ -25,6 +25,7 @@ class MaxRetry:
                     return await connect_once(*args, **kwargs)
                 except (
                     aiohttp.client_exceptions.ClientPayloadError,  # type: ignore
+                    aiohttp.client_exceptions.ClientConnectorError,  # type: ignore
                     aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
                 ):
                     await asyncio.sleep(0.5)
@@ -47,6 +48,7 @@ class Fetcher:
     }
     cookies = {}
     semaphore: asyncio.Semaphore = asyncio.Semaphore(8)  # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
+    _touch_set: set[str] = set()
 
     @classmethod
     def set_proxy(cls, proxy: Union[Literal["no", "auto"], str]):
@@ -73,36 +75,39 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
-        Logger.debug(f"Fetch text: {url}")
         async with cls.semaphore:
+            Logger.debug(f"Fetch text: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.text(encoding=encoding)
 
     @classmethod
     @MaxRetry(2)
     async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
-        Logger.debug(f"Fetch bin: {url}")
         async with cls.semaphore:
+            Logger.debug(f"Fetch bin: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.read()
 
     @classmethod
     @MaxRetry(2)
     async def fetch_json(cls, session: ClientSession, url: str) -> Any:
-        Logger.debug(f"Fetch json: {url}")
         async with cls.semaphore:
+            Logger.debug(f"Fetch json: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.json()
 
     @classmethod
     @MaxRetry(2)
     async def get_redirected_url(cls, session: ClientSession, url: str) -> str:
-        async with session.get(
-            url,
-            proxy=Fetcher.proxy,
-            ssl=False,
-        ) as resp:
-            async with cls.semaphore:
+        # 关于为什么要前往重定向 url，是因为 B 站的 url 类型实在是太多了，比如有 b23.tv 的短链接
+        # 为 SEO 的搜索引擎链接、甚至有的 av、BV 链接实际上是番剧页面，一一列举实在太麻烦，而且最后一种
+        # 情况需要在 av、BV 解析一部分信息后才能知道是否是番剧页面，处理起来非常麻烦（bilili 就是这么做的）
+        async with cls.semaphore:
+            async with session.get(
+                url,
+                proxy=Fetcher.proxy,
+                ssl=False,
+            ) as resp:
                 redirected_url = str(resp.url)
                 if redirected_url == url:
                     Logger.debug(f"Get redircted url: {url}")
@@ -113,15 +118,15 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
-        headers = session.headers.copy()
-        headers["Range"] = "bytes=0-1"
-        async with session.get(
-            url,
-            headers=headers,
-            proxy=Fetcher.proxy,
-            ssl=False,
-        ) as resp:
-            async with cls.semaphore:
+        async with cls.semaphore:
+            headers = session.headers.copy()
+            headers["Range"] = "bytes=0-1"
+            async with session.get(
+                url,
+                headers=headers,
+                proxy=Fetcher.proxy,
+                ssl=False,
+            ) as resp:
                 if resp.status == 206:
                     size = int(resp.headers["Content-Range"].split("/")[-1])
                     Logger.debug(f"Get size: {url} {size}")
@@ -132,13 +137,17 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def touch_url(cls, session: ClientSession, url: str):
-        Logger.debug(f"Torch url: {url}")
-        async with session.get(
-            url,
-            proxy=Fetcher.proxy,
-            ssl=False,
-        ) as resp:
-            async with cls.semaphore:
+        # 因为保持同一个 session，同样的页面没必要重复 touch
+        if url in cls._touch_set:
+            return
+        cls._touch_set.add(url)
+        async with cls.semaphore:
+            Logger.debug(f"Torch url: {url}")
+            async with session.get(
+                url,
+                proxy=Fetcher.proxy,
+                ssl=False,
+            ) as resp:
                 resp.close()
 
     @classmethod
@@ -152,8 +161,8 @@ class Fetcher:
         size: Optional[int],
         stream: bool = True,
     ) -> None:
-        Logger.debug(f"Start download (offset {offset}) {url}")
         async with cls.semaphore:
+            Logger.debug(f"Start download (offset {offset}) {url}")
             done = False
             headers = session.headers.copy()
             url_pool = [url] + mirrors
@@ -192,6 +201,7 @@ class Fetcher:
 
                 except (
                     aiohttp.client_exceptions.ClientPayloadError,  # type: ignore
+                    aiohttp.client_exceptions.ClientConnectorError,  # type: ignore
                     aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
                 ):
                     await asyncio.sleep(0.5)
