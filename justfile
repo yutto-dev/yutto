@@ -1,8 +1,10 @@
+set positional-arguments
+
 VERSION := `poetry run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
 DOCKER_NAME := "siguremo/yutto"
 
-run:
-  poetry run python -m yutto
+run *ARGS:
+  poetry run python -m yutto {{ARGS}}
 
 test:
   poetry run pytest -m '(api or e2e or downloader) and not ci_only'
@@ -24,7 +26,7 @@ upgrade:
   just build
   python3 -m pip install ./dist/yutto-*.whl
 
-upgrade-pip:
+upgrade-from-pypi:
   python3 -m pip install --upgrade --pre yutto
 
 clean:
@@ -46,8 +48,11 @@ clean-builds:
   rm -rf dist/
   rm -rf yutto.egg-info/
 
-build-docker:
+docker-run *ARGS:
+  docker run --rm -it -v `pwd`:/app {{DOCKER_NAME}} {{ARGS}}
+
+docker-build:
   docker build -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" .
 
-publish-docker:
+docker-publish:
   docker buildx build --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
