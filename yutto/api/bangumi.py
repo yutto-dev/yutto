@@ -95,7 +95,7 @@ async def get_bangumi_playurl(
         if resp_json.get("result") is None:
             raise NoAccessPermissionError(f"无法下载该视频（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}")
         if resp_json["result"]["is_preview"] == 1:
-            Logger.warning(f"视频（cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
+            Logger.warning(f"视频（avid: {avid}, cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
         if resp_json["result"].get("dash") is None:
             raise UnSupportedTypeError(f"该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式")
         return (
