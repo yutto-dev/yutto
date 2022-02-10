@@ -2,9 +2,11 @@
 
 很高兴你对参与 yutto 的贡献感兴趣，在提交你的贡献之前，请花一点点时间阅读本指南
 
-## 工具安装
+## 开发工具链
 
 为了获得最佳的开发体验，希望你能够安装一些开发工具
+
+这些工具都是可选的，都有一定的替代方案，不过可能会稍微麻烦些……
 
 ### 依赖管理工具 poetry
 
@@ -14,9 +16,13 @@
 pip install poetry
 ```
 
+> 替代方案（非常不建议）：自行使用 pip 安装依赖，依赖项在 pyproject.toml 中可以找到。
+
 ### 命令执行工具 just
 
 [just](https://github.com/casey/just) 是一款用 rust 编写的简单易用的命令执行工具，通过它可以方便地执行一些开发时常用的命令。安装方法请参考[它的文档](https://github.com/casey/just#installation)
+
+> 替代方案（不方便安装或者 Windows 上无法运行这些命令时建议使用）：自行查看 justfile 中对应的详细命令。
 
 ### 编辑器 Visual Studio Code
 
@@ -26,7 +32,7 @@ pip install poetry
 
 ## 本地调试
 
-如果你想要本地调试，最佳的方案是从 github 上下载最新的源码来运行
+如果你想要本地调试，最佳实践是从 github 上下载最新的源码来运行
 
 ```bash
 git clone git@github.com:SigureMo/yutto.git
@@ -94,8 +100,10 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 
 如果可能，可以按照 `<gitmoji> <type>: <subject>` 来进行命名
 
+> Gitmoji 参考：<https://gitmoji.dev/>
+
 ### 内容
 
 尽可能按照模板书写
 
-**因为有你，yutto 才会更加完善，感谢你的贡献**
+**因为有你，yutto 才会更加完善，感谢你的贡献 (・ω< )★**
