@@ -61,7 +61,7 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
 
         t_now = time.time()
         size_now = size_written + size_in_buffer
-        speed = (size_now - size) / (t_now - t + 10 ** -6)
+        speed = (size_now - size) / (t_now - t + 10**-6)
 
         # 进度条默认颜色为青色
         # 当速度过快导致 buffer 中的块数过多时（>2048 块，每块 2**15Bytes，缓冲区共 64MiB），使用红色进行警告

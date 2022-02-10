@@ -73,6 +73,7 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
+        Logger.debug(f"Fetch text: {url}")
         async with cls.semaphore:
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.text(encoding=encoding)
@@ -80,6 +81,7 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
+        Logger.debug(f"Fetch bin: {url}")
         async with cls.semaphore:
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.read()
@@ -87,6 +89,7 @@ class Fetcher:
     @classmethod
     @MaxRetry(2)
     async def fetch_json(cls, session: ClientSession, url: str) -> Any:
+        Logger.debug(f"Fetch json: {url}")
         async with cls.semaphore:
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 return await resp.json()
@@ -100,7 +103,12 @@ class Fetcher:
             ssl=False,
         ) as resp:
             async with cls.semaphore:
-                return str(resp.url)
+                redirected_url = str(resp.url)
+                if redirected_url == url:
+                    Logger.debug(f"Get redircted url: {url}")
+                else:
+                    Logger.debug(f"Get redircted url: {url} -> {redirected_url}")
+                return redirected_url
 
     @classmethod
     @MaxRetry(2)
@@ -115,13 +123,16 @@ class Fetcher:
         ) as resp:
             async with cls.semaphore:
                 if resp.status == 206:
-                    return int(resp.headers["Content-Range"].split("/")[-1])
+                    size = int(resp.headers["Content-Range"].split("/")[-1])
+                    Logger.debug(f"Get size: {url} {size}")
+                    return size
                 else:
                     return None
 
     @classmethod
     @MaxRetry(2)
     async def touch_url(cls, session: ClientSession, url: str):
+        Logger.debug(f"Torch url: {url}")
         async with session.get(
             url,
             proxy=Fetcher.proxy,
@@ -141,6 +152,7 @@ class Fetcher:
         size: Optional[int],
         stream: bool = True,
     ) -> None:
+        Logger.debug(f"Start download (offset {offset}) {url}")
         async with cls.semaphore:
             done = False
             headers = session.headers.copy()
@@ -166,7 +178,7 @@ class Fetcher:
                                 # 而使用 1MiB 以上或者不使用流式下载方式时，由于分块太大，
                                 # 导致进度条显示的实时速度并不准，波动太大，用户体验不佳，
                                 # 因此取两者折中
-                                chunk = await resp.content.read(2 ** 15)
+                                chunk = await resp.content.read(2**15)
                                 if not chunk:
                                     break
                                 await file_buffer.write(chunk, offset + block_offset)

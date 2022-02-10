@@ -19,7 +19,7 @@ def size_format(size: float, ndigits: int = 2, base_unit_size: Literal[1024, 100
             index += 1
         else:
             break
-    return "{}{:.{}f} {}".format(sign, size / base_unit_size ** index, ndigits, unit_list[index])
+    return "{}{:.{}f} {}".format(sign, size / base_unit_size**index, ndigits, unit_list[index])
 
 
 def get_char_width(char: str) -> int:
