@@ -206,6 +206,10 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 
 如果可能，可以按照 `<gitmoji> <type>: <subject>` 来进行命名
 
+这里的 `<type>` 采取和 vite 一样的可选值
+
+> Vite Git Commit Message Convention 参考：<https://github.com/vitejs/vite/blob/main/.github/commit-convention.md>
+>
 > Gitmoji 参考：<https://gitmoji.dev/>
 
 ### 内容

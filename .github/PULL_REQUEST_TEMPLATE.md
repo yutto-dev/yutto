@@ -15,10 +15,15 @@
 -  [ ] :sparkles: feat: 添加新功能
 -  [ ] :bug: fix: 修复 bug
 -  [ ] :pencil: docs: 对文档进行修改
--  [ ] :art: style: 对代码语义无影响的格式修改（如去除无用空格、格式化等等修改）
 -  [ ] :recycle: refactor: 代码重构（既不是新增功能，也不是修改 bug 的代码变动）
 -  [ ] :zap: perf: 提高性能的代码修改
+-  [ ] :technologist: dx: 优化开发体验
+-  [ ] :hammer: workflow: 工作流变动
+-  [ ] :label: types: 类型声明修改
+-  [ ] :construction: wip: 工作正在进行中
 -  [ ] :white_check_mark: test: 测试用例添加及修改
 -  [ ] :hammer: build: 影响构建系统或外部依赖关系的更改
 -  [ ] :construction_worker: ci: 更改 CI 配置文件和脚本
 -  [ ] :question: chore: 其它不涉及源码以及测试的修改
+-  [ ] :arrow_up: deps: 依赖项修改
+-  [ ] :bookmark: release: 发布新版本
