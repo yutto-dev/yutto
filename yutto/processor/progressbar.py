@@ -67,8 +67,9 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         # 当速度过快导致 buffer 中的块数过多时（>2048 块，每块 2**15Bytes，缓冲区共 64MiB），使用红色进行警告
         # 在速度高于 8MiB/s 时，使用绿色示意高速下载中
         speed_threshold = 8 * 1024 * 1024
+        num_blocks_in_buffer_threshold = 2048
         is_fast = speed >= speed_threshold
-        bar_color = "red" if num_blocks_in_buffer > 2048 else ("green" if is_fast else "cyan")
+        bar_color = "red" if num_blocks_in_buffer > num_blocks_in_buffer_threshold else ("green" if is_fast else "cyan")
         # 40：后面还有至少 37 个字符，因此这里取 40
         bar_width = min(get_terminal_size()[0] - 40, bar_max_width)
         if bar_width < bar_min_width:
@@ -85,6 +86,8 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         speed_text_style: Optional[list[Style]] = ["bold"] if is_fast else None
         speed_text_suffix: str = "/⚡" if is_fast else "/s"
 
+        if num_blocks_in_buffer > num_blocks_in_buffer_threshold:
+            Logger.debug(f"number blocks in buffer: {num_blocks_in_buffer}")
         Logger.status.set(
             "{}{:>10}/{:>10} {:>12}  ".format(
                 bar + " " if bar else bar,
