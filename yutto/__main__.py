@@ -87,6 +87,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")
     group_common.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
+    group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
     group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
 
     # 仅批量下载使用
@@ -95,7 +96,7 @@ def cli() -> argparse.ArgumentParser:
     group_batch.add_argument("-p", "--episodes", default="^~$", help="选集")
     group_batch.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
 
-    # 仅 file scheme 列表中使用
+    # 仅任务列表中使用
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
     group_batch_file.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
 

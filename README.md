@@ -341,6 +341,11 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 -  参数 `--no-color`
 -  默认值 `False`
 
+#### 不显示进度条
+
+-  参数 `--no-progress`
+-  默认值 `False`
+
 #### 启用 Debug 模式
 
 -  参数 `--debug`
@@ -466,6 +471,16 @@ pip install uvloop
 ```
 
 现在再运行就会发现不会弹出「没有安装 uvloop 的」 warning 了，至于具体提升多少我也不太清楚啦，没有测过
+
+### 作为 log 输出到文件
+
+虽说 yutto 不像 bilili 那样会全屏刷新，但进度条还是会一直刷新占据多行，可能影响 log 的阅读，另外颜色码也是难以阅读的，因此我们可以通过选项禁用他们：
+
+```bash
+yutto --no-color --no-progress > log
+```
+
+当然，如果你有
 
 ### 使用 url alias
 

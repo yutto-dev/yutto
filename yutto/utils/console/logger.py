@@ -50,6 +50,7 @@ class Logger:
 
     @classmethod
     def enable_statusbar(cls):
+        # StatusBar 为整个 log 模块中唯一有刷新能力的部分，如果禁用（不启用）可以保证 log 的可读性
         cls.status.enable()
 
     @classmethod
