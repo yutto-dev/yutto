@@ -93,7 +93,7 @@ def cli() -> argparse.ArgumentParser:
     # 仅批量下载使用
     group_batch = parser.add_argument_group("batch", "批量下载参数")
     group_batch.add_argument("-b", "--batch", action="store_true", help="批量下载")
-    group_batch.add_argument("-p", "--episodes", default="^~$", help="选集")
+    group_batch.add_argument("-p", "--episodes", default="1~-1", help="选集")
     group_batch.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
 
     # 仅任务列表中使用

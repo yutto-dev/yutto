@@ -72,7 +72,11 @@ def select_audio(
 
 
 def check_episodes(episodes_str: str) -> bool:
-    return bool(re.match(r"([\-\d\^\$]+(~[\-\d\^\$]+)?)(,[\-\d\^\$]+(~[\-\d\^\$]+)?)*", episodes_str))
+    regex_number = r"(-?(0|[1-9]\d*))"
+    regex_episode = rf"({regex_number}|\$|\^)"
+    regex_range = rf"({regex_episode}|({regex_episode}?~{regex_episode}?))"
+    regex_compose = rf"{regex_range}(,{regex_range})*"
+    return bool(re.match(rf"{regex_compose}$", episodes_str))
 
 
 def parse_episodes(episodes_str: str, total: int) -> list[int]:
@@ -91,12 +95,19 @@ def parse_episodes(episodes_str: str, total: int) -> list[int]:
     # 解析字符串为列表
     Logger.info(f"全 {total} 话")
     if check_episodes(episodes_str):
-        episodes_str = episodes_str.replace("^", "1")
+        if "^" in episodes_str:
+            episodes_str = episodes_str.replace("^", "1")
+            Logger.deprecated_warning("起始符语法糖 ^ 已经被弃用，将会在 2.0.0 正式版移除，请直接使用明确的剧集序号 1 代替，或者在使用范围时，起始为 1 时可以省略")
         episodes_str = episodes_str.replace("$", "-1")
         episode_list: list[int] = []
         for episode_item in episodes_str.split(","):
             if "~" in episode_item:
-                start, end = episode_item.split("~")
+                splitted = episode_item.split("~")
+                if len(splitted) != 2:
+                    Logger.error("{} 选集参数每部分至多包含一个 ~".format(episode_item))
+                    sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+                start, end = splitted
+                start, end = "1" if not start else start, "-1" if not end else end
                 start, end = int(start), int(end)
                 start, end = resolve_negetive(start), resolve_negetive(end)
                 if not (end >= start):

@@ -7,7 +7,7 @@ run *ARGS:
   poetry run python -m yutto {{ARGS}}
 
 test:
-  poetry run pytest -m '(api or e2e or downloader) and not ci_only'
+  poetry run pytest -m '(api or e2e or downloader or processor) and not ci_only'
   just clean
 
 fmt:
