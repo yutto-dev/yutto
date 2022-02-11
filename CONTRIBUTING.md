@@ -43,9 +43,115 @@ poetry run yutto -v
 
 注意本地调试请不要直接使用 `yutto` 命令，那只会运行从 pip 安装的 yutto，而不是本地调试的 yutto。
 
-## 模块结构
+另外请注意如果你确定想为 yutto 做贡献请 fork 之后 clone 自己的 repo 再修改，以便发起 PR。
 
-> TODO: 说明各个模块的作用
+## 架构设计
+
+这部分内容带你了解下 yutto 的主要模块结构与工作流程。
+
+> 本部分内容可能略有滞后，这里列出的是 2022-02-11 时 [0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7](https://github.com/SigureMo/yutto/tree/0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7) 的模块结构，
+
+### 模块结构
+
+```text
+.
+├── Dockerfile                         # 一个轻量的 yutto docker
+├── justfile                           # just 命令启动文件
+├── pyproject.toml                     # poetry 依赖清单
+├── tests                              # 测试文件
+│   ├── __init__.py
+│   ├── test_api                       # API 测试模块，对应 yutto/api
+│   ├── test_downloader.py             # downloader 测试模块，对应 yutto/
+│   └── test_e2e.py                    # 端到端测试
+└── yutto
+    ├── __init__.py
+    ├── __main__.py                    # 命令行入口，含所有命令选项
+    ├── __version__.py
+    ├── _typing.py                     # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
+    ├── api                            # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
+    │   ├── __init__.py
+    │   ├── acg_video.py               # 投稿视频相关
+    │   ├── bangumi.py                 # 番剧相关
+    │   ├── danmaku.py                 # 弹幕相关（xml、protobuf）
+    │   ├── info.py                    # 基本信息相关
+    │   └── space.py                   # 个人空间相关（收藏夹、合集、列表）
+    ├── bilibili_typing                # bilibili 自己的一些数据类型绑定
+    │   ├── __init__.py
+    │   ├── codec.py                   # bilibili 的 codec
+    │   └── quality.py                 # bilibili 的 qn
+    ├── exceptions.py                  # yutto 异常声明模块
+    ├── extractor                      # 页面提取器（每种入口 url 对应一个 extractor）
+    │   ├── __init__.py
+    │   ├── _abc.py                    # 基本抽象类
+    │   ├── acg_video.py               # 投稿视频单集
+    │   ├── acg_video_batch.py         # 投稿视频批量
+    │   ├── bangumi.py                 # 番剧单话
+    │   ├── bangumi_batch.py           # 番剧全集
+    │   ├── common.py                  # 低阶提取器（投稿视频、番剧），每种视频类型对应一个低阶提取器
+    │   ├── favourites.py              # 收藏夹
+    │   ├── favourites_all.py          # 全部收藏夹
+    │   ├── series.py                  # 合集、视频列表
+    │   └── uploader_all_videos.py     # 个人空间全部
+    ├── processor                      # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
+    │   ├── __init__.py
+    │   ├── downloader.py              # 下载器
+    │   ├── filter.py                  # 选集、内容过滤器（本部分可修改成支持交互的）
+    │   ├── parser.py                  # 文件解析器（解析任务列表、alias 文件）
+    │   ├── path_resolver.py           # 路径处理器（需处理路径变量）
+    │   └── progressbar.py             # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
+    ├── utils                          # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extrator、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
+    │   ├── __init__.py
+    │   ├── asynclib.py                # 封装部分异步相关方法
+    │   ├── console                    # 命令行打印相关
+    │   │   ├── __init__.py
+    │   │   ├── attributes.py
+    │   │   ├── colorful.py
+    │   │   ├── formatter.py
+    │   │   ├── logger.py              # 其中的 Logger 是 yutto 主要的打印方式，yutto 中只应使用这一种打印方式
+    │   │   └── status_bar.py          # 底部状态栏（主要用于显示进度条）
+    │   ├── danmaku.py                 # 「资源文件」弹幕基本封装
+    │   ├── fetcher.py                 # 基本抓取器
+    │   ├── ffmpeg.py                  # FFmpeg 驱动单例模块
+    │   ├── file_buffer.py             # 文件缓冲器（yutto 下载原理的核心）
+    │   ├── functools                  # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
+    │   ├── metadata.py                # 「资源文件」描述文件基本封装
+    │   ├── priority.py                # 资源优先级判定（用于 codec、quality 判定）
+    │   ├── subtitle.py                # 「资源文件」字幕基本封装
+    │   └── time.py                    # 时间基本模块
+    └── validator.py                   # 命令参数验证器（内含初期全局状态的设置）
+```
+
+### 工作流程
+
+切入代码的最好方式自然是从入口开始啦～ yutto 的命令行入口是 [yutto/\_\_main\_\_.py](./yutto/__main__.py)，这里列出了 yutto 整个的工作流程：
+
+1. 解析参数并利用 [yutto/validator.py](./yutto/validator.py) 验证参数的正确性，虽然 argparse 已经做了基本的验证，但 validator 会进一步的验证。另外目前 validator 还会顺带做全局状态的设置的工作，这部分以后可能修改。
+2. 利用 [yutto/processor/parser.py](./yutto/processor/parser.py) 解析 alias 和任务列表
+3. 遍历任务列表下载：
+   1. 初始化提取器 [yutto/extrator/](./yutto/extractor/)
+   2. 利用所有提取器处理 id 为可识别的 url
+   3. 重定向一下入口 url 到可识别的 url
+   4. 从入口 url 提取 `EpisodeData` 列表
+      1. 如果是单话下载（继承 `yutto.extrator._abc.SingleExtrator`）
+         1. 解析有用信息以提供给路径变量
+         2. 使用 `yutto.extrator.common` 里的低阶提取器直接提取
+      2. 如果是批量下载（继承 `yutto.extrator._abc.BatchExtrator`）
+         1. 循环解析列表
+         2. 展平列表
+         3. 选集（如果支持的话）
+         4. 根据列表构造协程任务（任务包含了解析信息和利用低阶提取器提取）
+         5. 并行执行解析任务
+         6. 任务重排序
+   5. 将 `EpisodeData` 列表依次传入 [yutto/utils/downloader.py](yutto/utils/../processor/downloader.py) 进行下载
+      1. 选择清晰度
+      2. 显示详细信息
+      3. 字幕、弹幕、描述文件等额外资源下载
+      4. 下载音频、视频
+      5. 合并音频、视频
+
+## 改动
+
+嗯，你现在已经基本了解 yutto 的结构了，可以尝试去修改部分源码了。
 
 ## 测试
 
@@ -105,5 +211,39 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 ### 内容
 
 尽可能按照模板书写
+
+## 版本发布
+
+> 本章节内容仅针对有发布权限的维护者
+
+### 更新版本号
+
+现阶段书写版本号的代码包括以下几个文件，发布版本前需要全部更改：
+
+-  [Dockerfile](./Dockerfile)
+-  [pyproject.toml](./pyproject.toml)
+-  [yutto/\_\_version\_\_.py](./yutto/__version__.py)
+
+### 发布到 PyPI
+
+```bash
+just publish
+```
+
+### 构建镜像并到 DockerHub
+
+⚠️ 必须在发布到 PyPI 之后
+
+> 需预先自行安装 [Docker](https://docs.docker.com/get-docker/) 并安装 [buildx 插件](https://docs.docker.com/buildx/working-with-buildx/) （我这里貌似不需要手动安装插件就有了……）
+
+```bash
+just publish-docker
+```
+
+### 发布到 Homebrew Tap
+
+⚠️ 必须在发布到 PyPI 之后
+
+修改 <https://github.com/SigureMo/homebrew-tap/blob/main/Formula/yutto.rb>，按照提示构建新版本 Formula。
 
 **因为有你，yutto 才会更加完善，感谢你的贡献 (・ω< )★**
