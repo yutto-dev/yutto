@@ -126,7 +126,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.4"
 description = "Cross-platform colored terminal text."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
@@ -316,7 +316,7 @@ uvloop = ["uvloop"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.0"
-content-hash = "a8451d1f6762bc9d23b66f76ed0ddb66df1389111626e0a3e975bcb029394952"
+content-hash = "4feb6898021d5c9ae682b478ff929d31776e0c3f9104d21564af56aa532dbdba"
 
 [metadata.files]
 aiofiles = [

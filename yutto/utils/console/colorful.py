@@ -1,5 +1,12 @@
 import re
+import sys
 from typing import Final, Literal, NamedTuple, Optional, TypedDict, Union
+
+# thirt-party imports
+# if system is windows, initialize colorama, which translates UNIX console color sequences into windows color sequences
+if sys.platform == 'win32':
+    from colorama import init
+    init()
 
 CSI: Final[str] = "\x1b["
 
