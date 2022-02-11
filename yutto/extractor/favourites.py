@@ -11,7 +11,6 @@ from yutto.api.space import get_favourite_avids, get_favourite_info, get_uploade
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_acg_video_data
-from yutto.processor.filter import parse_episodes
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -46,9 +45,6 @@ class FavouritesExtractor(BatchExtractor):
             for avid in await get_favourite_avids(session, self.fid)
             for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
         ]
-        # 选集过滤
-        episodes = parse_episodes(args.episodes, len(acg_video_list))
-        acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
 
         return [
             self._parse_episodes_data(

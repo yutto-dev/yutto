@@ -16,7 +16,7 @@ from yutto.api.bangumi import (
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
-from yutto.processor.filter import parse_episodes
+from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.console.logger import Badge, Logger
 
 
@@ -82,7 +82,7 @@ class BangumiBatchExtractor(BatchExtractor):
         # 如果没有 with_section 则不需要专区内容
         bangumi_list = list(filter(lambda item: args.with_section or not item["is_section"], bangumi_list))
         # 选集过滤
-        episodes = parse_episodes(args.episodes, len(bangumi_list))
+        episodes = parse_episodes_selection(args.episodes, len(bangumi_list))
         bangumi_list = list(filter(lambda item: item["id"] in episodes, bangumi_list))
         return [
             self._parse_episodes_data(

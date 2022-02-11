@@ -95,7 +95,7 @@ poetry run yutto -v
     ├── processor                      # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
     │   ├── __init__.py
     │   ├── downloader.py              # 下载器
-    │   ├── filter.py                  # 选集、内容过滤器（本部分可修改成支持交互的）
+    │   ├── selector.py                # 选集、内容过滤器（本部分可修改成支持交互的）
     │   ├── parser.py                  # 文件解析器（解析任务列表、alias 文件）
     │   ├── path_resolver.py           # 路径处理器（需处理路径变量）
     │   └── progressbar.py             # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）

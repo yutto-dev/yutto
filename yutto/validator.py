@@ -9,7 +9,7 @@ import aiohttp
 from yutto.api.info import is_vip
 from yutto.exceptions import ErrorCode
 from yutto.bilibili_typing.codec import audio_codec_priority_default, video_codec_priority_default
-from yutto.processor.filter import check_episodes
+from yutto.processor.selector import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy, install_uvloop
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
@@ -141,7 +141,7 @@ def validate_basic_arguments(args: argparse.Namespace):
 def validate_batch_argments(args: argparse.Namespace):
     """检查批量下载相关选项"""
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
-    if not check_episodes(args.episodes):
+    if not validate_episodes_selection(args.episodes):
         # TODO: 错误信息链接到相应文档，当然需要先写文档……
         Logger.error("选集参数（{}）格式不正确呀～重新检查一下下～".format(args.episodes))
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
