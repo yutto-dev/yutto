@@ -42,7 +42,7 @@ yutto = "yutto.__main__:main"
 "Bug Tracker" = "https://github.com/SigureMo/yutto/issues"
 
 [tool.pytest.ini_options]
-markers = ["api", "e2e", "downloader", "processor", "ci_skip", "ci_only"]
+markers = ["api", "e2e", "processor", "ci_skip", "ci_only"]
 
 [tool.black]
 line-length = 120

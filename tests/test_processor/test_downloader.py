@@ -11,7 +11,7 @@ from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functools import as_sync
 
 
-@pytest.mark.downloader
+@pytest.mark.processor
 @as_sync
 async def test_1_5_M_downloader():
     test_dir = "./downloader_test/"
@@ -40,7 +40,7 @@ async def test_1_5_M_downloader():
     shutil.rmtree(test_dir)
 
 
-@pytest.mark.downloader
+@pytest.mark.processor
 @as_sync
 async def test_1_5_M_no_slice_downloader():
     test_dir = "./downloader_test/"
