@@ -54,6 +54,12 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 pip install --pre yutto
 ```
 
+如果想要尝试 Nightly 版本，可尝试
+
+```bash
+pip install git+https://github.com/SigureMo/yutto@main
+```
+
 ### 从 GitHub 获取最新源码手动安装
 
 这同样要求你自行配置 Python 和 FFmpeg 环境
