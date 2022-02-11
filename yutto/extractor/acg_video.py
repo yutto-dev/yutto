@@ -56,12 +56,12 @@ class AcgVideoExtractor(SingleExtractor):
             return False
 
     async def extract(self, session: aiohttp.ClientSession, args: argparse.Namespace) -> Optional[EpisodeData]:
-        title, pubdate = await asyncio.gather(
-            get_acg_video_title(session, self.avid),
-            get_acg_video_pubdate(session, self.avid),
-        )
-        Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
         try:
+            title, pubdate = await asyncio.gather(
+                get_acg_video_title(session, self.avid),
+                get_acg_video_pubdate(session, self.avid),
+            )
+            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
             return await extract_acg_video_data(
                 session,
                 self.avid,

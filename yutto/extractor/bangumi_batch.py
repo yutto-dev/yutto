@@ -5,6 +5,7 @@ from typing import Any, Coroutine, Optional
 
 import aiohttp
 
+from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
     BangumiListItem,
     get_bangumi_list,
@@ -12,11 +13,10 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
 from yutto.processor.filter import parse_episodes
-from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
 
 
@@ -115,6 +115,6 @@ class BangumiBatchExtractor(BatchExtractor):
                     "{title}/{name}",
                 ),
             )
-        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
+        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
             return None

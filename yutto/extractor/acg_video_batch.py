@@ -7,7 +7,7 @@ import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_acg_video_data
 from yutto.processor.filter import parse_episodes
@@ -55,12 +55,17 @@ class AcgVideoBatchExtractor(BatchExtractor):
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
-        title, pubdate, acg_video_list = await asyncio.gather(
-            get_acg_video_title(session, self.avid),
-            get_acg_video_pubdate(session, self.avid),
-            get_acg_video_list(session, self.avid, with_metadata=args.with_metadata),
-        )
-        Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
+        try:
+            title, pubdate, acg_video_list = await asyncio.gather(
+                get_acg_video_title(session, self.avid),
+                get_acg_video_pubdate(session, self.avid),
+                get_acg_video_list(session, self.avid, with_metadata=args.with_metadata),
+            )
+            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
+        except NotFoundError as e:
+            # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
+            Logger.error(e.message)
+            return []
 
         # 选集过滤
         episodes = parse_episodes(args.episodes, len(acg_video_list))
@@ -102,6 +107,6 @@ class AcgVideoBatchExtractor(BatchExtractor):
                     "{title}/{name}",
                 ),
             )
-        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError) as e:
+        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
             return None

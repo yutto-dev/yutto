@@ -36,6 +36,8 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
+    if res_json["code"] == -404:
+        raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
     assert res_json_data is not None, "响应数据无 data 域"
     episode_id = EpisodeId("")
     if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
