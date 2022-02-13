@@ -8,6 +8,8 @@ from yutto.utils.subtitle import SubtitleData
 
 
 class BilibiliId(NamedTuple):
+    """所有 bilibili id 的基类"""
+
     value: str
 
     def __str__(self) -> str:
@@ -21,7 +23,28 @@ class BilibiliId(NamedTuple):
 
 
 class AvId(BilibiliId):
-    """AID 与 BVID 的统一，大多数 API 只需要其中一种即可正常工作"""
+    """AId 与 BvId 的统一，大多数 API 只需要其中一种即可正常工作
+
+    Examples:
+        .. code-block:: python
+            # 初始化
+            # 这两个 Id 事实上是完全一样的，指向同一个资源
+            # 因此我们只获取其一即可，在能够获取 BvId 的情况下建议使用 BvId
+            aid = AId("808982399")
+            bvid = BvId("BV1f34y1k7D5")
+
+            # 使用
+            # 由于 B 站大多数需要 aid/bvid 的接口都是只提供其一即可，
+            # 因此我们可以直接这样通过格式化的方式来产生一个合法的接口链接
+            api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
+            api = api.format(aid=aid.value, bvid="")
+            api = api.format(aid="", bvid=bvid.value)
+
+            # 为了方便，继承了 AvId 的 AId 和 BvId 都可以通过 to_dict 方法简化这一步
+            api = api.format(**aid.to_dict())
+            api = api.format(**bvid.to_dict())
+            # 这样就完全屏蔽了 aid 和 bvid 的差异了
+    """
 
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
@@ -126,6 +149,8 @@ class MultiLangSubtitle(TypedDict):
 
 
 class EpisodeData(TypedDict):
+    """剧集数据，包含了一个视频资源的基本信息以及相关资源"""
+
     videos: list[VideoUrlMeta]
     audios: list[AudioUrlMeta]
     subtitles: list[MultiLangSubtitle]

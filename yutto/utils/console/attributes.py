@@ -6,10 +6,10 @@ from typing import Optional
 
 
 def get_terminal_size() -> tuple[int, int]:
-    """Get the size of the console.
-    @refs: https://github.com/willmcgugan/rich/blob/e5246436cd75de32f3436cc88d6e4fdebe13bd8d/rich/console.py#L918-L951
-    Returns:
-        tuple[int, int]: A named tuple containing the dimensions.
+    """获取 Console 的宽高
+
+    Refs:
+        https://github.com/willmcgugan/rich/blob/e5246436cd75de32f3436cc88d6e4fdebe13bd8d/rich/console.py#L918-L951
     """
 
     width: Optional[int] = None

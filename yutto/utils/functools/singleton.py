@@ -2,13 +2,14 @@
 class Singleton(type):
     """单例模式元类
 
-    @refs: https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+    Refs:
+        - https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
 
-    # Usage
-    ```
-    class MyClass(BaseClass, metaclass=Singleton):
-        pass
-    ```
+    Examples:
+        .. code-block:: python
+
+            class MyClass(BaseClass, metaclass=Singleton):
+                pass
     """
 
     _instances = {}

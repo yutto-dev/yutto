@@ -14,6 +14,12 @@ T = TypeVar("T")
 
 
 class MaxRetry:
+    """重试装饰器，为请求方法提供一定的重试次数
+
+    Args:
+        max_retry (int): 额外重试次数（如重试次数为 2，则最多尝试 3 次）
+    """
+
     def __init__(self, max_retry: int = 2):
         self.max_retry = max_retry
 

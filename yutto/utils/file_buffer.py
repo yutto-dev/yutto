@@ -37,7 +37,6 @@ class AsyncFileBuffer(aobject):
                 async with await AsyncFileBuffer("/path/to/file", True) as buffer:
                     for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
                         await buffer.write(chunk, i)
-                await buffer.close()
     """
 
     # pyright: reportIncompatibleMethodOverride=false

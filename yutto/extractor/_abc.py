@@ -29,6 +29,7 @@ class SingleExtractor(Extractor):
         return []
 
     async def extract(self, session: aiohttp.ClientSession, args: argparse.Namespace) -> Optional[EpisodeData]:
+        """单话的只需要解析出来一话的数据即可，如果无法获取返回 None 即可，之后会自动过滤掉"""
         raise NotImplementedError
 
 
@@ -52,4 +53,6 @@ class BatchExtractor(Extractor):
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
+        """为了并行化，批量下载需要返回协程任务列表，协程返回内容是一个元组，第一个位置是协程序号
+        以便协程全部完成后恢复原顺序"""
         raise NotImplementedError
