@@ -1,10 +1,10 @@
 import json
 import re
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from aiohttp import ClientSession
 
-from yutto.api.info import get_video_info
+from yutto.api.info import get_video_info, VideoInfo, PageInfo
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
 from yutto._typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, VideoUrlMeta
@@ -19,40 +19,44 @@ class AcgVideoListItem(TypedDict):
     name: str
     avid: AvId
     cid: CId
-    metadata: Optional[MetaData]
+    metadata: MetaData
 
 
-async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
-    return (await get_video_info(session, avid))["title"]
+class AcgVideoList(TypedDict):
+    title: str
+    pubdate: str
+    pages: list[AcgVideoListItem]
 
 
-async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
-    return (await get_video_info(session, avid))["pubdate"]
+# async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
+#     return (await get_video_info(session, avid))["title"]
 
 
-async def get_acg_video_list(session: ClientSession, avid: AvId, with_metadata: bool = False) -> list[AcgVideoListItem]:
+# async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
+#     return get_time_str_by_stamp((await get_video_info(session, avid))["pubdate"], "%Y-%m-%d")
+
+
+async def get_acg_video_list(session: ClientSession, avid: AvId) -> AcgVideoList:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
     if res_json.get("data") is None:
         Logger.warning(f"啊叻？视频 {avid} 不见了诶")
         return []
-    acg_video_info: list[AcgVideoListItem] = [
-        {
-            "id": i + 1,
-            "name": item["part"],
-            "avid": avid,
-            "cid": CId(str(item["cid"])),
-            "metadata": None,
-        }
-        for i, item in enumerate(res_json["data"])
-    ]
-
-    if with_metadata:
-        metadata_list = await get_acg_video_metadata(session, avid)
-        assert len(metadata_list) == len(acg_video_info)
-        for info, metadata in zip(acg_video_info, metadata_list):
-            info["metadata"] = metadata
-    return acg_video_info
+    video_info = await get_video_info(session, avid)
+    return {
+        "title": video_info["title"],
+        "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
+        "pages": [
+            {
+                "id": i + 1,
+                "name": item["part"],
+                "avid": avid,
+                "cid": CId(str(item["cid"])),
+                "metadata": _parse_acg_video_metadata(video_info, page_info),
+            }
+            for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
+        ],
+    }
 
 
 async def get_acg_video_playurl(
@@ -117,20 +121,14 @@ async def get_acg_video_subtitles(session: ClientSession, avid: AvId, cid: CId) 
         return []
 
 
-async def get_acg_video_metadata(session: ClientSession, avid: AvId) -> list[MetaData]:
-    web_interface_api = "https://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
-    web_interface_url = web_interface_api.format(**avid.to_dict())
-    res_json = await Fetcher.fetch_json(session, web_interface_url)
-    return [
-        MetaData(
-            title=page_info["part"],
-            show_title=page_info["part"],
-            plot=res_json["data"]["desc"],
-            thumb=page_info["first_frame"] if page_info.get("first_frame") else res_json["data"]["pic"],
-            premiered=get_time_str_by_stamp(res_json["data"]["pubdate"]),
-            dataadded=get_time_str_by_now(),
-            source="",  # TODO
-            original_filename="",  # TODO
-        )
-        for page_info in res_json["data"]["pages"]
-    ]
+def _parse_acg_video_metadata(video_info: VideoInfo, page_info: PageInfo) -> MetaData:
+    return MetaData(
+        title=page_info["part"],
+        show_title=page_info["part"],
+        plot=video_info["description"],
+        thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
+        premiered=get_time_str_by_stamp(video_info["pubdate"]),
+        dataadded=get_time_str_by_now(),
+        source="",  # TODO
+        original_filename="",  # TODO
+    )

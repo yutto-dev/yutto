@@ -1,12 +1,11 @@
 import argparse
-import asyncio
 import re
 from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto._typing import EpisodeData, MId
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
+from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list
 from yutto.api.space import get_uploader_name, get_uploader_space_all_videos_avids
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
@@ -35,21 +34,30 @@ class UploaderAllVideosExtractor(BatchExtractor):
         username = await get_uploader_name(session, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
-        acg_video_list = [
-            acg_video_item
-            for avid in await get_uploader_space_all_videos_avids(session, self.mid)
-            for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
-        ]
+        acg_video_info_list: list[tuple[AcgVideoListItem, str, str]] = []
+        for avid in await get_uploader_space_all_videos_avids(session, self.mid):
+            acg_video_list = await get_acg_video_list(session, avid)
+            Fetcher.touch_url(session, avid.to_url()),
+            for acg_video_item in acg_video_list["pages"]:
+                acg_video_info_list.append(
+                    (
+                        acg_video_item,
+                        acg_video_list["title"],
+                        acg_video_list["pubdate"],
+                    )
+                )
 
         return [
             self._parse_episodes_data(
                 session,
                 args,
                 username,
+                title,
+                pubdate,
                 i,
                 acg_video_item,
             )
-            for i, acg_video_item in enumerate(acg_video_list)
+            for i, (acg_video_item, title, pubdate) in enumerate(acg_video_info_list)
         ]
 
     async def _parse_episodes_data(
@@ -57,15 +65,12 @@ class UploaderAllVideosExtractor(BatchExtractor):
         session: aiohttp.ClientSession,
         args: argparse.Namespace,
         username: str,
+        title: str,
+        pubdate: str,
         i: int,
         acg_video_item: AcgVideoListItem,
     ) -> Optional[tuple[int, EpisodeData]]:
         try:
-            _, title, pubdate = await asyncio.gather(
-                Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
-                get_acg_video_title(session, acg_video_item["avid"]),
-                get_acg_video_pubdate(session, acg_video_item["avid"]),
-            )
             return (
                 i,
                 await extract_acg_video_data(

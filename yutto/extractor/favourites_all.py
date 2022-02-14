@@ -1,12 +1,11 @@
 import argparse
-import asyncio
 import re
 from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto._typing import EpisodeData, MId
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
+from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list
 from yutto.api.space import get_all_favourites, get_favourite_avids, get_uploader_name
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
@@ -16,7 +15,7 @@ from yutto.utils.fetcher import Fetcher
 
 
 class FavouritesAllExtractor(BatchExtractor):
-    """用户单一收藏夹"""
+    """用户所有收藏夹"""
 
     REGEX_FAV_ALL = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<fid>\d+)")
 
@@ -35,12 +34,23 @@ class FavouritesAllExtractor(BatchExtractor):
         username = await get_uploader_name(session, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
-        acg_video_list = [
-            (acg_video_item, fav["title"])
-            for fav in await get_all_favourites(session, self.mid)
-            for avid in await get_favourite_avids(session, fav["fid"])
-            for acg_video_item in await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
-        ]
+        acg_video_info_list: list[tuple[AcgVideoListItem, str, str, str]] = []
+
+        for fav in await get_all_favourites(session, self.mid):
+            series_title = fav["title"]
+            fid = fav["fid"]
+            for avid in await get_favourite_avids(session, fid):
+                acg_video_list = await get_acg_video_list(session, avid)
+                await Fetcher.touch_url(session, avid.to_url())
+                for acg_video_item in acg_video_list["pages"]:
+                    acg_video_info_list.append(
+                        (
+                            acg_video_item,
+                            acg_video_list["title"],
+                            acg_video_list["pubdate"],
+                            series_title,
+                        )
+                    )
 
         return [
             self._parse_episodes_data(
@@ -48,10 +58,12 @@ class FavouritesAllExtractor(BatchExtractor):
                 args,
                 username,
                 series_title,
+                title,
+                pubdate,
                 i,
                 acg_video_item,
             )
-            for i, (acg_video_item, series_title) in enumerate(acg_video_list)
+            for i, (acg_video_item, title, pubdate, series_title) in enumerate(acg_video_info_list)
         ]
 
     async def _parse_episodes_data(
@@ -60,15 +72,12 @@ class FavouritesAllExtractor(BatchExtractor):
         args: argparse.Namespace,
         username: str,
         series_title: str,
+        title: str,
+        pubdate: str,
         i: int,
         acg_video_item: AcgVideoListItem,
     ) -> Optional[tuple[int, EpisodeData]]:
-        pubdate = await get_acg_video_pubdate(session, acg_video_item["avid"])
         try:
-            _, title = await asyncio.gather(
-                Fetcher.touch_url(session, acg_video_item["avid"].to_url()),
-                get_acg_video_title(session, acg_video_item["avid"]),
-            )
             return (
                 i,
                 await extract_acg_video_data(

@@ -34,7 +34,7 @@ async def extract_bangumi_data(
     # 在批量解析时会事先获取到该信息，为避免重复解析因此直接传入该值即可
     # 但如果是单视频解析的话，就需要在这里自行获取了
     if bangumi_info is None:
-        bangumi_list = await get_bangumi_list(session, season_id, with_metadata=args.with_metadata)
+        bangumi_list = await get_bangumi_list(session, season_id)
         for bangumi_item in bangumi_list:
             if bangumi_item["episode_id"] == episode_id:
                 bangumi_info = bangumi_item
@@ -49,7 +49,7 @@ async def extract_bangumi_data(
     videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
     subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    metadata = bangumi_info["metadata"]
+    metadata = bangumi_info["metadata"] if args.with_metadata else None
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,
@@ -83,15 +83,15 @@ async def extract_acg_video_data(
     auto_subpath_template: str = "{title}",
 ) -> EpisodeData:
     if acg_video_info is None:
-        acg_video_list = await get_acg_video_list(session, avid, with_metadata=args.with_metadata)
-        acg_video_info = acg_video_list[page - 1]
+        acg_video_list = await get_acg_video_list(session, avid)
+        acg_video_info = acg_video_list["pages"][page - 1]
     cid = acg_video_info["cid"]
     name = acg_video_info["name"]
     id = acg_video_info["id"]
     videos, audios = await get_acg_video_playurl(session, avid, cid)
     subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
     danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-    metadata = acg_video_info["metadata"]
+    metadata = acg_video_info["metadata"] if args.with_metadata else None
     subpath_variables_base: PathTemplateVariableDict = {
         "id": id,
         "name": name,

@@ -1,12 +1,11 @@
 import argparse
-import asyncio
 import re
 from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
+from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_acg_video_data
@@ -56,12 +55,8 @@ class AcgVideoBatchExtractor(BatchExtractor):
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
         try:
-            title, pubdate, acg_video_list = await asyncio.gather(
-                get_acg_video_title(session, self.avid),
-                get_acg_video_pubdate(session, self.avid),
-                get_acg_video_list(session, self.avid, with_metadata=args.with_metadata),
-            )
-            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
+            acg_video_list = await get_acg_video_list(session, self.avid)
+            Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except NotFoundError as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
             Logger.error(e.message)
@@ -69,19 +64,19 @@ class AcgVideoBatchExtractor(BatchExtractor):
 
         # 选集过滤
         episodes = parse_episodes_selection(args.episodes, len(acg_video_list))
-        acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
+        acg_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, acg_video_list["pages"]))
 
         return [
             self._parse_episodes_data(
                 session,
                 self.avid,
                 args,
-                title,
-                pubdate,
+                acg_video_list["title"],
+                acg_video_list["pubdate"],
                 i,
                 acg_video_item,
             )
-            for i, acg_video_item in enumerate(acg_video_list)
+            for i, acg_video_item in enumerate(acg_video_list["pages"])
         ]
 
     async def _parse_episodes_data(

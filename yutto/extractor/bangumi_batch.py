@@ -76,7 +76,7 @@ class BangumiBatchExtractor(BatchExtractor):
 
         title, bangumi_list = await asyncio.gather(
             get_bangumi_title(session, self.season_id),
-            get_bangumi_list(session, self.season_id, with_metadata=args.with_metadata),
+            get_bangumi_list(session, self.season_id),
         )
         Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
         # 如果没有 with_section 则不需要专区内容

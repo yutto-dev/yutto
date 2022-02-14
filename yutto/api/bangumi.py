@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 from aiohttp import ClientSession
 
@@ -19,7 +19,7 @@ class BangumiListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
-    metadata: Optional[MetaData]
+    metadata: MetaData
 
 
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
@@ -58,9 +58,7 @@ async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonI
     return title
 
 
-async def get_bangumi_list(
-    session: ClientSession, season_id: SeasonId, with_metadata: bool = False
-) -> list[BangumiListItem]:
+async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[BangumiListItem]:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
     resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
     result = resp_json["result"]
@@ -75,7 +73,7 @@ async def get_bangumi_list(
             "episode_id": EpisodeId(str(item["id"])),
             "avid": BvId(item["bvid"]),
             "is_section": i >= len(result["episodes"]),
-            "metadata": _parse_bangumi_metadata(item) if with_metadata else None,
+            "metadata": _parse_bangumi_metadata(item),
         }
         for i, item in enumerate(result["episodes"] + section_episodes)
     ]
