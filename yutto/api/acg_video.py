@@ -28,35 +28,29 @@ class AcgVideoList(TypedDict):
     pages: list[AcgVideoListItem]
 
 
-# async def get_acg_video_title(session: ClientSession, avid: AvId) -> str:
-#     return (await get_video_info(session, avid))["title"]
-
-
-# async def get_acg_video_pubdate(session: ClientSession, avid: AvId) -> str:
-#     return get_time_str_by_stamp((await get_video_info(session, avid))["pubdate"], "%Y-%m-%d")
-
-
 async def get_acg_video_list(session: ClientSession, avid: AvId) -> AcgVideoList:
+    video_info = await get_video_info(session, avid)
+    result: AcgVideoList = {
+        "title": video_info["title"],
+        "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
+        "pages": [],
+    }
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = await Fetcher.fetch_json(session, list_api.format(**avid.to_dict()))
     if res_json.get("data") is None:
         Logger.warning(f"啊叻？视频 {avid} 不见了诶")
-        return []
-    video_info = await get_video_info(session, avid)
-    return {
-        "title": video_info["title"],
-        "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
-        "pages": [
-            {
-                "id": i + 1,
-                "name": item["part"],
-                "avid": avid,
-                "cid": CId(str(item["cid"])),
-                "metadata": _parse_acg_video_metadata(video_info, page_info),
-            }
-            for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
-        ],
-    }
+        return result
+    result["pages"] = [
+        {
+            "id": i + 1,
+            "name": item["part"],
+            "avid": avid,
+            "cid": CId(str(item["cid"])),
+            "metadata": _parse_acg_video_metadata(video_info, page_info),
+        }
+        for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
+    ]
+    return result
 
 
 async def get_acg_video_playurl(

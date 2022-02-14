@@ -22,7 +22,6 @@ class VideoInfo(TypedDict):
     cid: CId
     picture: str
     title: str
-    # pubdate: str
     pubdate: int
     description: str
     pages: list[PageInfo]
@@ -50,7 +49,6 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
         "cid": CId(str(res_json_data["cid"])),
         "picture": res_json_data["pic"],
         "title": res_json_data["title"],
-        # "pubdate": time.strftime("%Y-%m-%d", time.localtime(res_json_data["pubdate"])),
         "pubdate": res_json_data["pubdate"],
         "description": res_json_data["desc"],
         "pages": [

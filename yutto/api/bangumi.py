@@ -45,13 +45,6 @@ async def get_season_id_by_episode_id(session: ClientSession, episode_id: Episod
     return SeasonId(str(season_id))
 
 
-# async def get_bangumi_title(session: ClientSession, season_id: SeasonId) -> str:
-#     play_url = "https://api.bilibili.com/pgc/view/web/season?season_id={season_id}".format(season_id=season_id)
-#     resp = await Fetcher.fetch_json(session, play_url)
-#     title = resp["result"]["title"]
-#     return title
-
-
 async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
     resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
