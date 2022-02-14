@@ -1,12 +1,13 @@
 import argparse
 import re
+import sys
 from typing import Optional
 
 import aiohttp
 
 from yutto._typing import EpisodeData, EpisodeId
 from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
+from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_bangumi_data
 from yutto.utils.console.logger import Badge, Logger
@@ -41,10 +42,18 @@ class BangumiExtractor(SingleExtractor):
         bangumi_list = await get_bangumi_list(session, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         try:
+            for bangumi_item in bangumi_list["pages"]:
+                if bangumi_item["episode_id"] == self.episode_id:
+                    bangumi_list_item = bangumi_item
+                    break
+            else:
+                Logger.error("在列表中未找到该剧集")
+                sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
+
             return await extract_bangumi_data(
                 session,
                 self.episode_id,
-                None,
+                bangumi_list_item,
                 args,
                 {"title": bangumi_list["title"]},
                 "{name}",

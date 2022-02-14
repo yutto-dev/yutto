@@ -1,47 +1,24 @@
 import argparse
 import os
-import sys
-from typing import Optional
 
 import aiohttp
 
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles
-from yutto.api.bangumi import (
-    BangumiListItem,
-    get_bangumi_list,
-    get_bangumi_playurl,
-    get_bangumi_subtitles,
-    get_season_id_by_episode_id,
-)
-from yutto.api.danmaku import get_danmaku
-from yutto.exceptions import ErrorCode
-from yutto.processor.path_resolver import UNKNOWN, PathTemplateVariableDict, resolve_path_template
 from yutto._typing import AvId, EpisodeData, EpisodeId
-from yutto.utils.console.logger import Logger
+from yutto.api.acg_video import AcgVideoListItem, get_acg_video_playurl, get_acg_video_subtitles
+from yutto.api.bangumi import BangumiListItem, get_bangumi_playurl, get_bangumi_subtitles
+from yutto.api.danmaku import get_danmaku
+from yutto.processor.path_resolver import UNKNOWN, PathTemplateVariableDict, resolve_path_template
 from yutto.utils.danmaku import EmptyDanmakuData
 
 
 async def extract_bangumi_data(
     session: aiohttp.ClientSession,
     episode_id: EpisodeId,
-    bangumi_info: Optional[BangumiListItem],
+    bangumi_info: BangumiListItem,
     args: argparse.Namespace,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
 ) -> EpisodeData:
-    season_id = await get_season_id_by_episode_id(session, episode_id)
-    # 如果不包含详细信息，需从列表中解析
-    # 在批量解析时会事先获取到该信息，为避免重复解析因此直接传入该值即可
-    # 但如果是单视频解析的话，就需要在这里自行获取了
-    if bangumi_info is None:
-        bangumi_list = (await get_bangumi_list(session, season_id))["pages"]
-        for bangumi_item in bangumi_list:
-            if bangumi_item["episode_id"] == episode_id:
-                bangumi_info = bangumi_item
-                break
-        else:
-            Logger.error("在列表中未找到该剧集")
-            sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
     avid = bangumi_info["avid"]
     cid = bangumi_info["cid"]
     name = bangumi_info["name"]
@@ -76,15 +53,11 @@ async def extract_bangumi_data(
 async def extract_acg_video_data(
     session: aiohttp.ClientSession,
     avid: AvId,
-    page: int,
-    acg_video_info: Optional[AcgVideoListItem],
+    acg_video_info: AcgVideoListItem,
     args: argparse.Namespace,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
 ) -> EpisodeData:
-    if acg_video_info is None:
-        acg_video_list = await get_acg_video_list(session, avid)
-        acg_video_info = acg_video_list["pages"][page - 1]
     cid = acg_video_info["cid"]
     name = acg_video_info["name"]
     id = acg_video_info["id"]

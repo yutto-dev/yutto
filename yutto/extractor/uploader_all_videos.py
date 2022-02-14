@@ -76,7 +76,6 @@ class UploaderAllVideosExtractor(BatchExtractor):
                 await extract_acg_video_data(
                     session,
                     acg_video_item["avid"],
-                    i + 1,
                     acg_video_item,
                     args,
                     {

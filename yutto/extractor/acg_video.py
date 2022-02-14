@@ -61,10 +61,12 @@ class AcgVideoExtractor(SingleExtractor):
             return await extract_acg_video_data(
                 session,
                 self.avid,
-                self.page,
-                None,
+                acg_video_list["pages"][self.page - 1],
                 args,
-                {"title": acg_video_list["title"], "pubdate": acg_video_list["pubdate"]},
+                {
+                    "title": acg_video_list["title"],
+                    "pubdate": acg_video_list["pubdate"],
+                },
                 "{title}",
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:

@@ -95,7 +95,6 @@ class AcgVideoBatchExtractor(BatchExtractor):
                 await extract_acg_video_data(
                     session,
                     avid,
-                    i + 1,
                     acg_video_item,
                     args,
                     {"title": title, "pubdate": pubdate},
