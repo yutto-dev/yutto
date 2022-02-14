@@ -7,18 +7,18 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 
 
-# @pytest.mark.api
-# @as_sync
-# async def test_get_acg_video_title():
-#     avid = BvId("BV1vZ4y1M7mQ")
-#     async with aiohttp.ClientSession(
-#         headers=Fetcher.headers,
-#         cookies=Fetcher.cookies,
-#         trust_env=Fetcher.trust_env,
-#         timeout=aiohttp.ClientTimeout(total=5),
-#     ) as session:
-#         title = await get_acg_video_title(session, avid)
-#         assert title == "用 bilili 下载 B 站视频"
+@pytest.mark.api
+@as_sync
+async def test_get_acg_video_title():
+    avid = BvId("BV1vZ4y1M7mQ")
+    async with aiohttp.ClientSession(
+        headers=Fetcher.headers,
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        timeout=aiohttp.ClientTimeout(total=5),
+    ) as session:
+        title = (await get_acg_video_list(session, avid))["title"]
+        assert title == "用 bilili 下载 B 站视频"
 
 
 @pytest.mark.api

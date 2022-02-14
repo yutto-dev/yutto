@@ -34,7 +34,7 @@ async def extract_bangumi_data(
     # 在批量解析时会事先获取到该信息，为避免重复解析因此直接传入该值即可
     # 但如果是单视频解析的话，就需要在这里自行获取了
     if bangumi_info is None:
-        bangumi_list = await get_bangumi_list(session, season_id)
+        bangumi_list = (await get_bangumi_list(session, season_id))["pages"]
         for bangumi_item in bangumi_list:
             if bangumi_item["episode_id"] == episode_id:
                 bangumi_info = bangumi_item

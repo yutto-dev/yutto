@@ -22,6 +22,11 @@ class BangumiListItem(TypedDict):
     metadata: MetaData
 
 
+class BangumiList(TypedDict):
+    title: str
+    pages: list[BangumiListItem]
+
+
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
     home_url = "https://www.bilibili.com/bangumi/media/md{media_id}".format(media_id=media_id)
     season_id = SeasonId("")
@@ -40,43 +45,35 @@ async def get_season_id_by_episode_id(session: ClientSession, episode_id: Episod
     return SeasonId(str(season_id))
 
 
-async def get_bangumi_title(session: ClientSession, season_id: SeasonId) -> str:
-    play_url = "https://api.bilibili.com/pgc/view/web/season?season_id={season_id}".format(season_id=season_id)
-    resp = await Fetcher.fetch_json(session, play_url)
-    title = resp["result"]["title"]
-    return title
+# async def get_bangumi_title(session: ClientSession, season_id: SeasonId) -> str:
+#     play_url = "https://api.bilibili.com/pgc/view/web/season?season_id={season_id}".format(season_id=season_id)
+#     resp = await Fetcher.fetch_json(session, play_url)
+#     title = resp["result"]["title"]
+#     return title
 
 
-async def get_bangumi_title_from_html(session: ClientSession, season_id: SeasonId) -> str:
-    """原来用的从 HTML 里解析标题，但由于 HTML 经常改版，所以暂时弃用，未来可能删掉"""
-    play_url = "https://www.bilibili.com/bangumi/play/ss{season_id}".format(season_id=season_id)
-    regex_title = re.compile(r'<a href=".+" target="_blank" title="(.*?)" class="media-title">(?P<title>.*?)</a>')
-    if match_obj := regex_title.search(await Fetcher.fetch_text(session, play_url)):
-        title = match_obj.group("title")
-    else:
-        title = "呐，我也不知道是什么标题呢～"
-    return title
-
-
-async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> list[BangumiListItem]:
+async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
     resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
     result = resp_json["result"]
     section_episodes = []
     for section in result.get("section", []):
         section_episodes += section["episodes"]
-    return [
-        {
-            "id": i + 1,
-            "name": _bangumi_episode_title(item["title"], item["long_title"]),
-            "cid": CId(str(item["cid"])),
-            "episode_id": EpisodeId(str(item["id"])),
-            "avid": BvId(item["bvid"]),
-            "is_section": i >= len(result["episodes"]),
-            "metadata": _parse_bangumi_metadata(item),
-        }
-        for i, item in enumerate(result["episodes"] + section_episodes)
-    ]
+    return {
+        "title": result["title"],
+        "pages": [
+            {
+                "id": i + 1,
+                "name": _bangumi_episode_title(item["title"], item["long_title"]),
+                "cid": CId(str(item["cid"])),
+                "episode_id": EpisodeId(str(item["id"])),
+                "avid": BvId(item["bvid"]),
+                "is_section": i >= len(result["episodes"]),
+                "metadata": _parse_bangumi_metadata(item),
+            }
+            for i, item in enumerate(result["episodes"] + section_episodes)
+        ],
+    }
 
 
 async def get_bangumi_playurl(

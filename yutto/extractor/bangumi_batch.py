@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import re
 from typing import Any, Coroutine, Optional
 
@@ -9,7 +8,6 @@ from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
     BangumiListItem,
     get_bangumi_list,
-    get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
@@ -74,25 +72,24 @@ class BangumiBatchExtractor(BatchExtractor):
     ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
         await self._parse_ids(session)
 
-        title, bangumi_list = await asyncio.gather(
-            get_bangumi_title(session, self.season_id),
-            get_bangumi_list(session, self.season_id),
-        )
-        Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
+        bangumi_list = await get_bangumi_list(session, self.season_id)
+        Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         # 如果没有 with_section 则不需要专区内容
-        bangumi_list = list(filter(lambda item: args.with_section or not item["is_section"], bangumi_list))
+        bangumi_list["pages"] = list(
+            filter(lambda item: args.with_section or not item["is_section"], bangumi_list["pages"])
+        )
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(bangumi_list))
-        bangumi_list = list(filter(lambda item: item["id"] in episodes, bangumi_list))
+        episodes = parse_episodes_selection(args.episodes, len(bangumi_list["pages"]))
+        bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
         return [
             self._parse_episodes_data(
                 session,
                 args,
-                title,
+                bangumi_list["title"],
                 i,
                 bangumi_item,
             )
-            for i, bangumi_item in enumerate(bangumi_list)
+            for i, bangumi_item in enumerate(bangumi_list["pages"])
         ]
 
     async def _parse_episodes_data(
