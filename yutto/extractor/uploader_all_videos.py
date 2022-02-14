@@ -37,7 +37,7 @@ class UploaderAllVideosExtractor(BatchExtractor):
         acg_video_info_list: list[tuple[AcgVideoListItem, str, str]] = []
         for avid in await get_uploader_space_all_videos_avids(session, self.mid):
             acg_video_list = await get_acg_video_list(session, avid)
-            Fetcher.touch_url(session, avid.to_url()),
+            await Fetcher.touch_url(session, avid.to_url())
             for acg_video_item in acg_video_list["pages"]:
                 acg_video_info_list.append(
                     (
