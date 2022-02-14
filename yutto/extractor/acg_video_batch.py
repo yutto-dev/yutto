@@ -63,7 +63,7 @@ class AcgVideoBatchExtractor(BatchExtractor):
             return []
 
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(acg_video_list))
+        episodes = parse_episodes_selection(args.episodes, len(acg_video_list["pages"]))
         acg_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, acg_video_list["pages"]))
 
         return [
