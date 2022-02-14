@@ -1,11 +1,14 @@
 import argparse
 import asyncio
-from typing import Any, Coroutine, Optional
+from functools import wraps
+from typing import Any, Callable, Coroutine, Optional, TypeVar
 
 import aiohttp
 
 from yutto._typing import EpisodeData
 from yutto.utils.console.logger import Logger
+
+T = TypeVar("T")
 
 
 class Extractor:
@@ -41,9 +44,9 @@ class BatchExtractor(Extractor):
         # 先解析各种资源链接
         for i, coro in enumerate(asyncio.as_completed(coroutine_list)):
             Logger.status.set(f"正在努力解析第 {i+1}/{num_videos} 个视频")
-            results = await coro
+            order, results = await coro
             if results is not None:
-                download_list.append(results)
+                download_list.append((order, results))
 
         # 由于 asyncio.as_completed 的顺序是按照完成顺序的，所以需要重新排序下
         download_list.sort(key=lambda x: x[0])
@@ -52,7 +55,17 @@ class BatchExtractor(Extractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
         """为了并行化，批量下载需要返回协程任务列表，协程返回内容是一个元组，第一个位置是协程序号
         以便协程全部完成后恢复原顺序"""
         raise NotImplementedError
+
+    @staticmethod
+    def with_order(
+        func: Callable[..., Coroutine[Any, Any, T]], order: int
+    ) -> Callable[..., Coroutine[Any, Any, tuple[int, T]]]:
+        @wraps(func)
+        async def with_order_func(*args: Any, **kwargs: Any) -> tuple[int, T]:
+            return (order, await func(*args, **kwargs))
+
+        return with_order_func

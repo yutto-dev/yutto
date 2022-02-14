@@ -14,7 +14,7 @@ from yutto.api.space import (
     get_medialist_title,
     get_uploader_name,
 )
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
+from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_acg_video_data
 from yutto.utils.console.logger import Badge, Logger
@@ -53,7 +53,7 @@ class SeriesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
         # 视频合集
         if self.is_collection:
             username, series_title = await asyncio.gather(
@@ -64,16 +64,20 @@ class SeriesExtractor(BatchExtractor):
 
             acg_video_info_list: list[tuple[AcgVideoListItem, str, str]] = []
             for avid in await get_collection_avids(session, self.series_id):
-                acg_video_list = await get_acg_video_list(session, avid)
-                await Fetcher.touch_url(session, avid.to_url())
-                for acg_video_item in acg_video_list["pages"]:
-                    acg_video_info_list.append(
-                        (
-                            acg_video_item,
-                            acg_video_list["title"],
-                            acg_video_list["pubdate"],
+                try:
+                    acg_video_list = await get_acg_video_list(session, avid)
+                    await Fetcher.touch_url(session, avid.to_url())
+                    for acg_video_item in acg_video_list["pages"]:
+                        acg_video_info_list.append(
+                            (
+                                acg_video_item,
+                                acg_video_list["title"],
+                                acg_video_list["pubdate"],
+                            )
                         )
-                    )
+                except NotFoundError as e:
+                    Logger.error(e.message)
+                    continue
         # 视频列表
         else:
             username, series_title = await asyncio.gather(
@@ -83,59 +87,34 @@ class SeriesExtractor(BatchExtractor):
 
             acg_video_info_list: list[tuple[AcgVideoListItem, str, str]] = []
             for avid in await get_medialist_avids(session, self.series_id):
-                acg_video_list = await get_acg_video_list(session, avid)
-                await Fetcher.touch_url(session, avid.to_url())
-                for acg_video_item in acg_video_list["pages"]:
-                    acg_video_info_list.append(
-                        (
-                            acg_video_item,
-                            acg_video_list["title"],
-                            acg_video_list["pubdate"],
+                try:
+                    acg_video_list = await get_acg_video_list(session, avid)
+                    await Fetcher.touch_url(session, avid.to_url())
+                    for acg_video_item in acg_video_list["pages"]:
+                        acg_video_info_list.append(
+                            (
+                                acg_video_item,
+                                acg_video_list["title"],
+                                acg_video_list["pubdate"],
+                            )
                         )
-                    )
+                except NotFoundError as e:
+                    Logger.error(e.message)
+                    continue
 
         return [
-            self._parse_episodes_data(
+            self.with_order(extract_acg_video_data, i)(
                 session,
-                args,
-                series_title,
-                username,
-                title,
-                pubdate,
-                i,
+                acg_video_item["avid"],
                 acg_video_item,
+                args,
+                {
+                    "series_title": series_title,
+                    "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
+                    "title": title,
+                    "pubdate": pubdate,
+                },
+                "{series_title}/{title}/{name}",
             )
             for i, (acg_video_item, title, pubdate) in enumerate(acg_video_info_list)
         ]
-
-    async def _parse_episodes_data(
-        self,
-        session: aiohttp.ClientSession,
-        args: argparse.Namespace,
-        series_title: str,
-        username: str,
-        title: str,
-        pubdate: str,
-        i: int,
-        acg_video_item: AcgVideoListItem,
-    ) -> Optional[tuple[int, EpisodeData]]:
-        try:
-            return (
-                i,
-                await extract_acg_video_data(
-                    session,
-                    acg_video_item["avid"],
-                    acg_video_item,
-                    args,
-                    {
-                        "series_title": series_title,
-                        "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
-                        "title": title,
-                        "pubdate": pubdate,
-                    },
-                    "{series_title}/{title}/{name}",
-                ),
-            )
-        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-            Logger.error(e.message)
-            return None
