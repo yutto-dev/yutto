@@ -61,9 +61,9 @@ async def get_acg_video_playurl(
 
     resp_json = await Fetcher.fetch_json(session, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:
-        raise NoAccessPermissionError(f"无法下载该视频（avid: {avid}, cid: {cid}）")
+        raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}）")
     if resp_json.get("data") is None:
-        raise NoAccessPermissionError(f"无法下载该视频（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}")
+        raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}")
     if resp_json["data"].get("dash") is None:
         raise UnSupportedTypeError(f"该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式")
     # TODO: 处理 resp_json["data"]["dash"]["dolby"]，应当是 Dolby 的音频流
