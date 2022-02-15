@@ -55,7 +55,9 @@ class BangumiExtractor(SingleExtractor):
                 self.episode_id,
                 bangumi_list_item,
                 args,
-                {"title": bangumi_list["title"]},
+                {
+                    "title": bangumi_list["title"],
+                },
                 "{name}",
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
