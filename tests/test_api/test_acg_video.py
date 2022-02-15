@@ -1,7 +1,7 @@
 import aiohttp
 import pytest
 
-from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list, get_acg_video_playurl, get_acg_video_subtitles
 from yutto._typing import BvId, CId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
@@ -17,7 +17,7 @@ async def test_get_acg_video_title():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        title = await get_acg_video_title(session, avid)
+        title = (await get_acg_video_list(session, avid))["title"]
         assert title == "用 bilili 下载 B 站视频"
 
 
@@ -31,7 +31,7 @@ async def test_get_acg_video_list():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        acg_video_list = await get_acg_video_list(session, avid, with_metadata=True)
+        acg_video_list = (await get_acg_video_list(session, avid))["pages"]
         assert acg_video_list[0]["id"] == 1
         assert acg_video_list[0]["name"] == "bilili 特性以及使用方法简单介绍"
         assert acg_video_list[0]["cid"] == CId("222190584")

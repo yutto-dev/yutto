@@ -1,12 +1,11 @@
 import argparse
-import asyncio
 import re
 from typing import Optional
 
 import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
-from yutto.api.acg_video import get_acg_video_pubdate, get_acg_video_title
+from yutto.api.acg_video import get_acg_video_list
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_acg_video_data
@@ -57,18 +56,17 @@ class AcgVideoExtractor(SingleExtractor):
 
     async def extract(self, session: aiohttp.ClientSession, args: argparse.Namespace) -> Optional[EpisodeData]:
         try:
-            title, pubdate = await asyncio.gather(
-                get_acg_video_title(session, self.avid),
-                get_acg_video_pubdate(session, self.avid),
-            )
-            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
+            acg_video_list = await get_acg_video_list(session, self.avid)
+            Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
             return await extract_acg_video_data(
                 session,
                 self.avid,
-                self.page,
-                None,
+                acg_video_list["pages"][self.page - 1],
                 args,
-                {"title": title, "pubdate": pubdate},
+                {
+                    "title": acg_video_list["title"],
+                    "pubdate": acg_video_list["pubdate"],
+                },
                 "{title}",
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:

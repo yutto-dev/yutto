@@ -7,12 +7,16 @@ from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
 
 async def get_xml_danmaku(session: aiohttp.ClientSession, cid: CId) -> str:
     danmaku_api = "http://comment.bilibili.com/{cid}.xml"
-    return await Fetcher.fetch_text(session, danmaku_api.format(cid=cid), encoding="utf-8")
+    results = await Fetcher.fetch_text(session, danmaku_api.format(cid=cid), encoding="utf-8")
+    assert results is not None
+    return results
 
 
 async def get_protobuf_danmaku(session: aiohttp.ClientSession, cid: CId, segment_id: int = 1) -> bytes:
     danmaku_api = "http://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid={cid}&segment_index={segment_id}"
-    return await Fetcher.fetch_bin(session, danmaku_api.format(cid=cid, segment_id=segment_id))
+    results = await Fetcher.fetch_bin(session, danmaku_api.format(cid=cid, segment_id=segment_id))
+    assert results is not None
+    return results
 
 
 async def get_danmaku(

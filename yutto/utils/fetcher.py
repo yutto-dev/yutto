@@ -80,26 +80,32 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
+    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> Optional[str]:
         async with cls.semaphore:
             Logger.debug(f"Fetch text: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
+                if not resp.ok:
+                    return None
                 return await resp.text(encoding=encoding)
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
+    async def fetch_bin(cls, session: ClientSession, url: str) -> Optional[bytes]:
         async with cls.semaphore:
             Logger.debug(f"Fetch bin: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
+                if not resp.ok:
+                    return None
                 return await resp.read()
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_json(cls, session: ClientSession, url: str) -> Any:
+    async def fetch_json(cls, session: ClientSession, url: str) -> Optional[Any]:
         async with cls.semaphore:
             Logger.debug(f"Fetch json: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
+                if not resp.ok:
+                    return None
                 return await resp.json()
 
     @classmethod
@@ -188,12 +194,11 @@ class Fetcher:
                     ) as resp:
                         if stream:
                             while True:
-                                # 如果直接用 1KiB 的话，会产生大量的块，消耗大量的 CPU 资源，
-                                # 反而使得协程的优势不明显
+                                # 如果直接用 1KiB 的话，会产生大量的块，需要消耗大量的 CPU 资源来维持顺序，
                                 # 而使用 1MiB 以上或者不使用流式下载方式时，由于分块太大，
                                 # 导致进度条显示的实时速度并不准，波动太大，用户体验不佳，
                                 # 因此取两者折中
-                                chunk = await resp.content.read(2**15)
+                                chunk = await resp.content.read(2**16)
                                 if not chunk:
                                     break
                                 await file_buffer.write(chunk, offset + block_offset)

@@ -1,13 +1,12 @@
 import argparse
-import asyncio
 import re
 from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_list, get_acg_video_pubdate, get_acg_video_title
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
+from yutto.api.acg_video import get_acg_video_list
+from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_acg_video_data
 from yutto.processor.selector import parse_episodes_selection
@@ -54,59 +53,30 @@ class AcgVideoBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
         try:
-            title, pubdate, acg_video_list = await asyncio.gather(
-                get_acg_video_title(session, self.avid),
-                get_acg_video_pubdate(session, self.avid),
-                get_acg_video_list(session, self.avid, with_metadata=args.with_metadata),
-            )
-            Logger.custom(title, Badge("投稿视频", fore="black", back="cyan"))
+            acg_video_list = await get_acg_video_list(session, self.avid)
+            Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except NotFoundError as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
             Logger.error(e.message)
             return []
 
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(acg_video_list))
-        acg_video_list = list(filter(lambda item: item["id"] in episodes, acg_video_list))
+        episodes = parse_episodes_selection(args.episodes, len(acg_video_list["pages"]))
+        acg_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, acg_video_list["pages"]))
 
         return [
-            self._parse_episodes_data(
+            self.with_order(extract_acg_video_data, i)(
                 session,
-                self.avid,
-                args,
-                title,
-                pubdate,
-                i,
+                acg_video_item["avid"],
                 acg_video_item,
+                args,
+                {
+                    "title": acg_video_list["title"],
+                    "pubdate": acg_video_list["pubdate"],
+                },
+                "{title}/{name}",
             )
-            for i, acg_video_item in enumerate(acg_video_list)
+            for i, acg_video_item in enumerate(acg_video_list["pages"])
         ]
-
-    async def _parse_episodes_data(
-        self,
-        session: aiohttp.ClientSession,
-        avid: AvId,
-        args: argparse.Namespace,
-        title: str,
-        pubdate: str,
-        i: int,
-        acg_video_item: AcgVideoListItem,
-    ) -> Optional[tuple[int, EpisodeData]]:
-        try:
-            return (
-                i,
-                await extract_acg_video_data(
-                    session,
-                    avid,
-                    i + 1,
-                    acg_video_item,
-                    args,
-                    {"title": title, "pubdate": pubdate},
-                    "{title}/{name}",
-                ),
-            )
-        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-            Logger.error(e.message)
-            return None

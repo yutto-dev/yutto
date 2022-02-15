@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import re
 from typing import Any, Coroutine, Optional
 
@@ -7,13 +6,10 @@ import aiohttp
 
 from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
-    BangumiListItem,
     get_bangumi_list,
-    get_bangumi_title,
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
 from yutto.processor.selector import parse_episodes_selection
@@ -71,50 +67,28 @@ class BangumiBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, Optional[tuple[int, EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
         await self._parse_ids(session)
 
-        title, bangumi_list = await asyncio.gather(
-            get_bangumi_title(session, self.season_id),
-            get_bangumi_list(session, self.season_id, with_metadata=args.with_metadata),
-        )
-        Logger.custom(title, Badge("番剧", fore="black", back="cyan"))
+        bangumi_list = await get_bangumi_list(session, self.season_id)
+        Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         # 如果没有 with_section 则不需要专区内容
-        bangumi_list = list(filter(lambda item: args.with_section or not item["is_section"], bangumi_list))
+        bangumi_list["pages"] = list(
+            filter(lambda item: args.with_section or not item["is_section"], bangumi_list["pages"])
+        )
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(bangumi_list))
-        bangumi_list = list(filter(lambda item: item["id"] in episodes, bangumi_list))
+        episodes = parse_episodes_selection(args.episodes, len(bangumi_list["pages"]))
+        bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
         return [
-            self._parse_episodes_data(
+            self.with_order(extract_bangumi_data, i)(
                 session,
-                args,
-                title,
-                i,
+                bangumi_item["episode_id"],
                 bangumi_item,
+                args,
+                {
+                    "title": bangumi_list["title"],
+                },
+                "{title}/{name}",
             )
-            for i, bangumi_item in enumerate(bangumi_list)
+            for i, bangumi_item in enumerate(bangumi_list["pages"])
         ]
-
-    async def _parse_episodes_data(
-        self,
-        session: aiohttp.ClientSession,
-        args: argparse.Namespace,
-        title: str,
-        i: int,
-        bangumi_item: BangumiListItem,
-    ) -> Optional[tuple[int, EpisodeData]]:
-        try:
-            return (
-                i,
-                await extract_bangumi_data(
-                    session,
-                    bangumi_item["episode_id"],
-                    bangumi_item,
-                    args,
-                    {"title": title},
-                    "{title}/{name}",
-                ),
-            )
-        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-            Logger.error(e.message)
-            return None

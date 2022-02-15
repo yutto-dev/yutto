@@ -5,7 +5,6 @@ from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_playurl,
     get_bangumi_subtitles,  # type: ignore
-    get_bangumi_title,
     get_season_id_by_media_id,
     get_season_id_by_episode_id,
 )
@@ -54,7 +53,7 @@ async def test_get_bangumi_title():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        title = await get_bangumi_title(session, season_id)
+        title = (await get_bangumi_list(session, season_id))["title"]
         assert title == "我的三体之章北海传"
 
 
@@ -68,7 +67,7 @@ async def test_get_bangumi_list():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        bangumi_list = await get_bangumi_list(session, season_id, with_metadata=True)
+        bangumi_list = (await get_bangumi_list(session, season_id))["pages"]
         assert bangumi_list[0]["id"] == 1
         assert bangumi_list[0]["name"] == "第1话"
         assert bangumi_list[0]["cid"] == CId("144541892")
