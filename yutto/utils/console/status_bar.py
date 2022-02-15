@@ -18,6 +18,10 @@ class StatusBar:
         cls._enabled = False
 
     @classmethod
+    def set_snippers(cls, snippers: list[str]):
+        cls._snippers = snippers
+
+    @classmethod
     def clear(cls):
         if not cls._enabled:
             return
@@ -36,7 +40,7 @@ class StatusBar:
         cls.tip = tip
 
     @classmethod
-    def set_wait(cls):
+    def next_tick(cls):
         cls.set(cls._snippers[cls._count] + " " + cls.tip)
         cls._count += 1
         cls._count %= len(cls._snippers)

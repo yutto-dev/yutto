@@ -153,7 +153,7 @@ async def run(args_list: list[argparse.Namespace]):
                 Logger.error("无效的 url～请检查一下链接是否正确～")
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
-            # 提取链接～
+            # 提取信息，构造解析任务～
             for extractor in extractors:
                 if extractor.match(url):
                     download_list = await extractor(session, args)
@@ -167,7 +167,13 @@ async def run(args_list: list[argparse.Namespace]):
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
             # 下载～
-            for i, episode_data in enumerate(download_list):
+            for i, episode_data_coro in enumerate(download_list):
+                if episode_data_coro is None:
+                    continue
+                # 这时候才真正开始解析链接
+                episode_data = await episode_data_coro
+                if episode_data is None:
+                    continue
                 if args.batch:
                     Logger.custom(
                         f"{episode_data['filename']}",

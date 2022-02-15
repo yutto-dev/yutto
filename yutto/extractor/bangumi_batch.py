@@ -67,7 +67,7 @@ class BangumiBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
+    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         await self._parse_ids(session)
 
         bangumi_list = await get_bangumi_list(session, self.season_id)
@@ -80,7 +80,7 @@ class BangumiBatchExtractor(BatchExtractor):
         episodes = parse_episodes_selection(args.episodes, len(bangumi_list["pages"]))
         bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
         return [
-            self.with_order(extract_bangumi_data, i)(
+            extract_bangumi_data(
                 session,
                 bangumi_item["episode_id"],
                 bangumi_item,
@@ -90,5 +90,5 @@ class BangumiBatchExtractor(BatchExtractor):
                 },
                 "{title}/{name}",
             )
-            for i, bangumi_item in enumerate(bangumi_list["pages"])
+            for bangumi_item in bangumi_list["pages"]
         ]

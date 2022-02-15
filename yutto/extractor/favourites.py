@@ -33,7 +33,7 @@ class FavouritesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
+    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         username, favourite_info = await asyncio.gather(
             get_uploader_name(session, self.mid),
             get_favourite_info(session, self.fid),
@@ -61,7 +61,7 @@ class FavouritesExtractor(BatchExtractor):
                 continue
 
         return [
-            self.with_order(extract_acg_video_data, i)(
+            extract_acg_video_data(
                 session,
                 acg_video_item["avid"],
                 acg_video_item,
@@ -74,5 +74,5 @@ class FavouritesExtractor(BatchExtractor):
                 },
                 "{username}的收藏夹/{series_title}/{title}/{name}",
             )
-            for i, (acg_video_item, title, pubdate) in enumerate(acg_video_info_list)
+            for acg_video_item, title, pubdate in acg_video_info_list
         ]
