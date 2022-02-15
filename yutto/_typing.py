@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from typing import NamedTuple, Optional, TypedDict
 
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
@@ -22,7 +23,7 @@ class BilibiliId(NamedTuple):
         return self.value == other.value
 
 
-class AvId(BilibiliId):
+class AvId(BilibiliId, metaclass=ABCMeta):
     """AId 与 BvId 的统一，大多数 API 只需要其中一种即可正常工作
 
     Examples:
@@ -46,9 +47,11 @@ class AvId(BilibiliId):
             # 这样就完全屏蔽了 aid 和 bvid 的差异了
     """
 
+    @abstractmethod
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
 
+    @abstractmethod
     def to_url(self) -> str:
         raise NotImplementedError("请不要直接使用 AvId")
 
