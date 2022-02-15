@@ -83,6 +83,7 @@ class Fetcher:
     async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> Optional[str]:
         async with cls.semaphore:
             Logger.debug(f"Fetch text: {url}")
+            Logger.status.next_tick()
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 if not resp.ok:
                     return None
@@ -93,6 +94,7 @@ class Fetcher:
     async def fetch_bin(cls, session: ClientSession, url: str) -> Optional[bytes]:
         async with cls.semaphore:
             Logger.debug(f"Fetch bin: {url}")
+            Logger.status.next_tick()
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 if not resp.ok:
                     return None
@@ -103,6 +105,7 @@ class Fetcher:
     async def fetch_json(cls, session: ClientSession, url: str) -> Optional[Any]:
         async with cls.semaphore:
             Logger.debug(f"Fetch json: {url}")
+            Logger.status.next_tick()
             async with session.get(url, proxy=Fetcher.proxy) as resp:
                 if not resp.ok:
                     return None
@@ -125,6 +128,7 @@ class Fetcher:
                     Logger.debug(f"Get redircted url: {url}")
                 else:
                     Logger.debug(f"Get redircted url: {url} -> {redirected_url}")
+                Logger.status.next_tick()
                 return redirected_url
 
     @classmethod

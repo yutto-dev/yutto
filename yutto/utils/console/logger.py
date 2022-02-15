@@ -52,13 +52,27 @@ class Logger:
     def enable_statusbar(cls):
         # StatusBar 为整个 log 模块中唯一有刷新能力的部分，如果禁用（不启用）可以保证 log 的可读性
         cls.status.enable()
+        cls.status.set_snippers(
+            [
+                "( ´･ω･)",
+                "(　´･ω)",
+                "( 　´･)",
+                "( 　 ´)",
+                "(     )",
+                "(`　  )",
+                "(･`   )",
+                "(ω･`　)",
+                "(･ω･` )",
+                "(´･ω･`)",
+            ]
+        )
 
     @classmethod
     def custom(cls, string: Any, badge: Badge, *print_args: Any, **print_kwargs: Any):
         prefix = badge + " "
         cls.status.clear()
         print(prefix + str(string), *print_args, **print_kwargs)
-        cls.status.set_wait()
+        cls.status.next_tick()
 
     @classmethod
     def warning(cls, string: Any, *print_args: Any, **print_kwargs: Any):
@@ -115,6 +129,7 @@ class Logger:
 
     @classmethod
     def print(cls, string: Any, *print_args: Any, **print_kwargs: Any):
+        cls.status.clear()
         print(string, *print_args, **print_kwargs)
 
     @classmethod
