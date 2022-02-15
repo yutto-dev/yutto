@@ -240,7 +240,7 @@ just publish
 > 需预先自行安装 [Docker](https://docs.docker.com/get-docker/) 并安装 [buildx 插件](https://docs.docker.com/buildx/working-with-buildx/) （我这里貌似不需要手动安装插件就有了……）
 
 ```bash
-just publish-docker
+just docker-publish
 ```
 
 ### 发布到 Homebrew Tap
