@@ -26,3 +26,5 @@ jobs:
       - name: Test yutto
         run: |
           yutto -v
+          yutto -h
+          yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
