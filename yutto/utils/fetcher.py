@@ -80,26 +80,32 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> str:
+    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> Optional[str]:
         async with cls.semaphore:
             Logger.debug(f"Fetch text: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
+                if not resp.ok:
+                    return None
                 return await resp.text(encoding=encoding)
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_bin(cls, session: ClientSession, url: str) -> bytes:
+    async def fetch_bin(cls, session: ClientSession, url: str) -> Optional[bytes]:
         async with cls.semaphore:
             Logger.debug(f"Fetch bin: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
+                if not resp.ok:
+                    return None
                 return await resp.read()
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_json(cls, session: ClientSession, url: str) -> Any:
+    async def fetch_json(cls, session: ClientSession, url: str) -> Optional[Any]:
         async with cls.semaphore:
             Logger.debug(f"Fetch json: {url}")
             async with session.get(url, proxy=Fetcher.proxy) as resp:
+                if not resp.ok:
+                    return None
                 return await resp.json()
 
     @classmethod

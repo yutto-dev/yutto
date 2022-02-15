@@ -31,6 +31,8 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
     regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
     res_json = await Fetcher.fetch_json(session, info_api.format(**avid.to_dict()))
+    if res_json is None:
+        raise NotFoundError(f"无法该视频 {avid} 信息")
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
@@ -64,6 +66,7 @@ async def get_video_info(session: ClientSession, avid: AvId) -> VideoInfo:
 async def is_vip(session: ClientSession) -> bool:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
     res_json = await Fetcher.fetch_json(session, info_api)
+    assert res_json is not None
     res_json_data = res_json.get("data")
     if res_json_data.get("vipStatus") == 1:
         return True
