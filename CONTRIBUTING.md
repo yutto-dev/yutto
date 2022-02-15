@@ -131,18 +131,17 @@ poetry run yutto -v
    1. 初始化提取器 [yutto/extrator/](./yutto/extractor/)
    2. 利用所有提取器处理 id 为可识别的 url
    3. 重定向一下入口 url 到可识别的 url
-   4. 从入口 url 提取 `EpisodeData` 列表
+   4. 从入口 url 提取信息，构造解析任务
       1. 如果是单话下载（继承 `yutto.extrator._abc.SingleExtrator`）
          1. 解析有用信息以提供给路径变量
-         2. 使用 `yutto.extrator.common` 里的低阶提取器直接提取
+         2. 使用 `yutto.extrator.common` 里的低阶提取器构造链接解析任务
       2. 如果是批量下载（继承 `yutto.extrator._abc.BatchExtrator`）
          1. 循环解析列表
          2. 展平列表
          3. 选集（如果支持的话）
          4. 根据列表构造协程任务（任务包含了解析信息和利用低阶提取器提取）
-         5. 并行执行解析任务
-         6. 任务重排序
-   5. 将 `EpisodeData` 列表依次传入 [yutto/utils/downloader.py](yutto/utils/../processor/downloader.py) 进行下载
+         5. 构造解析任务
+   5. 依次执行解析任务，并将结果依次传入 [yutto/utils/downloader.py](yutto/utils/../processor/downloader.py) 进行下载
       1. 选择清晰度
       2. 显示详细信息
       3. 字幕、弹幕、描述文件等额外资源下载
