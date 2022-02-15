@@ -1,7 +1,7 @@
 import argparse
 import re
 import sys
-from typing import Optional
+from typing import Optional, Coroutine, Any
 
 import aiohttp
 
@@ -37,7 +37,9 @@ class BangumiExtractor(SingleExtractor):
         else:
             return False
 
-    async def extract(self, session: aiohttp.ClientSession, args: argparse.Namespace) -> Optional[EpisodeData]:
+    async def extract(
+        self, session: aiohttp.ClientSession, args: argparse.Namespace
+    ) -> Optional[Coroutine[Any, Any, Optional[EpisodeData]]]:
         season_id = await get_season_id_by_episode_id(session, self.episode_id)
         bangumi_list = await get_bangumi_list(session, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
@@ -50,7 +52,7 @@ class BangumiExtractor(SingleExtractor):
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
 
-            return await extract_bangumi_data(
+            return extract_bangumi_data(
                 session,
                 self.episode_id,
                 bangumi_list_item,

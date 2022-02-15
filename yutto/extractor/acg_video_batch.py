@@ -53,7 +53,7 @@ class AcgVideoBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
+    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         try:
             acg_video_list = await get_acg_video_list(session, self.avid)
             Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
@@ -67,7 +67,7 @@ class AcgVideoBatchExtractor(BatchExtractor):
         acg_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, acg_video_list["pages"]))
 
         return [
-            self.with_order(extract_acg_video_data, i)(
+            extract_acg_video_data(
                 session,
                 acg_video_item["avid"],
                 acg_video_item,
@@ -78,5 +78,5 @@ class AcgVideoBatchExtractor(BatchExtractor):
                 },
                 "{title}/{name}",
             )
-            for i, acg_video_item in enumerate(acg_video_list["pages"])
+            for acg_video_item in acg_video_list["pages"]
         ]

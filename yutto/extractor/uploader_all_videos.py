@@ -30,7 +30,7 @@ class UploaderAllVideosExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
+    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         username = await get_uploader_name(session, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
@@ -52,7 +52,7 @@ class UploaderAllVideosExtractor(BatchExtractor):
                 continue
 
         return [
-            self.with_order(extract_acg_video_data, i)(
+            extract_acg_video_data(
                 session,
                 acg_video_item["avid"],
                 acg_video_item,
@@ -64,5 +64,5 @@ class UploaderAllVideosExtractor(BatchExtractor):
                 },
                 "{username}的全部投稿视频/{title}/{name}",
             )
-            for i, (acg_video_item, title, pubdate) in enumerate(acg_video_info_list)
+            for acg_video_item, title, pubdate in acg_video_info_list
         ]

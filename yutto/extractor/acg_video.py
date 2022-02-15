@@ -1,6 +1,6 @@
 import argparse
 import re
-from typing import Optional
+from typing import Optional, Coroutine, Any
 
 import aiohttp
 
@@ -54,11 +54,13 @@ class AcgVideoExtractor(SingleExtractor):
         else:
             return False
 
-    async def extract(self, session: aiohttp.ClientSession, args: argparse.Namespace) -> Optional[EpisodeData]:
+    async def extract(
+        self, session: aiohttp.ClientSession, args: argparse.Namespace
+    ) -> Optional[Coroutine[Any, Any, Optional[EpisodeData]]]:
         try:
             acg_video_list = await get_acg_video_list(session, self.avid)
             Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
-            return await extract_acg_video_data(
+            return extract_acg_video_data(
                 session,
                 self.avid,
                 acg_video_list["pages"][self.page - 1],

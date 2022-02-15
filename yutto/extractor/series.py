@@ -53,7 +53,7 @@ class SeriesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, tuple[int, Optional[EpisodeData]]]]:
+    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         # 视频合集
         if self.is_collection:
             username, series_title = await asyncio.gather(
@@ -103,7 +103,7 @@ class SeriesExtractor(BatchExtractor):
                     continue
 
         return [
-            self.with_order(extract_acg_video_data, i)(
+            extract_acg_video_data(
                 session,
                 acg_video_item["avid"],
                 acg_video_item,
@@ -116,5 +116,5 @@ class SeriesExtractor(BatchExtractor):
                 },
                 "{series_title}/{title}/{name}",
             )
-            for i, (acg_video_item, title, pubdate) in enumerate(acg_video_info_list)
+            for acg_video_item, title, pubdate in acg_video_info_list
         ]
