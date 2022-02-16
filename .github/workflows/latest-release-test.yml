@@ -19,6 +19,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
 
+      - name: Install tools
+        run: |
+          sudo apt update
+          sudo apt install ffmpeg
+
       - name: Install yutto latest
         run: |
           pip install yutto
