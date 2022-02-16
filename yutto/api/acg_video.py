@@ -67,6 +67,24 @@ async def get_acg_video_playurl(
     if resp_json["data"].get("dash") is None:
         raise UnSupportedTypeError(f"该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式")
     # TODO: 处理 resp_json["data"]["dash"]["dolby"]，应当是 Dolby 的音频流
+    # {
+    #   "type": 1 | 2, (1: Dolby Audio 杜比音效（例：BV1Fa41127J4），2: Dolby Atmos 杜比全景声（例：BV1eV411W7tt）)
+    #   "audio": [
+    #     {
+    #       "id": 30255 | 30250，（好像是只有这俩，分别对应上面两个）
+    #       "base_url": "xxxx",
+    #       "backup_url": ["xxxx", "xxxx"],
+    #       "bandwidth": xxx,
+    #       "mime_type": "audio/mp4",
+    #       "codecs": "ec-3",
+    #       "segment_base": {
+    #         "initialization": "xxx",
+    #         "index_range": "xxx",
+    #       },
+    #       "size": xxx,
+    #     }
+    #   ],
+    # }
     return (
         [
             {
