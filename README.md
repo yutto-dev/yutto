@@ -489,8 +489,6 @@ pip install uvloop
 yutto --no-color --no-progress > log
 ```
 
-当然，如果你有
-
 ### 使用 url alias
 
 yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
@@ -505,7 +503,7 @@ rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 yutto --batch rimuru-nikki --alias-file=/path/to/alias-file
 ```
 
-### 使用文件列表
+### 使用任务列表
 
 现在 url 不仅支持 http/https 链接与裸 id，还支持使用文件路径与 file scheme 来用于表示文件列表，文件列表以行分隔，每行写一次命令的参数，该参数会覆盖掉主程序中所使用的参数，示例如下：
 
@@ -548,6 +546,18 @@ yutto file:///path/to/list --vcodec="avc:copy"
 另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
 
 最后，列表也是支持嵌套的哦（虽然没什么用 2333）
+
+### 自定义命令别名
+
+如果你不习惯于 yutto 的默认参数，那么可能每次运行都需要在后面加上长长一串参数，为了避免这一点，我是这样做的：
+
+在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
+
+```bash
+alias bll='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:copy"'
+```
+
+由于我提前在 `~/.sessdata` 存储了我的 `SESSDATA`，所以避免每次都要手动输入 cookie 的问题。
 
 ## FAQ
 
