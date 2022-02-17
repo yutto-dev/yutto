@@ -152,6 +152,8 @@ def merge_video_and_audio(
         ["-i", audio_path] if audio is not None else [],
         ["-vcodec", options["video_save_codec"]] if video is not None else [],
         ["-acodec", options["audio_save_codec"]] if audio is not None else [],
+        # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
+        ["-strict", "unofficial"],
         ["-threads", str(os.cpu_count())],
         ["-y", output_path],
     ]
