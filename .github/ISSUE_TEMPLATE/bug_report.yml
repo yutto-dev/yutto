@@ -55,9 +55,9 @@ body:
       label: 一点点的自我检查
       description: 在你提交 issue 之前，麻烦确认自己是否已经完成了以下检查：
       options:
-        - label: 充分阅读 [README.md](https://github.com/SigureMo/yutto)，特别是与本 issue 相关的部分
+        - label: 充分阅读 [README.md](https://github.com/yutto-dev/yutto)，特别是与本 issue 相关的部分
           required: true
         - label: 如果是网络问题，已经检查网络连接、设置是否正常，并经过充分测试认为这是 yutto 本身的问题
           required: true
-        - label: 本 issue 在 [issues](https://github.com/SigureMo/yutto/issues) 和 [discussion](https://github.com/SigureMo/yutto/discussions) 中并没有重复问题
+        - label: 本 issue 在 [issues](https://github.com/yutto-dev/yutto/issues) 和 [discussion](https://github.com/yutto-dev/yutto/discussions) 中并没有重复问题
           required: true

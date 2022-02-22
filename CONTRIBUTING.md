@@ -35,7 +35,7 @@ pip install poetry
 如果你想要本地调试，最佳实践是从 github 上下载最新的源码来运行
 
 ```bash
-git clone git@github.com:SigureMo/yutto.git
+git clone git@github.com:yutto-dev/yutto.git
 cd yutto/
 poetry install
 poetry run yutto -v
@@ -49,7 +49,7 @@ poetry run yutto -v
 
 这部分内容带你了解下 yutto 的主要模块结构与工作流程。
 
-> 本部分内容可能略有滞后，这里列出的是 2022-02-11 时 [0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7](https://github.com/SigureMo/yutto/tree/0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7) 的模块结构，
+> 本部分内容可能略有滞后，这里列出的是 2022-02-11 时 [0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7](https://github.com/yutto-dev/yutto/tree/0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7) 的模块结构，
 
 ### 模块结构
 
@@ -178,7 +178,7 @@ just fmt
 # 首先在 GitHub 上 fork
 git clone git@github.com:<YOUR_USER_NAME>/yutto.git         # 将你的 repo clone 到本地
 cd yutto/                                                   # cd 到该目录
-git remote add upstream git@github.com:SigureMo/yutto.git   # 将原分支绑定在 upstream
+git remote add upstream git@github.com:yutto-dev/yutto.git   # 将原分支绑定在 upstream
 git checkout -b <NEW_BRANCH>                                # 新建一个分支，名称随意，最好含有你本次改动的语义
 git push origin <NEW_BRANCH>                                # 将该分支推送到 origin （也就是你 fork 后的 repo）
 # 对源码进行修改、并通过测试

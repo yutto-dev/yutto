@@ -4,14 +4,14 @@
    <a href="https://python.org/" target="_blank"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/yutto?logo=python&style=flat-square"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img src="https://img.shields.io/pypi/v/yutto?style=flat-square" alt="pypi"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/yutto?style=flat-square"></a>
-   <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/github/license/SigureMo/yutto?style=flat-square"></a>
+   <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/github/license/yutto-dev/yutto?style=flat-square"></a>
    <a href="https://github.com/psf/black"><img alt="black" src="https://img.shields.io/badge/code%20style-black-000000?style=flat-square"></a>
    <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67?style=flat-square" alt="Gitmoji"></a>
 </p>
 
 yutto，一个可爱且任性的 B 站下载器（CLI）
 
-当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/SigureMo/yutto/discussions) 提出～～～
+当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/yutto-dev/yutto/discussions) 提出～～～
 
 ## 版本号为什么是 2.0
 
@@ -57,7 +57,7 @@ pip install --pre yutto
 如果想要尝试 Nightly 版本，可尝试
 
 ```bash
-pip install git+https://github.com/SigureMo/yutto@main
+pip install git+https://github.com/yutto-dev/yutto@main
 ```
 
 ### 从 GitHub 获取最新源码手动安装
@@ -65,7 +65,7 @@ pip install git+https://github.com/SigureMo/yutto@main
 这同样要求你自行配置 Python 和 FFmpeg 环境
 
 ```bash
-git clone https://github.com/SigureMo/yutto.git
+git clone https://github.com/yutto-dev/yutto.git
 cd yutto/
 pip install poetry
 poetry build
@@ -598,7 +598,7 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 
 ## 参考
 
--  基本结构：<https://github.com/SigureMo/bilili>
+-  基本结构：<https://github.com/yutto-dev/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
 -  弹幕转换：<https://github.com/ShigureLab/biliass>
 -  样式设计：<https://github.com/willmcgugan/rich>

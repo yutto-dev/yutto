@@ -5,8 +5,8 @@ description = "🧊 一个可爱且任性的 B 站视频下载器"
 authors = ["Nyakku Shigure <sigure.qaq@gmail.com>"]
 license = "GPL-3.0"
 readme = "README.md"
-homepage = "https://github.com/SigureMo/yutto"
-repository = "https://github.com/SigureMo/yutto"
+homepage = "https://github.com/yutto-dev/yutto"
+repository = "https://github.com/yutto-dev/yutto"
 keywords = ["python", "bilibili", "video", "downloader", "danmaku"]
 classifiers = [
   "Environment :: Console",
@@ -39,7 +39,7 @@ uvloop = ["uvloop"]
 yutto = "yutto.__main__:main"
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/SigureMo/yutto/issues"
+"Bug Tracker" = "https://github.com/yutto-dev/yutto/issues"
 
 [tool.pytest.ini_options]
 markers = ["api", "e2e", "processor", "ci_skip", "ci_only"]
