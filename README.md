@@ -7,6 +7,7 @@
    <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/github/license/yutto-dev/yutto?style=flat-square"></a>
    <a href="https://github.com/psf/black"><img alt="black" src="https://img.shields.io/badge/code%20style-black-000000?style=flat-square"></a>
    <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67?style=flat-square" alt="Gitmoji"></a>
+   <a href="https://discord.gg/5cQGyFwsqC"><img src="https://img.shields.io/badge/chat-discord-5d24a3?logo=discord&style=flat-square" alt="discord chat"></a>
 </p>
 
 yutto，一个可爱且任性的 B 站下载器（CLI）
