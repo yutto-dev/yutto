@@ -42,6 +42,8 @@ def main():
 def cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {yutto_version}")
+    # 如果需要创建其他子命令可参考
+    # https://stackoverflow.com/questions/29998417/create-parser-with-subcommands-in-argparse-customize-positional-arguments
     parser.add_argument("url", help="视频主页 url 或 url 列表（需使用 file scheme）")
     group_common = parser.add_argument_group("common", "通用参数")
     group_common.add_argument("-n", "--num-workers", type=int, default=8, help="同时用于下载的最大 Worker 数")
