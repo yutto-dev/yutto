@@ -17,6 +17,7 @@ build:
   poetry build
 
 publish:
+  touch yutto/py.typed
   poetry publish --build
   git tag "v{{VERSION}}"
   git push --tags

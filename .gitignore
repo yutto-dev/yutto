@@ -131,5 +131,8 @@ dmypy.json
 # test files
 *.test.py
 
+# stub files
+py.typed
+
 # logs
 log
