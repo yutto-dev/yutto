@@ -223,7 +223,7 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 -  可选值 `"ass" | "xml" | "protobuf"`
 -  默认值 `"ass"`
 
-B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动下载 `xml` 格式弹幕并转换为 `ass` 格式，如果你不喜欢 yutto 自动转换的效果，可以选择输出格式为 `xml` 或 `protobuf`，手动通过一些工具进行转换，比如 yutto 和 bilili 所使用的 [biliass](https://github.com/ShigureLab/biliass)，或者使用 [us-danmaku](https://tiansh.github.io/us-danmaku/bilibili/) 进行在线转换。
+B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动下载 `xml` 格式弹幕并转换为 `ass` 格式，如果你不喜欢 yutto 自动转换的效果，可以选择输出格式为 `xml` 或 `protobuf`，手动通过一些工具进行转换，比如 yutto 和 bilili 所使用的 [biliass](https://github.com/yutto-dev/biliass)，或者使用 [us-danmaku](https://tiansh.github.io/us-danmaku/bilibili/) 进行在线转换。
 
 如果你不想下载弹幕，只需要使用参数 `--no-danmaku` 即可。
 
@@ -602,7 +602,7 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 
 -  基本结构：<https://github.com/yutto-dev/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
--  弹幕转换：<https://github.com/ShigureLab/biliass>
+-  弹幕转换：<https://github.com/yutto-dev/biliass>
 -  样式设计：<https://github.com/willmcgugan/rich>
 
 ## 参与贡献
