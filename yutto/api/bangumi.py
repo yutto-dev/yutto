@@ -77,7 +77,7 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> Bangu
 async def get_bangumi_playurl(
     session: ClientSession, avid: AvId, episode_id: EpisodeId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=127&fnver=0&fnval=16&fourk=1"
+    play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1"
 
     resp_json = await Fetcher.fetch_json(session, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
     if resp_json is None:
