@@ -25,13 +25,15 @@ def slice_blocks(
 ) -> list[tuple[int, Optional[int]]]:
     """生成分块后的 (start, size) 序列
 
-    Args:
-        start (int): 总起始位置
-        total_size (Optional[int]): 需要分块的总大小
-        block_size (Optional[int], optional): 每块的大小. Defaults to None.
+    ### Args
 
-    Returns:
-        list[tuple[int, Optional[int]]]: 分块大小序列，使用元组组织，格式为 (start, size)
+    - start (int): 总起始位置
+    - total_size (Optional[int]): 需要分块的总大小
+    - block_size (Optional[int], optional): 每块的大小. Defaults to None.
+
+    ### Returns
+
+    - list[tuple[int, Optional[int]]]: 分块大小序列，使用元组组织，格式为 (start, size)
     """
     if total_size is None:
         return [(0, None)]

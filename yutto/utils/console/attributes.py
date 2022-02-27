@@ -8,8 +8,9 @@ from typing import Optional
 def get_terminal_size() -> tuple[int, int]:
     """获取 Console 的宽高
 
-    Refs:
-        https://github.com/willmcgugan/rich/blob/e5246436cd75de32f3436cc88d6e4fdebe13bd8d/rich/console.py#L918-L951
+    ### Refs
+
+    - https://github.com/willmcgugan/rich/blob/e5246436cd75de32f3436cc88d6e4fdebe13bd8d/rich/console.py#L918-L951
     """
 
     width: Optional[int] = None

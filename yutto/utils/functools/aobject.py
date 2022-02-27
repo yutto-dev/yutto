@@ -4,18 +4,20 @@ from typing import Any
 class aobject(object):
     """Inheriting this class allows you to define an async __ainit__.
 
-    Refs:
-        https://stackoverflow.com/questions/33128325/how-to-set-class-attribute-with-await-in-init
+    ### Refs
 
-    Examples:
-        .. code-block:: python
+    - https://stackoverflow.com/questions/33128325/how-to-set-class-attribute-with-await-in-init
 
-            class MyClass(aobject):
-                # pyright: reportIncompatibleMethodOverride=false
-                async def __ainit__(self):
-                    ...
+    ### Examples
 
-            await MyClass()
+    ``` python
+    class MyClass(aobject):
+        # pyright: reportIncompatibleMethodOverride=false
+        async def __ainit__(self):
+            ...
+
+    await MyClass()
+    ```
     """
 
     async def __new__(cls, *args: Any, **kwargs: Any):

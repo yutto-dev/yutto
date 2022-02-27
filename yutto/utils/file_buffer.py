@@ -19,24 +19,26 @@ class BufferChunk:
 class AsyncFileBuffer(aobject):
     """异步文件缓冲区
 
-    Args:
-        file_path (str): 所需存储文件位置
-        overwrite (bool): 是否直接覆盖原文件
+    ### Args
 
-    Examples:
-        .. code-block:: python
+    - file_path (str): 所需存储文件位置
+    - overwrite (bool): 是否直接覆盖原文件
 
-            async def afunc():
-                buffer = await AsyncFileBuffer("/path/to/file", True)
-                for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
-                    await buffer.write(chunk, i)
-                await buffer.close()
+    ### Examples:
 
-                # 或者使用 async with（注意后面要有 await，因为 AsyncFileBuffer 的初始化是异步的）
+    ``` python
+    async def afunc():
+        buffer = await AsyncFileBuffer("/path/to/file", True)
+        for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
+            await buffer.write(chunk, i)
+        await buffer.close()
 
-                async with await AsyncFileBuffer("/path/to/file", True) as buffer:
-                    for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
-                        await buffer.write(chunk, i)
+        # 或者使用 async with（注意后面要有 await，因为 AsyncFileBuffer 的初始化是异步的）
+
+        async with await AsyncFileBuffer("/path/to/file", True) as buffer:
+            for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
+                await buffer.write(chunk, i)
+    ```
     """
 
     # pyright: reportIncompatibleMethodOverride=false

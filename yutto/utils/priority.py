@@ -5,9 +5,10 @@ def gen_priority_sequence(choice: int, num_choices: int) -> list[int]:
     - 在清晰度中，应当从左向右清晰度降低
     - 在编码方式中，应当从左向右兼容性提高，压缩率降低
 
-    Args:
-        choice (int): 是当前选择的目标索引
-        num_choices (int): 是可选择目标数量
+    ### Args:
+
+    - choice (int): 是当前选择的目标索引
+    - num_choices (int): 是可选择目标数量
 
     """
 
