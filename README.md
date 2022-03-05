@@ -49,7 +49,7 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 
 ### pip 安装
 
-在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.sigure.xyz/guide/getting-started.html)）
+在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
 
 ```bash
 pip install --pre yutto
@@ -122,8 +122,6 @@ yutto --batch https://www.bilibili.com/bangumi/play/ep395211
 ```
 
 ### 基础参数
-
-> 大部分参数与 bilili 重合，可参考 [bilili 的 cli 文档](https://bilili.nyakku.moe/cli/)
 
 yutto 支持一些基础参数，无论是批量下载还是单视频下载都适用。
 
