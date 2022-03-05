@@ -586,6 +586,7 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 -  [ ] docs: 可爱的 logo（呜呜呜，有谁会做 logo 嘛？）
 -  [ ] docs: 可爱的静态文档（可能需要 VitePress 到 1.0）
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑
+-  [ ] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
 
 ### future
 
