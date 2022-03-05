@@ -30,6 +30,7 @@ def select_video(
     video_combined_priority = [
         (vqn, vcodec)
         for vqn in video_quality_priority
+        # TODO: Dolby Selector
         for vcodec in video_codec_priority
     ]
     # fmt: on
@@ -37,9 +38,6 @@ def select_video(
     for vqn, vcodec in video_combined_priority:
         for video in videos:
             if video["quality"] == vqn and video["codec"] == vcodec:
-                # TODO: Dolby Support
-                if video["quality"] == 126:
-                    Logger.warning("目前仅支持杜比视界视频流下载，但可能无法达到在线观看的效果")
                 return video
     return None
 
