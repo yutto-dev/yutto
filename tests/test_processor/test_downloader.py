@@ -12,6 +12,7 @@ from yutto.utils.functools import as_sync
 
 
 @pytest.mark.processor
+@pytest.mark.ignore
 @as_sync
 async def test_1_5_M_downloader():
     test_dir = "./downloader_test/"
@@ -41,6 +42,7 @@ async def test_1_5_M_downloader():
 
 
 @pytest.mark.processor
+@pytest.mark.ignore
 @as_sync
 async def test_1_5_M_no_slice_downloader():
     test_dir = "./downloader_test/"

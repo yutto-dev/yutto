@@ -35,4 +35,4 @@ jobs:
 
       - name: unit test
         run: |
-          poetry run pytest -m "(api or processor) and not ci_skip"
+          poetry run pytest -m "(api or processor) and not (ci_skip or ignore)"

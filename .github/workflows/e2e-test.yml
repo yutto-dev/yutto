@@ -52,4 +52,4 @@ jobs:
 
       - name: e2e test
         run: |
-          poetry run pytest -m "e2e and not ci_skip"
+          poetry run pytest -m "e2e and not (ci_skip or ignore)"
