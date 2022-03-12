@@ -475,10 +475,13 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 听说 uvloop 可以提高协程效率，如果你的系统非 Windows 的话，可以试一下安装 uvloop：
 
 ```bash
+# 在安装 yutto 时就指定该额外依赖
+pip install yutto[uvloop]
+# 如果已经安装过 yutto，请手动安装下 uvloop
 pip install uvloop
 ```
 
-现在再运行就会发现不会弹出「没有安装 uvloop 的」 warning 了，至于具体提升多少我也不太清楚啦，没有测过
+现在再运行就应当会出现「成功使用 uvloop 加速协程」的提示了，至于具体提升多少我也不太清楚啦，没有测过
 
 ### 作为 log 输出到文件
 
