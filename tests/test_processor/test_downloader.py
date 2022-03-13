@@ -12,11 +12,12 @@ from yutto.utils.functools import as_sync
 
 
 @pytest.mark.processor
-@pytest.mark.ignore
 @as_sync
 async def test_1_5_M_downloader():
     test_dir = "./downloader_test/"
-    url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
+    # url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
+    # 因为 file-examples-com 挂掉了（GitHub 账号都消失了，因此暂时使用一个别处的 mirror）
+    url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
     video_path = os.path.join(test_dir, "test_1_5_M.mp4")
     if not os.path.exists(test_dir):
         os.mkdir(test_dir)
@@ -42,11 +43,11 @@ async def test_1_5_M_downloader():
 
 
 @pytest.mark.processor
-@pytest.mark.ignore
 @as_sync
 async def test_1_5_M_no_slice_downloader():
     test_dir = "./downloader_test/"
-    url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
+    # url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
+    url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
     video_path = os.path.join(test_dir, "test_1_5_M.mp4")
     if not os.path.exists(test_dir):
         os.mkdir(test_dir)
