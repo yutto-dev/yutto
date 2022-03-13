@@ -5,6 +5,8 @@ import pytest
 
 from yutto.__version__ import VERSION as yutto_version
 
+from .conftest import TEST_DIR
+
 PYTHON = sys.executable
 
 
@@ -20,7 +22,7 @@ def test_version_e2e():
 def test_bangumi_e2e():
     short_bangumi = "https://www.bilibili.com/bangumi/play/ep100367"
     subprocess.run(
-        [PYTHON, "-m", "yutto", short_bangumi, "-q=16", "-w"],
+        [PYTHON, "-m", "yutto", short_bangumi, f"-d={TEST_DIR}", "-q=16", "-w"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,
@@ -31,7 +33,7 @@ def test_bangumi_e2e():
 def test_acg_video_e2e():
     short_acg_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
     subprocess.run(
-        [PYTHON, "-m", "yutto", short_acg_video, "-q=16", "-w"],
+        [PYTHON, "-m", "yutto", short_acg_video, f"-d={TEST_DIR}", "-q=16", "-w"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,

@@ -136,3 +136,6 @@ py.typed
 
 # logs
 log
+
+# test files
+__test_files__

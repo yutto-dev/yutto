@@ -1,6 +1,5 @@
 import asyncio
 import os
-import shutil
 
 import aiohttp
 import pytest
@@ -10,18 +9,18 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functools import as_sync
 
+from ..conftest import TEST_DIR
+
 
 @pytest.mark.processor
 @as_sync
-async def test_1_5_M_downloader():
-    test_dir = "./downloader_test/"
+async def test_150_kB_downloader():
+    # test_dir = "./downloader_test/"
     # url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
     # 因为 file-examples-com 挂掉了（GitHub 账号都消失了，因此暂时使用一个别处的 mirror）
     url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
-    video_path = os.path.join(test_dir, "test_1_5_M.mp4")
-    if not os.path.exists(test_dir):
-        os.mkdir(test_dir)
-    async with await AsyncFileBuffer(video_path, overwrite=False) as buffer:
+    file_path = os.path.join(TEST_DIR, "test_150_kB.pdf")
+    async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:
         async with aiohttp.ClientSession(
             headers=Fetcher.headers,
             cookies=Fetcher.cookies,
@@ -38,20 +37,17 @@ async def test_1_5_M_downloader():
             print("开始下载……")
             await asyncio.gather(*coroutines)
             print("下载完成！")
-            assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
-    shutil.rmtree(test_dir)
+            assert size == os.path.getsize(file_path), "文件大小与实际大小不符"
 
 
 @pytest.mark.processor
 @as_sync
-async def test_1_5_M_no_slice_downloader():
-    test_dir = "./downloader_test/"
+async def test_150_kB_no_slice_downloader():
+    # test_dir = "./downloader_test/"
     # url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
     url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
-    video_path = os.path.join(test_dir, "test_1_5_M.mp4")
-    if not os.path.exists(test_dir):
-        os.mkdir(test_dir)
-    async with await AsyncFileBuffer(video_path, overwrite=False) as buffer:
+    file_path = os.path.join(TEST_DIR, "test_150_kB_no_slice.pdf")
+    async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:
         async with aiohttp.ClientSession(
             headers=Fetcher.headers,
             cookies=Fetcher.cookies,
@@ -65,5 +61,4 @@ async def test_1_5_M_no_slice_downloader():
             print("开始下载……")
             await asyncio.gather(*coroutines)
             print("下载完成！")
-            assert size == os.path.getsize(video_path), "文件大小与实际大小不符"
-    shutil.rmtree(test_dir)
+            assert size == os.path.getsize(file_path), "文件大小与实际大小不符"
