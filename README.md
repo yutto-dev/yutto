@@ -597,6 +597,7 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 -  [ ] feat: 字幕、弹幕嵌入视频支持（也许？）
 -  [ ] feat: 封面下载支持（也许？）
 -  [ ] refactor: 以插件形式支持更多音视频处理方面的功能，比如类似 autosub 的工具（也许？）
+-  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
 -  [ ] feat: 更多批下载支持
 -  [ ] feat: 以及更加可爱～
 
