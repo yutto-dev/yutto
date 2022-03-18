@@ -30,8 +30,9 @@ class AcgVideoList(TypedDict):
 
 async def get_acg_video_list(session: ClientSession, avid: AvId) -> AcgVideoList:
     video_info = await get_video_info(session, avid)
+    video_title = video_info["title"]
     result: AcgVideoList = {
-        "title": video_info["title"],
+        "title": video_title,
         "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
         "pages": [],
     }
@@ -40,6 +41,15 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> AcgVideoList
     if res_json is None or res_json.get("data") is None:
         Logger.warning(f"啊叻？视频 {avid} 不见了诶")
         return result
+
+    # 对无意义的分 p 视频名进行修改
+    for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"])):
+        # TODO: 这里 part 出现了两次，需要都修改，后续去除其中一个冗余数据
+        if _is_meaningless_name(item["part"]):
+            item["part"] = f"{video_title}_P{i+1:02}"
+        if _is_meaningless_name(page_info["part"]):
+            page_info["part"] = f"{video_title}_P{i+1:02}"
+
     result["pages"] = [
         {
             "id": i + 1,
@@ -149,3 +159,12 @@ def _parse_acg_video_metadata(video_info: VideoInfo, page_info: PageInfo) -> Met
         source="",  # TODO
         original_filename="",  # TODO
     )
+
+
+def _is_meaningless_name(name: str) -> bool:
+    """检测名称是否为无意义的名称"""
+    video_ext_list = [".mp4", ".flv", ".mkv", ".avi", ".wmv", ".mov", ".mpg", ".mpeg", ".ts"]
+    for video_ext in video_ext_list:
+        if name.endswith(video_ext):
+            return True
+    return False
