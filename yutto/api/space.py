@@ -64,13 +64,21 @@ async def get_all_favourites(session: ClientSession, mid: MId) -> list[Favourite
 
 
 # 个人空间·视频列表·avid
-async def get_medialist_avids(session: ClientSession, series_id: SeriesId) -> list[AvId]:
-    api = "https://api.bilibili.com/x/v2/medialist/resource/list?type=5&otype=2&biz_id={series_id}"
-    json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
-    assert json_data is not None
-    if not json_data["data"]:
-        return []
-    return [BvId(video_info["bv_id"]) for video_info in json_data["data"]["media_list"]]
+async def get_medialist_avids(session: ClientSession, series_id: SeriesId, mid: MId) -> list[AvId]:
+    api = "https://api.bilibili.com/x/series/archives?mid={mid}&series_id={series_id}&only_normal=true&pn={pn}&ps={ps}"
+    ps = 30
+    pn = 1
+    total = 1
+    all_avid: list[AvId] = []
+
+    while pn <= total:
+        url = api.format(series_id=series_id, mid=mid, ps=ps, pn=pn)
+        json_data = await Fetcher.fetch_json(session, url)
+        assert json_data is not None
+        total = math.ceil(json_data["data"]["page"]["total"] / ps)
+        pn += 1
+        all_avid += [BvId(video_info["bvid"]) for video_info in json_data["data"]["archives"]]
+    return all_avid
 
 
 # 个人空间·视频列表·标题
@@ -82,12 +90,13 @@ async def get_medialist_title(session: ClientSession, series_id: SeriesId) -> st
 
 
 # 个人空间·视频合集·avid
-async def get_collection_avids(session: ClientSession, series_id: SeriesId) -> list[AvId]:
-    api = "https://api.bilibili.com/x/polymer/space/seasons_archives_list?mid=477782158&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
+async def get_collection_avids(session: ClientSession, series_id: SeriesId, mid: MId) -> list[AvId]:
+    api = "https://api.bilibili.com/x/polymer/space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
     ps = 30
     pn = 1
     total = 1
     all_avid: list[AvId] = []
+
     while pn <= total:
         space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn)
         json_data = await Fetcher.fetch_json(session, space_videos_url)

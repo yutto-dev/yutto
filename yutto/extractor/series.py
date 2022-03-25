@@ -63,7 +63,7 @@ class SeriesExtractor(BatchExtractor):
             Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
 
             acg_video_info_list: list[tuple[AcgVideoListItem, str, str]] = []
-            for avid in await get_collection_avids(session, self.series_id):
+            for avid in await get_collection_avids(session, self.series_id, self.mid):
                 try:
                     acg_video_list = await get_acg_video_list(session, avid)
                     await Fetcher.touch_url(session, avid.to_url())
@@ -86,7 +86,7 @@ class SeriesExtractor(BatchExtractor):
             Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
 
             acg_video_info_list: list[tuple[AcgVideoListItem, str, str]] = []
-            for avid in await get_medialist_avids(session, self.series_id):
+            for avid in await get_medialist_avids(session, self.series_id, self.mid):
                 try:
                     acg_video_list = await get_acg_video_list(session, avid)
                     await Fetcher.touch_url(session, avid.to_url())
