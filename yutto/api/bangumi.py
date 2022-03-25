@@ -28,14 +28,10 @@ class BangumiList(TypedDict):
 
 
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
-    home_url = "https://www.bilibili.com/bangumi/media/md{media_id}".format(media_id=media_id)
-    season_id = SeasonId("")
-    regex_season_id = re.compile(r'"param":{"season_id":(\d+),"season_type":\d+}')
-    home_page = await Fetcher.fetch_text(session, home_url)
-    assert home_page is not None
-    if match_obj := regex_season_id.search(home_page):
-        season_id = match_obj.group(1)
-    return SeasonId(str(season_id))
+    home_url = "https://api.bilibili.com/pgc/review/user?media_id={media_id}".format(media_id=media_id)
+    res_json = await Fetcher.fetch_json(session, home_url)
+    assert res_json is not None
+    return SeasonId(str(res_json["result"]["media"]["season_id"]))
 
 
 async def get_season_id_by_episode_id(session: ClientSession, episode_id: EpisodeId) -> SeasonId:
