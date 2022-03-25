@@ -98,7 +98,7 @@ async def get_collection_avids(session: ClientSession, series_id: SeriesId, mid:
     all_avid: list[AvId] = []
 
     while pn <= total:
-        space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn)
+        space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn, mid=mid)
         json_data = await Fetcher.fetch_json(session, space_videos_url)
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["total"] / ps)

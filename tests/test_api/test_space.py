@@ -93,13 +93,14 @@ async def test_all_favourites():
 @as_sync
 async def test_get_medialist_avids():
     series_id = SeriesId("1947439")
+    mid = MId("100969474")
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        avids = await get_medialist_avids(session, series_id=series_id)
+        avids = await get_medialist_avids(session, series_id=series_id, mid=mid)
         assert avids == [BvId("BV1Y441167U2"), BvId("BV1vZ4y1M7mQ")]
 
 
@@ -122,13 +123,14 @@ async def test_get_medialist_title():
 async def test_get_collection_avids():
     # 测试页面：https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195&ctype=0
     series_id = SeriesId("23195")
+    mid = MId("361469957")
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        avids = await get_collection_avids(session, series_id=series_id)
+        avids = await get_collection_avids(session, series_id=series_id, mid=mid)
         assert BvId("BV1xy4y1G7tz") in avids
         assert BvId("BV1k34y1S71P") in avids
 
