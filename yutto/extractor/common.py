@@ -5,7 +5,7 @@ from typing import Optional
 import aiohttp
 
 from yutto._typing import AvId, EpisodeData, EpisodeId
-from yutto.api.acg_video import AcgVideoListItem, get_acg_video_playurl, get_acg_video_subtitles
+from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_playurl, get_ugc_video_subtitles
 from yutto.api.bangumi import BangumiListItem, get_bangumi_playurl, get_bangumi_subtitles
 from yutto.api.danmaku import get_danmaku
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
@@ -57,22 +57,22 @@ async def extract_bangumi_data(
         return None
 
 
-async def extract_acg_video_data(
+async def extract_ugc_video_data(
     session: aiohttp.ClientSession,
     avid: AvId,
-    acg_video_info: AcgVideoListItem,
+    ugc_video_info: UgcVideoListItem,
     args: argparse.Namespace,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
 ) -> Optional[EpisodeData]:
     try:
-        cid = acg_video_info["cid"]
-        name = acg_video_info["name"]
-        id = acg_video_info["id"]
-        videos, audios = await get_acg_video_playurl(session, avid, cid)
-        subtitles = await get_acg_video_subtitles(session, avid, cid) if not args.no_subtitle else []
+        cid = ugc_video_info["cid"]
+        name = ugc_video_info["name"]
+        id = ugc_video_info["id"]
+        videos, audios = await get_ugc_video_playurl(session, avid, cid)
+        subtitles = await get_ugc_video_subtitles(session, avid, cid) if not args.no_subtitle else []
         danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-        metadata = acg_video_info["metadata"] if args.with_metadata else None
+        metadata = ugc_video_info["metadata"] if args.with_metadata else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,

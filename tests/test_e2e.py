@@ -30,10 +30,10 @@ def test_bangumi_e2e():
 
 
 @pytest.mark.e2e
-def test_acg_video_e2e():
-    short_acg_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
+def test_ugc_video_e2e():
+    short_ugc_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
     subprocess.run(
-        [PYTHON, "-m", "yutto", short_acg_video, f"-d={TEST_DIR}", "-q=16", "-w"],
+        [PYTHON, "-m", "yutto", short_ugc_video, f"-d={TEST_DIR}", "-q=16", "-w"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=True,

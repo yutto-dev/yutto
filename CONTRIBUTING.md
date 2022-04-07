@@ -70,7 +70,7 @@ poetry run yutto -v
     ├── _typing.py                     # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
     ├── api                            # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
     │   ├── __init__.py
-    │   ├── acg_video.py               # 投稿视频相关
+    │   ├── ugc_video.py               # 投稿视频相关
     │   ├── bangumi.py                 # 番剧相关
     │   ├── danmaku.py                 # 弹幕相关（xml、protobuf）
     │   ├── info.py                    # 基本信息相关
@@ -83,8 +83,8 @@ poetry run yutto -v
     ├── extractor                      # 页面提取器（每种入口 url 对应一个 extractor）
     │   ├── __init__.py
     │   ├── _abc.py                    # 基本抽象类
-    │   ├── acg_video.py               # 投稿视频单集
-    │   ├── acg_video_batch.py         # 投稿视频批量
+    │   ├── ugc_video.py               # 投稿视频单集
+    │   ├── ugc_video_batch.py         # 投稿视频批量
     │   ├── bangumi.py                 # 番剧单话
     │   ├── bangumi_batch.py           # 番剧全集
     │   ├── common.py                  # 低阶提取器（投稿视频、番剧），每种视频类型对应一个低阶提取器

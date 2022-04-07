@@ -11,8 +11,8 @@ from yutto.__version__ import VERSION as yutto_version
 from yutto.bilibili_typing.quality import audio_quality_priority_default, video_quality_priority_default
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
-    AcgVideoBatchExtractor,
-    AcgVideoExtractor,
+    UgcVideoBatchExtractor,
+    UgcVideoExtractor,
     BangumiBatchExtractor,
     BangumiExtractor,
     FavouritesAllExtractor,
@@ -127,7 +127,7 @@ async def run(args_list: list[argparse.Namespace]):
             # 初始化各种提取器
             extractors = (
                 [
-                    AcgVideoBatchExtractor(),  # 投稿全集
+                    UgcVideoBatchExtractor(),  # 投稿全集
                     BangumiBatchExtractor(),  # 番剧全集
                     FavouritesExtractor(),  # 用户单一收藏
                     FavouritesAllExtractor(),  # 用户全部收藏
@@ -136,7 +136,7 @@ async def run(args_list: list[argparse.Namespace]):
                 ]
                 if args.batch
                 else [
-                    AcgVideoExtractor(),  # 投稿单集
+                    UgcVideoExtractor(),  # 投稿单集
                     BangumiExtractor(),  # 番剧单话
                 ]
             )

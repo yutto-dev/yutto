@@ -2,7 +2,7 @@ import re
 import sys
 from typing import Optional
 
-from yutto.api.acg_video import AudioUrlMeta, VideoUrlMeta
+from yutto.api.ugc_video import AudioUrlMeta, VideoUrlMeta
 from yutto.exceptions import ErrorCode
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec, gen_acodec_priority, gen_vcodec_priority
 from yutto.bilibili_typing.quality import (

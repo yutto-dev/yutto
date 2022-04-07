@@ -5,14 +5,14 @@ from typing import Optional, Coroutine, Any
 import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
-from yutto.api.acg_video import get_acg_video_list
+from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.extractor._abc import SingleExtractor
-from yutto.extractor.common import extract_acg_video_data
+from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.console.logger import Badge, Logger
 
 
-class AcgVideoExtractor(SingleExtractor):
+class UgcVideoExtractor(SingleExtractor):
     """投稿视频单视频"""
 
     REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
@@ -58,16 +58,16 @@ class AcgVideoExtractor(SingleExtractor):
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> Optional[Coroutine[Any, Any, Optional[EpisodeData]]]:
         try:
-            acg_video_list = await get_acg_video_list(session, self.avid)
-            Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
-            return extract_acg_video_data(
+            ugc_video_list = await get_ugc_video_list(session, self.avid)
+            Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
+            return extract_ugc_video_data(
                 session,
                 self.avid,
-                acg_video_list["pages"][self.page - 1],
+                ugc_video_list["pages"][self.page - 1],
                 args,
                 {
-                    "title": acg_video_list["title"],
-                    "pubdate": acg_video_list["pubdate"],
+                    "title": ugc_video_list["title"],
+                    "pubdate": ugc_video_list["pubdate"],
                 },
                 "{title}",
             )

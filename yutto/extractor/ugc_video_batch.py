@@ -5,15 +5,15 @@ from typing import Any, Coroutine, Optional
 import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
-from yutto.api.acg_video import get_acg_video_list
+from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
-from yutto.extractor.common import extract_acg_video_data
+from yutto.extractor.common import extract_ugc_video_data
 from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.console.logger import Badge, Logger
 
 
-class AcgVideoBatchExtractor(BatchExtractor):
+class UgcVideoBatchExtractor(BatchExtractor):
     """投稿视频批下载"""
 
     REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
@@ -55,28 +55,28 @@ class AcgVideoBatchExtractor(BatchExtractor):
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         try:
-            acg_video_list = await get_acg_video_list(session, self.avid)
-            Logger.custom(acg_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
+            ugc_video_list = await get_ugc_video_list(session, self.avid)
+            Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except NotFoundError as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
             Logger.error(e.message)
             return []
 
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(acg_video_list["pages"]))
-        acg_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, acg_video_list["pages"]))
+        episodes = parse_episodes_selection(args.episodes, len(ugc_video_list["pages"]))
+        ugc_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, ugc_video_list["pages"]))
 
         return [
-            extract_acg_video_data(
+            extract_ugc_video_data(
                 session,
-                acg_video_item["avid"],
-                acg_video_item,
+                ugc_video_item["avid"],
+                ugc_video_item,
                 args,
                 {
-                    "title": acg_video_list["title"],
-                    "pubdate": acg_video_list["pubdate"],
+                    "title": ugc_video_list["title"],
+                    "pubdate": ugc_video_list["pubdate"],
                 },
                 "{title}/{name}",
             )
-            for acg_video_item in acg_video_list["pages"]
+            for ugc_video_item in ugc_video_list["pages"]
         ]

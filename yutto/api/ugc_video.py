@@ -14,7 +14,7 @@ from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
 
 
-class AcgVideoListItem(TypedDict):
+class UgcVideoListItem(TypedDict):
     id: int
     name: str
     avid: AvId
@@ -22,16 +22,16 @@ class AcgVideoListItem(TypedDict):
     metadata: MetaData
 
 
-class AcgVideoList(TypedDict):
+class UgcVideoList(TypedDict):
     title: str
     pubdate: str
-    pages: list[AcgVideoListItem]
+    pages: list[UgcVideoListItem]
 
 
-async def get_acg_video_list(session: ClientSession, avid: AvId) -> AcgVideoList:
+async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList:
     video_info = await get_video_info(session, avid)
     video_title = video_info["title"]
-    result: AcgVideoList = {
+    result: UgcVideoList = {
         "title": video_title,
         "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
         "pages": [],
@@ -56,14 +56,14 @@ async def get_acg_video_list(session: ClientSession, avid: AvId) -> AcgVideoList
             "name": item["part"],
             "avid": avid,
             "cid": CId(str(item["cid"])),
-            "metadata": _parse_acg_video_metadata(video_info, page_info),
+            "metadata": _parse_ugc_video_metadata(video_info, page_info),
         }
         for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
     ]
     return result
 
 
-async def get_acg_video_playurl(
+async def get_ugc_video_playurl(
     session: ClientSession, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     # 4048 = 16(useDash) | 64(useHDR) | 128(use4K) | 256(useDolby) | 512(useXXX) | 1024(use8K) | 2048(useAV1)
@@ -125,7 +125,7 @@ async def get_acg_video_playurl(
     )
 
 
-async def get_acg_video_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
+async def get_ugc_video_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
     subtitile_api = "https://api.bilibili.com/x/player.so?aid={aid}&bvid={bvid}&id=cid:{cid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
     res_text = await Fetcher.fetch_text(session, subtitile_url)
@@ -148,7 +148,7 @@ async def get_acg_video_subtitles(session: ClientSession, avid: AvId, cid: CId) 
     return []
 
 
-def _parse_acg_video_metadata(video_info: VideoInfo, page_info: PageInfo) -> MetaData:
+def _parse_ugc_video_metadata(video_info: VideoInfo, page_info: PageInfo) -> MetaData:
     return MetaData(
         title=page_info["part"],
         show_title=page_info["part"],
