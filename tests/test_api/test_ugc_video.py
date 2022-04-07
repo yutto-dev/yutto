@@ -46,6 +46,7 @@ async def test_get_ugc_video_list():
 
 
 @pytest.mark.api
+@pytest.mark.ci_skip
 @as_sync
 async def test_get_ugc_video_playurl():
     avid = BvId("BV1vZ4y1M7mQ")
