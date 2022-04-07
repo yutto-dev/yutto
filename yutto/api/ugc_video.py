@@ -1,17 +1,35 @@
 import json
 import re
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from aiohttp import ClientSession
 
-from yutto.api.info import get_video_info, VideoInfo, PageInfo
-from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
+from yutto._typing import AId, AudioUrlMeta, AvId, BvId, CId, EpisodeId, MultiLangSubtitle, VideoUrlMeta
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
-from yutto._typing import AudioUrlMeta, AvId, CId, MultiLangSubtitle, VideoUrlMeta
+from yutto.exceptions import NoAccessPermissionError, NotFoundError, UnSupportedTypeError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
+
+
+class _UgcVideoPageInfo(TypedDict):
+    part: str
+    first_frame: Optional[str]
+
+
+class _UgcVideoInfo(TypedDict):
+    avid: AvId
+    aid: AId
+    bvid: BvId
+    episode_id: EpisodeId
+    is_bangumi: bool
+    cid: CId
+    picture: str
+    title: str
+    pubdate: int
+    description: str
+    pages: list[_UgcVideoPageInfo]
 
 
 class UgcVideoListItem(TypedDict):
@@ -28,8 +46,44 @@ class UgcVideoList(TypedDict):
     pages: list[UgcVideoListItem]
 
 
+async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInfo:
+    regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
+    info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
+    res_json = await Fetcher.fetch_json(session, info_api.format(**avid.to_dict()))
+    if res_json is None:
+        raise NotFoundError(f"无法该视频 {avid} 信息")
+    res_json_data = res_json.get("data")
+    if res_json["code"] == 62002:
+        raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
+    if res_json["code"] == -404:
+        raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
+    assert res_json_data is not None, "响应数据无 data 域"
+    episode_id = EpisodeId("")
+    if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
+        episode_id = EpisodeId(ep_match.group("episode_id"))
+    return {
+        "avid": BvId(res_json_data["bvid"]),
+        "aid": AId(str(res_json_data["aid"])),
+        "bvid": BvId(res_json_data["bvid"]),
+        "episode_id": episode_id,
+        "is_bangumi": bool(episode_id),
+        "cid": CId(str(res_json_data["cid"])),
+        "picture": res_json_data["pic"],
+        "title": res_json_data["title"],
+        "pubdate": res_json_data["pubdate"],
+        "description": res_json_data["desc"],
+        "pages": [
+            {
+                "part": page["part"],
+                "first_frame": page.get("first_frame"),
+            }
+            for page in res_json_data["pages"]
+        ],
+    }
+
+
 async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList:
-    video_info = await get_video_info(session, avid)
+    video_info = await get_ugc_video_info(session, avid)
     video_title = video_info["title"]
     result: UgcVideoList = {
         "title": video_title,
@@ -148,7 +202,7 @@ async def get_ugc_video_subtitles(session: ClientSession, avid: AvId, cid: CId) 
     return []
 
 
-def _parse_ugc_video_metadata(video_info: VideoInfo, page_info: PageInfo) -> MetaData:
+def _parse_ugc_video_metadata(video_info: _UgcVideoInfo, page_info: _UgcVideoPageInfo) -> MetaData:
     return MetaData(
         title=page_info["part"],
         show_title=page_info["part"],

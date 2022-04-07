@@ -6,9 +6,9 @@ import sys
 
 import aiohttp
 
-from yutto.api.info import is_vip
-from yutto.exceptions import ErrorCode
+from yutto.api.user_info import is_vip
 from yutto.bilibili_typing.codec import audio_codec_priority_default, video_codec_priority_default
+from yutto.exceptions import ErrorCode
 from yutto.processor.selector import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy, install_uvloop
 from yutto.utils.console.colorful import set_no_color
