@@ -1,6 +1,6 @@
 from typing import Literal
-from yutto.utils.priority import gen_priority_sequence
 
+from yutto.utils.priority import gen_priority_sequence
 
 VideoCodecId = Literal[7, 12, 13]
 VideoCodec = Literal["avc", "hevc", "av1"]

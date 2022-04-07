@@ -1,18 +1,18 @@
 import aiohttp
 import pytest
 
+from yutto._typing import AId, BvId, FId, MId, SeriesId
 from yutto.api.space import (
     get_all_favourites,
+    get_collection_avids,
+    get_collection_title,
     get_favourite_avids,
     get_favourite_info,
     get_medialist_avids,
     get_medialist_title,
     get_uploader_name,
     get_uploader_space_all_videos_avids,
-    get_collection_title,
-    get_collection_avids,
 )
-from yutto._typing import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
 

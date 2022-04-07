@@ -1,12 +1,17 @@
 import argparse
 import re
-from typing import Optional, Coroutine, Any
+from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
+from yutto.exceptions import (
+    HttpStatusError,
+    NoAccessPermissionError,
+    NotFoundError,
+    UnSupportedTypeError,
+)
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.console.logger import Badge, Logger

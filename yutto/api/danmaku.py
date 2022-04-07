@@ -1,8 +1,8 @@
 import aiohttp
 
 from yutto._typing import CId
-from yutto.utils.fetcher import Fetcher
 from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
+from yutto.utils.fetcher import Fetcher
 
 
 async def get_xml_danmaku(session: aiohttp.ClientSession, cid: CId) -> str:

@@ -3,14 +3,19 @@ import sys
 from typing import Optional
 
 from yutto.api.ugc_video import AudioUrlMeta, VideoUrlMeta
-from yutto.exceptions import ErrorCode
-from yutto.bilibili_typing.codec import AudioCodec, VideoCodec, gen_acodec_priority, gen_vcodec_priority
+from yutto.bilibili_typing.codec import (
+    AudioCodec,
+    VideoCodec,
+    gen_acodec_priority,
+    gen_vcodec_priority,
+)
 from yutto.bilibili_typing.quality import (
     AudioQuality,
     VideoQuality,
     gen_audio_quality_priority,
     gen_video_quality_priority,
 )
+from yutto.exceptions import ErrorCode
 from yutto.utils.console.logger import Logger
 
 

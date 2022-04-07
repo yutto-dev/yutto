@@ -1,7 +1,7 @@
 import sys
 from enum import Enum
 from types import TracebackType
-from typing import Union, Type
+from typing import Type, Union
 
 
 class ErrorCode(Enum):

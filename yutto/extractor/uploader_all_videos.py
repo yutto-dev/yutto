@@ -5,8 +5,8 @@ from typing import Any, Coroutine, Optional
 import aiohttp
 
 from yutto._typing import EpisodeData, MId
-from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.api.space import get_uploader_name, get_uploader_space_all_videos_avids
+from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data

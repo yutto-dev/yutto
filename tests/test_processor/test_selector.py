@@ -1,6 +1,9 @@
 import pytest
 
-from yutto.processor.selector import parse_episodes_selection, validate_episodes_selection
+from yutto.processor.selector import (
+    parse_episodes_selection,
+    validate_episodes_selection,
+)
 
 
 @pytest.mark.processor

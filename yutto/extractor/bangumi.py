@@ -1,13 +1,19 @@
 import argparse
 import re
 import sys
-from typing import Optional, Coroutine, Any
+from typing import Any, Coroutine, Optional
 
 import aiohttp
 
 from yutto._typing import EpisodeData, EpisodeId
 from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
-from yutto.exceptions import ErrorCode, HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
+from yutto.exceptions import (
+    ErrorCode,
+    HttpStatusError,
+    NoAccessPermissionError,
+    NotFoundError,
+    UnSupportedTypeError,
+)
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_bangumi_data
 from yutto.utils.console.logger import Badge, Logger

@@ -32,6 +32,7 @@ colorama = { version = "^0.4.4", markers = "sys_platform == 'win32'" }
 pytest = "^7.0"
 black = "^22.1"
 pytest-parallel = "^0.1.1"
+isort = "^5.10.1"
 
 [tool.poetry.extras]
 uvloop = ["uvloop"]
@@ -47,6 +48,9 @@ markers = ["api", "e2e", "processor", "ignore", "ci_skip", "ci_only"]
 
 [tool.black]
 line-length = 120
+
+[tool.isort]
+profile = "black"
 
 [build-system]
 requires = ["poetry_core>=1.0.0"]

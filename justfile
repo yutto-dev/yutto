@@ -11,6 +11,7 @@ test:
   just clean
 
 fmt:
+  poetry run isort .
   poetry run black .
 
 build:

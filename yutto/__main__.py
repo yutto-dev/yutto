@@ -6,18 +6,20 @@ import sys
 
 import aiohttp
 
-from yutto.validator import initial_validate, validate_basic_arguments, validate_batch_argments
 from yutto.__version__ import VERSION as yutto_version
-from yutto.bilibili_typing.quality import audio_quality_priority_default, video_quality_priority_default
+from yutto.bilibili_typing.quality import (
+    audio_quality_priority_default,
+    video_quality_priority_default,
+)
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
-    UgcVideoBatchExtractor,
-    UgcVideoExtractor,
     BangumiBatchExtractor,
     BangumiExtractor,
     FavouritesAllExtractor,
     FavouritesExtractor,
     SeriesExtractor,
+    UgcVideoBatchExtractor,
+    UgcVideoExtractor,
     UploaderAllVideosExtractor,
 )
 from yutto.processor.downloader import start_downloader
@@ -25,6 +27,11 @@ from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
+from yutto.validator import (
+    initial_validate,
+    validate_basic_arguments,
+    validate_batch_argments,
+)
 
 
 def main():

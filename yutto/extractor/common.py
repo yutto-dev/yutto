@@ -5,11 +5,28 @@ from typing import Optional
 import aiohttp
 
 from yutto._typing import AvId, EpisodeData, EpisodeId
-from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_playurl, get_ugc_video_subtitles
-from yutto.api.bangumi import BangumiListItem, get_bangumi_playurl, get_bangumi_subtitles
+from yutto.api.bangumi import (
+    BangumiListItem,
+    get_bangumi_playurl,
+    get_bangumi_subtitles,
+)
 from yutto.api.danmaku import get_danmaku
-from yutto.exceptions import HttpStatusError, NoAccessPermissionError, NotFoundError, UnSupportedTypeError
-from yutto.processor.path_resolver import UNKNOWN, PathTemplateVariableDict, resolve_path_template
+from yutto.api.ugc_video import (
+    UgcVideoListItem,
+    get_ugc_video_playurl,
+    get_ugc_video_subtitles,
+)
+from yutto.exceptions import (
+    HttpStatusError,
+    NoAccessPermissionError,
+    NotFoundError,
+    UnSupportedTypeError,
+)
+from yutto.processor.path_resolver import (
+    UNKNOWN,
+    PathTemplateVariableDict,
+    resolve_path_template,
+)
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 

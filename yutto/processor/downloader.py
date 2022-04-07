@@ -7,8 +7,8 @@ import aiohttp
 
 from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
-from yutto.processor.selector import select_audio, select_video
 from yutto.processor.progressbar import show_progress
+from yutto.processor.selector import select_audio, select_video
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku

@@ -3,9 +3,19 @@ from typing import Any, TypedDict
 
 from aiohttp import ClientSession
 
-from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
+from yutto._typing import (
+    AudioUrlMeta,
+    AvId,
+    BvId,
+    CId,
+    EpisodeId,
+    MediaId,
+    MultiLangSubtitle,
+    SeasonId,
+    VideoUrlMeta,
+)
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
-from yutto._typing import AudioUrlMeta, AvId, BvId, CId, EpisodeId, MediaId, MultiLangSubtitle, SeasonId, VideoUrlMeta
+from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData

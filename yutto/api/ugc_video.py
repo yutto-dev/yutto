@@ -4,9 +4,22 @@ from typing import Optional, TypedDict
 
 from aiohttp import ClientSession
 
-from yutto._typing import AId, AudioUrlMeta, AvId, BvId, CId, EpisodeId, MultiLangSubtitle, VideoUrlMeta
+from yutto._typing import (
+    AId,
+    AudioUrlMeta,
+    AvId,
+    BvId,
+    CId,
+    EpisodeId,
+    MultiLangSubtitle,
+    VideoUrlMeta,
+)
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
-from yutto.exceptions import NoAccessPermissionError, NotFoundError, UnSupportedTypeError
+from yutto.exceptions import (
+    NoAccessPermissionError,
+    NotFoundError,
+    UnSupportedTypeError,
+)
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData

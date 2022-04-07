@@ -1,13 +1,13 @@
 import asyncio
 import math
 import time
-from typing import Union, Optional
+from typing import Optional, Union
 
-from yutto.utils.console.colorful import colored_string, Color, RGBColor, Style
+from yutto.utils.console.attributes import get_terminal_size
+from yutto.utils.console.colorful import Color, RGBColor, Style, colored_string
 from yutto.utils.console.formatter import size_format
 from yutto.utils.console.logger import Logger
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.console.attributes import get_terminal_size
 
 
 class ProgressBar:
