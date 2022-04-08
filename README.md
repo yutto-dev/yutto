@@ -87,7 +87,8 @@ pip install ./dist/yutto-*.whl
 |用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的收藏夹/{series_title}/{title}/{name}`|
 |用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
 |UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
-|合集和视频列表|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439`|`{series_title}/{title}/{name}`|
+|合集|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195`|`{series_title}/{title}/{name}`|
+|视频列表|:white_check_mark:|`https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439`|`{series_title}/{title}/{name}`|
 
 ### 基本命令
 

@@ -27,11 +27,14 @@ class SeriesExtractor(BatchExtractor):
     REGEX_SERIES = re.compile(
         r"https?://space\.bilibili\.com/(?P<mid>\d+)/channel/seriesdetail\?sid=(?P<series_id>\d+)"
     )
-    REGEX_MEDIA_LIST = re.compile(
+    REGEX_SERIES_MEDIA_LIST = re.compile(
         r"https?://www\.bilibili\.com/medialist/play/(?P<mid>\d+)\?business=space_series&business_id=(?P<series_id>\d+)"
     )
-    REGEX_COLLECTIOMS = re.compile(
+    REGEX_COLLECTIOM = re.compile(
         r"https?://space\.bilibili\.com/(?P<mid>\d+)/channel/collectiondetail\?sid=(?P<series_id>\d+)"
+    )
+    REGEX_COLLECTION_MEDIA_LIST = re.compile(
+        r"https?://www\.bilibili\.com/medialist/play/(?P<mid>\d+)\?business=space_collection&business_id=(?P<series_id>\d+)"
     )
 
     mid: MId
@@ -40,13 +43,16 @@ class SeriesExtractor(BatchExtractor):
 
     def match(self, url: str) -> bool:
         if (
-            (match_obj := self.REGEX_MEDIA_LIST.match(url))
+            (match_obj := self.REGEX_SERIES_MEDIA_LIST.match(url))
+            or (match_obj := self.REGEX_COLLECTION_MEDIA_LIST.match(url))
             or (match_obj := self.REGEX_SERIES.match(url))
-            or (match_obj := self.REGEX_COLLECTIOMS.match(url))
+            or (match_obj := self.REGEX_COLLECTIOM.match(url))
         ):
             self.mid = MId(match_obj.group("mid"))
             self.series_id = SeriesId(match_obj.group("series_id"))
-            self.is_collection = True if self.REGEX_COLLECTIOMS.match(url) else False
+            self.is_collection = (
+                True if self.REGEX_COLLECTIOM.match(url) or self.REGEX_COLLECTION_MEDIA_LIST.match(url) else False
+            )
             return True
         else:
             return False
