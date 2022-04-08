@@ -15,6 +15,7 @@ from yutto.exceptions import ErrorCode
 from yutto.extractor import (
     BangumiBatchExtractor,
     BangumiExtractor,
+    CollectionExtractor,
     FavouritesAllExtractor,
     FavouritesExtractor,
     SeriesExtractor,
@@ -138,7 +139,8 @@ async def run(args_list: list[argparse.Namespace]):
                     BangumiBatchExtractor(),  # 番剧全集
                     FavouritesExtractor(),  # 用户单一收藏
                     FavouritesAllExtractor(),  # 用户全部收藏
-                    SeriesExtractor(),  # 视频合集、视频列表
+                    SeriesExtractor(),  # 视频列表
+                    CollectionExtractor(),  # 视频合集
                     UploaderAllVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
                 ]
                 if args.batch

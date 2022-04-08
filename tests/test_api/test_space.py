@@ -115,7 +115,7 @@ async def test_get_medialist_title():
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
         title = await get_medialist_title(session, series_id=series_id)
-        assert title == "一个小合集～"
+        assert title == "一个小视频列表～"
 
 
 @pytest.mark.api
