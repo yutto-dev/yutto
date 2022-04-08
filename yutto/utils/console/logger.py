@@ -1,4 +1,5 @@
-from typing import Any, Optional
+import json
+from typing import Any, Optional, Union
 
 from yutto.utils.console.colorful import Color, Style, colored_string
 from yutto.utils.console.formatter import get_string_width
@@ -131,6 +132,10 @@ class Logger:
     def print(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         cls.status.clear()
         print(string, *print_args, **print_kwargs)
+
+    @classmethod
+    def json(cls, obj: Union[list[Any], dict[str, Any]], *print_args: Any, **print_kwargs: Any):
+        Logger.print(json.dumps(obj, indent=2), *print_args, **print_kwargs)
 
     @classmethod
     def new_line(cls):
