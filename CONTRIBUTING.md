@@ -49,7 +49,7 @@ poetry run yutto -v
 
 这部分内容带你了解下 yutto 的主要模块结构与工作流程。
 
-> 本部分内容可能略有滞后，这里列出的是 2022-02-11 时 [0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7](https://github.com/yutto-dev/yutto/tree/0fd5e0820e5c476ae696bf95db0ccc9ff205b5f7) 的模块结构，
+> 本部分内容可能略有滞后，这里列出的是 2022-04-08 时 [5662caefed372558ffa7dd7124800284d61a7557](https://github.com/yutto-dev/yutto/tree/5662caefed372558ffa7dd7124800284d61a7557) 的模块结构，
 
 ### 模块结构
 
@@ -61,7 +61,7 @@ poetry run yutto -v
 ├── tests                              # 测试文件
 │   ├── __init__.py
 │   ├── test_api                       # API 测试模块，对应 yutto/api
-│   ├── test_downloader.py             # downloader 测试模块，对应 yutto/
+│   ├── test_processor.py              # processor 测试模块，对应 yutto/processor
 │   └── test_e2e.py                    # 端到端测试
 └── yutto
     ├── __init__.py
@@ -70,11 +70,11 @@ poetry run yutto -v
     ├── _typing.py                     # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
     ├── api                            # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
     │   ├── __init__.py
-    │   ├── ugc_video.py               # 投稿视频相关
     │   ├── bangumi.py                 # 番剧相关
     │   ├── danmaku.py                 # 弹幕相关（xml、protobuf）
-    │   ├── info.py                    # 基本信息相关
-    │   └── space.py                   # 个人空间相关（收藏夹、合集、列表）
+    │   ├── space.py                   # 个人空间相关（收藏夹、合集、列表）
+    │   ├── ugc_video.py               # 投稿视频相关
+    │   └── user_info.py               # 用户信息相关
     ├── bilibili_typing                # bilibili 自己的一些数据类型绑定
     │   ├── __init__.py
     │   ├── codec.py                   # bilibili 的 codec
@@ -83,15 +83,16 @@ poetry run yutto -v
     ├── extractor                      # 页面提取器（每种入口 url 对应一个 extractor）
     │   ├── __init__.py
     │   ├── _abc.py                    # 基本抽象类
-    │   ├── ugc_video.py               # 投稿视频单集
-    │   ├── ugc_video_batch.py         # 投稿视频批量
     │   ├── bangumi.py                 # 番剧单话
     │   ├── bangumi_batch.py           # 番剧全集
+    │   ├── collection.py              # 合集
     │   ├── common.py                  # 低阶提取器（投稿视频、番剧），每种视频类型对应一个低阶提取器
     │   ├── favourites.py              # 收藏夹
-    │   ├── favourites_all.py          # 全部收藏夹
-    │   ├── series.py                  # 合集、视频列表
-    │   └── uploader_all_videos.py     # 个人空间全部
+    │   ├── series.py                  # 视频列表
+    │   ├── ugc_video.py               # 投稿视频单集
+    │   ├── ugc_video_batch.py         # 投稿视频批量
+    │   ├── user_all_favourites.py.py  # 全部收藏夹
+    │   └── user_all_ugc_videos.py     # 个人空间全部
     ├── processor                      # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
     │   ├── __init__.py
     │   ├── downloader.py              # 下载器
