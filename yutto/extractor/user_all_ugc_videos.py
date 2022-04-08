@@ -14,8 +14,8 @@ from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
 
-class UploaderAllVideosExtractor(BatchExtractor):
-    """UP 主个人空间全部视频"""
+class UserAllUgcVideosExtractor(BatchExtractor):
+    """UP 主个人空间全部投稿视频"""
 
     REGEX_SPACE = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)(/video)?")
 

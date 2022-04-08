@@ -14,7 +14,7 @@ from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
 
-class FavouritesAllExtractor(BatchExtractor):
+class UserAllFavouritesExtractor(BatchExtractor):
     """用户所有收藏夹"""
 
     REGEX_FAV_ALL = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist")

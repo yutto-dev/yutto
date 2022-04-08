@@ -16,12 +16,12 @@ from yutto.extractor import (
     BangumiBatchExtractor,
     BangumiExtractor,
     CollectionExtractor,
-    FavouritesAllExtractor,
     FavouritesExtractor,
     SeriesExtractor,
     UgcVideoBatchExtractor,
     UgcVideoExtractor,
-    UploaderAllVideosExtractor,
+    UserAllFavouritesExtractor,
+    UserAllUgcVideosExtractor,
 )
 from yutto.processor.downloader import start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
@@ -138,10 +138,10 @@ async def run(args_list: list[argparse.Namespace]):
                     UgcVideoBatchExtractor(),  # 投稿全集
                     BangumiBatchExtractor(),  # 番剧全集
                     FavouritesExtractor(),  # 用户单一收藏
-                    FavouritesAllExtractor(),  # 用户全部收藏
+                    UserAllFavouritesExtractor(),  # 用户全部收藏
                     SeriesExtractor(),  # 视频列表
                     CollectionExtractor(),  # 视频合集
-                    UploaderAllVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
+                    UserAllUgcVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
                 ]
                 if args.batch
                 else [
