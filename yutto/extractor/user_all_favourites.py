@@ -17,7 +17,7 @@ from yutto.utils.fetcher import Fetcher
 class UserAllFavouritesExtractor(BatchExtractor):
     """用户所有收藏夹"""
 
-    REGEX_FAV_ALL = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist")
+    REGEX_FAV_ALL = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist$")
 
     mid: MId
 

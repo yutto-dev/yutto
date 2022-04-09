@@ -28,14 +28,18 @@ class CollectionExtractor(BatchExtractor):
     REGEX_COLLECTION_MEDIA_LIST = re.compile(
         r"https?://www\.bilibili\.com/medialist/play/(?P<mid>\d+)\?business=space_collection&business_id=(?P<series_id>\d+)"
     )
+    REGEX_COLLECTION_FAV_PAGE = re.compile(
+        r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<series_id>\d+)&ftype=collect"
+    )
 
     mid: MId
     series_id: SeriesId
-    is_collection: bool
 
     def match(self, url: str) -> bool:
-        if (match_obj := self.REGEX_COLLECTION_MEDIA_LIST.match(url)) or (
-            match_obj := self.REGEX_COLLECTIOM.match(url)
+        if (
+            (match_obj := self.REGEX_COLLECTION_MEDIA_LIST.match(url))
+            or (match_obj := self.REGEX_COLLECTIOM.match(url))
+            or (match_obj := self.REGEX_COLLECTION_FAV_PAGE.match(url))
         ):
             self.mid = MId(match_obj.group("mid"))
             self.series_id = SeriesId(match_obj.group("series_id"))
