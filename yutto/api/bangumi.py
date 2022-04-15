@@ -62,7 +62,10 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> Bangu
     result = resp_json["result"]
     section_episodes = []
     for section in result.get("section", []):
-        section_episodes += section["episodes"]
+        if section["type"] != 5:
+            # 如 https://www.bilibili.com/bangumi/play/ep409825 中的「次元发电机采访」
+            # 和 https://www.bilibili.com/bangumi/play/ep424859 中的「编辑推荐」
+            section_episodes += section["episodes"]
     return {
         "title": result["title"],
         "pages": [
