@@ -6,7 +6,7 @@ from typing import Any, Coroutine, Optional
 import aiohttp
 
 from yutto._typing import EpisodeData, MId, SeriesId
-from yutto.api.space import get_medialist_avids, get_medialist_title, get_uploader_name
+from yutto.api.space import get_medialist_avids, get_medialist_title, get_user_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
@@ -40,7 +40,7 @@ class SeriesExtractor(BatchExtractor):
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         username, series_title = await asyncio.gather(
-            get_uploader_name(session, self.mid), get_medialist_title(session, self.series_id)
+            get_user_name(session, self.mid), get_medialist_title(session, self.series_id)
         )
         Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
 

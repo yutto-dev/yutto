@@ -7,7 +7,7 @@ from yutto.utils.fetcher import Fetcher
 
 
 # 个人空间·全部
-async def get_uploader_space_all_videos_avids(session: ClientSession, mid: MId) -> list[AvId]:
+async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> list[AvId]:
     space_videos_api = (
         "https://api.bilibili.com/x/space/arc/search?mid={mid}&ps={ps}&tid=0&pn={pn}&order=pubdate&jsonp=jsonp"
     )
@@ -28,12 +28,12 @@ async def get_uploader_space_all_videos_avids(session: ClientSession, mid: MId) 
 
 
 # 个人空间·用户名
-async def get_uploader_name(session: ClientSession, mid: MId) -> str:
+async def get_user_name(session: ClientSession, mid: MId) -> str:
     space_info_api = "https://api.bilibili.com/x/space/acc/info?mid={mid}&jsonp=jsonp"
     space_info_url = space_info_api.format(mid=mid)
-    uploader_info = await Fetcher.fetch_json(session, space_info_url)
-    assert uploader_info is not None
-    return uploader_info["data"]["name"]
+    user_info = await Fetcher.fetch_json(session, space_info_url)
+    assert user_info is not None
+    return user_info["data"]["name"]
 
 
 # 个人空间·收藏夹·信息

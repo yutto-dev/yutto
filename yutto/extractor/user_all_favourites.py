@@ -5,7 +5,7 @@ from typing import Any, Coroutine, Optional
 import aiohttp
 
 from yutto._typing import EpisodeData, MId
-from yutto.api.space import get_all_favourites, get_favourite_avids, get_uploader_name
+from yutto.api.space import get_all_favourites, get_favourite_avids, get_user_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
@@ -31,7 +31,7 @@ class UserAllFavouritesExtractor(BatchExtractor):
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
-        username = await get_uploader_name(session, self.mid)
+        username = await get_user_name(session, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, str, str]] = []

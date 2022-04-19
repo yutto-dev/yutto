@@ -7,7 +7,7 @@ import aiohttp
 
 from yutto._typing import EpisodeData, MId, SeriesId
 from yutto.api.collection import get_collection_details
-from yutto.api.space import get_uploader_name
+from yutto.api.space import get_user_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
@@ -49,7 +49,7 @@ class CollectionExtractor(BatchExtractor):
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
         username, collection_details = await asyncio.gather(
-            get_uploader_name(session, self.mid),
+            get_user_name(session, self.mid),
             get_collection_details(session, self.series_id, self.mid),
         )
         collection_title = collection_details["title"]

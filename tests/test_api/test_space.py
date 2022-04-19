@@ -8,8 +8,8 @@ from yutto.api.space import (
     get_favourite_info,
     get_medialist_avids,
     get_medialist_title,
-    get_uploader_name,
-    get_uploader_space_all_videos_avids,
+    get_user_name,
+    get_user_space_all_videos_avids,
 )
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functools import as_sync
@@ -17,7 +17,7 @@ from yutto.utils.functools import as_sync
 
 @pytest.mark.api
 @as_sync
-async def test_get_uploader_space_all_videos_avids():
+async def test_get_user_space_all_videos_avids():
     mid = MId("100969474")
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
@@ -25,14 +25,14 @@ async def test_get_uploader_space_all_videos_avids():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        all_avid = await get_uploader_space_all_videos_avids(session, mid=mid)
+        all_avid = await get_user_space_all_videos_avids(session, mid=mid)
         assert len(all_avid) > 0
         assert AId("371660125") in all_avid or BvId("BV1vZ4y1M7mQ") in all_avid
 
 
 @pytest.mark.api
 @as_sync
-async def test_get_uploader_name():
+async def test_get_user_name():
     mid = MId("100969474")
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
@@ -40,7 +40,7 @@ async def test_get_uploader_name():
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        username = await get_uploader_name(session, mid=mid)
+        username = await get_user_name(session, mid=mid)
         assert username == "时雨千陌"
 
 
