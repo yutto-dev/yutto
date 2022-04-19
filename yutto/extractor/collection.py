@@ -6,15 +6,13 @@ from typing import Any, Coroutine, Optional
 import aiohttp
 
 from yutto._typing import EpisodeData, MId, SeriesId
-from yutto.api.space import (
-    get_collection_avids,
-    get_collection_title,
-    get_uploader_name,
-)
+from yutto.api.collection import get_collection_details
+from yutto.api.space import get_uploader_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -50,17 +48,26 @@ class CollectionExtractor(BatchExtractor):
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
-        username, series_title = await asyncio.gather(
+        username, collection_details = await asyncio.gather(
             get_uploader_name(session, self.mid),
-            get_collection_title(session, self.series_id),
+            get_collection_details(session, self.series_id, self.mid),
         )
-        Logger.custom(series_title, Badge("视频合集", fore="black", back="cyan"))
+        collection_title = collection_details["title"]
+        Logger.custom(collection_title, Badge("视频合集", fore="black", back="cyan"))
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
-        for avid in await get_collection_avids(session, self.series_id, self.mid):
+
+        # 选集过滤
+        episodes = parse_episodes_selection(args.episodes, len(collection_details["pages"]))
+        collection_details["pages"] = list(filter(lambda item: item["id"] in episodes, collection_details["pages"]))
+
+        for item in collection_details["pages"]:
             try:
+                avid = item["avid"]
                 ugc_video_list = await get_ugc_video_list(session, avid)
                 await Fetcher.touch_url(session, avid.to_url())
+                if len(ugc_video_list["pages"]) != 1:
+                    Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")
                 for ugc_video_item in ugc_video_list["pages"]:
                     ugc_video_info_list.append(
                         (
@@ -80,12 +87,14 @@ class CollectionExtractor(BatchExtractor):
                 ugc_video_item,
                 args,
                 {
-                    "series_title": series_title,
+                    # TODO: 关于对于 id 的优化
+                    # TODO: 关于对于 title 的优化（最好使用合集标题，而不是原来的视频标题）
+                    "series_title": collection_title,
                     "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
                     "title": title,
                     "pubdate": pubdate,
                 },
-                "{series_title}/{title}/{name}",
+                "{series_title}/{title}",
             )
             for ugc_video_item, title, pubdate in ugc_video_info_list
         ]

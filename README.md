@@ -78,17 +78,17 @@ pip install ./dist/yutto-*.whl
 ### 已支持的下载类型
 
 <!-- prettier-ignore -->
-|Type|Batch|Example url|Path template|
-|-|-|-|-|
-|投稿视频|:x:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}`|
-|投稿视频|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
-|番剧|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
-|番剧|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
-|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create`|`{username}的收藏夹/{series_title}/{title}/{name}`|
-|用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
-|UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
-|合集|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195`|`{series_title}/{title}/{name}`|
-|视频列表|:white_check_mark:|`https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439` <br/> `https://space.bilibili.com/100969474/favlist?fid=270359&ftype=collect`|`{series_title}/{title}/{name}`|
+|类型|是否为批量下载|是否支持选集|示例链接|默认路径模板|
+|-|-|-|-|-|
+|投稿视频|:x:|:x:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}`|
+|投稿视频|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
+|番剧|:x:|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
+|番剧|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
+|用户指定收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create`|`{username}的收藏夹/{series_title}/{title}/{name}`|
+|用户全部收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
+|UP 主个人空间|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
+|合集|:white_check_mark:|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195`|`{series_title}/{title}`|
+|视频列表|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439` <br/> `https://space.bilibili.com/100969474/favlist?fid=270359&ftype=collect`|`{series_title}/{title}/{name}`|
 
 ### 基本命令
 
@@ -428,7 +428,7 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 1. 这里使用的序号是视频的顺序序号，而不是番剧所标注的`第 n 话`，因为有可能会出现 `第 x.5 话` 等等的特殊情况，此时一定要按照顺序自行计数。
 2. 参数值里一定不要加空格
 3. 参数值开头为特殊符号时最好使用 `=` 来连接选项和参数，或者尝试使用引号包裹参数
-4. 个人空间、合集、收藏夹等批量下载暂不支持选集操作
+4. 个人空间、视频列表、收藏夹等批量下载暂不支持选集操作
 
 #### 同时下载附加剧集
 
@@ -587,10 +587,11 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 
 -  [x] feat: 投稿视频描述文件支持
 -  [x] refactor: 整理路径变量名
+-  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
+-  [ ] refactor: 针对视频合集优化路径变量
 -  [ ] docs: 可爱的 logo（呜呜呜，有谁会做 logo 嘛？）
 -  [ ] docs: 可爱的静态文档（可能需要 VitePress 到 1.0）
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑
--  [ ] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
 
 ### future
 

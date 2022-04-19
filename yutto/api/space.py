@@ -87,29 +87,3 @@ async def get_medialist_title(session: ClientSession, series_id: SeriesId) -> st
     json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
     assert json_data is not None
     return json_data["data"]["title"]
-
-
-# 个人空间·视频合集·avid
-async def get_collection_avids(session: ClientSession, series_id: SeriesId, mid: MId) -> list[AvId]:
-    api = "https://api.bilibili.com/x/polymer/space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
-    ps = 30
-    pn = 1
-    total = 1
-    all_avid: list[AvId] = []
-
-    while pn <= total:
-        space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn, mid=mid)
-        json_data = await Fetcher.fetch_json(session, space_videos_url)
-        assert json_data is not None
-        total = math.ceil(json_data["data"]["page"]["total"] / ps)
-        pn += 1
-        all_avid += [BvId(archives["bvid"]) for archives in json_data["data"]["archives"]]
-    return all_avid
-
-
-# 个人空间·视频合集·标题
-async def get_collection_title(session: ClientSession, series_id: SeriesId) -> str:
-    api = "https://api.bilibili.com/x/v1/medialist/info?type=8&biz_id={series_id}"
-    json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
-    assert json_data is not None
-    return json_data["data"]["title"]
