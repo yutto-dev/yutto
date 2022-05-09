@@ -16,7 +16,7 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 ## 版本号为什么是 2.0
 
-因为 yutto 是 bilili 的後輩呀～
+因为 yutto 是 [bilili](https://github.com/yutto-dev/bilili) 的後輩呀～
 
 ## 从安装开始～
 
@@ -47,7 +47,7 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 
 与直接运行 yutto 不同的是，这里的下载目标路径是通过 `-v <path>:/app` 指定的，也就是说 docker 里的 yutto 会将内容下载到 docker 里的 `/app` 目录下，与之相对应的挂载点 `<path>` 就是下载路径。你也可以直接挂载到 `$(pwd)`，此时就和本机 yutto 的默认行为一致啦，也是下载到当前目录下～
 
-### pip 安装
+### pip/pipx 安装
 
 在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
 
@@ -60,6 +60,14 @@ pip install --pre yutto
 ```bash
 pip install git+https://github.com/yutto-dev/yutto@main
 ```
+
+当然，你也可以通过 [pipx](https://github.com/pypa/pipx) 来安装 yutto（当然，前提是你要自己先安装它）
+
+```bash
+pipx install yutto
+```
+
+pipx 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx 是更推荐的安装方式。
 
 ### 从 GitHub 获取最新源码手动安装
 
