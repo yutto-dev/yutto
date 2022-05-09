@@ -10,9 +10,9 @@ from yutto.utils.functools import as_sync
 @pytest.mark.api
 @as_sync
 async def test_get_collection_details():
-    # 测试页面：https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195&ctype=0
-    series_id = SeriesId("23195")
-    mid = MId("361469957")
+    # 测试页面：https://space.bilibili.com/6762654/channel/collectiondetail?sid=39879&ctype=0
+    series_id = SeriesId("39879")
+    mid = MId("6762654")
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
@@ -22,6 +22,6 @@ async def test_get_collection_details():
         collection_details = await get_collection_details(session, series_id=series_id, mid=mid)
         title = collection_details["title"]
         avids = [page["avid"] for page in collection_details["pages"]]
-        assert title == "算法入门【Go语言】"
-        assert BvId("BV1xy4y1G7tz") in avids
-        assert BvId("BV1k34y1S71P") in avids
+        assert title == "原神傻开心整活"
+        assert BvId("BV1er4y1H7tQ") in avids
+        assert BvId("BV1Yi4y1C7u6") in avids
