@@ -19,7 +19,7 @@ async def test_150_kB_downloader():
     # url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
     # 因为 file-examples-com 挂掉了（GitHub 账号都消失了，因此暂时使用一个别处的 mirror）
     url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
-    file_path = os.path.join(TEST_DIR, "test_150_kB.pdf")
+    file_path = TEST_DIR / "test_150_kB.pdf"
     async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:
         async with aiohttp.ClientSession(
             headers=Fetcher.headers,
@@ -37,7 +37,7 @@ async def test_150_kB_downloader():
             print("开始下载……")
             await asyncio.gather(*coroutines)
             print("下载完成！")
-            assert size == os.path.getsize(file_path), "文件大小与实际大小不符"
+            assert size == file_path.stat().st_size, "文件大小与实际大小不符"
 
 
 @pytest.mark.processor
@@ -46,7 +46,7 @@ async def test_150_kB_no_slice_downloader():
     # test_dir = "./downloader_test/"
     # url = "https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
     url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
-    file_path = os.path.join(TEST_DIR, "test_150_kB_no_slice.pdf")
+    file_path = TEST_DIR / "test_150_kB_no_slice.pdf"
     async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:
         async with aiohttp.ClientSession(
             headers=Fetcher.headers,
@@ -61,4 +61,4 @@ async def test_150_kB_no_slice_downloader():
             print("开始下载……")
             await asyncio.gather(*coroutines)
             print("下载完成！")
-            assert size == os.path.getsize(file_path), "文件大小与实际大小不符"
+            assert size == file_path.stat().st_size, "文件大小与实际大小不符"

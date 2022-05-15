@@ -1,8 +1,8 @@
 import heapq
-import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import TracebackType
-from typing import Optional, Type
+from typing import Optional, Type, Union
 
 import aiofiles
 
@@ -42,12 +42,12 @@ class AsyncFileBuffer(aobject):
     """
 
     # pyright: reportIncompatibleMethodOverride=false
-    async def __ainit__(self, file_path: str, overwrite: bool = False):
-        self.file_path = file_path
-        if overwrite and os.path.exists(file_path):
-            os.remove(file_path)
+    async def __ainit__(self, file_path: Union[str, Path], overwrite: bool = False):
+        self.file_path = Path(file_path)
+        if overwrite:
+            self.file_path.unlink(missing_ok=True)
         self.buffer = list[BufferChunk]()
-        self.written_size = os.path.getsize(file_path) if not overwrite and os.path.exists(file_path) else 0
+        self.written_size = self.file_path.stat().st_size if not overwrite and self.file_path.exists() else 0
         self.file_obj: Optional[aiofiles.threadpool.binary.AsyncBufferedIOBase] = await aiofiles.open(file_path, "ab")
 
     async def write(self, chunk: bytes, offset: int):

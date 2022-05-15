@@ -1,16 +1,15 @@
-import os
 import shutil
+from pathlib import Path
 
 import pytest
 
-TEST_DIR = "./__test_files__"
+TEST_DIR = Path("./__test_files__")
 
 
 def pytest_sessionstart(session: pytest.Session):
-    if not os.path.exists(TEST_DIR):
-        os.mkdir(TEST_DIR)
+    TEST_DIR.mkdir(exist_ok=True)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
-    if os.path.exists(TEST_DIR):
+    if TEST_DIR.exists():
         shutil.rmtree(TEST_DIR)
