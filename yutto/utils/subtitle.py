@@ -23,7 +23,7 @@ class Subtitle:
         seconds = int(seconds)
         minutes, sec = seconds // 60, seconds % 60
         hour, min = minutes // 60, minutes % 60
-        return "{:02}:{:02}:{:02},{}".format(hour, min, sec, ms)
+        return "{:02}:{:02}:{:02},{:03}".format(hour, min, sec, ms)
 
     def write_subtitle(self, subtitle_line_data: SubtitleLineData) -> None:
         self._count += 1
