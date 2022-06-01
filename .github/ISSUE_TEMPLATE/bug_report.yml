@@ -20,7 +20,11 @@ body:
     id: reproduction
     attributes:
       label: 复现方式
-      description: "请在这里提供你所使用/调用 yutto 的方式。如果与特定 url 有关，请直接在命令中提供该 url。"
+      description: |
+        请在这里提供你所使用/调用 yutto 的方式。如果与特定 url 有关，请直接在命令中提供该 url。
+        为了节省彼此交流的时间，麻烦在提交 issue 前多次测试该命令是能够反复复现的（非网络问题），
+        如果可以，麻烦在提交 issue 前对其他的情况进行测试，并将相关信息详细描述在问题简述中，
+        这里仅提供**最小可复现**的命令
       placeholder: "注意在粘贴的命令中隐去所有隐私信息哦(*/ω＼*)"
     validations:
       required: true
@@ -45,7 +49,7 @@ body:
     id: additional-context
     attributes:
       label: 额外信息
-      description:
+      description: 请尽可能提供一些你认为可能产生该问题的一些原因
       placeholder: 如有额外的信息，请填写在这里～
     validations:
       required: false
