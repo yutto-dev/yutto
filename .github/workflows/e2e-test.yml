@@ -31,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: Gr1N/setup-poetry@v7
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         id: poetry-cache
         with:
           path: |
