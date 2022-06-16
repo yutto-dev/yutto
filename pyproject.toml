@@ -21,12 +21,12 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9.0"
-aiohttp = "^3.7.4"
-aiofiles = ">=0.7,<0.9"
+aiohttp = "^3.8.1"
+aiofiles = "^0.8.0"
 biliass = "1.3.5"
 uvloop = { version = "0.16.0", optional = true }
 dicttoxml = "^1.7.4"
-colorama = { version = "^0.4.4", markers = "sys_platform == 'win32'" }
+colorama = { version = "^0.4.5", markers = "sys_platform == 'win32'" }
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
