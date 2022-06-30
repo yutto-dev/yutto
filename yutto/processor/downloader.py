@@ -1,7 +1,8 @@
 import asyncio
 import functools
 import os
-from typing import Any, Coroutine, Optional
+from pathlib import Path
+from typing import Any, Coroutine, Optional, Union
 
 import aiohttp
 
@@ -88,9 +89,9 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 async def download_video_and_audio(
     session: aiohttp.ClientSession,
     video: Optional[VideoUrlMeta],
-    video_path: str,
+    video_path: Union[str, Path],
     audio: Optional[AudioUrlMeta],
-    audio_path: str,
+    audio_path: Union[str, Path],
     options: DownloaderOptions,
 ):
     """下载音视频"""
@@ -133,10 +134,10 @@ async def download_video_and_audio(
 
 def merge_video_and_audio(
     video: Optional[VideoUrlMeta],
-    video_path: str,
+    video_path: Union[str, Path],
     audio: Optional[AudioUrlMeta],
-    audio_path: str,
-    output_path: str,
+    audio_path: Union[str, Path],
+    output_path: Union[str, Path],
     options: DownloaderOptions,
 ):
     """合并音视频"""
@@ -150,14 +151,14 @@ def merge_video_and_audio(
         options["audio_save_codec"] = "copy"
 
     args_list: list[list[str]] = [
-        ["-i", video_path] if video is not None else [],
-        ["-i", audio_path] if audio is not None else [],
+        ["-i", str(video_path)] if video is not None else [],
+        ["-i", str(audio_path)] if audio is not None else [],
         ["-vcodec", options["video_save_codec"]] if video is not None else [],
         ["-acodec", options["audio_save_codec"]] if audio is not None else [],
         # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
         ["-strict", "unofficial"],
         ["-threads", str(os.cpu_count())],
-        ["-y", output_path],
+        ["-y", str(output_path)],
     ]
 
     ffmpeg.exec(functools.reduce(lambda prev, cur: prev + cur, args_list))
@@ -181,16 +182,14 @@ async def start_downloader(
     subtitles = episode_data["subtitles"]
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
-    output_dir = episode_data["output_dir"]
-    tmp_dir = episode_data["tmp_dir"]
+    output_dir = Path(episode_data["output_dir"])
+    tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
 
     Logger.info(f"开始处理视频 {filename}")
-    if not os.path.isdir(tmp_dir):
-        os.makedirs(tmp_dir)
-    tmp_path_no_ext = os.path.join(tmp_dir, filename)
-    video_path = tmp_path_no_ext + "_video.m4s"
-    audio_path = tmp_path_no_ext + "_audio.m4s"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    video_path = tmp_dir.joinpath(filename + "_video.m4s")
+    audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
 
     video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
     audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
@@ -199,18 +198,16 @@ async def start_downloader(
     show_videos_info(videos, videos.index(video) if video is not None else -1)
     show_audios_info(audios, audios.index(audio) if audio is not None else -1)
 
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
-    output_path_no_ext = os.path.join(output_dir, filename)
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_format = ".mp4" if video is not None else ".aac"
-    output_path = output_path_no_ext + output_format
-    if os.path.exists(output_path):
+    output_path = output_dir.joinpath(filename + output_format)
+    if output_path.exists():
         if not options["overwrite"]:
             Logger.info(f"文件 {filename} 已存在")
             return
         else:
             Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
-            os.remove(output_path)
+            output_path.unlink()
 
     if video is None and audio is None:
         Logger.warning("没有音视频需要下载")
@@ -219,7 +216,7 @@ async def start_downloader(
     # 保存字幕
     if subtitles:
         for subtitle in subtitles:
-            write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+            write_subtitle(subtitle["lines"], str(output_path), subtitle["lang"])
         Logger.custom(
             "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
             badge=Badge("字幕", fore="black", back="cyan"),
@@ -229,7 +226,7 @@ async def start_downloader(
     if danmaku["data"]:
         write_danmaku(
             danmaku,
-            output_path,
+            str(output_path),
             video["height"] if video is not None else 0,
             video["width"] if video is not None else 0,
         )
@@ -237,7 +234,7 @@ async def start_downloader(
 
     # 保存媒体描述文件
     if metadata is not None:
-        write_metadata(metadata, output_path)
+        write_metadata(metadata, str(output_path))
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     # 下载视频 / 音频

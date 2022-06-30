@@ -1,5 +1,5 @@
 import argparse
-import os
+from pathlib import Path
 from typing import Optional
 
 import aiohttp
@@ -58,7 +58,8 @@ async def extract_bangumi_data(
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
+        file_path = Path(args.dir, subpath)
+        output_dir, filename = str(file_path.parent), file_path.name
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -100,7 +101,8 @@ async def extract_ugc_video_data(
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        output_dir, filename = os.path.split(os.path.join(args.dir, subpath))
+        file_path = Path(args.dir, subpath)
+        output_dir, filename = str(file_path.parent), file_path.name
         return EpisodeData(
             videos=videos,
             audios=audios,

@@ -1,5 +1,5 @@
-import os
-from typing import TypedDict
+from pathlib import Path
+from typing import TypedDict, Union
 
 SubtitleLineData = TypedDict("SubtitleLineData", {"content": str, "from": int, "to": int})
 
@@ -37,10 +37,11 @@ class Subtitle:
         return self._text
 
 
-def write_subtitle(subtitle_data: SubtitleData, video_path: str, lang: str):
+def write_subtitle(subtitle_data: SubtitleData, video_path: Union[str, Path], lang: str):
+    video_path = Path(video_path)
+    video_name = video_path.stem
     sub = Subtitle()
-    video_path_no_ext = os.path.splitext(video_path)[0]
-    subtitle_path = f"{video_path_no_ext}_{lang}.srt"
+    subtitle_path = video_path.with_name(f"{video_name}_{lang}.srt")
     for subline in subtitle_data:
         sub.write_subtitle(subline)
     with open(subtitle_path, "w", encoding="utf-8") as f:

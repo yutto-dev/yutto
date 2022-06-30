@@ -1,5 +1,5 @@
-import os
-from typing import TypedDict
+from pathlib import Path
+from typing import TypedDict, Union
 from xml.dom.minidom import parseString
 
 import dicttoxml  # type: ignore
@@ -16,9 +16,9 @@ class MetaData(TypedDict):
     original_filename: str
 
 
-def write_metadata(metadata: MetaData, video_path: str):
-    video_path_no_ext = os.path.splitext(video_path)[0]
-    metadata_path = video_path_no_ext + ".nfo"
+def write_metadata(metadata: MetaData, video_path: Union[str, Path]):
+    video_path = Path(video_path)
+    metadata_path = video_path.with_suffix(".nfo")
     custom_root = "episodedetails"
 
     xml_content = dicttoxml.dicttoxml(metadata, custom_root=custom_root, attr_type=False)  # type: ignore
