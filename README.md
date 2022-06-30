@@ -578,9 +578,9 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 
 [《転スラ日記》第一话 00:24](https://www.bilibili.com/bangumi/play/ep395211?t=24)
 
-### yutto 会很快替代 bilili 吗
+### yutto 会替代 bilili 吗
 
-短期内不会，bilili 并不会消失，在一段时间内 bilili 仍会做纠错性维护，只是不会提供新特性了。
+yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～
 
 ## Roadmap
 
@@ -597,9 +597,8 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 -  [x] refactor: 整理路径变量名
 -  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
 -  [ ] refactor: 针对视频合集优化路径变量
--  [ ] docs: 可爱的 logo（呜呜呜，有谁会做 logo 嘛？）
--  [ ] docs: 可爱的静态文档（可能需要 VitePress 到 1.0）
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑
+-  [ ] docs: 可爱的静态文档
 
 ### future
 
