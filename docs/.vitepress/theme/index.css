@@ -1,0 +1,31 @@
+/* Home title */
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(60deg, #34fefe 30%, #8927f2);
+  --c-brand: #46bcf3 !important;
+  --c-accent: #3aa3aa !important;
+  --c-brand-light: rgb(64, 216, 221) !important;
+  /* badge component colors */
+  --c-tip: #42b983;
+  --c-warning: #e7c000;
+  --c-danger: #cc0000;
+  --c-badge-tip: var(--c-tip);
+  --c-badge-warning: var(--c-warning);
+  --c-badge-danger: var(--c-danger);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: rgb(32, 41, 58) !important;
+    --c-text: rgb(202, 204, 192) !important;
+    --c-divider: rgba(22, 196, 202, 0.103) !important;
+    --c-text-light: #58dbc5 !important;
+    --c-brand: #22ecdc !important;
+    --c-brand-light: #23d4c6 !important;
+    --c-accent: #90c321 !important;
+  }
+}
+
+
+
+/* Overrides */

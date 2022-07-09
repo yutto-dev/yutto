@@ -1,0 +1,37 @@
+{
+  "name": "yutto-docs",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Nyakku Shigure <sigure.qaq@gmail.com>",
+  "license": "CC0-1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/yutto-dev/yutto.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yutto-dev/yutto/issues"
+  },
+  "homepage": "https://github.com/yutto-dev/yutto#readme",
+  "packageManager": "pnpm@7.5.0",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build"
+  },
+  "devDependencies": {
+    "@moefy-canvas/core": "^0.3.3",
+    "@moefy-canvas/theme-sparkler": "^0.3.3",
+    "vite": "^2.9.14",
+    "vitepress": "1.0.0-alpha.4",
+    "vue": "^3.2.37"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "@algolia/client-search",
+        "react",
+        "react-dom",
+        "@types/react"
+      ]
+    }
+  }
+}
