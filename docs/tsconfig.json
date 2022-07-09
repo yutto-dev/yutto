@@ -6,6 +6,7 @@
     "lib": ["DOM", "ES2020"],
     "module": "ESNext",
     "moduleResolution": "node",
+    "jsx": "preserve",
     "newLine": "lf",
     "noEmitOnError": true,
     "noImplicitAny": false,
@@ -16,5 +17,5 @@
     "strictNullChecks": true,
     "target": "ES2018"
   },
-  "include": ["./docs/.vitepress/**/*", "./docs/.vitepress/env.d.ts", "./vite.config.ts"]
+  "include": ["./.vitepress/**/*", "./.vitepress/env.d.ts"]
 }
