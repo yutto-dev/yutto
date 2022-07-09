@@ -40,21 +40,21 @@ defineProps({
   line-height: 18px;
   border-radius: 3px;
   padding: 0 6px;
-  color: var(--c-bg);
+  color: var(--vp-c-bg);
   vertical-align: top;
-  transition: color var(--t-color), background-color var(--t-color);
+  transition: color var(--vp-t-color), background-color var(--vp-t-color);
 }
 
 .badge.tip {
-  background-color: var(--c-badge-tip);
+  background-color: var(--vp-badge-tip);
 }
 
 .badge.warning {
-  background-color: var(--c-badge-warning);
+  background-color: var(--vp-badge-warning);
 }
 
 .badge.danger {
-  background-color: var(--c-badge-danger);
+  background-color: var(--vp-badge-danger);
 }
 
 .badge.table-of-contents {

@@ -1,31 +1,66 @@
-/* Home title */
+/**
+ * Colors
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-c-brand: #29c9cf;
+  --vp-c-brand-light: #46f3f3;
+  --vp-c-brand-lighter: #94fffa;
+  --vp-c-brand-dark: #53aaf2;
+  --vp-c-brand-darker: #4586e1;
+  --vp-c-brand-dimm: rgba(100, 108, 255, 0.08);
+}
+
+/**
+ * Component: Button
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-button-brand-border: var(--vp-c-brand-light);
+  --vp-button-brand-text: var(--vp-c-text-dark-1);
+  --vp-button-brand-bg: var(--vp-c-brand);
+  --vp-button-brand-hover-border: var(--vp-c-brand-light);
+  --vp-button-brand-hover-text: var(--vp-c-text-dark-1);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-light);
+  --vp-button-brand-active-border: var(--vp-c-brand-light);
+  --vp-button-brand-active-text: var(--vp-c-text-dark-1);
+  --vp-button-brand-active-bg: var(--vp-button-brand-bg);
+}
+
+/**
+ * Component: Badge
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-badge-tip: #42b983;
+  --vp-badge-warning: #e7c000;
+  --vp-badge-danger: #cc0000;
+  --vp-badge-badge-tip: var(--vp-badge-tip);
+  --vp-badge-badge-warning: var(--vp-badge-warning);
+  --vp-badge-badge-danger: var(--vp-badge-danger);
+}
+
+/**
+ * Component: Home
+ * -------------------------------------------------------------------------- */
+
 :root {
   --vp-home-hero-name-color: transparent;
   --vp-home-hero-name-background: -webkit-linear-gradient(60deg, #34fefe 30%, #8927f2);
-  --c-brand: #46bcf3 !important;
-  --c-accent: #3aa3aa !important;
-  --c-brand-light: rgb(64, 216, 221) !important;
-  /* badge component colors */
-  --c-tip: #42b983;
-  --c-warning: #e7c000;
-  --c-danger: #cc0000;
-  --c-badge-tip: var(--c-tip);
-  --c-badge-warning: var(--c-warning);
-  --c-badge-danger: var(--c-danger);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --c-bg: rgb(32, 41, 58) !important;
-    --c-text: rgb(202, 204, 192) !important;
-    --c-divider: rgba(22, 196, 202, 0.103) !important;
-    --c-text-light: #58dbc5 !important;
-    --c-brand: #22ecdc !important;
-    --c-brand-light: #23d4c6 !important;
-    --c-accent: #90c321 !important;
-  }
+/**
+ * Component: Custom Block
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-custom-block-tip-border: var(--vp-c-brand);
+  --vp-custom-block-tip-text: var(--vp-c-brand-darker);
+  --vp-custom-block-tip-bg: var(--vp-c-brand-dimm);
 }
 
-
-
-/* Overrides */
+.dark {
+  --vp-custom-block-tip-border: var(--vp-c-brand);
+  --vp-custom-block-tip-text: var(--vp-c-brand-lighter);
+  --vp-custom-block-tip-bg: var(--vp-c-brand-dimm);
+}

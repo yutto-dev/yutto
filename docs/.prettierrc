@@ -11,6 +11,12 @@
       "options": {
         "tabWidth": 3
       }
+    },
+    {
+      "files": "*.json5",
+      "options": {
+        "singleQuote": false
+      }
     }
   ]
 }
