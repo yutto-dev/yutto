@@ -38,7 +38,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/yutto-dev/docs/edit/main/:path',
+      pattern: 'https://github.com/yutto-dev/yutto/edit/main/docs/:path',
       text: '为此页提供修改建议',
     },
 
