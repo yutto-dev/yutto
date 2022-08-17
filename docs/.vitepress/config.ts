@@ -47,12 +47,4 @@ export default defineConfig({
       { icon: 'discord', link: 'https://discord.gg/5cQGyFwsqC' },
     ],
   },
-
-  vite: {
-    // can't build, see https://github.com/vuejs/vitepress/issues/476
-    // @ts-ignore
-    ssr: {
-      noExternal: ['@moefy-canvas/core', '@moefy-canvas/theme-sparkler'],
-    },
-  },
 })
