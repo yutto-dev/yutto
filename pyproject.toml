@@ -35,6 +35,7 @@ black = "^22.1"
 pytest-parallel = "^0.1.1"
 isort = "^5.10.1"
 pyright = "^1.1.268"
+pytest-rerunfailures = "^10.2"
 
 [tool.poetry.extras]
 uvloop = ["uvloop"]
