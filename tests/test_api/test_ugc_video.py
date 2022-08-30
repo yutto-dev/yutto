@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import aiohttp
 import pytest
 
@@ -9,7 +11,7 @@ from yutto.api.ugc_video import (
     get_ugc_video_subtitles,
 )
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 
 @pytest.mark.api

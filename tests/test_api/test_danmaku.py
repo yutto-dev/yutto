@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import aiohttp
 import pytest
 
 from yutto._typing import CId
 from yutto.api.danmaku import get_danmaku, get_protobuf_danmaku, get_xml_danmaku
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 
 @pytest.mark.api

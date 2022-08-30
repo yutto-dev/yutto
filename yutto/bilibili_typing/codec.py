@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 from yutto.utils.priority import gen_priority_sequence

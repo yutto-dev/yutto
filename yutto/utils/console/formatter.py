@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Literal
 
 from yutto.utils.console.colorful import no_colored_string

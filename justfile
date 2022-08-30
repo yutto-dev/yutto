@@ -6,6 +6,9 @@ DOCKER_NAME := "siguremo/yutto"
 run *ARGS:
   poetry run python -m yutto {{ARGS}}
 
+install:
+  poetry install
+
 test:
   poetry run pytest -m '(api or e2e or processor) and not (ci_only or ignore)' --workers auto
   just clean
@@ -13,6 +16,9 @@ test:
 fmt:
   poetry run isort .
   poetry run black .
+
+lint:
+  poetry run pyright yutto tests
 
 build:
   poetry build
@@ -49,6 +55,21 @@ clean-builds:
   rm -rf build/
   rm -rf dist/
   rm -rf yutto.egg-info/
+
+ci-fmt-check:
+  poetry run isort --check-only .
+  poetry run black --check --diff .
+
+ci-lint:
+  just lint
+
+ci-test:
+  poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --workers auto
+  just clean
+
+ci-e2e-test:
+  poetry run pytest -m "e2e and not (ci_skip or ignore)" --workers auto
+  just clean
 
 docker-run *ARGS:
   docker run --rm -it -v `pwd`:/app {{DOCKER_NAME}} {{ARGS}}

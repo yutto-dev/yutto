@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import copy
 import re
@@ -27,7 +29,7 @@ from yutto.processor.downloader import start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 from yutto.validator import (
     initial_validate,
     validate_basic_arguments,

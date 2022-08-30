@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import heapq
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -7,7 +9,7 @@ from typing import Optional, Type, Union
 import aiofiles
 
 from yutto.utils.console.logger import Logger
-from yutto.utils.functools import aobject
+from yutto.utils.funcutils import aobject
 
 
 @dataclass(order=True)

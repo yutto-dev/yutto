@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import asyncio
-import os
 
 import aiohttp
 import pytest
@@ -7,7 +8,7 @@ import pytest
 from yutto.processor.downloader import slice_blocks
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 from ..conftest import TEST_DIR
 

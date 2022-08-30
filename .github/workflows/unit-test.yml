@@ -20,19 +20,28 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
 
-      - uses: Gr1N/setup-poetry@v7
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.2.0rc2
+
+      - name: Install just
+        uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: actions/cache@v3
         id: poetry-cache
         with:
           path: |
             **/.venv
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}-poetry-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
-          poetry install
+          just install
 
       - name: unit test
         run: |
-          poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --workers auto
+          just ci-test

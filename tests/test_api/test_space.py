@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import aiohttp
 import pytest
 
@@ -12,7 +14,7 @@ from yutto.api.space import (
     get_user_space_all_videos_avids,
 )
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 
 @pytest.mark.api

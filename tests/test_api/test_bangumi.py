@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import aiohttp
 import pytest
 
@@ -10,7 +12,7 @@ from yutto.api.bangumi import (
     get_season_id_by_media_id,
 )
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 
 @pytest.mark.api

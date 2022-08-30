@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 import sys
 from typing import Final, Literal, NamedTuple, Optional, TypedDict, Union

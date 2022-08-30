@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 
 TIME_FMT = "%Y-%m-%d %H:%M:%S"

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .bangumi import BangumiExtractor
 from .bangumi_batch import BangumiBatchExtractor
 from .collection import CollectionExtractor

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import os
@@ -16,7 +18,7 @@ from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.functools import filter_none_value, xmerge
+from yutto.utils.funcutils import filter_none_value, xmerge
 from yutto.utils.metadata import write_metadata
 from yutto.utils.subtitle import write_subtitle
 

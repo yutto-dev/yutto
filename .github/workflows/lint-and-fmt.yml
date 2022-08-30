@@ -1,9 +1,9 @@
-name: e2e Test
+name: Lint and Format
 
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  test-e2e:
+  lint-and-fmt:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,20 +20,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
 
-      - name: Install tools
-        run: |
-          sudo apt update
-          sudo apt install ffmpeg
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.2.0rc2
 
       - name: Install just
         uses: extractions/setup-just@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.2.0rc2
 
       - uses: actions/cache@v3
         id: poetry-cache
@@ -45,15 +40,12 @@ jobs:
       - name: Install dependencies
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
-          poetry install
+          just install
 
-      - name: e2e without subprocess
+      - name: lint
         run: |
-          poetry run yutto -v
-          poetry run yutto -h
-          poetry run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
-          just clean
+          just ci-lint
 
-      - name: e2e test
+      - name: format check
         run: |
-          just ci-e2e-test
+          just ci-fmt-check

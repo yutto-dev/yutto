@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import aiohttp
 import pytest
 
 from yutto._typing import BvId, MId, SeriesId
 from yutto.api.collection import get_collection_details
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 
 @pytest.mark.api

@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import aiohttp
 import pytest
 
 from yutto.api.user_info import is_vip
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.functools import as_sync
+from yutto.utils.funcutils import as_sync
 
 
 @pytest.mark.api

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
 from typing import NamedTuple, Optional, TypedDict
 
@@ -19,7 +21,9 @@ class BilibiliId(NamedTuple):
     def __repr__(self) -> str:
         return self.__str__()
 
-    def __eq__(self, other: "BilibiliId") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BilibiliId):
+            return False
         return self.value == other.value
 
 

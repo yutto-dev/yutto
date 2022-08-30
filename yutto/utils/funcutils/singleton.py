@@ -1,4 +1,7 @@
 # type: ignore
+from __future__ import annotations
+
+
 class Singleton(type):
     """单例模式元类
 

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def gen_priority_sequence(choice: int, num_choices: int) -> list[int]:
     """根据默认先降后升的机制生成序列
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .aobject import aobject
 from .as_sync import as_sync
 from .filter_none_value import filter_none_value

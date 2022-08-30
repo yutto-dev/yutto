@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import TypedDict, Union
-from xml.dom.minidom import parseString
+from xml.dom.minidom import parseString  # type: ignore
 
 import dicttoxml  # type: ignore
 

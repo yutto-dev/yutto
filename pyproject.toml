@@ -12,6 +12,7 @@ classifiers = [
   "Environment :: Console",
   "Operating System :: OS Independent",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Typing :: Typed",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.9",
@@ -28,11 +29,12 @@ uvloop = { version = "0.16.0", optional = true }
 dicttoxml = "^1.7.4"
 colorama = { version = "^0.4.5", markers = "sys_platform == 'win32'" }
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 black = "^22.1"
 pytest-parallel = "^0.1.1"
 isort = "^5.10.1"
+pyright = "^1.1.268"
 
 [tool.poetry.extras]
 uvloop = ["uvloop"]
@@ -51,7 +53,14 @@ line-length = 120
 
 [tool.isort]
 profile = "black"
+add_imports = ["from __future__ import annotations"]
+skip = ["setup.py", ".venv"]
+
+[tool.pyright]
+include = ["yutto", "tests"]
+pythonVersion = "3.9"
+typeCheckingMode = "strict"
 
 [build-system]
-requires = ["poetry_core>=1.0.0"]
+requires = ["poetry_core>=1.1.0rc2"]
 build-backend = "poetry.core.masonry.api"
