@@ -32,8 +32,6 @@ jobs:
 
       - name: Install poetry
         uses: snok/install-poetry@v1
-        with:
-          version: 1.2.0rc2
 
       - uses: actions/cache@v3
         id: poetry-cache
