@@ -18,11 +18,11 @@
     "build": "vitepress build"
   },
   "devDependencies": {
-    "@moefy-canvas/core": "^0.3.3",
-    "@moefy-canvas/theme-sparkler": "^0.3.3",
-    "vite": "^3.0.8",
-    "vitepress": "1.0.0-alpha.6",
-    "vue": "^3.2.37"
+    "@moefy-canvas/core": "^0.5.2",
+    "@moefy-canvas/theme-sparkler": "^0.5.2",
+    "vite": "^3.1.0",
+    "vitepress": "1.0.0-alpha.13",
+    "vue": "^3.2.39"
   },
   "pnpm": {
     "peerDependencyRules": {
