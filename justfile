@@ -64,7 +64,7 @@ ci-lint:
   just lint
 
 ci-test:
-  poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --workers auto
+  poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --workers auto --reruns 3 --reruns-delay 1
   just clean
 
 ci-e2e-test:
