@@ -58,6 +58,7 @@ class UgcVideoListItem(TypedDict):
 class UgcVideoList(TypedDict):
     title: str
     pubdate: str
+    avid: AvId
     pages: list[UgcVideoListItem]
 
 
@@ -73,6 +74,10 @@ async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInf
     if res_json["code"] == -404:
         raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
     assert res_json_data is not None, "响应数据无 data 域"
+    if res_json_data.get("forward"):
+        forward_avid = AId(str(res_json_data["forward"]))
+        Logger.info(f"视频 {avid} 撞车了哦！正在跳转到原视频 {forward_avid}～")
+        return await get_ugc_video_info(session, forward_avid)
     episode_id = EpisodeId("")
     if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
         episode_id = EpisodeId(ep_match.group("episode_id"))
@@ -99,9 +104,12 @@ async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInf
 
 async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList:
     video_info = await get_ugc_video_info(session, avid)
+    if avid not in [video_info["aid"], video_info["bvid"]]:
+        avid = video_info["avid"]
     video_title = video_info["title"]
     result: UgcVideoList = {
         "title": video_title,
+        "avid": avid,
         "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
         "pages": [],
     }
