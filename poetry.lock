@@ -61,14 +61,14 @@ tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy 
 
 [[package]]
 name = "biliass"
-version = "1.3.5"
+version = "1.3.7.dev1"
 description = "将 B 站 XML 弹幕转换为 ASS 弹幕"
 category = "main"
 optional = false
-python-versions = ">=3.6.0"
+python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-protobuf = ">=4.21.0"
+protobuf = ">=4.21.9,<5.0.0"
 
 [[package]]
 name = "black"
@@ -270,7 +270,7 @@ diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pyright"
-version = "1.1.277"
+version = "1.1.278"
 description = "Command line wrapper for pyright"
 category = "dev"
 optional = false
@@ -375,7 +375,7 @@ uvloop = ["uvloop"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.0"
-content-hash = "4366c55ea1839554a048a2ff979b37c06655ac1fd470c96e596e42ec269efb5d"
+content-hash = "fec79b5b2614b2e9cc21609e33206d605a81dc7f01fd84328bd7be3bdb2d3725"
 
 [metadata.files]
 aiofiles = [
@@ -484,8 +484,8 @@ attrs = [
     {file = "attrs-22.1.0.tar.gz", hash = "sha256:29adc2665447e5191d0e7c568fde78b21f9672d344281d0c6e1ab085429b22b6"},
 ]
 biliass = [
-    {file = "biliass-1.3.5-py2.py3-none-any.whl", hash = "sha256:943c58b738e9d24d8807259324e6ec6f09661861b96e4c47c3bed9798faacfe1"},
-    {file = "biliass-1.3.5.tar.gz", hash = "sha256:920a10517da5e5810d128cdc9df96ec2f7003b5652c657c73d521af40056e885"},
+    {file = "biliass-1.3.7.dev1-py3-none-any.whl", hash = "sha256:2a9283a87c0368d24f2ad82e1c5a66a9a24ec76cdf4f1b48ba3ee1a103f98b85"},
+    {file = "biliass-1.3.7.dev1.tar.gz", hash = "sha256:60e9e14547c9e6038209ccb96914ce389224b45ae8e957f7c2f977d271513c37"},
 ]
 black = [
     {file = "black-22.10.0-1fixedarch-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:5cc42ca67989e9c3cf859e84c2bf014f6633db63d1cbdf8fdb666dcd9e77e3fa"},
@@ -708,8 +708,8 @@ pyparsing = [
     {file = "pyparsing-3.0.9.tar.gz", hash = "sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb"},
 ]
 pyright = [
-    {file = "pyright-1.1.277-py3-none-any.whl", hash = "sha256:de7e2f533771d94e5db722cbdb0db9eafe250395b00cf2baa1ac969343ec23b0"},
-    {file = "pyright-1.1.277.tar.gz", hash = "sha256:38975508f2a3ef846db16466c659a37ad18c741113bc46bcdf6a7250b550cdc8"},
+    {file = "pyright-1.1.278-py3-none-any.whl", hash = "sha256:9abaf42482ac8d42c54c91b5501943c2700bdf85289466ddb05bae000353209c"},
+    {file = "pyright-1.1.278.tar.gz", hash = "sha256:a9fd0399657ef7dadabb57f0ccb0216c39f4bfbd9e3e1c28232bf55748330880"},
 ]
 pytest = [
     {file = "pytest-7.2.0-py3-none-any.whl", hash = "sha256:892f933d339f068883b6fd5a459f03d85bfcb355e4981e146d2c7616c21fef71"},
