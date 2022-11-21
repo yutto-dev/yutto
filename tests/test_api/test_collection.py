@@ -24,6 +24,6 @@ async def test_get_collection_details():
         collection_details = await get_collection_details(session, series_id=series_id, mid=mid)
         title = collection_details["title"]
         avids = [page["avid"] for page in collection_details["pages"]]
-        assert title == "原神傻开心整活"
+        assert title == "傻开心整活"
         assert BvId("BV1er4y1H7tQ") in avids
         assert BvId("BV1Yi4y1C7u6") in avids
