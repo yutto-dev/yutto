@@ -28,19 +28,6 @@
 }
 
 /**
- * Component: Badge
- * -------------------------------------------------------------------------- */
-
-:root {
-  --vp-badge-tip: #42b983;
-  --vp-badge-warning: #e7c000;
-  --vp-badge-danger: #cc0000;
-  --vp-badge-badge-tip: var(--vp-badge-tip);
-  --vp-badge-badge-warning: var(--vp-badge-warning);
-  --vp-badge-badge-danger: var(--vp-badge-danger);
-}
-
-/**
  * Component: Home
  * -------------------------------------------------------------------------- */
 
