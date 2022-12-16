@@ -10,7 +10,7 @@ install:
   poetry install
 
 test:
-  poetry run pytest -m '(api or e2e or processor) and not (ci_only or ignore)' --workers auto
+  poetry run pytest -m '(api or e2e or processor) and not (ci_only or ignore)'
   just clean
 
 fmt:
@@ -64,11 +64,11 @@ ci-lint:
   just lint
 
 ci-test:
-  poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --workers auto --reruns 3 --reruns-delay 1
+  poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
   just clean
 
 ci-e2e-test:
-  poetry run pytest -m "e2e and not (ci_skip or ignore)" --workers auto
+  poetry run pytest -m "e2e and not (ci_skip or ignore)"
   just clean
 
 docker-run *ARGS:
