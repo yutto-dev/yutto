@@ -56,6 +56,9 @@ clean-builds:
   rm -rf dist/
   rm -rf yutto.egg-info/
 
+ci-install:
+  poetry install --no-interaction --no-root
+
 ci-fmt-check:
   poetry run isort --check-only .
   poetry run black --check --diff .

@@ -37,7 +37,7 @@ jobs:
         id: poetry-cache
         with:
           path: |
-            **/.venv
+            .venv
           key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}-poetry-${{ hashFiles('poetry.lock') }}
 
       - name: Install dependencies
