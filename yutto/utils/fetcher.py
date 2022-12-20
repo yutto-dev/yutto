@@ -32,14 +32,10 @@ class MaxRetry:
             while retry:
                 try:
                     return await connect_once(*args, **kwargs)
-                except (
-                    aiohttp.client_exceptions.ClientPayloadError,  # type: ignore
-                    aiohttp.client_exceptions.ClientConnectorError,  # type: ignore
-                    aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
-                    aiohttp.client_exceptions.ClientHttpProxyError,  # type: ignore
-                ):
+                except aiohttp.ClientError as e:
                     await asyncio.sleep(0.5)
-                    Logger.warning(f"抓取失败，正在重试，剩余 {retry - 1} 次")
+                    error_type = e.__class__.__name__
+                    Logger.warning(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次")
                 except asyncio.TimeoutError:
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 finally:
