@@ -581,7 +581,7 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 
 ### yutto 会替代 bilili 吗
 
-yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～
+yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～（咳，正式版早着呢，我现在都懒得 rc，一直 beta 下去挺好的 ξ( ✿ ＞ ◡❛)）
 
 ## Roadmap
 
