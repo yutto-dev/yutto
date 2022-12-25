@@ -68,7 +68,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "-aq",
         "--audio-quality",
-        default=30280,
+        default=30251,
         choices=audio_quality_priority_default,
         type=int,
         help="音频码率等级（30280:320kbps, 30232:128kbps, 30216:64kbps）",

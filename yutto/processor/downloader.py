@@ -201,7 +201,16 @@ async def start_downloader(
     show_audios_info(audios, audios.index(audio) if audio is not None else -1)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_format = ".mp4" if video is not None else ".aac"
+    output_format = ".mp4"
+    if video is None:
+        if audio is not None and audio["codec"] == "fLaC":
+            output_format = ".flac"
+        else:
+            output_format = ".aac"
+    else:
+        if audio is not None and audio["codec"] == "fLaC":
+            output_format = ".mkv"  # MP4 does not support FLAC audio
+
     output_path = output_dir.joinpath(filename + output_format)
     if output_path.exists():
         if not options["overwrite"]:

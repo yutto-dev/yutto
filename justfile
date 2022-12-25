@@ -40,7 +40,9 @@ upgrade-from-pypi:
 clean:
   find . -name "*.m4s" -print0 | xargs -0 rm -f
   find . -name "*.mp4" -print0 | xargs -0 rm -f
+  find . -name "*.mkv" -print0 | xargs -0 rm -f
   find . -name "*.aac" -print0 | xargs -0 rm -f
+  find . -name "*.flac" -print0 | xargs -0 rm -f
   find . -name "*.srt" -print0 | xargs -0 rm -f
   find . -name "*.xml" -print0 | xargs -0 rm -f
   find . -name "*.ass" -print0 | xargs -0 rm -f
