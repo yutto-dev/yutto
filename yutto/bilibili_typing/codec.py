@@ -7,10 +7,10 @@ from yutto.utils.priority import gen_priority_sequence
 VideoCodecId = Literal[7, 12, 13]
 VideoCodec = Literal["avc", "hevc", "av1"]
 AudioCodecId = Literal[0]
-AudioCodec = Literal["mp4a"]
+AudioCodec = Literal["mp4a", "fLaC"]
 
 video_codec_priority_default: list[VideoCodec] = ["avc", "hevc", "av1"]
-audio_codec_priority_default: list[AudioCodec] = ["mp4a"]
+audio_codec_priority_default: list[AudioCodec] = ["mp4a", "fLaC"]
 
 video_codec_map: dict[VideoCodecId, VideoCodec] = {
     7: "avc",
