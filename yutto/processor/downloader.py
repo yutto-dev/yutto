@@ -187,14 +187,18 @@ async def start_downloader(
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
+    require_video = options["require_video"]
+    require_audio = options["require_audio"]
 
     Logger.info(f"开始处理视频 {filename}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
 
-    video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
-    audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
+    video = select_video(videos, options["video_quality"], options["video_download_codec"])
+    audio = select_audio(audios, options["audio_quality"], options["audio_download_codec"])
+    will_download_video = video is not None and require_video
+    will_download_audio = audio is not None and require_audio
 
     # 显示音视频详细信息
     show_videos_info(videos, videos.index(video) if video is not None else -1)
@@ -202,13 +206,13 @@ async def start_downloader(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     output_format = ".mp4"
-    if video is None:
-        if audio is not None and audio["codec"] == "fLaC":
+    if not will_download_video:
+        if will_download_audio and audio["codec"] == "fLaC":  # type: ignore
             output_format = ".flac"
         else:
             output_format = ".aac"
     else:
-        if audio is not None and audio["codec"] == "fLaC":
+        if will_download_audio and audio["codec"] == "fLaC":  # type: ignore
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
@@ -245,7 +249,7 @@ async def start_downloader(
             Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
             output_path.unlink()
 
-    if video is None and audio is None:
+    if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
         return
 

@@ -23,13 +23,9 @@ from yutto.utils.console.logger import Logger
 
 def select_video(
     videos: list[VideoUrlMeta],
-    require_video: bool = True,
     video_quality: VideoQuality = 127,
     video_codec: VideoCodec = "hevc",
 ) -> Optional[VideoUrlMeta]:
-    if not require_video:
-        return None
-
     video_quality_priority = gen_video_quality_priority(video_quality)
     video_codec_priority = gen_vcodec_priority(video_codec)
 
@@ -51,13 +47,9 @@ def select_video(
 
 def select_audio(
     audios: list[AudioUrlMeta],
-    require_audio: bool = True,
     audio_quality: AudioQuality = 30280,
     audio_codec: AudioCodec = "mp4a",
 ) -> Optional[AudioUrlMeta]:
-    if not require_audio:
-        return None
-
     audio_quality_priority = gen_audio_quality_priority(audio_quality)
     audio_codec_priority = gen_acodec_priority(audio_codec)
 

@@ -117,10 +117,6 @@ def validate_basic_arguments(args: argparse.Namespace):
         Logger.error("不下载视频时无法嵌入弹幕的哦！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    # 不下载视频无法准确生成 ASS 弹幕（ASS 弹幕生成计算依赖于视频分辨率大小）
-    if not args.require_video and args.require_danmaku and args.danmaku_format == "ass":
-        Logger.warning("不下载视频时无法根据视频分辨率自适应调整 ASS 弹幕大小哦！")
-
     # 生成字幕才可以嵌入字幕
     if args.embed_subtitle and not args.require_subtitle:
         Logger.error("生成字幕才可以嵌入字幕喔！")
