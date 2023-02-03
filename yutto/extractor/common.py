@@ -47,9 +47,9 @@ async def extract_bangumi_data(
         name = bangumi_info["name"]
         id = bangumi_info["id"]
         videos, audios = await get_bangumi_playurl(session, avid, episode_id, cid)
-        subtitles = await get_bangumi_subtitles(session, avid, cid) if not args.no_subtitle else []
-        danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-        metadata = bangumi_info["metadata"] if args.with_metadata else None
+        subtitles = await get_bangumi_subtitles(session, avid, cid) if args.require_subtitle else []
+        danmaku = await get_danmaku(session, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        metadata = bangumi_info["metadata"] if args.require_metadata else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,
@@ -90,9 +90,9 @@ async def extract_ugc_video_data(
         name = ugc_video_info["name"]
         id = ugc_video_info["id"]
         videos, audios = await get_ugc_video_playurl(session, avid, cid)
-        subtitles = await get_ugc_video_subtitles(session, avid, cid) if not args.no_subtitle else []
-        danmaku = await get_danmaku(session, cid, args.danmaku_format) if not args.no_danmaku else EmptyDanmakuData
-        metadata = ugc_video_info["metadata"] if args.with_metadata else None
+        subtitles = await get_ugc_video_subtitles(session, avid, cid) if args.require_subtitle else []
+        danmaku = await get_danmaku(session, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        metadata = ugc_video_info["metadata"] if args.require_metadata else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,

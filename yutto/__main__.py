@@ -4,9 +4,12 @@ import argparse
 import copy
 import re
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any, Literal
 
 import aiohttp
+from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
 from yutto.bilibili_typing.quality import (
@@ -35,6 +38,9 @@ from yutto.validator import (
     validate_basic_arguments,
     validate_batch_argments,
 )
+
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku"]
 
 
 def main():
@@ -79,8 +85,6 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "--acodec", default="mp4a:copy", metavar="DOWNLOAD_ACODEC:SAVE_ACODEC", help="音频编码格式（<下载格式>:<生成格式>）"
     )
-    group_common.add_argument("--video-only", dest="require_audio", action="store_false", help="只下载视频")
-    group_common.add_argument("--audio-only", dest="require_video", action="store_false", help="只下载音频")
     group_common.add_argument("-df", "--danmaku-format", default="ass", choices=["xml", "ass", "protobuf"], help="弹幕类型")
     group_common.add_argument("-bs", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB")
     group_common.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
@@ -92,9 +96,59 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
     )
-    group_common.add_argument("--no-danmaku", action="store_true", help="不生成弹幕文件")
-    group_common.add_argument("--no-subtitle", action="store_true", help="不生成字幕文件")
-    group_common.add_argument("--with-metadata", action="store_true", help="生成元数据文件")
+
+    # 资源选择
+    group_common.add_argument(
+        "--video-only",
+        dest="require_audio",
+        action=create_select_required_action(deselect=["audio"]),
+        help="仅下载视频流",
+    )
+    group_common.add_argument(
+        "--audio-only",
+        dest="require_video",
+        action=create_select_required_action(deselect=["video"]),
+        help="仅下载音频流",
+    )  # 视频和音频是反选对方，而不是其余反选所有的
+    group_common.add_argument(
+        "--no-danmaku",
+        dest="require_danmaku",
+        action=create_select_required_action(deselect=["danmaku"]),
+        help="不生成弹幕文件",
+    )
+    group_common.add_argument(
+        "--danmaku-only",
+        dest="require_danmaku",
+        action=create_select_required_action(select=["danmaku"], deselect=invert_selection(["danmaku"])),
+        help="仅生成弹幕文件",
+    )
+    group_common.add_argument(
+        "--no-subtitle",
+        dest="require_subtitle",
+        action=create_select_required_action(deselect=["subtitle"]),
+        help="不生成字幕文件",
+    )
+    group_common.add_argument(
+        "--subtitle-only",
+        dest="require_subtitle",
+        action=create_select_required_action(select=["subtitle"], deselect=invert_selection(["subtitle"])),
+        help="仅生成字幕文件",
+    )
+    group_common.add_argument(
+        "--with-metadata",
+        dest="require_metadata",
+        action=create_select_required_action(select=["metadata"]),
+        help="生成元数据文件",
+    )
+    group_common.add_argument(
+        "--metadata-only",
+        dest="require_metadata",
+        action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
+        help="仅生成元数据文件",
+    )
+    group_common.set_defaults(
+        require_video=True, require_audio=True, require_subtitle=True, require_metadata=False, require_danmaku=True
+    )
     group_common.add_argument("--metadata-format", default="nfo", choices=["nfo"], help="（待实现）元数据文件类型，目前仅支持 nfo")
     group_common.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")
     group_common.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
@@ -235,6 +289,32 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
         return args_list
     else:
         return [args]
+
+
+def create_select_required_action(select: list[DownloadResourceType] = [], deselect: list[DownloadResourceType] = []):
+    class SelectRequiredAction(argparse.Action):
+        def __init__(self, option_strings: str, dest: str, nargs: int | str | None = None, **kwargs: dict[str, Any]):
+            if nargs is not None:
+                raise ValueError("nargs not allowed")
+            super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+        def __call__(
+            self,
+            parser: argparse.ArgumentParser,
+            namespace: argparse.Namespace,
+            values: str | Sequence[str] | None,
+            option_string: str | None = None,
+        ):
+            for select_item in select:
+                setattr(namespace, f"require_{select_item}", True)
+            for deselect_item in deselect:
+                setattr(namespace, f"require_{deselect_item}", False)
+
+    return SelectRequiredAction
+
+
+def invert_selection(select: list[DownloadResourceType]) -> list[DownloadResourceType]:
+    return [tp for tp in DOWNLOAD_RESOURCE_TYPES if tp not in select]
 
 
 if __name__ == "__main__":

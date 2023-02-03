@@ -49,7 +49,6 @@ class ProgressBar:
 
 
 async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
-    file_buffers = list(filter(lambda x: x is not None, file_buffers))
     t = time.time()
     size = sum([file_buffer.written_size for file_buffer in file_buffers])
     progress_bar = ProgressBar("╸━", "━")
