@@ -212,17 +212,6 @@ async def start_downloader(
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
-    if output_path.exists():
-        if not options["overwrite"]:
-            Logger.info(f"文件 {filename} 已存在")
-            return
-        else:
-            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
-            output_path.unlink()
-
-    if video is None and audio is None:
-        Logger.warning("没有音视频需要下载")
-        return
 
     # 保存字幕
     if subtitles:
@@ -238,8 +227,8 @@ async def start_downloader(
         write_danmaku(
             danmaku,
             str(output_path),
-            video["height"] if video is not None else 0,
-            video["width"] if video is not None else 0,
+            video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
+            video["width"] if video is not None else 1920,
         )
         Logger.custom("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan"))
 
@@ -247,6 +236,18 @@ async def start_downloader(
     if metadata is not None:
         write_metadata(metadata, str(output_path))
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+
+    if output_path.exists():
+        if not options["overwrite"]:
+            Logger.info(f"文件 {filename} 已存在")
+            return
+        else:
+            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
+            output_path.unlink()
+
+    if video is None and audio is None:
+        Logger.warning("没有音视频需要下载")
+        return
 
     # 下载视频 / 音频
     await download_video_and_audio(session, video, video_path, audio, audio_path, options)

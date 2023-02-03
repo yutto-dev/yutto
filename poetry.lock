@@ -695,7 +695,7 @@ files = [
 name = "typing-extensions"
 version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -842,4 +842,4 @@ uvloop = ["uvloop"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "412a18bfbb9a9abfbca2b68a75a7876087fa3633ea5d1821ff554c90d9f9bfdb"
+content-hash = "6003de93985e26bf0e7b4e7ca64c6b685a69759ad8c9ce1f15d7c7667bc70560"
