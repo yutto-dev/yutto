@@ -211,20 +211,6 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 
 详情同视频编码。
 
-#### 仅下载视频流
-
--  参数 `--video-only`
--  默认值 `False`
-
-#### 仅下载音频流
-
--  参数 `--audio-only`
--  默认值 `False`
-
-仅下载其中的音频流，保存为 `.aac` 文件。
-
-值得注意的是，在不选择视频流时，嵌入字幕、弹幕功能将无法工作。
-
 #### 弹幕格式选择
 
 -  参数 `-df` 或 `--danmaku-format`
@@ -264,6 +250,31 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动�
 
 -  参数 `--tmp-dir`
 -  默认值是“存放根目录”即 `-d, --dir` 的值
+
+#### Cookies 设置
+
+-  参数 `-c` 或 `--sessdata`
+-  默认值 `""`
+
+设置 Cookies 后你才可以下载更高清晰度以及更多的剧集，当你传入你的大会员 `SESSDATA` 时（当然前提是你是大会员），你就可以下载大会员可访问的资源咯。
+
+<details><summary> SESSDATA 获取方式 </summary>
+
+这里用 Chrome 作为示例，其它浏览器请尝试类似方法。
+
+首先，用你的帐号登录 B 站，然后随便打开一个 B 站网页，比如[首页](https://www.bilibili.com/)。
+
+按 F12 打开开发者工具，切换到 Network 栏，刷新页面，此时第一个加载的资源应该就是当前页面的 html，选中该资源，在右侧 「Request Headers」 中找到 「cookie」，在其中找到类似于 `SESSDATA=d8bc7493%2C2843925707%2C08c3e*81;` 的一串字符串，复制这里的 `d8bc7493%2C2843925707%2C08c3e*81`，这就是你需要的 `SESSDATA`。
+
+</details>
+
+另外，由于 SESSDATA 中可能有特殊符号，所以传入时你可能需要使用双引号来包裹
+
+```bash
+yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
+```
+
+当然，示例里的 SESSDATA 是无效的，请使用自己的 SESSDATA。
 
 #### 存放子路径模板
 
@@ -316,39 +327,54 @@ yutto rimuru1 --batch --alias-file='~/.yutto_alias'
 cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 ```
 
-#### Cookies 设置
+#### 仅下载视频流
 
--  参数 `-c` 或 `--sessdata`
--  默认值 `""`
+-  参数 `--video-only`
+-  默认值 `False`
 
-设置 Cookies 后你才可以下载更高清晰度以及更多的剧集，当你传入你的大会员 `SESSDATA` 时（当然前提是你是大会员），你就可以下载大会员可访问的资源咯。
+> **Note**
+>
+> 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
+>
+> 「仅下载音频流」也是同样的。
 
-<details><summary> SESSDATA 获取方式 </summary>
+#### 仅下载音频流
 
-这里用 Chrome 作为示例，其它浏览器请尝试类似方法。
+-  参数 `--audio-only`
+-  默认值 `False`
 
-首先，用你的帐号登录 B 站，然后随便打开一个 B 站网页，比如[首页](https://www.bilibili.com/)。
+仅下载其中的音频流，保存为 `.aac` 文件。
 
-按 F12 打开开发者工具，切换到 Network 栏，刷新页面，此时第一个加载的资源应该就是当前页面的 html，选中该资源，在右侧 「Request Headers」 中找到 「cookie」，在其中找到类似于 `SESSDATA=d8bc7493%2C2843925707%2C08c3e*81;` 的一串字符串，复制这里的 `d8bc7493%2C2843925707%2C08c3e*81`，这就是你需要的 `SESSDATA`。
-
-</details>
-
-另外，由于 SESSDATA 中可能有特殊符号，所以传入时你可能需要使用双引号来包裹
-
-```bash
-yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
-```
-
-当然，示例里的 SESSDATA 是无效的，请使用自己的 SESSDATA。
-
-#### 不下载弹幕
+#### 不生成弹幕文件
 
 -  参数 `--no-danmaku`
 -  默认值 `False`
 
-#### 不下载字幕
+#### 仅生成弹幕文件
+
+-  参数 `--danmaku-only`
+-  默认值 `False`
+
+#### 不生成字幕文件
 
 -  参数 `--no-subtitle`
+-  默认值 `False`
+
+#### 仅生成字幕文件
+
+-  参数 `--subtitle-only`
+-  默认值 `False`
+
+#### 生成媒体元数据文件
+
+-  参数 `--with-metadata`
+-  默认值 `False`
+
+目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
+
+#### 仅生成媒体元数据文件
+
+-  参数 `--metadata-only`
 -  默认值 `False`
 
 #### 不显示颜色
@@ -365,13 +391,6 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 
 -  参数 `--debug`
 -  默认值 `False`
-
-#### 生成媒体元数据文件
-
--  参数 `--with-metadata`
--  默认值 `False`
-
-目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
 
 </details>
 

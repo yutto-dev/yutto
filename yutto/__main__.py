@@ -102,13 +102,13 @@ def cli() -> argparse.ArgumentParser:
         "--video-only",
         dest="require_audio",
         action=create_select_required_action(deselect=["audio"]),
-        help="只下载视频",
+        help="仅下载视频流",
     )
     group_common.add_argument(
         "--audio-only",
         dest="require_video",
         action=create_select_required_action(deselect=["video"]),
-        help="只下载音频",
+        help="仅下载音频流",
     )  # 视频和音频是反选对方，而不是其余反选所有的
     group_common.add_argument(
         "--no-danmaku",
@@ -120,7 +120,7 @@ def cli() -> argparse.ArgumentParser:
         "--danmaku-only",
         dest="require_danmaku",
         action=create_select_required_action(select=["danmaku"], deselect=invert_selection(["danmaku"])),
-        help="只生成弹幕文件",
+        help="仅生成弹幕文件",
     )
     group_common.add_argument(
         "--no-subtitle",
@@ -132,7 +132,7 @@ def cli() -> argparse.ArgumentParser:
         "--subtitle-only",
         dest="require_subtitle",
         action=create_select_required_action(select=["subtitle"], deselect=invert_selection(["subtitle"])),
-        help="只生成字幕文件",
+        help="仅生成字幕文件",
     )
     group_common.add_argument(
         "--with-metadata",
@@ -144,7 +144,7 @@ def cli() -> argparse.ArgumentParser:
         "--metadata-only",
         dest="require_metadata",
         action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
-        help="只生成元数据文件",
+        help="仅生成元数据文件",
     )
     group_common.set_defaults(
         require_video=True, require_audio=True, require_subtitle=True, require_metadata=False, require_danmaku=True
