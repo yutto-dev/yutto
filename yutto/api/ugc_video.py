@@ -248,7 +248,7 @@ def _parse_ugc_video_metadata(video_info: _UgcVideoInfo, page_info: _UgcVideoPag
         plot=video_info["description"],
         thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
         premiered=get_time_str_by_stamp(video_info["pubdate"]),
-        dataadded=get_time_str_by_now(),
+        dateadded=get_time_str_by_now(),
         source="",  # TODO
         original_filename="",  # TODO
     )
