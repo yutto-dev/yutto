@@ -209,18 +209,26 @@ async def start_downloader(
     will_download_audio = audio is not None and require_audio
 
     # 显示音视频详细信息
-    show_videos_info(videos, videos.index(video) if video is not None else -1)
-    show_audios_info(audios, audios.index(audio) if audio is not None else -1)
+    show_videos_info(
+        videos, videos.index(video) if will_download_video else -1  # pyright: ignore [reportGeneralTypeIssues]
+    )
+    show_audios_info(
+        audios, audios.index(audio) if will_download_audio else -1  # pyright: ignore [reportGeneralTypeIssues]
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     output_format = ".mp4"
     if not will_download_video:
-        if will_download_audio and audio["codec"] == "fLaC":  # type: ignore
+        if options["output_format_audio_only"] != "infer":
+            output_format = "." + options["output_format_audio_only"]
+        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".flac"
         else:
             output_format = ".aac"
     else:
-        if will_download_audio and audio["codec"] == "fLaC":  # type: ignore
+        if options["output_format"] != "infer":
+            output_format = "." + options["output_format"]
+        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
@@ -260,6 +268,9 @@ async def start_downloader(
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
         return
+
+    video = video if will_download_video else None
+    audio = audio if will_download_audio else None
 
     # 下载视频 / 音频
     await download_video_and_audio(session, video, video_path, audio, audio_path, options)

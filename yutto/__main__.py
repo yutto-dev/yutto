@@ -85,6 +85,15 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "--acodec", default="mp4a:copy", metavar="DOWNLOAD_ACODEC:SAVE_ACODEC", help="音频编码格式（<下载格式>:<生成格式>）"
     )
+    group_common.add_argument(
+        "--output-format", default="infer", choices=["infer", "mp4", "mkv", "mov"], help="输出格式（infer 为自动推断）"
+    )
+    group_common.add_argument(
+        "--output-format-audio-only",
+        default="infer",
+        choices=["infer", "aac", "flac", "mp4", "mkv", "mov"],
+        help="仅包含音频流时所使用的输出格式（infer 为自动推断）",
+    )
     group_common.add_argument("-df", "--danmaku-format", default="ass", choices=["xml", "ass", "protobuf"], help="弹幕类型")
     group_common.add_argument("-bs", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB")
     group_common.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
@@ -258,6 +267,8 @@ async def run(args_list: list[argparse.Namespace]):
                         "audio_quality": args.audio_quality,
                         "audio_download_codec": args.acodec.split(":")[0],
                         "audio_save_codec": args.acodec.split(":")[1],
+                        "output_format": args.output_format,
+                        "output_format_audio_only": args.output_format_audio_only,
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
