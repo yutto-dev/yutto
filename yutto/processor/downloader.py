@@ -152,6 +152,13 @@ def merge_video_and_audio(
     if audio is not None and audio["codec"] == options["audio_save_codec"]:
         options["audio_save_codec"] = "copy"
 
+    # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
+    # https://aaron.cc/ffmpeg-hevc-apple-devices/
+    # see also: https://github.com/yutto-dev/yutto/issues/85
+    vtag: str | None = None
+    if video is not None and video["codec"] == "hevc":
+        vtag = "hvc1"
+
     args_list: list[list[str]] = [
         ["-i", str(video_path)] if video is not None else [],
         ["-i", str(audio_path)] if audio is not None else [],
@@ -159,6 +166,7 @@ def merge_video_and_audio(
         ["-acodec", options["audio_save_codec"]] if audio is not None else [],
         # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
         ["-strict", "unofficial"],
+        ["-tag:v", vtag] if vtag is not None else [],
         ["-threads", str(os.cpu_count())],
         ["-y", str(output_path)],
     ]
