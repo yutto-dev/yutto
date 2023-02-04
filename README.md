@@ -646,8 +646,8 @@ yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bili
 -  [x] refactor: 整理路径变量名
 -  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
 -  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑
--  [ ] docs: 可爱的静态文档
+-  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Disscusing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
+-  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 
