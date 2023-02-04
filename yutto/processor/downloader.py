@@ -147,6 +147,15 @@ def merge_video_and_audio(
     ffmpeg = FFmpeg()
     Logger.info("开始合并……")
 
+    # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
+    # https://aaron.cc/ffmpeg-hevc-apple-devices/
+    # see also: https://github.com/yutto-dev/yutto/issues/85
+    vtag: str | None = None
+    if options["video_save_codec"] == "hevc" or (
+        options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc"
+    ):
+        vtag = "hvc1"
+
     if video is not None and video["codec"] == options["video_save_codec"]:
         options["video_save_codec"] = "copy"
     if audio is not None and audio["codec"] == options["audio_save_codec"]:
@@ -159,6 +168,7 @@ def merge_video_and_audio(
         ["-acodec", options["audio_save_codec"]] if audio is not None else [],
         # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
         ["-strict", "unofficial"],
+        ["-tag:v", vtag] if vtag is not None else [],
         ["-threads", str(os.cpu_count())],
         ["-y", str(output_path)],
     ]
@@ -201,18 +211,26 @@ async def start_downloader(
     will_download_audio = audio is not None and require_audio
 
     # 显示音视频详细信息
-    show_videos_info(videos, videos.index(video) if video is not None else -1)
-    show_audios_info(audios, audios.index(audio) if audio is not None else -1)
+    show_videos_info(
+        videos, videos.index(video) if will_download_video else -1  # pyright: ignore [reportGeneralTypeIssues]
+    )
+    show_audios_info(
+        audios, audios.index(audio) if will_download_audio else -1  # pyright: ignore [reportGeneralTypeIssues]
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     output_format = ".mp4"
     if not will_download_video:
-        if will_download_audio and audio["codec"] == "fLaC":  # type: ignore
+        if options["output_format_audio_only"] != "infer":
+            output_format = "." + options["output_format_audio_only"]
+        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".flac"
         else:
             output_format = ".aac"
     else:
-        if will_download_audio and audio["codec"] == "fLaC":  # type: ignore
+        if options["output_format"] != "infer":
+            output_format = "." + options["output_format"]
+        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
@@ -252,6 +270,9 @@ async def start_downloader(
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
         return
+
+    video = video if will_download_video else None
+    audio = audio if will_download_audio else None
 
     # 下载视频 / 音频
     await download_video_and_audio(session, video, video_path, audio, audio_path, options)

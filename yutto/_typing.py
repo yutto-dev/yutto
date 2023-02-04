@@ -179,6 +179,8 @@ class DownloaderOptions(TypedDict):
     audio_quality: AudioQuality
     audio_download_codec: AudioCodec
     audio_save_codec: str
+    output_format: str
+    output_format_audio_only: str
     overwrite: bool
     block_size: int
     num_workers: int

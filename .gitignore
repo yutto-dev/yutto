@@ -123,6 +123,7 @@ dmypy.json
 *.flac
 *.mp4
 *.mkv
+*.mov
 *.m4s
 *.xml
 *.pb
