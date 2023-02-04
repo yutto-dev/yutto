@@ -13,7 +13,7 @@ class MetaData(TypedDict):
     plot: str
     thumb: str
     premiered: str
-    dataadded: str
+    dateadded: str
     source: str
     original_filename: str
 

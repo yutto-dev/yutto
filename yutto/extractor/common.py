@@ -57,6 +57,7 @@ async def extract_bangumi_data(
             "username": UNKNOWN,
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
+            "download_date": bangumi_info["metadata"]["dateadded"],
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
@@ -100,6 +101,7 @@ async def extract_ugc_video_data(
             "username": UNKNOWN,
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
+            "download_date": ugc_video_info["metadata"]["dateadded"],
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
