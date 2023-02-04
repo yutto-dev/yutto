@@ -147,17 +147,19 @@ def merge_video_and_audio(
     ffmpeg = FFmpeg()
     Logger.info("开始合并……")
 
-    if video is not None and video["codec"] == options["video_save_codec"]:
-        options["video_save_codec"] = "copy"
-    if audio is not None and audio["codec"] == options["audio_save_codec"]:
-        options["audio_save_codec"] = "copy"
-
     # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
     # https://aaron.cc/ffmpeg-hevc-apple-devices/
     # see also: https://github.com/yutto-dev/yutto/issues/85
     vtag: str | None = None
-    if video is not None and video["codec"] == "hevc":
+    if options["video_save_codec"] == "hevc" or (
+        options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc"
+    ):
         vtag = "hvc1"
+
+    if video is not None and video["codec"] == options["video_save_codec"]:
+        options["video_save_codec"] = "copy"
+    if audio is not None and audio["codec"] == options["audio_save_codec"]:
+        options["audio_save_codec"] = "copy"
 
     args_list: list[list[str]] = [
         ["-i", str(video_path)] if video is not None else [],
