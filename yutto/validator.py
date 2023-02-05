@@ -15,7 +15,7 @@ from yutto.bilibili_typing.codec import (
 )
 from yutto.exceptions import ErrorCode
 from yutto.processor.selector import validate_episodes_selection
-from yutto.utils.asynclib import initial_async_policy, install_uvloop
+from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.fetcher import Fetcher
@@ -36,9 +36,6 @@ def initial_validate(args: argparse.Namespace):
     # debug 设置
     if args.debug:
         set_logger_debug()
-    else:
-        # 为保证协程错误栈的可读性，debug 模式不启用 uvloop
-        install_uvloop()
 
     # 初始化异步策略，消除平台差异
     initial_async_policy()

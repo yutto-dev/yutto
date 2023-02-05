@@ -528,19 +528,6 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 ## 小技巧
 
-### 使用 uvloop 提升协程效率
-
-听说 uvloop 可以提高协程效率，如果你的系统非 Windows 的话，可以试一下安装 uvloop：
-
-```bash
-# 在安装 yutto 时就指定该额外依赖
-pip install yutto[uvloop]
-# 如果已经安装过 yutto，请手动安装下 uvloop
-pip install uvloop
-```
-
-现在再运行就应当会出现「成功使用 uvloop 加速协程」的提示了，至于具体提升多少我也不太清楚啦，没有测过
-
 ### 作为 log 输出到文件
 
 虽说 yutto 不像 bilili 那样会全屏刷新，但进度条还是会一直刷新占据多行，可能影响 log 的阅读，另外颜色码也是难以阅读的，因此我们可以通过选项禁用他们：
