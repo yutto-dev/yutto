@@ -214,14 +214,10 @@ class Fetcher:
                     # TODO: 是否需要校验总大小
                     done = True
 
-                except (
-                    aiohttp.client_exceptions.ClientPayloadError,  # type: ignore
-                    aiohttp.client_exceptions.ClientConnectorError,  # type: ignore
-                    aiohttp.client_exceptions.ServerDisconnectedError,  # type: ignore
-                    aiohttp.client_exceptions.ClientHttpProxyError,  # type: ignore
-                ):
+                except aiohttp.ClientError as e:
                     await asyncio.sleep(0.5)
-                    Logger.warning(f"文件 {file_buffer.file_path} 下载出错，尝试重新连接...")
+                    error_type = e.__class__.__name__
+                    Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...")
 
                 except asyncio.TimeoutError:
                     Logger.warning(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...")
