@@ -147,6 +147,15 @@ def merge_video_and_audio(
     ffmpeg = FFmpeg()
     Logger.info("开始合并……")
 
+    # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
+    # https://aaron.cc/ffmpeg-hevc-apple-devices/
+    # see also: https://github.com/yutto-dev/yutto/issues/85
+    vtag: str | None = None
+    if options["video_save_codec"] == "hevc" or (
+        options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc"
+    ):
+        vtag = "hvc1"
+
     if video is not None and video["codec"] == options["video_save_codec"]:
         options["video_save_codec"] = "copy"
     if audio is not None and audio["codec"] == options["audio_save_codec"]:
@@ -159,6 +168,7 @@ def merge_video_and_audio(
         ["-acodec", options["audio_save_codec"]] if audio is not None else [],
         # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
         ["-strict", "unofficial"],
+        ["-tag:v", vtag] if vtag is not None else [],
         ["-threads", str(os.cpu_count())],
         ["-y", str(output_path)],
     ]
@@ -187,33 +197,43 @@ async def start_downloader(
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
+    require_video = options["require_video"]
+    require_audio = options["require_audio"]
 
     Logger.info(f"开始处理视频 {filename}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
 
-    video = select_video(videos, options["require_video"], options["video_quality"], options["video_download_codec"])
-    audio = select_audio(audios, options["require_audio"], options["audio_quality"], options["audio_download_codec"])
+    video = select_video(videos, options["video_quality"], options["video_download_codec"])
+    audio = select_audio(audios, options["audio_quality"], options["audio_download_codec"])
+    will_download_video = video is not None and require_video
+    will_download_audio = audio is not None and require_audio
 
     # 显示音视频详细信息
-    show_videos_info(videos, videos.index(video) if video is not None else -1)
-    show_audios_info(audios, audios.index(audio) if audio is not None else -1)
+    show_videos_info(
+        videos, videos.index(video) if will_download_video else -1  # pyright: ignore [reportGeneralTypeIssues]
+    )
+    show_audios_info(
+        audios, audios.index(audio) if will_download_audio else -1  # pyright: ignore [reportGeneralTypeIssues]
+    )
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_format = ".mp4" if video is not None else ".aac"
-    output_path = output_dir.joinpath(filename + output_format)
-    if output_path.exists():
-        if not options["overwrite"]:
-            Logger.info(f"文件 {filename} 已存在")
-            return
+    output_format = ".mp4"
+    if not will_download_video:
+        if options["output_format_audio_only"] != "infer":
+            output_format = "." + options["output_format_audio_only"]
+        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
+            output_format = ".flac"
         else:
-            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
-            output_path.unlink()
+            output_format = ".aac"
+    else:
+        if options["output_format"] != "infer":
+            output_format = "." + options["output_format"]
+        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
+            output_format = ".mkv"  # MP4 does not support FLAC audio
 
-    if video is None and audio is None:
-        Logger.warning("没有音视频需要下载")
-        return
+    output_path = output_dir.joinpath(filename + output_format)
 
     # 保存字幕
     if subtitles:
@@ -229,8 +249,8 @@ async def start_downloader(
         write_danmaku(
             danmaku,
             str(output_path),
-            video["height"] if video is not None else 0,
-            video["width"] if video is not None else 0,
+            video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
+            video["width"] if video is not None else 1920,
         )
         Logger.custom("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan"))
 
@@ -238,6 +258,21 @@ async def start_downloader(
     if metadata is not None:
         write_metadata(metadata, str(output_path))
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+
+    if output_path.exists():
+        if not options["overwrite"]:
+            Logger.info(f"文件 {filename} 已存在")
+            return
+        else:
+            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
+            output_path.unlink()
+
+    if not (will_download_audio or will_download_video):
+        Logger.warning("没有音视频需要下载")
+        return
+
+    video = video if will_download_video else None
+    audio = audio if will_download_audio else None
 
     # 下载视频 / 音频
     await download_video_and_audio(session, video, video_path, audio, audio_path, options)

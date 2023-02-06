@@ -4,7 +4,6 @@ from yutto.utils.console.formatter import get_string_width
 
 
 class StatusBar:
-
     _enabled = False
     tip = ""
     _snippers = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]

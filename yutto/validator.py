@@ -15,7 +15,7 @@ from yutto.bilibili_typing.codec import (
 )
 from yutto.exceptions import ErrorCode
 from yutto.processor.selector import validate_episodes_selection
-from yutto.utils.asynclib import initial_async_policy, install_uvloop
+from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.fetcher import Fetcher
@@ -36,9 +36,6 @@ def initial_validate(args: argparse.Namespace):
     # debug 设置
     if args.debug:
         set_logger_debug()
-    else:
-        # 为保证协程错误栈的可读性，debug 模式不启用 uvloop
-        install_uvloop()
 
     # 初始化异步策略，消除平台差异
     initial_async_policy()
@@ -107,11 +104,6 @@ def validate_basic_arguments(args: argparse.Namespace):
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    # video_only 和 audio_only 不能同时设置
-    if not args.require_video and not args.require_audio:
-        Logger.error("video_only 和 audio_only 不能同时设置呀！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
     # 不下载视频无法嵌入字幕
     if not args.require_video and args.embed_subtitle:
         Logger.error("不下载视频时无法嵌入字幕的哦！")
@@ -122,18 +114,13 @@ def validate_basic_arguments(args: argparse.Namespace):
         Logger.error("不下载视频时无法嵌入弹幕的哦！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    # 不下载视频无法生成 ASS 弹幕（ASS 弹幕生成计算依赖于视频分辨率大小）
-    if not args.require_video and not args.no_danmaku and args.danmaku_format == "ass":
-        Logger.error("不下载视频无法生成 ASS 弹幕呀！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
     # 生成字幕才可以嵌入字幕
-    if args.embed_subtitle and args.no_subtitle:
+    if args.embed_subtitle and not args.require_subtitle:
         Logger.error("生成字幕才可以嵌入字幕喔！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
     # 生成 ASS 弹幕才可以嵌入弹幕
-    if args.embed_danmaku and args.no_danmaku:
+    if args.embed_danmaku and not args.require_danmaku:
         Logger.error("生成 ASS 弹幕才可以嵌入弹幕喔！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 

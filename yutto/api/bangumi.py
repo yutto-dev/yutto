@@ -161,14 +161,13 @@ def _bangumi_episode_title(title: str, extra_title: str) -> str:
 
 
 def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
-
     return MetaData(
         title=_bangumi_episode_title(item["title"], item["long_title"]),
         show_title=item["share_copy"],
         plot=item["share_copy"],
         thumb=item["cover"],
         premiered=get_time_str_by_stamp(item["pub_time"]),
-        dataadded=get_time_str_by_now(),
+        dateadded=get_time_str_by_now(),
         source="",  # TODO
         original_filename="",  # TODO
     )

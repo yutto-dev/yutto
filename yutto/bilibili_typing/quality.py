@@ -12,10 +12,10 @@ class Media(Enum):
 
 
 VideoQuality = Literal[127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
-AudioQuality = Literal[30280, 30232, 30216]
+AudioQuality = Literal[30251, 30280, 30232, 30216]
 
 video_quality_priority_default: list[VideoQuality] = [127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
-audio_quality_priority_default: list[AudioQuality] = [30280, 30232, 30216]
+audio_quality_priority_default: list[AudioQuality] = [30251, 30280, 30232, 30216]
 
 video_quality_map = {
     127: {
@@ -76,6 +76,10 @@ video_quality_map = {
 }
 
 audio_quality_map = {
+    30251: {
+        "description": "Hi-Res",
+        "bitrate": 999,
+    },  # Example: BV1eV4y1P7fc
     30280: {
         "description": "320kbps",
         "bitrate": 320,

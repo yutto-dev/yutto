@@ -172,7 +172,7 @@ async def get_ugc_video_playurl(
     #     }
     #   ],
     # }
-    return (
+    videos: list[VideoUrlMeta] = (
         [
             {
                 "url": video["base_url"],
@@ -185,7 +185,9 @@ async def get_ugc_video_playurl(
             for video in resp_json["data"]["dash"]["video"]
         ]
         if resp_json["data"]["dash"]["video"]
-        else [],
+        else []
+    )
+    audios: list[AudioUrlMeta] = (
         [
             {
                 "url": audio["base_url"],
@@ -198,8 +200,22 @@ async def get_ugc_video_playurl(
             for audio in resp_json["data"]["dash"]["audio"]
         ]
         if resp_json["data"]["dash"]["audio"]
-        else [],
+        else []
     )
+    if resp_json["data"]["dash"]["flac"] is not None:
+        hi_res_audio_json = resp_json["data"]["dash"]["flac"]["audio"]
+        audios.append(
+            {
+                "url": hi_res_audio_json["base_url"],
+                "mirrors": hi_res_audio_json["backup_url"] if hi_res_audio_json["backup_url"] is not None else [],
+                "codec": "fLaC",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
+                "width": 0,
+                "height": 0,
+                "quality": hi_res_audio_json["id"],
+            }
+        )
+
+    return (videos, audios)
 
 
 async def get_ugc_video_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
@@ -232,7 +248,7 @@ def _parse_ugc_video_metadata(video_info: _UgcVideoInfo, page_info: _UgcVideoPag
         plot=video_info["description"],
         thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
         premiered=get_time_str_by_stamp(video_info["pubdate"]),
-        dataadded=get_time_str_by_now(),
+        dateadded=get_time_str_by_now(),
         source="",  # TODO
         original_filename="",  # TODO
     )

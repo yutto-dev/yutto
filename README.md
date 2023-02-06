@@ -182,6 +182,7 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 <!-- prettier-ignore -->
 |code|码率|
 |:-:|:-:|
+|30251| - (Hi-Res) |
 |30280|320kbps|
 |30232|128kbps|
 |30216|64kbps|
@@ -210,19 +211,31 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 
 详情同视频编码。
 
-#### 仅下载视频流
+#### 指定输出格式
 
--  参数 `--video-only`
--  默认值 `False`
+-  参数 `--output-format`
+-  可选值 `"infer" | "mp4" | "mkv" | "mov"`
+-  默认值 `"infer"`
 
-#### 仅下载音频流
+在至少包含视频流时所使用的输出格式，默认选值 `"infer"` 表示自动根据情况进行推导以保证输出的可用，推导规则如下：
 
--  参数 `--audio-only`
--  默认值 `False`
+-  如果输出包含音频流且音频流编码为 `"fLaC"`，则输出格式为 `"mkv"`，因为 `"mp4"` 尚不支持 `"fLaC"` 编码
+-  否则为 `"mp4"`
 
-仅下载其中的音频流，保存为 `.aac` 文件。
+#### 指定在仅包含音频流时的输出格式
 
-值得注意的是，在不选择视频流时，嵌入字幕、弹幕功能将无法工作。
+-  参数 `--output-format-audio-only`
+-  可选值 `"infer" | "aac" | "flac" | "mp4" | "mkv" | "mov"`
+-  默认值 `"infer"`
+
+在仅包含音频流时所使用的输出格式，默认选值 `"infer"` 表示自动根据情况进行推导以保证输出的可用，推导规则如下：
+
+-  如果音频流编码为 `"fLaC"`，则输出格式为 `"flac"`
+-  否则为 `"aac"`
+
+> **Note**
+>
+> 并不是仅仅在指定 `--audio-only` 时才会仅仅包含视频流，有些视频是仅包含音频流的，此时即便不指定 `--audio-only` 选项也会按照本选项的格式进行输出。
 
 #### 弹幕格式选择
 
@@ -264,6 +277,31 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动�
 -  参数 `--tmp-dir`
 -  默认值是“存放根目录”即 `-d, --dir` 的值
 
+#### Cookies 设置
+
+-  参数 `-c` 或 `--sessdata`
+-  默认值 `""`
+
+设置 Cookies 后你才可以下载更高清晰度以及更多的剧集，当你传入你的大会员 `SESSDATA` 时（当然前提是你是大会员），你就可以下载大会员可访问的资源咯。
+
+<details><summary> SESSDATA 获取方式 </summary>
+
+这里用 Chrome 作为示例，其它浏览器请尝试类似方法。
+
+首先，用你的帐号登录 B 站，然后随便打开一个 B 站网页，比如[首页](https://www.bilibili.com/)。
+
+按 F12 打开开发者工具，切换到 Network 栏，刷新页面，此时第一个加载的资源应该就是当前页面的 html，选中该资源，在右侧 「Request Headers」 中找到 「cookie」，在其中找到类似于 `SESSDATA=d8bc7493%2C2843925707%2C08c3e*81;` 的一串字符串，复制这里的 `d8bc7493%2C2843925707%2C08c3e*81`，这就是你需要的 `SESSDATA`。
+
+</details>
+
+另外，由于 SESSDATA 中可能有特殊符号，所以传入时你可能需要使用双引号来包裹
+
+```bash
+yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
+```
+
+当然，示例里的 SESSDATA 是无效的，请使用自己的 SESSDATA。
+
 #### 存放子路径模板
 
 -  参数 `-tp` 或 `--subpath-template`
@@ -287,7 +325,10 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动�
 |username|UP 主用户名|个人空间、收藏夹、合集、视频列表下载|
 |series_title|合集标题|收藏夹、视频合集、视频列表下载|
 |pubdate|投稿日期|仅投稿视频|
+|download_date|下载日期|全部|
 
+> **Note**
+>
 > 未来可能会对路径变量及默认路径模板进行调整
 
 #### url 别名文件路径
@@ -315,39 +356,54 @@ yutto rimuru1 --batch --alias-file='~/.yutto_alias'
 cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 ```
 
-#### Cookies 设置
+#### 仅下载视频流
 
--  参数 `-c` 或 `--sessdata`
--  默认值 `""`
+-  参数 `--video-only`
+-  默认值 `False`
 
-设置 Cookies 后你才可以下载更高清晰度以及更多的剧集，当你传入你的大会员 `SESSDATA` 时（当然前提是你是大会员），你就可以下载大会员可访问的资源咯。
+> **Note**
+>
+> 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
+>
+> 「仅下载音频流」也是同样的。
 
-<details><summary> SESSDATA 获取方式 </summary>
+#### 仅下载音频流
 
-这里用 Chrome 作为示例，其它浏览器请尝试类似方法。
+-  参数 `--audio-only`
+-  默认值 `False`
 
-首先，用你的帐号登录 B 站，然后随便打开一个 B 站网页，比如[首页](https://www.bilibili.com/)。
+仅下载其中的音频流，保存为 `.aac` 文件。
 
-按 F12 打开开发者工具，切换到 Network 栏，刷新页面，此时第一个加载的资源应该就是当前页面的 html，选中该资源，在右侧 「Request Headers」 中找到 「cookie」，在其中找到类似于 `SESSDATA=d8bc7493%2C2843925707%2C08c3e*81;` 的一串字符串，复制这里的 `d8bc7493%2C2843925707%2C08c3e*81`，这就是你需要的 `SESSDATA`。
-
-</details>
-
-另外，由于 SESSDATA 中可能有特殊符号，所以传入时你可能需要使用双引号来包裹
-
-```bash
-yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
-```
-
-当然，示例里的 SESSDATA 是无效的，请使用自己的 SESSDATA。
-
-#### 不下载弹幕
+#### 不生成弹幕文件
 
 -  参数 `--no-danmaku`
 -  默认值 `False`
 
-#### 不下载字幕
+#### 仅生成弹幕文件
+
+-  参数 `--danmaku-only`
+-  默认值 `False`
+
+#### 不生成字幕文件
 
 -  参数 `--no-subtitle`
+-  默认值 `False`
+
+#### 仅生成字幕文件
+
+-  参数 `--subtitle-only`
+-  默认值 `False`
+
+#### 生成媒体元数据文件
+
+-  参数 `--with-metadata`
+-  默认值 `False`
+
+目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
+
+#### 仅生成媒体元数据文件
+
+-  参数 `--metadata-only`
 -  默认值 `False`
 
 #### 不显示颜色
@@ -364,13 +420,6 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 
 -  参数 `--debug`
 -  默认值 `False`
-
-#### 生成媒体元数据文件
-
--  参数 `--with-metadata`
--  默认值 `False`
-
-目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
 
 </details>
 
@@ -479,19 +528,6 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 ## 小技巧
 
-### 使用 uvloop 提升协程效率
-
-听说 uvloop 可以提高协程效率，如果你的系统非 Windows 的话，可以试一下安装 uvloop：
-
-```bash
-# 在安装 yutto 时就指定该额外依赖
-pip install yutto[uvloop]
-# 如果已经安装过 yutto，请手动安装下 uvloop
-pip install uvloop
-```
-
-现在再运行就应当会出现「成功使用 uvloop 加速协程」的提示了，至于具体提升多少我也不太清楚啦，没有测过
-
 ### 作为 log 输出到文件
 
 虽说 yutto 不像 bilili 那样会全屏刷新，但进度条还是会一直刷新占据多行，可能影响 log 的阅读，另外颜色码也是难以阅读的，因此我们可以通过选项禁用他们：
@@ -580,7 +616,7 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 
 ### yutto 会替代 bilili 吗
 
-yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～
+yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～（咳，正式版早着呢，我现在都懒得 rc，一直 beta 下去挺好的 ξ( ✿ ＞ ◡❛)）
 
 ## Roadmap
 
@@ -597,8 +633,8 @@ yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bili
 -  [x] refactor: 整理路径变量名
 -  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
 -  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑
--  [ ] docs: 可爱的静态文档
+-  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Disscusing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
+-  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 

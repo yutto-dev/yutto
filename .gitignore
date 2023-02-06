@@ -120,7 +120,10 @@ dmypy.json
 # Media files
 *.aac
 *.mp3
+*.flac
 *.mp4
+*.mkv
+*.mov
 *.m4s
 *.xml
 *.pb
