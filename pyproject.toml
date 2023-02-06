@@ -32,7 +32,7 @@ typing-extensions = "^4.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2"
-black = "^22.12"
+black = "^23.1"
 isort = "^5.11.3"
 pyright = "^1.1.284"
 pytest-rerunfailures = "^11.0"
