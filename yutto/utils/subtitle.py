@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypedDict, Union
+from typing import TypedDict
 
-SubtitleLineData = TypedDict("SubtitleLineData", {"content": str, "from": int, "to": int})
-
+SubtitleLineData = TypedDict(  # noqa: UP013
+    "SubtitleLineData",
+    {
+        "content": str,
+        "from": int,  # This attribute is a keyword in Python, so it can not convert to class syntax
+        "to": int,
+    },
+)
 
 SubtitleData = list[SubtitleLineData]
 
@@ -25,7 +31,7 @@ class Subtitle:
         seconds = int(seconds)
         minutes, sec = seconds // 60, seconds % 60
         hour, min = minutes // 60, minutes % 60
-        return "{:02}:{:02}:{:02},{:03}".format(hour, min, sec, ms)
+        return f"{hour:02}:{min:02}:{sec:02},{ms:03}"
 
     def write_subtitle(self, subtitle_line_data: SubtitleLineData) -> None:
         self._count += 1
@@ -39,7 +45,7 @@ class Subtitle:
         return self._text
 
 
-def write_subtitle(subtitle_data: SubtitleData, video_path: Union[str, Path], lang: str):
+def write_subtitle(subtitle_data: SubtitleData, video_path: str | Path, lang: str):
     video_path = Path(video_path)
     video_name = video_path.stem
     sub = Subtitle()

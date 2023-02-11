@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import argparse
 import re
-from typing import Any, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any
 
 import aiohttp
 
@@ -55,7 +56,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         try:
             ugc_video_list = await get_ugc_video_list(session, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))

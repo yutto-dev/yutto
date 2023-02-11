@@ -42,7 +42,7 @@ def initial_validate(args: argparse.Namespace):
 
     # proxy 校验
     if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
-        Logger.error("proxy 参数值（{}）错误啦！".format(args.proxy))
+        Logger.error(f"proxy 参数值（{args.proxy}）错误啦！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     Fetcher.set_proxy(args.proxy)
 
@@ -65,7 +65,7 @@ def validate_basic_arguments(args: argparse.Namespace):
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
     if len(vcodec_splited) != 2:
-        Logger.error("vcodec 参数值（{}）不满足要求哦（并非使用 : 分隔的值）".format(args.vcodec))
+        Logger.error(f"vcodec 参数值（{args.vcodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     video_download_codec, video_save_codec = vcodec_splited
     if video_download_codec not in video_codec_priority_default:
@@ -86,7 +86,7 @@ def validate_basic_arguments(args: argparse.Namespace):
     # acodec 检查
     acodec_splited = args.acodec.split(":")
     if len(acodec_splited) != 2:
-        Logger.error("acodec 参数值（{}）不满足要求哦（并非使用 : 分隔的值）".format(args.acodec))
+        Logger.error(f"acodec 参数值（{args.acodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     audio_download_codec, audio_save_codec = acodec_splited
     if audio_download_codec not in audio_codec_priority_default:
@@ -135,7 +135,7 @@ def validate_batch_argments(args: argparse.Namespace):
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
     if not validate_episodes_selection(args.episodes):
         # TODO: 错误信息链接到相应文档，当然需要先写文档……
-        Logger.error("选集参数（{}）格式不正确呀～重新检查一下下～".format(args.episodes))
+        Logger.error(f"选集参数（{args.episodes}）格式不正确呀～重新检查一下下～")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 

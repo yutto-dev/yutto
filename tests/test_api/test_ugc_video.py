@@ -33,7 +33,7 @@ async def test_get_ugc_video_info():
         assert video_info["aid"] == aid
         assert video_info["bvid"] == bvid
         assert video_info["episode_id"] == episode_id
-        assert video_info["is_bangumi"] == True
+        assert video_info["is_bangumi"] is True
         assert video_info["cid"] == CId("144541892")
         assert video_info["title"] == "【独播】我的三体之章北海传 第1集"
 

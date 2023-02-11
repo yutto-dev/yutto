@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import re
-from typing import Any, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any
 
 import aiohttp
 
@@ -40,7 +41,7 @@ class SeriesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         username, series_title = await asyncio.gather(
             get_user_name(session, self.mid), get_medialist_title(session, self.series_id)
         )

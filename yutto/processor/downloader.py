@@ -3,8 +3,9 @@ from __future__ import annotations
 import asyncio
 import functools
 import os
+from collections.abc import Coroutine
 from pathlib import Path
-from typing import Any, Coroutine, Optional, Union
+from typing import Any
 
 import aiohttp
 
@@ -23,9 +24,7 @@ from yutto.utils.metadata import write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 
-def slice_blocks(
-    start: int, total_size: Optional[int], block_size: Optional[int] = None
-) -> list[tuple[int, Optional[int]]]:
+def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
     """生成分块后的 (start, size) 序列
 
     ### Args
@@ -43,7 +42,7 @@ def slice_blocks(
     if block_size is None:
         return [(0, total_size - 1)]
     assert start <= total_size, f"起始地址（{start}）大于总地址（{total_size}）"
-    offset_list: list[tuple[int, Optional[int]]] = [(i, block_size) for i in range(start, total_size, block_size)]
+    offset_list: list[tuple[int, int | None]] = [(i, block_size) for i in range(start, total_size, block_size)]
     if (total_size - start) % block_size != 0:
         offset_list[-1] = (
             start + (total_size - start) // block_size * block_size,
@@ -90,16 +89,16 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 
 async def download_video_and_audio(
     session: aiohttp.ClientSession,
-    video: Optional[VideoUrlMeta],
-    video_path: Union[str, Path],
-    audio: Optional[AudioUrlMeta],
-    audio_path: Union[str, Path],
+    video: VideoUrlMeta | None,
+    video_path: str | Path,
+    audio: AudioUrlMeta | None,
+    audio_path: str | Path,
     options: DownloaderOptions,
 ):
     """下载音视频"""
 
-    buffers: list[Optional[AsyncFileBuffer]] = [None, None]
-    sizes: list[Optional[int]] = [None, None]
+    buffers: list[AsyncFileBuffer | None] = [None, None]
+    sizes: list[int | None] = [None, None]
     coroutines_list: list[list[Coroutine[Any, Any, None]]] = []
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
@@ -135,11 +134,11 @@ async def download_video_and_audio(
 
 
 def merge_video_and_audio(
-    video: Optional[VideoUrlMeta],
-    video_path: Union[str, Path],
-    audio: Optional[AudioUrlMeta],
-    audio_path: Union[str, Path],
-    output_path: Union[str, Path],
+    video: VideoUrlMeta | None,
+    video_path: str | Path,
+    audio: AudioUrlMeta | None,
+    audio_path: str | Path,
+    output_path: str | Path,
     options: DownloaderOptions,
 ):
     """合并音视频"""

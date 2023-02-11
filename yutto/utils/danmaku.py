@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Union
+from typing import Literal, TypedDict, Union
 
 from biliass import Danmaku2ASS
 
@@ -14,28 +14,28 @@ DanmakuSourceDataType = Union[DanmakuSourceDataXml, DanmakuSourceDataProtobuf]
 
 
 class DanmakuData(TypedDict):
-    source_type: Optional[DanmakuSourceType]
-    save_type: Optional[DanmakuSaveType]
+    source_type: DanmakuSourceType | None
+    save_type: DanmakuSaveType | None
     data: list[DanmakuSourceDataType]
 
 
 EmptyDanmakuData: DanmakuData = {"source_type": None, "save_type": None, "data": []}
 
 
-def write_xml_danmaku(xml_danmaku: str, filepath: Union[str, Path]):
+def write_xml_danmaku(xml_danmaku: str, filepath: str | Path):
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(xml_danmaku)
 
 
-def write_protobuf_danmaku(protobuf_danmaku: bytes, filepath: Union[str, Path]):
+def write_protobuf_danmaku(protobuf_danmaku: bytes, filepath: str | Path):
     with open(filepath, "wb") as f:
         f.write(protobuf_danmaku)
 
 
 def write_ass_danmaku(
-    danmaku: list[Union[str, bytes]],
+    danmaku: list[str | bytes],
     input_format: Literal["xml", "protobuf"],
-    filepath: Union[str, Path],
+    filepath: str | Path,
     height: int,
     width: int,
 ):
@@ -64,7 +64,7 @@ def write_ass_danmaku(
         )
 
 
-def write_danmaku(danmaku: DanmakuData, video_path: Union[str, Path], height: int, width: int) -> Optional[str]:
+def write_danmaku(danmaku: DanmakuData, video_path: str | Path, height: int, width: int) -> str | None:
     video_path = Path(video_path)
     video_name = video_path.stem
     if danmaku["source_type"] == "xml":

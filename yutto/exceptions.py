@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from enum import Enum
 from types import TracebackType
-from typing import Type, Union
+from typing import Union
 
 
 class ErrorCode(Enum):
@@ -58,7 +58,7 @@ class NotFoundError(YuttoBaseException):
     code = ErrorCode.NOT_FOUND_ERROR
 
 
-def handleUncaughtException(exctype: Type[Exception], exception: Exception, trace: TracebackType):
+def handleUncaughtException(exctype: type[Exception], exception: Exception, trace: TracebackType):
     oldHook(exctype, exception, trace)
     if isinstance(exception, YuttoBaseException):
         sys.exit(exception.code.value)

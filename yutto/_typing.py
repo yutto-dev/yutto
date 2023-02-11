@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import NamedTuple, Optional, TypedDict
+from typing import NamedTuple, TypedDict
 
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
 from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
@@ -163,7 +163,7 @@ class EpisodeData(TypedDict):
     videos: list[VideoUrlMeta]
     audios: list[AudioUrlMeta]
     subtitles: list[MultiLangSubtitle]
-    metadata: Optional[MetaData]
+    metadata: MetaData | None
     danmaku: DanmakuData
     output_dir: str
     tmp_dir: str

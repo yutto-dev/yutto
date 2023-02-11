@@ -564,19 +564,19 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "2.6.2"
+version = "3.0.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-2.6.2-py3-none-any.whl", hash = "sha256:83c8f6d04389165de7c9b6f0c682439697887bca0aa2f1c87ef1826be3584490"},
-    {file = "platformdirs-2.6.2.tar.gz", hash = "sha256:e1fea1fe471b9ff8332e229df3cb7de4f53eeea4998d3b6bfff542115e998bd2"},
+    {file = "platformdirs-3.0.0-py3-none-any.whl", hash = "sha256:b1d5eb14f221506f50d6604a561f4c5786d9e80355219694a1b244bcd96f4567"},
+    {file = "platformdirs-3.0.0.tar.gz", hash = "sha256:8a1228abb1ef82d788f74139988b137e78692984ec7b08eaa6c65f1723af28f9"},
 ]
 
 [package.extras]
-docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=5.3)", "sphinx-autodoc-typehints (>=1.19.5)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
+docs = ["furo (>=2022.12.7)", "proselint (>=0.13)", "sphinx (>=6.1.3)", "sphinx-autodoc-typehints (>=1.22,!=1.23.4)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest (>=7.2.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
 
 [[package]]
 name = "pluggy"
@@ -620,14 +620,14 @@ files = [
 
 [[package]]
 name = "pyright"
-version = "1.1.292"
+version = "1.1.293"
 description = "Command line wrapper for pyright"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyright-1.1.292-py3-none-any.whl", hash = "sha256:23d1f14b15afe38bb7a7117b9861ad0546aff078da312d294e60a727445c23ff"},
-    {file = "pyright-1.1.292.tar.gz", hash = "sha256:035ea1af6fabfdcc80c0afb545f677bd377114157d69779cce2a642ff894e51c"},
+    {file = "pyright-1.1.293-py3-none-any.whl", hash = "sha256:afc05309e775a9869c864da4e8c0c7a3e3be9d8fe202e780c3bae981bbb13936"},
+    {file = "pyright-1.1.293.tar.gz", hash = "sha256:9397fdfcbc684fe5b87abbf9c27f540fe3b8d75999a5f187519cae1d065be38c"},
 ]
 
 [package.dependencies]
@@ -663,14 +663,14 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.
 
 [[package]]
 name = "pytest-rerunfailures"
-version = "11.0"
+version = "11.1"
 description = "pytest plugin to re-run tests to eliminate flaky failures"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-rerunfailures-11.0.tar.gz", hash = "sha256:cee59e4e6f0d73ae63fba099865314ba9b915b719349541110fa012ffb6efb13"},
-    {file = "pytest_rerunfailures-11.0-py3-none-any.whl", hash = "sha256:b8c535b6c353de8c4b39258216512c64f288e4d349e86877583a08b2f5ea5441"},
+    {file = "pytest-rerunfailures-11.1.tar.gz", hash = "sha256:bc6ad13614c976b04558c3a7bcc393a7e09686fb86b6ae73f827b78326c09f75"},
+    {file = "pytest_rerunfailures-11.1-py3-none-any.whl", hash = "sha256:9acd6cb19e3ba2f9191ecaaa15428348c2dead2e99a56f7e63479c0a3aabfeb8"},
 ]
 
 [package.dependencies]
@@ -678,15 +678,41 @@ packaging = ">=17.1"
 pytest = ">=5.3"
 
 [[package]]
+name = "ruff"
+version = "0.0.245"
+description = "An extremely fast Python linter, written in Rust."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ruff-0.0.245-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:9f3210cd7faa00894c7dbdb5c370e43f43481193bceb96da5e5cded3f4079e64"},
+    {file = "ruff-0.0.245-py3-none-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:776acbadbac4feb9d6f077963a1b339ce6374d5911464587c304a5705bac47e0"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:adc5def9e3a6d998f2c2121011b44fee235c92dbf5417a80f0b40b38a72bd722"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:4f7309411dc185ab21fb0940825fac29fc6d064c200324eec86c40364691382c"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d0fee8371d8624cb1efd6464a17832ad23761050456fb33e1e4e24ca0dfddbc1"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:95ac8826f11f027866f5fe8bfaccf2ac4882347b4845e7ff196ad880f5b3e508"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:11a8bf37b51108499bb0660d43786be1a6979057d491115c9c8ec362f98e839a"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:fb4fc2ab7a121309c45e35759f369c14b03a32b5d5b7ffa65335aecc41668de3"},
+    {file = "ruff-0.0.245-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:db68fce0818e24a766a03c2abc57a2445ccd6fd3e83f9cfb26e092bc6aac6162"},
+    {file = "ruff-0.0.245-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:7824ca46abe7b26cba8f4ca3f2124d2315331e4aad546409feec41f929139500"},
+    {file = "ruff-0.0.245-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:460600ddccb9586f88d24cc6cbef3bf87bb77a1d57aba9ed900f42591e0fa7a7"},
+    {file = "ruff-0.0.245-py3-none-musllinux_1_2_i686.whl", hash = "sha256:6d8c93ba539e9a43191ce86d740b1e7d2a58491902255383ff0e625e95c85d15"},
+    {file = "ruff-0.0.245-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:97b440d6fba04042be810111090429d3f90434f1d642e5d14e4f25e02cbe67ba"},
+    {file = "ruff-0.0.245-py3-none-win32.whl", hash = "sha256:36e11d525a9b282b78892d5d82a9bf0def17dd9c83354a8e01f852cf43cde5ce"},
+    {file = "ruff-0.0.245-py3-none-win_amd64.whl", hash = "sha256:5982a169e3c511f72eddcd9e05206441ded6017e8d90e1cebf6cb9dfbf80311c"},
+    {file = "ruff-0.0.245.tar.gz", hash = "sha256:57e85121b270b3f596391ae3c7c39941619abfc27a6cf372cf0aa525b8ca18e4"},
+]
+
+[[package]]
 name = "setuptools"
-version = "67.1.0"
+version = "67.2.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "setuptools-67.1.0-py3-none-any.whl", hash = "sha256:a7687c12b444eaac951ea87a9627c4f904ac757e7abdc5aac32833234af90378"},
-    {file = "setuptools-67.1.0.tar.gz", hash = "sha256:e261cdf010c11a41cb5cb5f1bf3338a7433832029f559a6a7614bd42a967c300"},
+    {file = "setuptools-67.2.0-py3-none-any.whl", hash = "sha256:16ccf598aab3b506593c17378473978908a2734d7336755a8769b480906bec1c"},
+    {file = "setuptools-67.2.0.tar.gz", hash = "sha256:b440ee5f7e607bb8c9de15259dba2583dd41a38879a7abc1d43a71c59524da48"},
 ]
 
 [package.extras]
@@ -809,4 +835,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "e4b45134003c6b15db1e980fd2d67d640dd195c3ad1eaa88b7b5c67b50d235d8"
+content-hash = "97a50087d6ec3085dffbe2b3117dbe5625d87463378d913fe9de9c64e3c633ff"

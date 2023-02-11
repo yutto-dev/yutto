@@ -14,10 +14,10 @@ class FFmpegNotFoundError(Exception):
         super().__init__("请配置正确的 FFmpeg 路径")
 
 
-class FFmpeg(object, metaclass=Singleton):
+class FFmpeg(metaclass=Singleton):
     def __init__(self, ffmpeg_path: str = "ffmpeg"):
         try:
-            if subprocess.run([ffmpeg_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode != 1:
+            if subprocess.run([ffmpeg_path], capture_output=True).returncode != 1:
                 raise FFmpegNotFoundError()
         except FileNotFoundError:
             raise FFmpegNotFoundError()
@@ -28,7 +28,7 @@ class FFmpeg(object, metaclass=Singleton):
         cmd = [self.path]
         cmd.extend(args)
         Logger.debug(" ".join(cmd))
-        return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return subprocess.run(cmd, capture_output=True)
 
     @cached_property
     def version(self) -> str:

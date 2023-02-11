@@ -36,6 +36,7 @@ black = "^23.1"
 isort = "^5.11.3"
 pyright = "^1.1.284"
 pytest-rerunfailures = "^11.0"
+ruff = "^0.0.245"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"
@@ -53,11 +54,33 @@ line-length = 120
 profile = "black"
 add_imports = ["from __future__ import annotations"]
 skip = ["setup.py", ".venv"]
+known_first_party = ["yutto"]
 
 [tool.pyright]
 include = ["yutto", "tests"]
 pythonVersion = "3.9"
 typeCheckingMode = "strict"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+select = [
+  # Pyflakes
+  "F",
+  # Pycodestyle
+  "E",
+  "W",
+  # Pyupgrade
+  "UP",
+  # Flake8-pyi
+  "PYI",
+]
+ignore = [
+  "E501",  # line too long, duplicate with black
+  "F401",  # imported but unused, duplicate with pyright
+  "F841",  # local variable is assigned to but never used, duplicate with pyright
+  "UP015", # it's not meet the "Explicit is better than implicit" principle
+]
 
 [build-system]
 requires = ["poetry_core>=1.1.0"]

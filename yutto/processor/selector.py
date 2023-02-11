@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Optional
 
 from yutto.api.ugc_video import AudioUrlMeta, VideoUrlMeta
 from yutto.bilibili_typing.codec import (
@@ -25,7 +24,7 @@ def select_video(
     videos: list[VideoUrlMeta],
     video_quality: VideoQuality = 127,
     video_codec: VideoCodec = "hevc",
-) -> Optional[VideoUrlMeta]:
+) -> VideoUrlMeta | None:
     video_quality_priority = gen_video_quality_priority(video_quality)
     video_codec_priority = gen_vcodec_priority(video_codec)
 
@@ -49,7 +48,7 @@ def select_audio(
     audios: list[AudioUrlMeta],
     audio_quality: AudioQuality = 30280,
     audio_codec: AudioCodec = "mp4a",
-) -> Optional[AudioUrlMeta]:
+) -> AudioUrlMeta | None:
     audio_quality_priority = gen_audio_quality_priority(audio_quality)
     audio_codec_priority = gen_acodec_priority(audio_codec)
 
@@ -101,14 +100,14 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
             if "~" in episode_item:
                 splitted = episode_item.split("~")
                 if len(splitted) != 2:
-                    Logger.error("{} 选集参数每部分至多包含一个 ~".format(episode_item))
+                    Logger.error(f"{episode_item} 选集参数每部分至多包含一个 ~")
                     sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
                 start, end = splitted
                 start, end = "1" if not start else start, "-1" if not end else end
                 start, end = int(start), int(end)
                 start, end = resolve_negetive(start), resolve_negetive(end)
                 if not (end >= start):
-                    Logger.error("终点值（{}）应不小于起点值（{}）".format(end, start))
+                    Logger.error(f"终点值（{end}）应不小于起点值（{start}）")
                     sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
                 episode_list.extend(list(range(start, end + 1)))
             else:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import urllib
 import urllib.request
-from typing import Optional, TextIO
+from typing import TextIO
 
 from yutto.utils.console.logger import Logger
 
@@ -15,7 +15,7 @@ def is_comment(line: str) -> bool:
     return False
 
 
-def alias_parser(f_alias: Optional[TextIO]) -> dict[str, str]:
+def alias_parser(f_alias: TextIO | None) -> dict[str, str]:
     if f_alias is None:
         return {}
     f_alias.seek(0)

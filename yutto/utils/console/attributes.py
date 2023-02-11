@@ -4,7 +4,6 @@ import os
 import platform
 import shutil
 import sys
-from typing import Optional
 
 
 def get_terminal_size() -> tuple[int, int]:
@@ -15,8 +14,8 @@ def get_terminal_size() -> tuple[int, int]:
     - https://github.com/willmcgugan/rich/blob/e5246436cd75de32f3436cc88d6e4fdebe13bd8d/rich/console.py#L918-L951
     """
 
-    width: Optional[int] = None
-    height: Optional[int] = None
+    width: int | None = None
+    height: int | None = None
     if platform.system() == "Windows":
         width, height = shutil.get_terminal_size()
     else:

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Optional
 
 import aiohttp
 
@@ -40,7 +39,7 @@ async def extract_bangumi_data(
     args: argparse.Namespace,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
-) -> Optional[EpisodeData]:
+) -> EpisodeData | None:
     try:
         avid = bangumi_info["avid"]
         cid = bangumi_info["cid"]
@@ -85,7 +84,7 @@ async def extract_ugc_video_data(
     args: argparse.Namespace,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
-) -> Optional[EpisodeData]:
+) -> EpisodeData | None:
     try:
         cid = ugc_video_info["cid"]
         name = ugc_video_info["name"]

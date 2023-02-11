@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import argparse
 from abc import ABCMeta, abstractmethod
-from typing import Any, Coroutine, Optional, TypeVar
+from collections.abc import Coroutine
+from typing import Any, TypeVar
 
 import aiohttp
 
@@ -24,31 +25,31 @@ class Extractor(metaclass=ABCMeta):
     @abstractmethod
     async def __call__(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         raise NotImplementedError
 
 
 class SingleExtractor(Extractor):
     async def __call__(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         return [await self.extract(session, args)]
 
     @abstractmethod
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> Optional[Coroutine[Any, Any, Optional[EpisodeData]]]:
+    ) -> Coroutine[Any, Any, EpisodeData | None] | None:
         raise NotImplementedError
 
 
 class BatchExtractor(Extractor):
     async def __call__(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         return await self.extract(session, args)
 
     @abstractmethod
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         raise NotImplementedError

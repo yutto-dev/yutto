@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import argparse
 import re
-from typing import Any, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any
 
 import aiohttp
 
@@ -69,7 +70,7 @@ class BangumiBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
         await self._parse_ids(session)
 
         bangumi_list = await get_bangumi_list(session, self.season_id)

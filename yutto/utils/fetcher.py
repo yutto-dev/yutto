@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import random
-from typing import Any, Callable, Coroutine, Literal, Optional, TypeVar, Union
+from collections.abc import Coroutine
+from typing import Any, Callable, Literal, TypeVar
 from urllib.parse import quote, unquote
 
 import aiohttp
@@ -46,7 +47,7 @@ class MaxRetry:
 
 
 class Fetcher:
-    proxy: Optional[str] = None
+    proxy: str | None = None
     trust_env: bool = True
     headers: dict[str, str] = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36",
@@ -57,7 +58,7 @@ class Fetcher:
     _touch_set: set[str] = set()
 
     @classmethod
-    def set_proxy(cls, proxy: Union[Literal["no", "auto"], str]):
+    def set_proxy(cls, proxy: Literal["no", "auto"] | str):
         if proxy == "auto":
             Fetcher.proxy = None
             Fetcher.trust_env = True
@@ -80,7 +81,7 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> Optional[str]:
+    async def fetch_text(cls, session: ClientSession, url: str, encoding: str | None = None) -> str | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
@@ -91,7 +92,7 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_bin(cls, session: ClientSession, url: str) -> Optional[bytes]:
+    async def fetch_bin(cls, session: ClientSession, url: str) -> bytes | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
@@ -102,7 +103,7 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_json(cls, session: ClientSession, url: str) -> Optional[Any]:
+    async def fetch_json(cls, session: ClientSession, url: str) -> Any | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch json: {url}")
             Logger.status.next_tick()
@@ -133,7 +134,7 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
+    async def get_size(cls, session: ClientSession, url: str) -> int | None:
         async with cls.semaphore:
             headers = session.headers.copy()
             headers["Range"] = "bytes=0-1"
@@ -174,7 +175,7 @@ class Fetcher:
         mirrors: list[str],
         file_buffer: AsyncFileBuffer,
         offset: int,
-        size: Optional[int],
+        size: int | None,
         stream: bool = True,
     ) -> None:
         async with cls.semaphore:

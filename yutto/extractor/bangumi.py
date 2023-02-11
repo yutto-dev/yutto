@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from typing import Any, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any
 
 import aiohttp
 
@@ -47,7 +48,7 @@ class BangumiExtractor(SingleExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> Optional[Coroutine[Any, Any, Optional[EpisodeData]]]:
+    ) -> Coroutine[Any, Any, EpisodeData | None] | None:
         season_id = await get_season_id_by_episode_id(session, self.episode_id)
         bangumi_list = await get_bangumi_list(session, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))

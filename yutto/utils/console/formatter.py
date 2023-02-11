@@ -54,6 +54,6 @@ def get_string_width(string: str) -> int:
     string = no_colored_string(string)
     try:
         length = sum([get_char_width(c) for c in string])
-    except:
+    except Exception:
         length = len(string)
     return length
