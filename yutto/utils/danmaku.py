@@ -22,25 +22,24 @@ class DanmakuData(TypedDict):
 EmptyDanmakuData: DanmakuData = {"source_type": None, "save_type": None, "data": []}
 
 
-def write_xml_danmaku(xml_danmaku: str, filepath: str | Path):
-    with open(filepath, "w", encoding="utf-8") as f:
+def write_xml_danmaku(xml_danmaku: str, filepath: Path):
+    with filepath.open("w", encoding="utf-8") as f:
         f.write(xml_danmaku)
 
 
-def write_protobuf_danmaku(protobuf_danmaku: bytes, filepath: str | Path):
-    with open(filepath, "wb") as f:
+def write_protobuf_danmaku(protobuf_danmaku: bytes, filepath: Path):
+    with filepath.open("wb") as f:
         f.write(protobuf_danmaku)
 
 
 def write_ass_danmaku(
     danmaku: list[str | bytes],
     input_format: Literal["xml", "protobuf"],
-    filepath: str | Path,
+    filepath: Path,
     height: int,
     width: int,
 ):
-    with open(
-        filepath,
+    with filepath.open(
         "w",
         encoding="utf-8-sig",
         errors="replace",

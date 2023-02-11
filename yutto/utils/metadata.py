@@ -18,13 +18,12 @@ class MetaData(TypedDict):
     original_filename: str
 
 
-def write_metadata(metadata: MetaData, video_path: str | Path):
-    video_path = Path(video_path)
+def write_metadata(metadata: MetaData, video_path: Path):
     metadata_path = video_path.with_suffix(".nfo")
     custom_root = "episodedetails"
 
     xml_content = dicttoxml.dicttoxml(metadata, custom_root=custom_root, attr_type=False)  # type: ignore
     dom = parseString(xml_content)  # type: ignore
     pretty_content = dom.toprettyxml()  # type: ignore
-    with open(metadata_path, "w", encoding="utf-8") as f:  # type: ignore
+    with metadata_path.open("w", encoding="utf-8") as f:  # type: ignore
         f.write(pretty_content)  # type: ignore

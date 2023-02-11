@@ -74,12 +74,13 @@ select = [
   "UP",
   # Flake8-pyi
   "PYI",
+  # Flake8-use-pathlib
+  "PTH"
 ]
 ignore = [
   "E501",  # line too long, duplicate with black
   "F401",  # imported but unused, duplicate with pyright
   "F841",  # local variable is assigned to but never used, duplicate with pyright
-  "UP015", # it's not meet the "Explicit is better than implicit" principle
 ]
 
 [build-system]

@@ -90,9 +90,9 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 async def download_video_and_audio(
     session: aiohttp.ClientSession,
     video: VideoUrlMeta | None,
-    video_path: str | Path,
+    video_path: Path,
     audio: AudioUrlMeta | None,
-    audio_path: str | Path,
+    audio_path: Path,
     options: DownloaderOptions,
 ):
     """下载音视频"""
@@ -135,10 +135,10 @@ async def download_video_and_audio(
 
 def merge_video_and_audio(
     video: VideoUrlMeta | None,
-    video_path: str | Path,
+    video_path: Path,
     audio: AudioUrlMeta | None,
-    audio_path: str | Path,
-    output_path: str | Path,
+    audio_path: Path,
+    output_path: Path,
     options: DownloaderOptions,
 ):
     """合并音视频"""
@@ -176,9 +176,9 @@ def merge_video_and_audio(
     Logger.info("合并完成！")
 
     if video is not None:
-        os.remove(video_path)
+        video_path.unlink()
     if audio is not None:
-        os.remove(audio_path)
+        audio_path.unlink()
 
 
 async def start_downloader(
@@ -237,7 +237,7 @@ async def start_downloader(
     # 保存字幕
     if subtitles:
         for subtitle in subtitles:
-            write_subtitle(subtitle["lines"], str(output_path), subtitle["lang"])
+            write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
         Logger.custom(
             "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
             badge=Badge("字幕", fore="black", back="cyan"),
@@ -255,7 +255,7 @@ async def start_downloader(
 
     # 保存媒体描述文件
     if metadata is not None:
-        write_metadata(metadata, str(output_path))
+        write_metadata(metadata, output_path)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     if output_path.exists():
