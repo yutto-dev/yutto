@@ -75,7 +75,9 @@ select = [
   # Flake8-pyi
   "PYI",
   # Flake8-use-pathlib
-  "PTH"
+  "PTH",
+  # Yesqa
+  "RUF100"
 ]
 ignore = [
   "E501",  # line too long, duplicate with black
@@ -84,5 +86,5 @@ ignore = [
 ]
 
 [build-system]
-requires = ["poetry_core>=1.1.0"]
+requires = ["poetry_core>=1.5.0"]
 build-backend = "poetry.core.masonry.api"
