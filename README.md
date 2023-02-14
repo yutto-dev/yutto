@@ -339,21 +339,21 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 指定别名文件路径，别名文件中存放一个别名与其对应的 url，使用空格或者 `=` 分隔，示例如下：
 
 ```
-rimuru1=https://www.bilibili.com/bangumi/play/ss25739/
-rimuru2=https://www.bilibili.com/bangumi/play/ss36170/
-rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+tensura1=https://www.bilibili.com/bangumi/play/ss25739/
+tensura2=https://www.bilibili.com/bangumi/play/ss36170/
+tensura-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 ```
 
 比如将上述内容存储到 `~/.yutto_alias`，则通过以下命令即可解析该文件：
 
 ```bash
-yutto rimuru1 --batch --alias-file='~/.yutto_alias'
+yutto tensura1 --batch --alias-file='~/.yutto_alias'
 ```
 
 当参数值为 `-` 时，会从标准输入中读取：
 
 ```bash
-cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
+cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 ```
 
 #### 仅下载视频流
@@ -541,13 +541,13 @@ yutto --no-color --no-progress <url> > log
 yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
 
 ```
-rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+tensura-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 ```
 
 之后下载最新话只需要
 
 ```
-yutto --batch rimuru-nikki --alias-file=/path/to/alias-file
+yutto --batch tensura-nikki --alias-file=/path/to/alias-file
 ```
 
 ### 使用任务列表
@@ -578,8 +578,8 @@ yutto ./path/to/list
 值得注意的是，在文件列表各项里的参数优先级是高于命令里的优先级的，比如文件中使用：
 
 ```
-rimuru1 --batch -p $ --no-danmaku --vcodec="hevc:copy"
-rimuru2 --batch -p $
+tensura1 --batch -p $ --no-danmaku --vcodec="hevc:copy"
+tensura2 --batch -p $
 ```
 
 而命令中则使用
@@ -588,7 +588,7 @@ rimuru2 --batch -p $
 yutto file:///path/to/list --vcodec="avc:copy"
 ```
 
-最终下载的 rimuru1 会是 "hevc:copy"，而 rimuru2 则会是 "avc:copy"
+最终下载的 tensura1 会是 "hevc:copy"，而 tensura2 则会是 "avc:copy"
 
 另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
 
