@@ -31,12 +31,12 @@ colorama = { version = "^0.4.6", markers = "sys_platform == 'win32'" }
 typing-extensions = "^4.4.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.2.1"
+pytest = "^7.2.2"
 black = "^23.1"
 isort = "^5.12.0"
-pyright = "^1.1.294"
+pyright = "^1.1.296"
 pytest-rerunfailures = "^11.0"
-ruff = "^0.0.252"
+ruff = "^0.0.254"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"
