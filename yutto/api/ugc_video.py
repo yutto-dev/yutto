@@ -256,6 +256,11 @@ def _parse_ugc_video_metadata(video_info: _UgcVideoInfo, page_info: _UgcVideoPag
 
 def _is_meaningless_name(name: str) -> bool:
     """检测名称是否为无意义的名称"""
+    # name 为空
+    if not name:
+        return True
+
+    # name 为视频文件名
     video_ext_list = [".mp4", ".flv", ".mkv", ".avi", ".wmv", ".mov", ".mpg", ".mpeg", ".ts"]
     for video_ext in video_ext_list:
         if name.endswith(video_ext):
