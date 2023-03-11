@@ -40,21 +40,17 @@ class BangumiList(TypedDict):
 
 
 async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
-    home_url = f"https://api.bilibili.com/pgc/review/user?media_id={media_id}"
-    res_json = await Fetcher.fetch_json(session, home_url)
+    media_api = f"https://api.bilibili.com/pgc/review/user?media_id={media_id}"
+    res_json = await Fetcher.fetch_json(session, media_api)
     assert res_json is not None
     return SeasonId(str(res_json["result"]["media"]["season_id"]))
 
 
 async def get_season_id_by_episode_id(session: ClientSession, episode_id: EpisodeId) -> SeasonId:
-    home_url = f"https://www.bilibili.com/bangumi/play/ep{episode_id}"
-    season_id = SeasonId("")
-    regex_season_id = re.compile(r'"id":\d+,"ssId":(\d+)')
-    home_page = await Fetcher.fetch_text(session, home_url)
-    assert home_page is not None
-    if match_obj := regex_season_id.search(home_page):
-        season_id = match_obj.group(1)
-    return SeasonId(str(season_id))
+    episode_api = f"https://api.bilibili.com/pgc/view/web/season?ep_id={episode_id}"
+    res_json = await Fetcher.fetch_json(session, episode_api)
+    assert res_json is not None
+    return SeasonId(str(res_json["result"]["season_id"]))
 
 
 async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> BangumiList:
