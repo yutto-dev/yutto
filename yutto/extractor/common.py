@@ -11,6 +11,7 @@ from yutto.api.bangumi import (
     get_bangumi_playurl,
     get_bangumi_subtitles,
 )
+from yutto.api.cheese import CheeseListItem, get_cheese_playurl
 from yutto.api.danmaku import get_danmaku
 from yutto.api.ugc_video import (
     UgcVideoListItem,
@@ -68,6 +69,49 @@ async def extract_bangumi_data(
             subtitles=subtitles,
             danmaku=danmaku,
             metadata=metadata,
+            output_dir=output_dir,
+            tmp_dir=args.tmp_dir or output_dir,
+            filename=filename,
+        )
+    except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
+        Logger.error(e.message)
+        return None
+
+
+async def extract_cheese_data(
+    session: aiohttp.ClientSession,
+    episode_id: EpisodeId,
+    cheese_info: CheeseListItem,
+    args: argparse.Namespace,
+    subpath_variables: PathTemplateVariableDict,
+    auto_subpath_template: str = "{name}",
+) -> EpisodeData | None:
+    try:
+        avid = cheese_info["avid"]
+        cid = cheese_info["cid"]
+        name = cheese_info["name"]
+        id = cheese_info["id"]
+        videos, audios = await get_cheese_playurl(session, avid, episode_id, cid)
+        danmaku = await get_danmaku(session, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        subpath_variables_base: PathTemplateVariableDict = {
+            "id": id,
+            "name": name,
+            "title": UNKNOWN,
+            "username": UNKNOWN,
+            "series_title": UNKNOWN,
+            "pubdate": UNKNOWN,
+            "download_date": UNKNOWN,
+        }
+        subpath_variables_base.update(subpath_variables)
+        subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
+        file_path = Path(args.dir, subpath)
+        output_dir, filename = str(file_path.parent), file_path.name
+        return EpisodeData(
+            videos=videos,
+            audios=audios,
+            subtitles=[],
+            danmaku=danmaku,
+            metadata=None,
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,

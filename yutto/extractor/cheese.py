@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from collections.abc import Coroutine
+from typing import Any
+
+import aiohttp
+
+from yutto._typing import EpisodeData, EpisodeId
+from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
+from yutto.exceptions import (
+    ErrorCode,
+    HttpStatusError,
+    NoAccessPermissionError,
+    NotFoundError,
+    UnSupportedTypeError,
+)
+from yutto.extractor._abc import SingleExtractor
+from yutto.extractor.common import extract_cheese_data
+from yutto.utils.console.logger import Badge, Logger
+
+
+class CheeseExtractor(SingleExtractor):
+    """单课时"""
+
+    REGEX_EP = re.compile(r"https?://www\.bilibili\.com/cheese/play/ep(?P<episode_id>\d+)")
+
+    REGEX_EP_ID = re.compile(r"ep(?P<episode_id>\d+)")
+
+    episode_id: EpisodeId
+
+    def resolve_shortcut(self, id: str) -> tuple[bool, str]:
+        matched = False
+        url = id
+        if match_obj := self.REGEX_EP_ID.match(id):
+            url = f"https://www.bilibili.com/cheese/play/ep{match_obj.group('episode_id')}"
+            matched = True
+        return matched, url
+
+    def match(self, url: str) -> bool:
+        if match_obj := self.REGEX_EP.match(url):
+            self.episode_id = EpisodeId(match_obj.group("episode_id"))
+            return True
+        else:
+            return False
+
+    async def extract(
+        self, session: aiohttp.ClientSession, args: argparse.Namespace
+    ) -> Coroutine[Any, Any, EpisodeData | None] | None:
+        season_id = await get_season_id_by_episode_id(session, self.episode_id)
+        cheese_list = await get_cheese_list(session, season_id)
+        Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
+        try:
+            for cheese_item in cheese_list["pages"]:
+                if cheese_item["episode_id"] == self.episode_id:
+                    cheese_list_item = cheese_item
+                    break
+            else:
+                Logger.error("在列表中未找到该剧集")
+                sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
+
+            return extract_cheese_data(
+                session,
+                self.episode_id,
+                cheese_list_item,
+                args,
+                {
+                    "title": cheese_list["title"],
+                },
+                "{name}",
+            )
+        except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
+            Logger.error(e.message)
+            return None
