@@ -33,7 +33,7 @@ def alias_parser(f_alias: TextIO | None) -> dict[str, str]:
 
 def file_scheme_parser(url: str) -> list[str]:
     file_url: str = urllib.parse.urlparse(url).path  # type: ignore
-    file_path = Path(urllib.request.url2pathname(file_url))
+    file_path = Path(urllib.request.url2pathname(file_url))  # type: ignore
     Logger.info(f"解析下载列表 {file_path} 中...")
     result: list[str] = []
     with file_path.open("r", encoding="utf-8") as f:
