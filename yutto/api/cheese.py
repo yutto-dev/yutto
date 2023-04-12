@@ -5,11 +5,11 @@ from typing import Any, TypedDict
 from aiohttp import ClientSession
 
 from yutto._typing import (
+    AId,
     AudioUrlMeta,
-    AvId,
-    BvId,
     CId,
     EpisodeId,
+    MultiLangSubtitle,
     SeasonId,
     VideoUrlMeta,
 )
@@ -26,7 +26,7 @@ class CheeseListItem(TypedDict):
     name: str
     cid: CId
     episode_id: EpisodeId
-    avid: AvId
+    avid: AId
     metadata: MetaData
 
 
@@ -56,7 +56,7 @@ async def get_cheese_list(session: ClientSession, season_id: SeasonId) -> Cheese
                 "name": item["title"],
                 "cid": CId(str(item["cid"])),
                 "episode_id": EpisodeId(str(item["id"])),
-                "avid": BvId(item["aid"]),
+                "avid": AId(str(item["aid"])),
                 "metadata": _parse_cheese_metadata(item),
             }
             for i, item in enumerate(section_episodes)
@@ -104,6 +104,28 @@ async def get_cheese_playurl(
             for audio in resp_json["data"]["dash"]["audio"]
         ],
     )
+
+
+async def get_cheese_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
+    subtitile_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
+    subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
+    subtitles_json_info = await Fetcher.fetch_json(session, subtitile_url)
+    if subtitles_json_info is None:
+        return []
+    subtitles_info = subtitles_json_info["data"]["subtitle"]
+    results: list[MultiLangSubtitle] = []
+    for sub_info in subtitles_info["subtitles"]:
+        subtitle_text = await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"])
+        if subtitle_text is None:
+            continue
+        results.append(
+            {
+                "lang": sub_info["lan_doc"],
+                "lines": subtitle_text["body"],
+            }
+        )
+
+    return results
 
 
 def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:

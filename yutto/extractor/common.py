@@ -11,7 +11,7 @@ from yutto.api.bangumi import (
     get_bangumi_playurl,
     get_bangumi_subtitles,
 )
-from yutto.api.cheese import CheeseListItem, get_cheese_playurl
+from yutto.api.cheese import CheeseListItem, get_cheese_playurl, get_cheese_subtitles
 from yutto.api.danmaku import get_danmaku
 from yutto.api.ugc_video import (
     UgcVideoListItem,
@@ -92,8 +92,9 @@ async def extract_cheese_data(
         name = cheese_info["name"]
         id = cheese_info["id"]
         videos, audios = await get_cheese_playurl(session, avid, episode_id, cid)
-        metadata = cheese_info["metadata"] if args.require_metadata else None
+        subtitles = await get_cheese_subtitles(session, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(session, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        metadata = cheese_info["metadata"] if args.require_metadata else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,
@@ -110,7 +111,7 @@ async def extract_cheese_data(
         return EpisodeData(
             videos=videos,
             audios=audios,
-            subtitles=[],  # 目前的值是"视频课·7分6秒"，并非子标题概念，没有实际价值暂时留空。
+            subtitles=subtitles,
             danmaku=danmaku,
             metadata=metadata,
             output_dir=output_dir,
