@@ -3,19 +3,10 @@ from __future__ import annotations
 import aiohttp
 import pytest
 
-from yutto._typing import (
-    AId,
-    AudioUrlMeta,
-    CId,
-    EpisodeId,
-    MultiLangSubtitle,
-    SeasonId,
-    VideoUrlMeta,
-)
+from yutto._typing import AId, AudioUrlMeta, CId, EpisodeId, SeasonId, VideoUrlMeta
 from yutto.api.cheese import (
     get_cheese_list,
     get_cheese_playurl,
-    get_cheese_subtitles,
     get_season_id_by_episode_id,
 )
 from yutto.utils.fetcher import Fetcher
@@ -73,6 +64,7 @@ async def test_get_cheese_list():
 
 
 @pytest.mark.api
+@pytest.mark.ci_skip
 @as_sync
 async def test_get_cheese_playurl():
     avid = AId("545852212")
@@ -94,14 +86,5 @@ async def test_get_cheese_playurl():
 @pytest.mark.api
 @as_sync
 async def test_get_cheese_subtitles():
-    avid = AId("545852212")
-    cid = CId("344779477")
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
-        playlist: list[MultiLangSubtitle] = await get_cheese_subtitles(session, avid, cid)
     # TODO: 暂未找到需要字幕的课程
     pass

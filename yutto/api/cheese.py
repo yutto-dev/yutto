@@ -6,8 +6,8 @@ from aiohttp import ClientSession
 
 from yutto._typing import (
     AId,
-    AvId,
     AudioUrlMeta,
+    AvId,
     CId,
     EpisodeId,
     MultiLangSubtitle,
@@ -27,7 +27,7 @@ class CheeseListItem(TypedDict):
     name: str
     cid: CId
     episode_id: EpisodeId
-    avid: AId
+    avid: AvId
     metadata: MetaData
 
 
@@ -132,7 +132,11 @@ async def get_cheese_subtitles(session: ClientSession, avid: AvId, cid: CId) -> 
 def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
     return MetaData(
         title=item["title"],
+        show_title=item["title"],  # 无此字段，用title代替
+        plot=item["title"],  # 无此字段，用title代替
         thumb=item["cover"],
         premiered=get_time_str_by_stamp(item["release_date"]),
         dateadded=get_time_str_by_now(),
+        source="",  # TODO
+        original_filename="",  # TODO
     )
