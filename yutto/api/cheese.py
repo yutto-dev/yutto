@@ -132,8 +132,8 @@ async def get_cheese_subtitles(session: ClientSession, avid: AvId, cid: CId) -> 
 def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
     return MetaData(
         title=item["title"],
-        show_title=item["title"],  # 无此字段，用title代替
-        plot=item["title"],  # 无此字段，用title代替
+        show_title=item["title"],  # 无此字段，用 title 代替
+        plot=item["title"],  # 无此字段，用 title 代替
         thumb=item["cover"],
         premiered=get_time_str_by_stamp(item["release_date"]),
         dateadded=get_time_str_by_now(),
