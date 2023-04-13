@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from .bangumi import BangumiExtractor
 from .bangumi_batch import BangumiBatchExtractor
+from .cheese import CheeseExtractor
+from .cheese_batch import CheeseBatchExtractor
 from .collection import CollectionExtractor
 from .favourites import FavouritesExtractor
 from .series import SeriesExtractor
@@ -15,6 +17,8 @@ __all__ = [
     "UgcVideoBatchExtractor",
     "BangumiExtractor",
     "BangumiBatchExtractor",
+    "CheeseExtractor",
+    "CheeseBatchExtractor",
     "UserAllUgcVideosExtractor",
     "FavouritesExtractor",
     "UserAllFavouritesExtractor",

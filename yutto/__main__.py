@@ -20,6 +20,8 @@ from yutto.exceptions import ErrorCode
 from yutto.extractor import (
     BangumiBatchExtractor,
     BangumiExtractor,
+    CheeseBatchExtractor,
+    CheeseExtractor,
     CollectionExtractor,
     FavouritesExtractor,
     SeriesExtractor,
@@ -202,6 +204,7 @@ async def run(args_list: list[argparse.Namespace]):
                 [
                     UgcVideoBatchExtractor(),  # 投稿全集
                     BangumiBatchExtractor(),  # 番剧全集
+                    CheeseBatchExtractor(),  # 课程全集
                     FavouritesExtractor(),  # 用户单一收藏
                     UserAllFavouritesExtractor(),  # 用户全部收藏
                     SeriesExtractor(),  # 视频列表
@@ -212,6 +215,7 @@ async def run(args_list: list[argparse.Namespace]):
                 else [
                     UgcVideoExtractor(),  # 投稿单集
                     BangumiExtractor(),  # 番剧单话
+                    CheeseExtractor(),  # 课程单集
                 ]
             )
 
