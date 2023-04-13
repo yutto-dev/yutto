@@ -6,6 +6,7 @@ from aiohttp import ClientSession
 
 from yutto._typing import (
     AId,
+    AvId,
     AudioUrlMeta,
     CId,
     EpisodeId,
