@@ -56,7 +56,10 @@ async def get_season_id_by_episode_id(session: ClientSession, episode_id: Episod
 async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
     resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
-    assert resp_json is not None
+    if resp_json is None:
+        raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）")
+    if resp_json.get("result") is None:
+        raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["result"]
     section_episodes = []
     for section in result.get("section", []):
