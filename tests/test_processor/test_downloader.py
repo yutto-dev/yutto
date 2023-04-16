@@ -26,7 +26,7 @@ async def test_150_kB_downloader():
             headers=Fetcher.headers,
             cookies=Fetcher.cookies,
             trust_env=Fetcher.trust_env,
-            timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+            timeout=aiohttp.ClientTimeout(total=10, connect=3, sock_connect=3, sock_read=7),
         ) as session:
             Fetcher.set_semaphore(4)
             size = await Fetcher.get_size(session, url)
@@ -53,7 +53,7 @@ async def test_150_kB_no_slice_downloader():
             headers=Fetcher.headers,
             cookies=Fetcher.cookies,
             trust_env=Fetcher.trust_env,
-            timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+            timeout=aiohttp.ClientTimeout(total=10, connect=3, sock_connect=3, sock_read=7),
         ) as session:
             Fetcher.set_semaphore(4)
             size = await Fetcher.get_size(session, url)

@@ -193,7 +193,7 @@ class Fetcher:
                     async with session.get(
                         url,
                         headers=headers,
-                        timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+                        timeout=aiohttp.ClientTimeout(total=10, connect=3, sock_connect=3, sock_read=7),
                         proxy=Fetcher.proxy,
                         ssl=False,
                     ) as resp:
