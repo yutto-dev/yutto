@@ -10,9 +10,7 @@ from yutto.utils.fetcher import Fetcher
 
 # 个人空间·全部
 async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> list[AvId]:
-    space_videos_api = (
-        "https://api.bilibili.com/x/space/arc/search?mid={mid}&ps={ps}&tid=0&pn={pn}&order=pubdate&jsonp=jsonp"
-    )
+    space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search?mid={mid}&ps={ps}&tid=0&pn={pn}&order=pubdate"
     # ps 随机设置有时会出现错误，因此暂时固定在 30
     # ps: int = random.randint(3, 6) * 10
     ps = 30
@@ -31,7 +29,7 @@ async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> l
 
 # 个人空间·用户名
 async def get_user_name(session: ClientSession, mid: MId) -> str:
-    space_info_api = "https://api.bilibili.com/x/space/acc/info?mid={mid}&jsonp=jsonp"
+    space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info?mid={mid}"
     space_info_url = space_info_api.format(mid=mid)
     user_info = await Fetcher.fetch_json(session, space_info_url)
     assert user_info is not None
