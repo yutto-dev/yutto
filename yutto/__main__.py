@@ -36,7 +36,7 @@ from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils import as_sync
 from yutto.validator import (
-    initial_validate,
+    initial_validation,
     validate_basic_arguments,
     validate_batch_argments,
 )
@@ -48,7 +48,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtit
 def main():
     parser = cli()
     args = parser.parse_args()
-    initial_validate(args)
+    initial_validation(args)
     args_list = flatten_args(args, parser)
     try:
         run(args_list)
@@ -160,9 +160,6 @@ def cli() -> argparse.ArgumentParser:
     group_common.set_defaults(
         require_video=True, require_audio=True, require_subtitle=True, require_metadata=False, require_danmaku=True
     )
-    group_common.add_argument("--metadata-format", default="nfo", choices=["nfo"], help="（待实现）元数据文件类型，目前仅支持 nfo")
-    group_common.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")
-    group_common.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
     group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")

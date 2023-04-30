@@ -22,7 +22,7 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
 
 
-def initial_validate(args: argparse.Namespace):
+def initial_validation(args: argparse.Namespace):
     """初始化检查，仅执行一次"""
 
     if not args.no_progress:
@@ -51,7 +51,7 @@ def initial_validate(args: argparse.Namespace):
         Logger.info("未提供 SESSDATA，无法下载会员专享剧集哟～")
     else:
         Fetcher.set_sessdata(args.sessdata)
-        if asyncio.run(vip_validate()):
+        if asyncio.run(validate_vip()):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
@@ -104,31 +104,6 @@ def validate_basic_arguments(args: argparse.Namespace):
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    # 不下载视频无法嵌入字幕
-    if not args.require_video and args.embed_subtitle:
-        Logger.error("不下载视频时无法嵌入字幕的哦！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 不下载视频无法嵌入弹幕
-    if not args.require_video and args.embed_danmaku:
-        Logger.error("不下载视频时无法嵌入弹幕的哦！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 生成字幕才可以嵌入字幕
-    if args.embed_subtitle and not args.require_subtitle:
-        Logger.error("生成字幕才可以嵌入字幕喔！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 生成 ASS 弹幕才可以嵌入弹幕
-    if args.embed_danmaku and not args.require_danmaku:
-        Logger.error("生成 ASS 弹幕才可以嵌入弹幕喔！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 嵌入弹幕功能仅支持 ASS 弹幕
-    if args.embed_danmaku and args.danmaku_format != "ass":
-        Logger.error("嵌入弹幕功能仅支持 ASS 弹幕喔！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
 
 def validate_batch_argments(args: argparse.Namespace):
     """检查批量下载相关选项"""
@@ -139,7 +114,7 @@ def validate_batch_argments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-async def vip_validate() -> bool:
+async def validate_vip() -> bool:
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
