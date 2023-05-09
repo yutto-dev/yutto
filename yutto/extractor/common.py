@@ -139,6 +139,11 @@ async def extract_ugc_video_data(
         subtitles = await get_ugc_video_subtitles(session, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(session, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
+        owner_uid: str | None = (
+            ugc_video_info["metadata"]["actor"][0]["profile"].split("/")[-1]
+            if ugc_video_info["metadata"]["actor"]
+            else UNKNOWN
+        )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,
@@ -147,6 +152,7 @@ async def extract_ugc_video_data(
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
             "download_date": ugc_video_info["metadata"]["dateadded"],
+            "owner_uid": owner_uid,
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)

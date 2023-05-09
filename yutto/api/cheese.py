@@ -141,5 +141,9 @@ def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
         premiered=get_time_str_by_stamp(item["release_date"]),
         dateadded=get_time_str_by_now(),
         source="",  # TODO
+        actor=[],  # TODO
+        genre=[],  # TODO
+        tag=[],  # TODO
+        website="",  # TODO
         original_filename="",  # TODO
     )

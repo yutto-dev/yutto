@@ -27,6 +27,7 @@ class MetaData(TypedDict):
     tag: list[str]
     source: str
     original_filename: str
+    website: str
 
 
 def write_metadata(metadata: MetaData, video_path: Path):

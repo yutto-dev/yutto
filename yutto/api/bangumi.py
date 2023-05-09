@@ -168,5 +168,9 @@ def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
         premiered=get_time_str_by_stamp(item["pub_time"]),
         dateadded=get_time_str_by_now(),
         source="",  # TODO
+        actor=[],  # TODO
+        genre=[],  # TODO
+        tag=[],  # TODO
+        website="",  # TODO
         original_filename="",  # TODO
     )
