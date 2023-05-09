@@ -7,6 +7,14 @@ from xml.dom.minidom import parseString  # type: ignore
 import dicttoxml  # type: ignore
 
 
+class Actor(TypedDict):
+    name: str
+    role: str
+    thumb: str
+    profile: str
+    order: int
+
+
 class MetaData(TypedDict):
     title: str
     show_title: str
@@ -14,6 +22,9 @@ class MetaData(TypedDict):
     thumb: str
     premiered: str
     dateadded: str
+    actor: list[Actor]
+    genre: list[str]
+    tag: list[str]
     source: str
     original_filename: str
 
