@@ -39,6 +39,7 @@ from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
     validate_batch_argments,
+    validate_vip,
 )
 
 DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku"]
@@ -157,12 +158,18 @@ def cli() -> argparse.ArgumentParser:
         action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
         help="仅生成元数据文件",
     )
+
     group_common.set_defaults(
-        require_video=True, require_audio=True, require_subtitle=True, require_metadata=False, require_danmaku=True
+        require_video=True,
+        require_audio=True,
+        require_subtitle=True,
+        require_metadata=False,
+        require_danmaku=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
     group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
+    group_common.add_argument("--vip-check", action="store_true", help="启用严格检查大会员生效")
 
     # 仅批量下载使用
     group_batch = parser.add_argument_group("batch", "批量下载参数")
@@ -256,6 +263,9 @@ async def run(args_list: list[argparse.Namespace]):
                         f"{episode_data['filename']}",
                         Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
+                if args.vip_check and not await validate_vip():
+                    Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
+                    break
                 await start_downloader(
                     session,
                     episode_data,
