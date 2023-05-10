@@ -345,16 +345,19 @@ files = [
 ]
 
 [[package]]
-name = "dicttoxml"
-version = "1.7.16"
-description = "Converts a Python dictionary or other native data type into a valid XML string."
+name = "dict2xml"
+version = "1.7.3"
+description = "Small utility to convert a python dictionary into an XML string"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.5"
 files = [
-    {file = "dicttoxml-1.7.16-py3-none-any.whl", hash = "sha256:8677671496d0d38e66c7179f82a7e9059f94887777955dc71b0ac602ee637c26"},
-    {file = "dicttoxml-1.7.16.tar.gz", hash = "sha256:6f36ce644881db5cd8940bee9b7cb3f3f6b7b327ba8a67d83d3e2caa0538bf9d"},
+    {file = "dict2xml-1.7.3-py3-none-any.whl", hash = "sha256:f849e1aec277f93d087482461b6b8afdde61df346918298aca4c42bcf9895f6d"},
+    {file = "dict2xml-1.7.3.tar.gz", hash = "sha256:02a5c198d0fecdfeb52644e9d905200a36c031e11c201362d7d217df684bc15d"},
 ]
+
+[package.extras]
+tests = ["noseofyeti[black] (==2.4.1)", "pytest (==7.2.1)"]
 
 [[package]]
 name = "exceptiongroup"
@@ -904,4 +907,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "36920553dda3c7ae301022c338c87290851a3faee26ac1cb76238dca84d23ea4"
+content-hash = "efe9378eed5909557a1d6f0d419449c5d37327762e85d33f29757b6ae7db9326"

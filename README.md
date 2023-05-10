@@ -307,7 +307,7 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 #### 存放子路径模板
 
 -  参数 `-tp` 或 `--subpath-template`
--  可选参数变量 `title | id | name | username | series_title | pubdate` （以后可能会有更多）
+-  可选参数变量 `title | id | name | username | series_title | pubdate | download_date | owner_uid` （以后可能会有更多）
 -  默认值 `"{auto}"`
 
 通过配置子路径模板可以灵活地控制视频存放位置。
@@ -316,7 +316,7 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 
 另外，该功能语法由 Python format 函数模板语法提供，所以也支持一些高级的用法，比如 `{id:0>3}{name}`。
 
-值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username` 变量当前仅在 UP 主全部投稿视频/收藏夹才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
+值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username`, `owner_uid` 变量当前仅在 UP 主全部投稿视频/收藏夹才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
 
 <!-- prettier-ignore -->
 |Variable|Description|Scope|
@@ -328,6 +328,7 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 |series_title|合集标题|收藏夹、视频合集、视频列表下载|
 |pubdate|投稿日期|仅投稿视频|
 |download_date|下载日期|全部|
+|owner_uid|UP主UID|个人空间、收藏夹、合集、视频列表下载|
 
 > **Note**
 >

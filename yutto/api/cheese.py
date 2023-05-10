@@ -138,8 +138,12 @@ def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
         show_title=item["title"],  # 无此字段，用 title 代替
         plot=item["title"],  # 无此字段，用 title 代替
         thumb=item["cover"],
-        premiered=get_time_str_by_stamp(item["release_date"]),
+        premiered=get_time_str_by_stamp(item["release_date"], "%Y-%m-%d"),
         dateadded=get_time_str_by_now(),
         source="",  # TODO
+        actor=[],  # TODO
+        genre=[],  # TODO
+        tag=[],  # TODO
+        website="",  # TODO
         original_filename="",  # TODO
     )

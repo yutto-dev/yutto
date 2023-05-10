@@ -4,7 +4,15 @@ from pathlib import Path
 from typing import TypedDict
 from xml.dom.minidom import parseString  # type: ignore
 
-import dicttoxml  # type: ignore
+from dict2xml import dict2xml  # type: ignore
+
+
+class Actor(TypedDict):
+    name: str
+    role: str
+    thumb: str
+    profile: str
+    order: int
 
 
 class MetaData(TypedDict):
@@ -14,16 +22,17 @@ class MetaData(TypedDict):
     thumb: str
     premiered: str
     dateadded: str
+    actor: list[Actor]
+    genre: list[str]
+    tag: list[str]
     source: str
     original_filename: str
+    website: str
 
 
 def write_metadata(metadata: MetaData, video_path: Path):
     metadata_path = video_path.with_suffix(".nfo")
-    custom_root = "episodedetails"
-
-    xml_content = dicttoxml.dicttoxml(metadata, custom_root=custom_root, attr_type=False)  # type: ignore
-    dom = parseString(xml_content)  # type: ignore
-    pretty_content = dom.toprettyxml()  # type: ignore
+    custom_root = "episodedetails"  # TODO: 不同视频类型使用不同的root name
+    xml_content = dict2xml(metadata, wrap=custom_root, indent="  ")  # type: ignore
     with metadata_path.open("w", encoding="utf-8") as f:  # type: ignore
-        f.write(pretty_content)  # type: ignore
+        f.write(xml_content)  # type: ignore
