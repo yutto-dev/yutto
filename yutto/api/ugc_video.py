@@ -271,7 +271,7 @@ def _parse_ugc_video_metadata(
         show_title=page_info["part"],
         plot=video_info["description"],
         thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
-        premiered=get_time_str_by_stamp(video_info["pubdate"]),
+        premiered=get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),
         dateadded=get_time_str_by_now(),
         actor=video_info["actor"],
         genre=video_info["genre"],

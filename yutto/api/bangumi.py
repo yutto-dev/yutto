@@ -165,7 +165,7 @@ def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
         show_title=item["share_copy"],
         plot=item["share_copy"],
         thumb=item["cover"],
-        premiered=get_time_str_by_stamp(item["pub_time"]),
+        premiered=get_time_str_by_stamp(item["pub_time"], "%Y-%m-%d"),
         dateadded=get_time_str_by_now(),
         source="",  # TODO
         actor=[],  # TODO
