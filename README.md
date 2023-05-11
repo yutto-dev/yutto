@@ -411,7 +411,7 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 #### 严格校验大会员状态有效
 
--  参数 `--vip-check`
+-  参数 `--vip-strict`
 -  默认值 `False`
 
 #### 不显示颜色
