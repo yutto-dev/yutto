@@ -265,7 +265,7 @@ async def run(args_list: list[argparse.Namespace]):
                     )
                 if args.vip_check and not await validate_vip():
                     Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
-                    break
+                    return
                 await start_downloader(
                     session,
                     episode_data,
