@@ -409,6 +409,11 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--metadata-only`
 -  默认值 `False`
 
+#### 严格校验大会员状态有效
+
+-  参数 `--vip-strict`
+-  默认值 `False`
+
 #### 不显示颜色
 
 -  参数 `--no-color`
