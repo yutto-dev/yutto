@@ -254,6 +254,9 @@ async def run(args_list: list[argparse.Namespace]):
             for i, episode_data_coro in enumerate(download_list):
                 if episode_data_coro is None:
                     continue
+                if args.vip_strict and not await validate_vip():
+                    Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
+                    return
                 # 这时候才真正开始解析链接
                 episode_data = await episode_data_coro
                 if episode_data is None:
@@ -263,9 +266,7 @@ async def run(args_list: list[argparse.Namespace]):
                         f"{episode_data['filename']}",
                         Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
-                if args.vip_strict and not await validate_vip():
-                    Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
-                    return
+
                 await start_downloader(
                     session,
                     episode_data,
