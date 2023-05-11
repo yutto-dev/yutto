@@ -95,7 +95,7 @@ async def get_watch_later_avids(session: ClientSession) -> list[AvId]:
     api = "https://api.bilibili.com/x/v2/history/toview/web"
     json_data = await Fetcher.fetch_json(session, api)
     assert json_data is not None
-    if json_data["code"] == -101:
+    if json_data["code"] in [-101, -400]:
         raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")
     # TODO: 处理其他code不为0的异常
     return [BvId(video_info["bvid"]) for video_info in json_data["data"]["list"]]
