@@ -5,6 +5,7 @@ import math
 from aiohttp import ClientSession
 
 from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
+from yutto.exceptions import NotLoginError
 from yutto.utils.fetcher import Fetcher
 
 
@@ -87,3 +88,14 @@ async def get_medialist_title(session: ClientSession, series_id: SeriesId) -> st
     json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
     assert json_data is not None
     return json_data["data"]["title"]
+
+
+# 个人空间·稍后再看
+async def get_watch_later_avids(session: ClientSession) -> list[AvId]:
+    api = "https://api.bilibili.com/x/v2/history/toview/web"
+    json_data = await Fetcher.fetch_json(session, api)
+    assert json_data is not None
+    if json_data["code"] in [-101, -400]:
+        raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")
+    # TODO: 处理其他code不为0的异常
+    return [BvId(video_info["bvid"]) for video_info in json_data["data"]["list"]]

@@ -95,6 +95,7 @@ pip install ./dist/yutto-*.whl
 |课程|:x:|:x:|`https://www.bilibili.com/cheese/play/ep6902`|`{name}`|
 |课程|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/cheese/play/ep6902` <br/> `https://www.bilibili.com/cheese/play/ss298`|`{title}/{name}`|
 |用户指定收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create`|`{username}的收藏夹/{series_title}/{title}/{name}`|
+|当前用户稍后再看|:white_check_mark:|:x:|`https://www.bilibili.com/watchlater`|`稍后再看/{title}/{name}`|
 |用户全部收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
 |UP 主个人空间|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
 |合集|:white_check_mark:|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195`|`{series_title}/{title}`|
@@ -316,7 +317,7 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 
 另外，该功能语法由 Python format 函数模板语法提供，所以也支持一些高级的用法，比如 `{id:0>3}{name}`。
 
-值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username`, `owner_uid` 变量当前仅在 UP 主全部投稿视频/收藏夹才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
+值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username`, `owner_uid` 变量当前仅在 UP 主全部投稿视频/收藏夹/稍后再看才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
 
 <!-- prettier-ignore -->
 |Variable|Description|Scope|
@@ -324,11 +325,11 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 |title|系列视频总标题（番剧名/投稿视频标题）|全部|
 |id|系列视频单 p 顺序标号|全部|
 |name|系列视频单 p 标题|全部|
-|username|UP 主用户名|个人空间、收藏夹、合集、视频列表下载|
+|username|UP 主用户名|个人空间、收藏夹、稍后再看、合集、视频列表下载|
 |series_title|合集标题|收藏夹、视频合集、视频列表下载|
 |pubdate|投稿日期|仅投稿视频|
 |download_date|下载日期|全部|
-|owner_uid|UP主UID|个人空间、收藏夹、合集、视频列表下载|
+|owner_uid|UP 主UID|个人空间、收藏夹、稍后再看、合集、视频列表下载|
 
 > **Note**
 >
