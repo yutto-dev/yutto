@@ -3,8 +3,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import re
-from collections.abc import Coroutine
-from typing import Any
 
 import aiohttp
 
@@ -16,6 +14,7 @@ from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.processor.selector import parse_episodes_selection
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -50,7 +49,7 @@ class CollectionExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, collection_details = await asyncio.gather(
             get_user_name(session, self.mid),
             get_collection_details(session, self.series_id, self.mid),
@@ -84,20 +83,22 @@ class CollectionExtractor(BatchExtractor):
                 continue
 
         return [
-            extract_ugc_video_data(
-                session,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                args,
-                {
-                    # TODO: 关于对于 id 的优化
-                    # TODO: 关于对于 title 的优化（最好使用合集标题，而不是原来的视频标题）
-                    "series_title": collection_title,
-                    "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
-                    "title": title,
-                    "pubdate": pubdate,
-                },
-                "{series_title}/{title}",
+            CoroutineWrapper(
+                extract_ugc_video_data(
+                    session,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    args,
+                    {
+                        # TODO: 关于对于 id 的优化
+                        # TODO: 关于对于 title 的优化（最好使用合集标题，而不是原来的视频标题）
+                        "series_title": collection_title,
+                        "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
+                        "title": title,
+                        "pubdate": pubdate,
+                    },
+                    "{series_title}/{title}",
+                )
             )
             for ugc_video_item, title, pubdate in ugc_video_info_list
         ]

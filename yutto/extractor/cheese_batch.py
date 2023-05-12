@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import re
-from collections.abc import Coroutine
 from typing import Any
 
 import aiohttp
@@ -12,6 +11,7 @@ from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_cheese_data
 from yutto.processor.selector import parse_episodes_selection
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 
@@ -55,7 +55,7 @@ class CheeseBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         await self._parse_ids(session)
 
         cheese_list = await get_cheese_list(session, self.season_id)
@@ -64,15 +64,17 @@ class CheeseBatchExtractor(BatchExtractor):
         episodes = parse_episodes_selection(args.episodes, len(cheese_list["pages"]))
         cheese_list["pages"] = list(filter(lambda item: item["id"] in episodes, cheese_list["pages"]))
         return [
-            extract_cheese_data(
-                session,
-                cheese_item["episode_id"],
-                cheese_item,
-                args,
-                {
-                    "title": cheese_list["title"],
-                },
-                "{title}/{name}",
+            CoroutineWrapper(
+                extract_cheese_data(
+                    session,
+                    cheese_item["episode_id"],
+                    cheese_item,
+                    args,
+                    {
+                        "title": cheese_list["title"],
+                    },
+                    "{title}/{name}",
+                )
             )
             for cheese_item in cheese_list["pages"]
         ]

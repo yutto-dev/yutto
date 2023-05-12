@@ -3,8 +3,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import re
-from collections.abc import Coroutine
-from typing import Any
 
 import aiohttp
 
@@ -14,6 +12,7 @@ from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -36,7 +35,7 @@ class FavouritesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, favourite_info = await asyncio.gather(
             get_user_name(session, self.mid),
             get_favourite_info(session, self.fid),
@@ -64,18 +63,20 @@ class FavouritesExtractor(BatchExtractor):
                 continue
 
         return [
-            extract_ugc_video_data(
-                session,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                args,
-                {
-                    "title": title,
-                    "username": username,
-                    "series_title": favourite_info["title"],
-                    "pubdate": pubdate,
-                },
-                "{username}的收藏夹/{series_title}/{title}/{name}",
+            CoroutineWrapper(
+                extract_ugc_video_data(
+                    session,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    args,
+                    {
+                        "title": title,
+                        "username": username,
+                        "series_title": favourite_info["title"],
+                        "pubdate": pubdate,
+                    },
+                    "{username}的收藏夹/{series_title}/{title}/{name}",
+                )
             )
             for ugc_video_item, title, pubdate in ugc_video_info_list
         ]

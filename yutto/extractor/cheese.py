@@ -3,8 +3,6 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from collections.abc import Coroutine
-from typing import Any
 
 import aiohttp
 
@@ -19,6 +17,7 @@ from yutto.exceptions import (
 )
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_cheese_data
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 
@@ -48,7 +47,7 @@ class CheeseExtractor(SingleExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> Coroutine[Any, Any, EpisodeData | None] | None:
+    ) -> CoroutineWrapper[EpisodeData | None] | None:
         season_id = await get_season_id_by_episode_id(session, self.episode_id)
         cheese_list = await get_cheese_list(session, season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
@@ -61,15 +60,17 @@ class CheeseExtractor(SingleExtractor):
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
 
-            return extract_cheese_data(
-                session,
-                self.episode_id,
-                cheese_list_item,
-                args,
-                {
-                    "title": cheese_list["title"],
-                },
-                "{name}",
+            return CoroutineWrapper(
+                extract_cheese_data(
+                    session,
+                    self.episode_id,
+                    cheese_list_item,
+                    args,
+                    {
+                        "title": cheese_list["title"],
+                    },
+                    "{name}",
+                )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
