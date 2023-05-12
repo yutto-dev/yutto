@@ -29,6 +29,7 @@ from yutto.extractor import (
     UgcVideoExtractor,
     UserAllFavouritesExtractor,
     UserAllUgcVideosExtractor,
+    UserWatchLaterExtractor,
 )
 from yutto.processor.downloader import start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
@@ -214,6 +215,7 @@ async def run(args_list: list[argparse.Namespace]):
                     SeriesExtractor(),  # 视频列表
                     CollectionExtractor(),  # 视频合集
                     UserAllUgcVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
+                    UserWatchLaterExtractor(),  # 用户稍后再看
                 ]
                 if args.batch
                 else [

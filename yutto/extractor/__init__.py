@@ -11,6 +11,7 @@ from .ugc_video import UgcVideoExtractor
 from .ugc_video_batch import UgcVideoBatchExtractor
 from .user_all_favourites import UserAllFavouritesExtractor
 from .user_all_ugc_videos import UserAllUgcVideosExtractor
+from .user_watch_later import UserWatchLaterExtractor
 
 __all__ = [
     "UgcVideoExtractor",
@@ -20,6 +21,7 @@ __all__ = [
     "CheeseExtractor",
     "CheeseBatchExtractor",
     "UserAllUgcVideosExtractor",
+    "UserWatchLaterExtractor",
     "FavouritesExtractor",
     "UserAllFavouritesExtractor",
     "SeriesExtractor",

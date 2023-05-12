@@ -17,6 +17,7 @@ class ErrorCode(Enum):
     EPISODE_NOT_FOUND_ERROR = 15
     MAX_RETRY_ERROR = 16
     NOT_FOUND_ERROR = 17
+    NOT_LOGIN_ERROR = 18
 
     # 异常状况，但并不算错误
     PAUSED_DOWNLOAD = 101
@@ -56,6 +57,10 @@ class MaxRetryError(YuttoBaseException):
 
 class NotFoundError(YuttoBaseException):
     code = ErrorCode.NOT_FOUND_ERROR
+
+
+class NotLoginError(YuttoBaseException):
+    code = ErrorCode.NOT_LOGIN_ERROR
 
 
 def handleUncaughtException(exctype: type[Exception], exception: Exception, trace: TracebackType):
