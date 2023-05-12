@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import platform
-from typing import Any, Coroutine, Generator, Generic, TypeVar
+from typing import Any, Generic, TypeVar
+from collections.abc import Coroutine, Generator
 
 from yutto.utils.console.logger import Logger
 
