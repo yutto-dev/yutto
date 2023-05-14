@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 import re
-from collections.abc import Coroutine
-from typing import Any
 
 import aiohttp
 
@@ -17,6 +15,7 @@ from yutto.exceptions import (
 )
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 
@@ -64,21 +63,23 @@ class UgcVideoExtractor(SingleExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> Coroutine[Any, Any, EpisodeData | None] | None:
+    ) -> CoroutineWrapper[EpisodeData | None] | None:
         try:
             ugc_video_list = await get_ugc_video_list(session, self.avid)
             self.avid = ugc_video_list["avid"]  # 当视频撞车时，使用新的 avid 替代原有 avid，见 #96
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
-            return extract_ugc_video_data(
-                session,
-                self.avid,
-                ugc_video_list["pages"][self.page - 1],
-                args,
-                {
-                    "title": ugc_video_list["title"],
-                    "pubdate": ugc_video_list["pubdate"],
-                },
-                "{title}",
+            return CoroutineWrapper(
+                extract_ugc_video_data(
+                    session,
+                    self.avid,
+                    ugc_video_list["pages"][self.page - 1],
+                    args,
+                    {
+                        "title": ugc_video_list["title"],
+                        "pubdate": ugc_video_list["pubdate"],
+                    },
+                    "{title}",
+                )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)

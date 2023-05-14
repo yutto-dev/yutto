@@ -3,8 +3,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import re
-from collections.abc import Coroutine
-from typing import Any
 
 import aiohttp
 
@@ -14,6 +12,7 @@ from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 
@@ -41,7 +40,7 @@ class SeriesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, series_title = await asyncio.gather(
             get_user_name(session, self.mid), get_medialist_title(session, self.series_id)
         )
@@ -65,18 +64,20 @@ class SeriesExtractor(BatchExtractor):
                 continue
 
         return [
-            extract_ugc_video_data(
-                session,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                args,
-                {
-                    "series_title": series_title,
-                    "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
-                    "title": title,
-                    "pubdate": pubdate,
-                },
-                "{series_title}/{title}/{name}",
+            CoroutineWrapper(
+                extract_ugc_video_data(
+                    session,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    args,
+                    {
+                        "series_title": series_title,
+                        "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
+                        "title": title,
+                        "pubdate": pubdate,
+                    },
+                    "{series_title}/{title}/{name}",
+                )
             )
             for ugc_video_item, title, pubdate in ugc_video_info_list
         ]

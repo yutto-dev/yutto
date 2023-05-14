@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import re
-from collections.abc import Coroutine
 from typing import Any
 
 import aiohttp
@@ -16,6 +15,7 @@ from yutto.api.bangumi import (
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
 from yutto.processor.selector import parse_episodes_selection
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 
@@ -70,7 +70,7 @@ class BangumiBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Coroutine[Any, Any, EpisodeData | None] | None]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         await self._parse_ids(session)
 
         bangumi_list = await get_bangumi_list(session, self.season_id)
@@ -83,15 +83,17 @@ class BangumiBatchExtractor(BatchExtractor):
         episodes = parse_episodes_selection(args.episodes, len(bangumi_list["pages"]))
         bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
         return [
-            extract_bangumi_data(
-                session,
-                bangumi_item["episode_id"],
-                bangumi_item,
-                args,
-                {
-                    "title": bangumi_list["title"],
-                },
-                "{title}/{name}",
+            CoroutineWrapper(
+                extract_bangumi_data(
+                    session,
+                    bangumi_item["episode_id"],
+                    bangumi_item,
+                    args,
+                    {
+                        "title": bangumi_list["title"],
+                    },
+                    "{title}/{name}",
+                )
             )
             for bangumi_item in bangumi_list["pages"]
         ]
