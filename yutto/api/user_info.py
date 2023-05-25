@@ -4,7 +4,7 @@ import hashlib
 import re
 import time
 import urllib.parse
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 from aiohttp import ClientSession
 
@@ -16,7 +16,7 @@ class WbiImg(TypedDict):
     sub_key: str
 
 
-wbi_img_cache: Optional[WbiImg] = None  # Simulate the LocalStorage of the browser
+wbi_img_cache: WbiImg | None = None  # Simulate the LocalStorage of the browser
 
 
 async def is_vip(session: ClientSession) -> bool:

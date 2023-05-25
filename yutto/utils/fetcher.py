@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import random
-from collections.abc import Coroutine
-from typing import Any, Callable, Literal, Mapping, TypeVar
+from collections.abc import Coroutine, Mapping
+from typing import Any, Callable, Literal, TypeVar
 from urllib.parse import quote, unquote
 
 import aiohttp
