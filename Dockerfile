@@ -1,6 +1,6 @@
 FROM alpine:3.17
 LABEL maintainer="siguremo" \
-      version="2.0.0-beta.25" \
+      version="2.0.0-beta.26" \
       description="light-weight container based on alpine for yutto"
 
 RUN set -x \
