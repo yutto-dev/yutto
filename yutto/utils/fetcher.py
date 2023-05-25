@@ -3,17 +3,19 @@ from __future__ import annotations
 import asyncio
 import random
 from collections.abc import Coroutine
-from typing import Any, Callable, Literal, TypeVar
+from typing import Any, Callable, Literal, Mapping, TypeVar
 from urllib.parse import quote, unquote
 
 import aiohttp
 from aiohttp import ClientSession
+from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
 from yutto.utils.console.logger import Logger
 from yutto.utils.file_buffer import AsyncFileBuffer
 
-T = TypeVar("T")
+RetT = TypeVar("RetT")
+InputT = ParamSpec("InputT")
 
 
 class MaxRetry:
@@ -27,8 +29,10 @@ class MaxRetry:
     def __init__(self, max_retry: int = 2):
         self.max_retry = max_retry
 
-    def __call__(self, connect_once: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
-        async def connect_n_times(*args: Any, **kwargs: Any) -> T:
+    def __call__(
+        self, connect_once: Callable[InputT, Coroutine[Any, Any, RetT]]
+    ) -> Callable[InputT, Coroutine[Any, Any, RetT]]:
+        async def connect_n_times(*args: InputT.args, **kwargs: InputT.kwargs) -> RetT:
             retry = self.max_retry + 1
             while retry:
                 try:
@@ -81,33 +85,52 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_text(cls, session: ClientSession, url: str, encoding: str | None = None) -> str | None:
+    async def fetch_text(
+        cls,
+        session: ClientSession,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+        encoding: str | None = None,
+    ) -> str | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
-            async with session.get(url, proxy=Fetcher.proxy) as resp:
+            async with session.get(url, proxy=Fetcher.proxy, params=params) as resp:
                 if not resp.ok:
                     return None
                 return await resp.text(encoding=encoding)
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_bin(cls, session: ClientSession, url: str) -> bytes | None:
+    async def fetch_bin(
+        cls,
+        session: ClientSession,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+    ) -> bytes | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
-            async with session.get(url, proxy=Fetcher.proxy) as resp:
+            async with session.get(url, proxy=Fetcher.proxy, params=params) as resp:
                 if not resp.ok:
                     return None
                 return await resp.read()
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_json(cls, session: ClientSession, url: str) -> Any | None:
+    async def fetch_json(
+        cls,
+        session: ClientSession,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+    ) -> Any | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch json: {url}")
             Logger.status.next_tick()
-            async with session.get(url, proxy=Fetcher.proxy) as resp:
+            async with session.get(url, proxy=Fetcher.proxy, params=params) as resp:
                 if not resp.ok:
                     return None
                 return await resp.json()

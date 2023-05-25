@@ -5,22 +5,31 @@ import math
 from aiohttp import ClientSession
 
 from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
+from yutto.api.user_info import encode_wbi, get_wbi_img
 from yutto.exceptions import NotLoginError
 from yutto.utils.fetcher import Fetcher
 
 
 # 个人空间·全部
 async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> list[AvId]:
-    space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search?mid={mid}&ps={ps}&tid=0&pn={pn}&order=pubdate"
+    space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search"
     # ps 随机设置有时会出现错误，因此暂时固定在 30
     # ps: int = random.randint(3, 6) * 10
     ps = 30
     pn = 1
     total = 1
     all_avid: list[AvId] = []
+    wbi_img = await get_wbi_img(session)
     while pn <= total:
-        space_videos_url = space_videos_api.format(mid=mid, ps=ps, pn=pn)
-        json_data = await Fetcher.fetch_json(session, space_videos_url)
+        params = {
+            "mid": mid,
+            "ps": ps,
+            "tid": 0,
+            "pn": pn,
+            "order": "pubdate",
+        }
+        params = encode_wbi(params, wbi_img)
+        json_data = await Fetcher.fetch_json(session, space_videos_api, params=params)
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["count"] / ps)
         pn += 1
@@ -30,9 +39,11 @@ async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> l
 
 # 个人空间·用户名
 async def get_user_name(session: ClientSession, mid: MId) -> str:
-    space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info?mid={mid}"
-    space_info_url = space_info_api.format(mid=mid)
-    user_info = await Fetcher.fetch_json(session, space_info_url)
+    wbi_img = await get_wbi_img(session)
+    params = {"mid": mid}
+    params = encode_wbi(params, wbi_img)
+    space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
+    user_info = await Fetcher.fetch_json(session, space_info_api, params=params)
     assert user_info is not None
     return user_info["data"]["name"]
 
