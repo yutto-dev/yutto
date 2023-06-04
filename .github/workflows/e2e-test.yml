@@ -1,6 +1,10 @@
 name: e2e Test
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test-e2e:
@@ -14,11 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install poetry
+        run: pipx install poetry
+
       - name: Install python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
+          cache: "poetry"
 
       - name: Install tools
         run: |
@@ -30,18 +38,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install poetry
-        uses: snok/install-poetry@v1
-
-      - uses: actions/cache@v3
-        id: poetry-cache
-        with:
-          path: |
-            .venv
-          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}-poetry-${{ hashFiles('poetry.lock') }}
-
       - name: Install dependencies
-        if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
           poetry install
 
