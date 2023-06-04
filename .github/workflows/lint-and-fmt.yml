@@ -14,29 +14,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install poetry
+        run: pipx install poetry
+
       - name: Install python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
-
-      - name: Install poetry
-        uses: snok/install-poetry@v1
+          cache: "poetry"
 
       - name: Install just
         uses: extractions/setup-just@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/cache@v3
-        id: poetry-cache
-        with:
-          path: |
-            .venv
-          key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.architecture }}-poetry-${{ hashFiles('poetry.lock') }}
-
       - name: Install dependencies
-        if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
           just ci-install
 
