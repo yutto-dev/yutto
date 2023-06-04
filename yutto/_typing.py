@@ -194,5 +194,4 @@ class FavouriteMetaData(TypedDict):
 if __name__ == "__main__":
     aid = AId("add")
     cid = CId("xxx")
-
     print("?aid={aid}&bvid={bvid}&cid={cid}".format(**aid.to_dict(), **cid.to_dict()))
