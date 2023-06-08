@@ -110,6 +110,9 @@ def cli() -> argparse.ArgumentParser:
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
     )
 
+    group_common.add_argument("--batch-filter-start-time", help="批量下载时，只下载该时间之后发布的稿件")
+    group_common.add_argument("--batch-filter-end-time", help="批量下载，只下载该时间之前发布的稿件")
+
     # 资源选择
     group_common.add_argument(
         "--video-only",

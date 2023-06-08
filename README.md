@@ -501,6 +501,12 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 -  参数 `-s` 或 `--with-section`
 -  默认值 `False`
 
+#### 指定稿件发布时间范围
+
+-  参数 `--batch-filter-start-time` 和 `--batch-filter-end-time` 分别表示`开始`和`结束`时间，该区间左右都是闭区间
+-  默认 `不限制`
+-  格式 `%Y-%m-%d` 或 `%Y-%m-%d %H:%M:%S`
+
 </details>
 
 ## 从 bilili1.x 迁移

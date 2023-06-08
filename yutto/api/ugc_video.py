@@ -123,7 +123,7 @@ async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInf
     }
 
 
-async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList:
+async def get_ugc_video_list(session: ClientSession, avid: AvId, pubdata_fmt: str = "%Y-%m-%d") -> UgcVideoList:
     video_info = await get_ugc_video_info(session, avid)
     if avid not in [video_info["aid"], video_info["bvid"]]:
         avid = video_info["avid"]
@@ -131,7 +131,7 @@ async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList
     result: UgcVideoList = {
         "title": video_title,
         "avid": avid,
-        "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
+        "pubdate": get_time_str_by_stamp(video_info["pubdate"], pubdata_fmt),
         "pages": [],
     }
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"

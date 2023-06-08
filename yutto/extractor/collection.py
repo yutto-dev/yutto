@@ -17,6 +17,7 @@ from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.filter import Filter
 
 
 class CollectionExtractor(BatchExtractor):
@@ -66,7 +67,10 @@ class CollectionExtractor(BatchExtractor):
         for item in collection_details["pages"]:
             try:
                 avid = item["avid"]
-                ugc_video_list = await get_ugc_video_list(session, avid)
+                ugc_video_list = await get_ugc_video_list(session, avid, "%Y-%m-%d %H:%M:%S")
+                if not Filter.verify_timer(ugc_video_list["pubdate"]):
+                    Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
+                    continue
                 await Fetcher.touch_url(session, avid.to_url())
                 if len(ugc_video_list["pages"]) != 1:
                     Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")

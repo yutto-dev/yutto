@@ -20,6 +20,7 @@ from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
+from yutto.utils.filter import Filter
 
 
 def initial_validation(args: argparse.Namespace):
@@ -55,6 +56,12 @@ def initial_validation(args: argparse.Namespace):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
+
+    # 批量下载时的过滤器设置
+    if args.batch_filter_start_time:
+        Filter.set_timer("batch_filter_start_time", args.batch_filter_start_time)
+    if args.batch_filter_end_time:
+        Filter.set_timer("batch_filter_end_time", args.batch_filter_end_time)
 
 
 def validate_basic_arguments(args: argparse.Namespace):
