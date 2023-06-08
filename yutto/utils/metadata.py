@@ -33,7 +33,6 @@ class MetaData(TypedDict):
 def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str | None]) -> TypedDict:
     for key, fmt in metadata_format.items():
         if fmt and key in metadata:
-            # datetime
             if isinstance(metadata[key], (time.struct_time)):  # TODO: datetime.datetime
                 metadata[key]: str = time.strftime(fmt, metadata[key])  # type: ignore
     return metadata
