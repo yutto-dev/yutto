@@ -13,3 +13,7 @@ def get_time_str_by_now(fmt: str = TIME_FMT):
 def get_time_str_by_stamp(stamp: float, fmt: str = TIME_FMT):
     local_time = time.localtime(stamp)
     return time.strftime(fmt, local_time)
+
+
+def get_time_struct_by_stamp(stamp: float):
+    return time.localtime(stamp)

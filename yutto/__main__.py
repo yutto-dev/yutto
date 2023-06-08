@@ -109,6 +109,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
     )
+    group_common.add_argument("--metadata-format-premiered", default="%Y-%m-%d", help="专用于metadata文件中premiered字段的日期格式")
 
     # 资源选择
     group_common.add_argument(
@@ -286,6 +287,9 @@ async def run(args_list: list[argparse.Namespace]):
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
+                        "metadata_format": {
+                            "premiered": args.metadata_format_premiered,
+                        },
                     },
                 )
                 Logger.new_line()

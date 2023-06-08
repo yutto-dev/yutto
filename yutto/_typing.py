@@ -184,6 +184,7 @@ class DownloaderOptions(TypedDict):
     overwrite: bool
     block_size: int
     num_workers: int
+    metadata_format: dict[str, str | None]
 
 
 class FavouriteMetaData(TypedDict):

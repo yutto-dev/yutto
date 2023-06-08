@@ -410,6 +410,14 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--metadata-only`
 -  默认值 `False`
 
+#### 指定媒体元数据值的格式
+
+当前仅支持`premiered`
+
+-  参数 `--metadata-format-premiered`
+-  默认值 `%Y-%m-%d`
+-  常用值 `%Y-%m-%d %H:%M:%S`
+
 #### 严格校验大会员状态有效
 
 -  参数 `--vip-strict`

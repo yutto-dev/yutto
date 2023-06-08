@@ -25,7 +25,11 @@ from yutto.exceptions import (
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import Actor, MetaData
-from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
+from yutto.utils.time import (
+    get_time_str_by_now,
+    get_time_str_by_stamp,
+    get_time_struct_by_stamp,
+)
 
 
 class _UgcVideoPageInfo(TypedDict):
@@ -271,7 +275,7 @@ def _parse_ugc_video_metadata(
         show_title=page_info["part"],
         plot=video_info["description"],
         thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
-        premiered=get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),
+        premiered=get_time_struct_by_stamp(video_info["pubdate"]),
         dateadded=get_time_str_by_now(),
         actor=video_info["actor"],
         genre=video_info["genre"],
