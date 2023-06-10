@@ -51,7 +51,7 @@ class FavouritesExtractor(BatchExtractor):
                 # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
                 # 至于为什么前面那俩（投稿视频页和番剧页）不需要额外 touch，因为在 get_redirected_url 阶段连接过了呀
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
-                    Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
+                    Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
                 await Fetcher.touch_url(session, avid.to_url())
                 for ugc_video_item in ugc_video_list["pages"]:
