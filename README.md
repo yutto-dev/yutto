@@ -505,9 +505,13 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 -  参数 `--batch-filter-start-time` 和 `--batch-filter-end-time` 分别表示`开始`和`结束`时间，该区间**左闭右开**
 -  默认 `不限制`
--  格式 `%Y-%m-%d` 或 `%Y-%m-%d %H:%M:%S`
--  例子 `2023-01-01`、`2023-12-31 23:59:59`
--  场景 仅下载2020年投稿的视频 `--batch-filter-start-time=2020-01-01 --batch-filter-end-time=2021-01-01`
+-  支持的格式
+   - `%Y-%m-%d`
+   - `%Y-%m-%d %H:%M:%S` 
+
+   例如仅下载2020年投稿的视频，可以这样:
+   
+   `--batch-filter-start-time=2020-01-01 --batch-filter-end-time=2021-01-01`
 
 </details>
 
