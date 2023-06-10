@@ -31,17 +31,17 @@ class MetaData(TypedDict):
     website: str
 
 
-def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str | None]) -> dict[str, Any]:
+def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str]) -> dict[str, Any]:
     formatted_metadata: dict[str, Any] = {}
     for key, value in metadata.items():
         if key in metadata_format:
             assert isinstance(value, int)
-            value = get_time_str_by_stamp(value)
+            value = get_time_str_by_stamp(value, metadata_format[key])
         formatted_metadata[key] = value
     return formatted_metadata
 
 
-def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[str, str | None]):
+def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[str, str]):
     metadata_path = video_path.with_suffix(".nfo")
     custom_root = "episodedetails"  # TODO: 不同视频类型使用不同的 root name
     # 增加字段格式化内容，后续如果需要调整可以继续调整
