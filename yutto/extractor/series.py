@@ -46,7 +46,7 @@ class SeriesExtractor(BatchExtractor):
         )
         Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
         for avid in await get_medialist_avids(session, self.series_id, self.mid):
             try:
                 ugc_video_list = await get_ugc_video_list(session, avid)

@@ -32,7 +32,7 @@ class UserWatchLaterExtractor(BatchExtractor):
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         try:
             avid_list = await get_watch_later_avids(session)

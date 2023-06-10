@@ -36,7 +36,7 @@ class UserAllFavouritesExtractor(BatchExtractor):
         username = await get_user_name(session, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         for fav in await get_all_favourites(session, self.mid):
             series_title = fav["title"]

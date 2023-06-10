@@ -42,7 +42,7 @@ class FavouritesExtractor(BatchExtractor):
         )
         Logger.custom(favourite_info["title"], Badge("收藏夹", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
 
         for avid in await get_favourite_avids(session, self.fid):
             try:
