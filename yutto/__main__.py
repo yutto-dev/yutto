@@ -109,7 +109,9 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
     )
-    group_common.add_argument("--metadata-format-premiered", default="%Y-%m-%d", help="专用于metadata文件中premiered字段的日期格式")
+    group_common.add_argument(
+        "--metadata-format-premiered", default="%Y-%m-%d", help="专用于 metadata 文件中 premiered 字段的日期格式"
+    )
 
     # 资源选择
     group_common.add_argument(
