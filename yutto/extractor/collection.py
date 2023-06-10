@@ -57,7 +57,7 @@ class CollectionExtractor(BatchExtractor):
         collection_title = collection_details["title"]
         Logger.custom(collection_title, Badge("视频合集", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
 
         # 选集过滤
         episodes = parse_episodes_selection(args.episodes, len(collection_details["pages"]))

@@ -36,7 +36,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         username = await get_user_name(session, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
         for avid in await get_user_space_all_videos_avids(session, self.mid):
             try:
                 ugc_video_list = await get_ugc_video_list(session, avid)

@@ -5,6 +5,7 @@ from html import unescape
 from typing import Literal, Union
 
 from yutto.utils.console.logger import Logger
+from yutto.utils.time import get_time_str_by_stamp
 
 PathTemplateVariable = Literal[
     "title", "id", "name", "username", "series_title", "pubdate", "download_date", "owner_uid"
@@ -50,6 +51,23 @@ def repair_filename(filename: str) -> str:
     return filename
 
 
+def create_time_formatter(name: str, value: int):
+    regex = re.compile(rf"{{{name}(@(?P<timefmt>.+))?}}")
+    DEFAULT_TIMEFMT = "%Y-%m-%d"
+
+    def convert_pubdate(matchobj: re.Match[str]):
+        timefmt = matchobj.group("timefmt")
+        if timefmt is None:
+            timefmt = DEFAULT_TIMEFMT
+        formatted_time = repair_filename(get_time_str_by_stamp(value, timefmt))
+        return formatted_time
+
+    def formatter(text: str):
+        return regex.sub(convert_pubdate, text)
+
+    return formatter
+
+
 def resolve_path_template(
     path_template: str, auto_path_template: str, subpath_variables: PathTemplateVariableDict
 ) -> str:
@@ -57,11 +75,23 @@ def resolve_path_template(
     if "{fav_title}" in path_template:
         Logger.deprecated_warning("路径变量 fav_title 已经被废除，已自动使用 series_title 替代（2.0.0 后将会彻底废除 fav_title）")
         path_template = path_template.replace("{fav_title}", "{series_title}")
+
     # 保证所有传进来的值都满足路径要求
     for key, value in subpath_variables.items():
+        # 未知变量警告
+        if f"{{{key}}}" in path_template and value == UNKNOWN:
+            Logger.warning("使用了未知的变量，可能导致产生错误的下载路径")
         # 只对字符串值修改，int 型不修改以适配高级模板
         if isinstance(value, str):
-            if f"{{{key}}}" in path_template and value == UNKNOWN:
-                Logger.warning("使用了未知的变量，可能导致产生错误的下载路径")
             subpath_variables[key] = repair_filename(value)
+
+    # 将时间变量转换为对应的时间格式
+    time_vars: list[PathTemplateVariable] = ["pubdate"]  # TODO: add download_date
+    for var in time_vars:
+        value = subpath_variables.pop(var)
+        if value == UNKNOWN:
+            continue
+        assert isinstance(value, int), f"变量 {var} 的值必须为 int 型，但是传入了 {value}"
+        time_formatter = create_time_formatter(var, value)
+        path_template = time_formatter(path_template)
     return path_template.format(auto=auto_path_template.format(**subpath_variables), **subpath_variables)
