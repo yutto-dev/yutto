@@ -415,8 +415,8 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 当前仅支持 `premiered`
 
 -  参数 `--metadata-format-premiered`
--  默认值 `%Y-%m-%d`
--  常用值 `%Y-%m-%d %H:%M:%S`
+-  默认值 `"%Y-%m-%d"`
+-  常用值 `"%Y-%m-%d %H:%M:%S"`
 
 #### 严格校验大会员状态有效
 
