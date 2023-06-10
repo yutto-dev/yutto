@@ -36,6 +36,7 @@ from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils import as_sync
+from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
 from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
@@ -108,6 +109,9 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument("-tp", "--subpath-template", default="{auto}", help="多级目录的存储路径模板")
     group_common.add_argument(
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
+    )
+    group_common.add_argument(
+        "--metadata-format-premiered", default=TIME_DATE_FMT, help="专用于 metadata 文件中 premiered 字段的日期格式"
     )
 
     # 资源选择
@@ -286,6 +290,10 @@ async def run(args_list: list[argparse.Namespace]):
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
+                        "metadata_format": {
+                            "premiered": args.metadata_format_premiered,
+                            "dateadded": TIME_FULL_FMT,
+                        },
                     },
                 )
                 Logger.new_line()

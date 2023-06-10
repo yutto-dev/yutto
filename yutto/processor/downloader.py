@@ -203,6 +203,7 @@ async def start_downloader(
     filename = episode_data["filename"]
     require_video = options["require_video"]
     require_audio = options["require_audio"]
+    metadata_format = options["metadata_format"]
 
     Logger.info(f"开始处理视频 {filename}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -260,7 +261,7 @@ async def start_downloader(
 
     # 保存媒体描述文件
     if metadata is not None:
-        write_metadata(metadata, output_path)
+        write_metadata(metadata, output_path, metadata_format)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     if output_path.exists():

@@ -19,7 +19,7 @@ from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData
-from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
+from yutto.utils.time import get_time_stamp_by_now
 
 
 class CheeseListItem(TypedDict):
@@ -138,8 +138,8 @@ def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
         show_title=item["title"],  # 无此字段，用 title 代替
         plot=item["title"],  # 无此字段，用 title 代替
         thumb=item["cover"],
-        premiered=get_time_str_by_stamp(item["release_date"], "%Y-%m-%d"),
-        dateadded=get_time_str_by_now(),
+        premiered=item["release_date"],
+        dateadded=get_time_stamp_by_now(),
         source="",  # TODO
         actor=[],  # TODO
         genre=[],  # TODO
