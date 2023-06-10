@@ -7,8 +7,8 @@ from yutto.utils.console.logger import Logger
 
 
 class Filter:
-    batch_filter_start_time: datetime.datetime | None = None
-    batch_filter_end_time: datetime.datetime | None = None
+    batch_filter_start_time: datetime.datetime = datetime.datetime.min
+    batch_filter_end_time: datetime.datetime = datetime.datetime.max
 
     @staticmethod
     def set_timer(key: str, user_input: str):
@@ -24,19 +24,5 @@ class Filter:
         setattr(Filter, key, timer)
 
     @staticmethod
-    def verify_timer(datestr: str) -> bool:
-        """验证过滤器"""
-        if Filter.batch_filter_start_time is None and Filter.batch_filter_end_time is None:
-            return True
-        elif Filter.batch_filter_start_time is None and isinstance(Filter.batch_filter_end_time, datetime.datetime):
-            return datetime.datetime.strptime(datestr, "%Y-%m-%d %H:%M:%S") <= Filter.batch_filter_end_time
-        elif isinstance(Filter.batch_filter_start_time, datetime.datetime) and Filter.batch_filter_end_time is None:
-            return datetime.datetime.strptime(datestr, "%Y-%m-%d %H:%M:%S") >= Filter.batch_filter_start_time
-        else:
-            assert isinstance(Filter.batch_filter_start_time, datetime.datetime)
-            assert isinstance(Filter.batch_filter_end_time, datetime.datetime)
-            return (
-                Filter.batch_filter_start_time
-                <= datetime.datetime.strptime(datestr, "%Y-%m-%d %H:%M:%S")
-                <= Filter.batch_filter_end_time
-            )
+    def verify_timer(timestamp: int) -> bool:
+        return Filter.batch_filter_start_time.timestamp() <= timestamp < Filter.batch_filter_end_time.timestamp()

@@ -33,7 +33,7 @@ class UserWatchLaterExtractor(BatchExtractor):
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         try:
             avid_list = await get_watch_later_avids(session)
@@ -43,7 +43,7 @@ class UserWatchLaterExtractor(BatchExtractor):
 
         for avid in avid_list:
             try:
-                ugc_video_list = await get_ugc_video_list(session, avid, "%Y-%m-%d %H:%M:%S")
+                ugc_video_list = await get_ugc_video_list(session, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
                     continue

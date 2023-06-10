@@ -110,9 +110,6 @@ def cli() -> argparse.ArgumentParser:
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
     )
 
-    group_common.add_argument("--batch-filter-start-time", help="批量下载时，只下载该时间之后发布的稿件")
-    group_common.add_argument("--batch-filter-end-time", help="批量下载，只下载该时间之前发布的稿件")
-
     # 资源选择
     group_common.add_argument(
         "--video-only",
@@ -180,6 +177,8 @@ def cli() -> argparse.ArgumentParser:
     group_batch.add_argument("-b", "--batch", action="store_true", help="批量下载")
     group_batch.add_argument("-p", "--episodes", default="1~-1", help="选集")
     group_batch.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
+    group_batch.add_argument("--batch-filter-start-time", help="只下载该时间之后(包含临界值)发布的稿件")
+    group_batch.add_argument("--batch-filter-end-time", help="只下载该时间之前(不包含临界值)发布的稿件")
 
     # 仅任务列表中使用
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")

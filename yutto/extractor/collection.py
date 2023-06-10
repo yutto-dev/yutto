@@ -58,7 +58,7 @@ class CollectionExtractor(BatchExtractor):
         collection_title = collection_details["title"]
         Logger.custom(collection_title, Badge("视频合集", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
 
         # 选集过滤
         episodes = parse_episodes_selection(args.episodes, len(collection_details["pages"]))
@@ -67,7 +67,7 @@ class CollectionExtractor(BatchExtractor):
         for item in collection_details["pages"]:
             try:
                 avid = item["avid"]
-                ugc_video_list = await get_ugc_video_list(session, avid, "%Y-%m-%d %H:%M:%S")
+                ugc_video_list = await get_ugc_video_list(session, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
                     continue

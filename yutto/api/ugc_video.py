@@ -60,7 +60,7 @@ class UgcVideoListItem(TypedDict):
 
 class UgcVideoList(TypedDict):
     title: str
-    pubdate: str
+    pubdate: int
     avid: AvId
     pages: list[UgcVideoListItem]
 
@@ -123,7 +123,7 @@ async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInf
     }
 
 
-async def get_ugc_video_list(session: ClientSession, avid: AvId, pubdata_fmt: str = "%Y-%m-%d") -> UgcVideoList:
+async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList:
     video_info = await get_ugc_video_info(session, avid)
     if avid not in [video_info["aid"], video_info["bvid"]]:
         avid = video_info["avid"]
@@ -131,7 +131,7 @@ async def get_ugc_video_list(session: ClientSession, avid: AvId, pubdata_fmt: st
     result: UgcVideoList = {
         "title": video_title,
         "avid": avid,
-        "pubdate": get_time_str_by_stamp(video_info["pubdate"], pubdata_fmt),
+        "pubdate": video_info["pubdate"],
         "pages": [],
     }
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"

@@ -47,10 +47,10 @@ class SeriesExtractor(BatchExtractor):
         )
         Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
         for avid in await get_medialist_avids(session, self.series_id, self.mid):
             try:
-                ugc_video_list = await get_ugc_video_list(session, avid, "%Y-%m-%d %H:%M:%S")
+                ugc_video_list = await get_ugc_video_list(session, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
                     continue

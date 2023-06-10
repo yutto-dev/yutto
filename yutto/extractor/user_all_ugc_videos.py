@@ -37,10 +37,10 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         username = await get_user_name(session, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
         for avid in await get_user_space_all_videos_avids(session, self.mid):
             try:
-                ugc_video_list = await get_ugc_video_list(session, avid, pubdata_fmt="%Y-%m-%d %H:%M:%S")
+                ugc_video_list = await get_ugc_video_list(session, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
                     continue

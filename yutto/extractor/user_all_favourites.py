@@ -37,14 +37,14 @@ class UserAllFavouritesExtractor(BatchExtractor):
         username = await get_user_name(session, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         for fav in await get_all_favourites(session, self.mid):
             series_title = fav["title"]
             fid = fav["fid"]
             for avid in await get_favourite_avids(session, fid):
                 try:
-                    ugc_video_list = await get_ugc_video_list(session, avid, "%Y-%m-%d %H:%M:%S")
+                    ugc_video_list = await get_ugc_video_list(session, avid)
                     if not Filter.verify_timer(ugc_video_list["pubdate"]):
                         Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
                         continue
