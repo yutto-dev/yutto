@@ -14,6 +14,7 @@ from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.filter import Filter
 
 
 class UserAllUgcVideosExtractor(BatchExtractor):
@@ -40,6 +41,9 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         for avid in await get_user_space_all_videos_avids(session, self.mid):
             try:
                 ugc_video_list = await get_ugc_video_list(session, avid)
+                if not Filter.verify_timer(ugc_video_list["pubdate"]):
+                    Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
+                    continue
                 await Fetcher.touch_url(session, avid.to_url())
                 for ugc_video_item in ugc_video_list["pages"]:
                     ugc_video_info_list.append(
