@@ -22,7 +22,7 @@ class MetaData(TypedDict):
     plot: str
     thumb: str
     premiered: int
-    dateadded: str
+    dateadded: int
     actor: list[Actor]
     genre: list[str]
     tag: list[str]

@@ -21,7 +21,7 @@ from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData
-from yutto.utils.time import get_time_str_by_now
+from yutto.utils.time import get_time_stamp_by_now
 
 
 class BangumiListItem(TypedDict):
@@ -166,7 +166,7 @@ def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
         plot=item["share_copy"],
         thumb=item["cover"],
         premiered=item["pub_time"],
-        dateadded=get_time_str_by_now(),
+        dateadded=get_time_stamp_by_now(),
         source="",  # TODO
         actor=[],  # TODO
         genre=[],  # TODO

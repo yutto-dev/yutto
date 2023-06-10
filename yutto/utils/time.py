@@ -5,6 +5,10 @@ import time
 TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 
+def get_time_stamp_by_now() -> int:
+    return int(time.time())
+
+
 def get_time_str_by_now(fmt: str = TIME_FMT):
     time_stamp_now = time.time()
     return get_time_str_by_stamp(time_stamp_now, fmt)

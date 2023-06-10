@@ -36,6 +36,7 @@ from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils import as_sync
+from yutto.utils.time import TIME_FMT
 from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
@@ -291,6 +292,7 @@ async def run(args_list: list[argparse.Namespace]):
                         "num_workers": args.num_workers,
                         "metadata_format": {
                             "premiered": args.metadata_format_premiered,
+                            "dateadded": TIME_FMT,
                         },
                     },
                 )

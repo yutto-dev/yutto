@@ -86,7 +86,7 @@ def resolve_path_template(
             subpath_variables[key] = repair_filename(value)
 
     # 将时间变量转换为对应的时间格式
-    time_vars: list[PathTemplateVariable] = ["pubdate"]  # TODO: add download_date
+    time_vars: list[PathTemplateVariable] = ["pubdate", "download_date"]
     for var in time_vars:
         value = subpath_variables.pop(var)
         if value == UNKNOWN:
