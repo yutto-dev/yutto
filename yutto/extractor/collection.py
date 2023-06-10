@@ -69,7 +69,7 @@ class CollectionExtractor(BatchExtractor):
                 avid = item["avid"]
                 ugc_video_list = await get_ugc_video_list(session, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
-                    Logger.debug(f"因为发布时间为{ugc_video_list['pubdate']} 跳过 {ugc_video_list['title']}")
+                    Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
                 await Fetcher.touch_url(session, avid.to_url())
                 if len(ugc_video_list["pages"]) != 1:
