@@ -328,7 +328,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
 
 def create_select_required_action(select: list[DownloadResourceType] = [], deselect: list[DownloadResourceType] = []):
     class SelectRequiredAction(argparse.Action):
-        def __init__(self, option_strings: str, dest: str, nargs: int | str | None = None, **kwargs: dict[str, Any]):
+        def __init__(self, option_strings: str, dest: str, nargs: int | str | None = None, **kwargs: Any):
             if nargs is not None:
                 raise ValueError("nargs not allowed")
             super().__init__(option_strings, dest, nargs=0, **kwargs)
