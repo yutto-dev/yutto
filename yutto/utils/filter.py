@@ -7,7 +7,7 @@ from yutto.utils.console.logger import Logger
 
 
 class Filter:
-    # XXX: A workaround to https://bugs.python.org/issue31212.
+    # NOTE(FrankHB): A workaround to https://bugs.python.org/issue31212.
     batch_filter_start_time: datetime.datetime = datetime.datetime(1, 1, 2)
     batch_filter_end_time: datetime.datetime = datetime.datetime(9999, 12, 31)
 
