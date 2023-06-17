@@ -7,8 +7,9 @@ from yutto.utils.console.logger import Logger
 
 
 class Filter:
-    batch_filter_start_time: datetime.datetime = datetime.datetime.min
-    batch_filter_end_time: datetime.datetime = datetime.datetime.max
+    # XXX: A workaround to https://bugs.python.org/issue31212.
+    batch_filter_start_time: datetime.datetime = datetime.datetime(1, 1, 2)
+    batch_filter_end_time: datetime.datetime = datetime.datetime(9999, 12, 31)
 
     @staticmethod
     def set_timer(key: str, user_input: str):
