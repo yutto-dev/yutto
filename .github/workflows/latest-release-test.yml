@@ -11,7 +11,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
         architecture: ["x64"]
-    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} test
+    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} latest release test
     steps:
       - name: Install python
         uses: actions/setup-python@v4
