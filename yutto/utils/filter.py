@@ -9,7 +9,7 @@ from yutto.utils.console.logger import Logger
 class Filter:
     # NOTE(FrankHB): A workaround to https://bugs.python.org/issue31212.
     batch_filter_start_time: datetime.datetime = datetime.datetime(1971, 1, 1)
-    batch_filter_end_time: datetime.datetime = datetime.datetime.today()
+    batch_filter_end_time: datetime.datetime = datetime.datetime.now() + datetime.timedelta(days=1)
 
     @staticmethod
     def set_timer(key: str, user_input: str):
