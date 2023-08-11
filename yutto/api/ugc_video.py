@@ -223,7 +223,7 @@ async def get_ugc_video_playurl(
         if resp_json["data"]["dash"]["audio"]
         else []
     )
-    if resp_json["data"]["dash"]["flac"] is not None:
+    if resp_json["data"]["dash"]["flac"] is not None and resp_json["data"]["dash"]["flac"]["audio"] is not None:
         hi_res_audio_json = resp_json["data"]["dash"]["flac"]["audio"]
         audios.append(
             {
