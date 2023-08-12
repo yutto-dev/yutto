@@ -13,7 +13,7 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12-dev"]
         architecture: ["x64"]
-    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} test
+    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} unit test
     steps:
       - name: Checkout
         uses: actions/checkout@v3
