@@ -62,7 +62,7 @@ class Fetcher:
     _touch_set: set[str] = set()
 
     @classmethod
-    def set_proxy(cls, proxy: Literal["no", "auto"] | str):
+    def set_proxy(cls, proxy: str):
         if proxy == "auto":
             Fetcher.proxy = None
             Fetcher.trust_env = True

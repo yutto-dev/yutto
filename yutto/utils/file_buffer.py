@@ -6,6 +6,7 @@ from pathlib import Path
 from types import TracebackType
 
 import aiofiles
+from typing_extensions import Self
 
 from yutto.utils.console.logger import Logger
 from yutto.utils.funcutils import aobject
@@ -85,7 +86,7 @@ class AsyncFileBuffer(aobject):
         # __exit__ should exist in pair with __enter__ but never executed
         ...
 
-    async def __aenter__(self) -> AsyncFileBuffer:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
