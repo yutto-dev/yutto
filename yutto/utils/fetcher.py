@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import random
 from collections.abc import Coroutine, Mapping
-from typing import Any, Callable, Literal, TypeVar
+from typing import Any, Callable, TypeVar
 from urllib.parse import quote, unquote
 
 import aiohttp
@@ -62,7 +62,7 @@ class Fetcher:
     _touch_set: set[str] = set()
 
     @classmethod
-    def set_proxy(cls, proxy: Literal["no", "auto"] | str):
+    def set_proxy(cls, proxy: str):
         if proxy == "auto":
             Fetcher.proxy = None
             Fetcher.trust_env = True
