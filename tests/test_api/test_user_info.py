@@ -20,4 +20,3 @@ async def test_get_user_info():
         user_info = await get_user_info(session)
         assert not user_info["vip_status"]
         assert not user_info["is_login"]
-        # assert user_info["mid"] == 0
