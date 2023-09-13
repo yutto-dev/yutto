@@ -241,7 +241,7 @@ async def run(args_list: list[argparse.Namespace]):
 
             # 在开始前校验，减少对第一个视频的请求
             if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
-                Logger.error("启用了严格校验大会员或登录模式，请检查SESSDATA或大会员状态！")
+                Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
                 sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
             # 重定向到可识别的 url
             try:
@@ -270,7 +270,7 @@ async def run(args_list: list[argparse.Namespace]):
 
                 # 中途校验，因为批量下载时可能会失效
                 if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
-                    Logger.error("启用了严格校验大会员或登录模式，请检查SESSDATA或大会员状态！")
+                    Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
                     sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
 
                 # 这时候才真正开始解析链接

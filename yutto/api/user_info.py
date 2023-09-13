@@ -26,7 +26,7 @@ async def get_user_info(session: ClientSession) -> UserInfo:
     assert res_json is not None
     res_json_data = res_json.get("data")
     return UserInfo(
-        vip_status=res_json_data.get("vipStatus") == 1,  # API返回的是int，如果未登录就没这个值
+        vip_status=res_json_data.get("vipStatus") == 1,  # API 返回的是 int，如果未登录就没这个值
         is_login=res_json_data.get("isLogin"),  # API返回的是bool
         # mid=res_json_data.get("mid", 0),  # API返回的是int, 0是未登录
     )

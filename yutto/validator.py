@@ -123,7 +123,7 @@ def validate_batch_argments(args: argparse.Namespace):
 
 
 async def validate_user_info(check_option: UserInfo) -> bool:
-    """UserInfo结构和用户输入是匹配的，如果要校验则置True即可，估计不会有要校验为False的情况吧~~"""
+    """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
@@ -132,7 +132,7 @@ async def validate_user_info(check_option: UserInfo) -> bool:
     ) as session:
         if check_option["is_login"] or check_option["vip_status"]:
             # 需要校验
-            # 这么写if是为了少一个get_user_info请求
+            # 这么写 if 是为了少一个 get_user_info 请求
             user_info = await get_user_info(session)
             if check_option["is_login"] and not user_info["is_login"]:
                 return False
