@@ -52,7 +52,7 @@ def repair_filename(filename: str) -> str:
 
 
 def create_time_formatter(name: str, value: int):
-    regex = re.compile(rf"{{{name}(@(?P<timefmt>.+))?}}")
+    regex = re.compile(rf"{{{name}(@(?P<timefmt>.+?))?}}")
     DEFAULT_TIMEFMT = "%Y-%m-%d"
 
     def convert_pubdate(matchobj: re.Match[str]):
