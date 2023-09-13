@@ -192,6 +192,11 @@ class FavouriteMetaData(TypedDict):
     title: str
 
 
+class UserInfo(TypedDict):
+    vip_status: bool
+    is_login: bool
+
+
 if __name__ == "__main__":
     aid = AId("add")
     cid = CId("xxx")
