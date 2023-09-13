@@ -21,6 +21,7 @@ class ErrorCode(Enum):
 
     # 异常状况，但并不算错误
     PAUSED_DOWNLOAD = 101
+    VIP_INVALID = 102
 
 
 class SuccessCode(Enum):

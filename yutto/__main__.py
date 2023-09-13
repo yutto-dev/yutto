@@ -238,6 +238,11 @@ async def run(args_list: list[argparse.Namespace]):
                 if matched:
                     break
 
+            # 在下载前校验大会员状态，这样如果一开始就不是大会员但开启了校验，就不需要获取视频的基本信息了~
+            if args.vip_strict and not await validate_vip():
+                Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
+                sys.exit(ErrorCode.VIP_INVALID.value)
+
             # 重定向到可识别的 url
             try:
                 url = await Fetcher.get_redirected_url(session, url)
@@ -262,9 +267,10 @@ async def run(args_list: list[argparse.Namespace]):
             for i, episode_data_coro in enumerate(download_list):
                 if episode_data_coro is None:
                     continue
+                # 下载过程中，可能突然出现大会员失效的情况，因此要每一次下载前校验
                 if args.vip_strict and not await validate_vip():
                     Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
-                    return
+                    sys.exit(ErrorCode.VIP_INVALID.value)
                 # 这时候才真正开始解析链接
                 episode_data = await episode_data_coro
                 if episode_data is None:
