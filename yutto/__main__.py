@@ -41,7 +41,7 @@ from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
     validate_batch_argments,
-    validate_vip,
+    validate_user_info,
 )
 
 DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku"]
@@ -175,6 +175,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
     group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
     group_common.add_argument("--vip-strict", action="store_true", help="启用严格检查大会员生效")
+    group_common.add_argument("--login-strict", action="store_true", help="启用严格检查登录状态")
 
     # 仅批量下载使用
     group_batch = parser.add_argument_group("batch", "批量下载参数")
@@ -238,6 +239,10 @@ async def run(args_list: list[argparse.Namespace]):
                 if matched:
                     break
 
+            # 在开始前校验，减少对第一个视频的请求
+            if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
+                Logger.error("启用了严格校验大会员或登录模式，请检查SESSDATA或大会员状态！")
+                sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
             # 重定向到可识别的 url
             try:
                 url = await Fetcher.get_redirected_url(session, url)
@@ -262,9 +267,12 @@ async def run(args_list: list[argparse.Namespace]):
             for i, episode_data_coro in enumerate(download_list):
                 if episode_data_coro is None:
                     continue
-                if args.vip_strict and not await validate_vip():
-                    Logger.error("启用了严格校验大会员模式，请检查SESSDATA或大会员状态！")
-                    return
+
+                # 中途校验，因为批量下载时可能会失效
+                if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
+                    Logger.error("启用了严格校验大会员或登录模式，请检查SESSDATA或大会员状态！")
+                    sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+
                 # 这时候才真正开始解析链接
                 episode_data = await episode_data_coro
                 if episode_data is None:

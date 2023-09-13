@@ -8,6 +8,7 @@ from typing import Any, TypedDict
 
 from aiohttp import ClientSession
 
+from yutto._typing import UserInfo
 from yutto.utils.fetcher import Fetcher
 
 
@@ -19,14 +20,16 @@ class WbiImg(TypedDict):
 wbi_img_cache: WbiImg | None = None  # Simulate the LocalStorage of the browser
 
 
-async def is_vip(session: ClientSession) -> bool:
+async def get_user_info(session: ClientSession) -> UserInfo:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
     res_json = await Fetcher.fetch_json(session, info_api)
     assert res_json is not None
     res_json_data = res_json.get("data")
-    if res_json_data.get("vipStatus") == 1:
-        return True
-    return False
+    return UserInfo(
+        vip_status=res_json_data.get("vipStatus") == 1,  # API返回的是int，如果未登录就没这个值
+        is_login=res_json_data.get("isLogin"),  # API返回的是bool
+        # mid=res_json_data.get("mid", 0),  # API返回的是int, 0是未登录
+    )
 
 
 async def get_wbi_img(session: ClientSession) -> WbiImg:
