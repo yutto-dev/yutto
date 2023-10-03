@@ -28,7 +28,9 @@ class FFmpeg(metaclass=Singleton):
         cmd = [self.path]
         cmd.extend(args)
         Logger.debug(" ".join(cmd))
-        return subprocess.run(cmd, capture_output=True)
+        # NOTE(aheadlead): FFmpeg 会谜之从 stdin 读取一个字节，这会让调用 yutto 的 shell 脚本踩到坑
+        # 这个行为在目前最新的 FFmpeg 6.0 仍然存在
+        return subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True)
 
     @cached_property
     def version(self) -> str:

@@ -8,7 +8,8 @@ import sys
 
 import aiohttp
 
-from yutto.api.user_info import is_vip
+from yutto._typing import UserInfo
+from yutto.api.user_info import get_user_info
 from yutto.bilibili_typing.codec import (
     audio_codec_priority_default,
     video_codec_priority_default,
@@ -52,7 +53,7 @@ def initial_validation(args: argparse.Namespace):
         Logger.info("未提供 SESSDATA，无法下载会员专享剧集哟～")
     else:
         Fetcher.set_sessdata(args.sessdata)
-        if asyncio.run(validate_vip()):
+        if asyncio.run(validate_user_info({"vip_status": True, "is_login": True})):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
@@ -121,11 +122,20 @@ def validate_batch_argments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-async def validate_vip() -> bool:
+async def validate_user_info(check_option: UserInfo) -> bool:
+    """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        return await is_vip(session)
+        if check_option["is_login"] or check_option["vip_status"]:
+            # 需要校验
+            # 这么写 if 是为了少一个 get_user_info 请求
+            user_info = await get_user_info(session)
+            if check_option["is_login"] and not user_info["is_login"]:
+                return False
+            if check_option["vip_status"] and not user_info["vip_status"]:
+                return False
+        return True

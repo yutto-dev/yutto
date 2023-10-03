@@ -423,6 +423,11 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--vip-strict`
 -  默认值 `False`
 
+#### 严格校验登录状态有效
+
+-  参数 `--login-strict`
+-  默认值 `False`
+
 #### 不显示颜色
 
 -  参数 `--no-color`
@@ -514,11 +519,12 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 -  参数 `--batch-filter-start-time` 和 `--batch-filter-end-time` 分别表示`开始`和`结束`时间，该区间**左闭右开**
 -  默认 `不限制`
 -  支持的格式
-   - `%Y-%m-%d`
-   - `%Y-%m-%d %H:%M:%S` 
 
-   例如仅下载2020年投稿的视频，可以这样:
-   
+   -  `%Y-%m-%d`
+   -  `%Y-%m-%d %H:%M:%S`
+
+   例如仅下载 2020 年投稿的视频，可以这样:
+
    `--batch-filter-start-time=2020-01-01 --batch-filter-end-time=2021-01-01`
 
 </details>
