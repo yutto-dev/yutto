@@ -24,6 +24,12 @@ lint:
 build:
   poetry build
 
+release:
+  @echo 'Tagging v{{VERSION}}...'
+  git tag "v{{VERSION}}"
+  @echo 'Push to GitHub to trigger publish process...'
+  git push --tags
+
 publish:
   touch yutto/py.typed
   poetry publish --build
