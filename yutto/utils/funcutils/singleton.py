@@ -1,5 +1,8 @@
-# type: ignore
 from __future__ import annotations
+
+from typing import Any, TypeVar
+
+T = TypeVar("T")
 
 
 class Singleton(type):
@@ -21,9 +24,9 @@ class Singleton(type):
     ```
     """
 
-    _instances = {}
+    _instances: dict[Any, Any] = {}
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(cls, *args: Any, **kwargs: Any):
         if cls not in cls._instances:
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
