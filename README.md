@@ -69,16 +69,14 @@ pipx install yutto
 
 pipx 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx 是更推荐的安装方式。
 
-### 从 GitHub 获取最新源码手动安装
+### 从 GitHub 手动拉取源码安装
 
 这同样要求你自行配置 Python 和 FFmpeg 环境
 
 ```bash
 git clone https://github.com/yutto-dev/yutto.git
 cd yutto/
-pip install poetry
-poetry build
-pip install ./dist/yutto-*.whl
+pip install .
 ```
 
 ## 主要功能
