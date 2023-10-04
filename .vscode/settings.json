@@ -1,8 +1,10 @@
 {
   "python.languageServer": "Pylance",
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-  "python.formatting.provider": "black",
   "python.analysis.typeCheckingMode": "strict",
   "python.analysis.inlayHints.functionReturnTypes": true,
-  "python.analysis.inlayHints.variableTypes": true
+  "python.analysis.inlayHints.variableTypes": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
 }
