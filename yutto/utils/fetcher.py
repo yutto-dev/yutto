@@ -182,7 +182,7 @@ class Fetcher:
             return
         cls._touch_set.add(url)
         async with cls.semaphore:
-            Logger.debug(f"Torch url: {url}")
+            Logger.debug(f"Touch url: {url}")
             async with session.get(
                 url,
                 proxy=Fetcher.proxy,
