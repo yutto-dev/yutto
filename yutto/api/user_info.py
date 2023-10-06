@@ -66,7 +66,7 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
     illegal_char_remover = re.compile(r"[!'\(\)*]")
 
     mixin_key = _get_mixin_key(img_key + sub_key)
-    time_stamp = time.time()
+    time_stamp = int(time.time())
     params_with_wts = dict(params, wts=time_stamp)
     url_encoded_params = urllib.parse.urlencode(
         {
