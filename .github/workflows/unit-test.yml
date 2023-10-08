@@ -7,11 +7,6 @@ on:
   merge_group:
   workflow_dispatch:
 
-# https://github.com/aio-libs/aiohttp/issues/7229#issuecomment-1663772882
-# This should removed after aiohttp 3.9 released
-env:
-  AIOHTTP_NO_EXTENSIONS: 1
-
 jobs:
   unit-test:
     runs-on: ubuntu-latest
