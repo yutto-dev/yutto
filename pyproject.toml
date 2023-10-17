@@ -39,7 +39,7 @@ black = "^23.1"
 isort = "^5.12.0"
 pyright = "^1.1.296"
 pytest-rerunfailures = "^11.0"
-ruff = "^0.0.292"
+ruff = "^0.1.0"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"
