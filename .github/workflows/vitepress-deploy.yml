@@ -3,6 +3,8 @@ name: VitePress Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+  merge_group:
   workflow_dispatch:
 
 jobs:
@@ -15,25 +17,16 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
-          lfs: true
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "20"
+          cache: "pnpm"
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        id: pnpm-cache
-        with:
-          path: |
-            ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
       - name: Install dependencies
         run: pnpm i --frozen-lockfile
 
@@ -43,10 +36,11 @@ jobs:
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
+        # if: github.ref == 'refs/heads/main' # Uncomment this before merge this PR
         with:
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_dir: docs/.vitepress/dist
-          external_repository: SigureMo/docs # 编译后直接转发到个人账户的 docs
+          external_repository: SigureMo/docs
           publish_branch: yutto
           force_orphan: true
           commit_message: ":rocket: deploy: "
