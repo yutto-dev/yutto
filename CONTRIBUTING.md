@@ -230,6 +230,16 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 
 ### 发布到 PyPI
 
+我们优先使用 GitHub Actions 构建并发布到 PyPI，这可以通过如下命令触发
+
+```bash
+just release
+```
+
+简单来说就是创建一个 tag 并 push，此时便会触发 GitHub Actions 中的 [Release](.github/workflows/release.yml) 构建
+
+如果你想要手动发布到 PyPI，可以使用下面的命令
+
 ```bash
 just publish
 ```
@@ -238,7 +248,7 @@ just publish
 
 ⚠️ 必须在发布到 PyPI 之后
 
-> 需预先自行安装 [Docker](https://docs.docker.com/get-docker/) 并安装 [buildx 插件](https://docs.docker.com/buildx/working-with-buildx/) （我这里貌似不需要手动安装插件就有了……）
+> 需预先自行安装 [Docker](https://docs.docker.com/get-docker/)
 
 ```bash
 just docker-publish

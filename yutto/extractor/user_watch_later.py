@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
 import re
 
 import aiohttp
 
-from yutto._typing import EpisodeData, MId, SeriesId
-from yutto.api.space import get_medialist_avids, get_medialist_title, get_user_name
+from yutto._typing import EpisodeData
+from yutto.api.space import get_watch_later_avids
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
-from yutto.exceptions import NotFoundError
+from yutto.exceptions import NotFoundError, NotLoginError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
@@ -18,23 +17,13 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import Filter
 
 
-class SeriesExtractor(BatchExtractor):
-    """视频列表"""
+class UserWatchLaterExtractor(BatchExtractor):
+    """用户稍后再看"""
 
-    REGEX_SERIES = re.compile(
-        r"https?://space\.bilibili\.com/(?P<mid>\d+)/channel/seriesdetail\?sid=(?P<series_id>\d+)"
-    )
-    REGEX_SERIES_MEDIA_LIST = re.compile(
-        r"https?://www\.bilibili\.com/medialist/play/(?P<mid>\d+)\?business=space_series&business_id=(?P<series_id>\d+)"
-    )
-
-    mid: MId
-    series_id: SeriesId
+    REGEX_WATCH_LATER = re.compile(r"https?://www\.bilibili\.com/watchlater/?.*?$")
 
     def match(self, url: str) -> bool:
-        if (match_obj := self.REGEX_SERIES_MEDIA_LIST.match(url)) or (match_obj := self.REGEX_SERIES.match(url)):
-            self.mid = MId(match_obj.group("mid"))
-            self.series_id = SeriesId(match_obj.group("series_id"))
+        if self.REGEX_WATCH_LATER.match(url):
             return True
         else:
             return False
@@ -42,13 +31,17 @@ class SeriesExtractor(BatchExtractor):
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        username, series_title = await asyncio.gather(
-            get_user_name(session, self.mid), get_medialist_title(session, self.series_id)
-        )
-        Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
+        Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
-        for avid in await get_medialist_avids(session, self.series_id, self.mid):
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
+
+        try:
+            avid_list = await get_watch_later_avids(session)
+        except NotLoginError as e:
+            Logger.error(e.message)
+            return []
+
+        for avid in avid_list:
             try:
                 ugc_video_list = await get_ugc_video_list(session, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
@@ -61,6 +54,7 @@ class SeriesExtractor(BatchExtractor):
                             ugc_video_item,
                             ugc_video_list["title"],
                             ugc_video_list["pubdate"],
+                            "稍后再看",
                         )
                     )
             except NotFoundError as e:
@@ -75,13 +69,13 @@ class SeriesExtractor(BatchExtractor):
                     ugc_video_item,
                     args,
                     {
-                        "series_title": series_title,
-                        "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
                         "title": title,
+                        "username": "",
+                        "series_title": series_title,
                         "pubdate": pubdate,
                     },
-                    "{series_title}/{title}/{name}",
+                    "稍后再看/{title}/{name}",
                 )
             )
-            for ugc_video_item, title, pubdate in ugc_video_info_list
+            for ugc_video_item, title, pubdate, series_title in ugc_video_info_list
         ]

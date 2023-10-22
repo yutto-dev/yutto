@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import re
-from typing import Any, Coroutine, Optional
 
 import aiohttp
 
@@ -12,14 +11,15 @@ from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.processor.selector import parse_episodes_selection
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 
 class UgcVideoBatchExtractor(BatchExtractor):
     """投稿视频批下载"""
 
-    REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
-    REGEX_BV = re.compile(r"https?://www\.bilibili\.com/video/(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
+    REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)/?(\?p=(?P<page>\d+))?")
+    REGEX_BV = re.compile(r"https?://www\.bilibili\.com/video/(?P<bvid>(bv|BV)\w+)/?(\?p=(?P<page>\d+))?")
 
     REGEX_AV_ID = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
     REGEX_BV_ID = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
@@ -55,7 +55,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         try:
             ugc_video_list = await get_ugc_video_list(session, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
@@ -69,16 +69,18 @@ class UgcVideoBatchExtractor(BatchExtractor):
         ugc_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, ugc_video_list["pages"]))
 
         return [
-            extract_ugc_video_data(
-                session,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                args,
-                {
-                    "title": ugc_video_list["title"],
-                    "pubdate": ugc_video_list["pubdate"],
-                },
-                "{title}/{name}",
+            CoroutineWrapper(
+                extract_ugc_video_data(
+                    session,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    args,
+                    {
+                        "title": ugc_video_list["title"],
+                        "pubdate": ugc_video_list["pubdate"],
+                    },
+                    "{title}/{name}",
+                )
             )
             for ugc_video_item in ugc_video_list["pages"]
         ]

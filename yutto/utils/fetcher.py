@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import asyncio
 import random
-from typing import Any, Callable, Coroutine, Literal, Optional, TypeVar, Union
+from collections.abc import Coroutine, Mapping
+from typing import Any, Callable, TypeVar
 from urllib.parse import quote, unquote
 
 import aiohttp
 from aiohttp import ClientSession
+from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
 from yutto.utils.console.logger import Logger
 from yutto.utils.file_buffer import AsyncFileBuffer
 
-T = TypeVar("T")
+RetT = TypeVar("RetT")
+InputT = ParamSpec("InputT")
 
 
 class MaxRetry:
@@ -26,8 +29,10 @@ class MaxRetry:
     def __init__(self, max_retry: int = 2):
         self.max_retry = max_retry
 
-    def __call__(self, connect_once: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., Coroutine[Any, Any, T]]:
-        async def connect_n_times(*args: Any, **kwargs: Any) -> T:
+    def __call__(
+        self, connect_once: Callable[InputT, Coroutine[Any, Any, RetT]]
+    ) -> Callable[InputT, Coroutine[Any, Any, RetT]]:
+        async def connect_n_times(*args: InputT.args, **kwargs: InputT.kwargs) -> RetT:
             retry = self.max_retry + 1
             while retry:
                 try:
@@ -46,10 +51,10 @@ class MaxRetry:
 
 
 class Fetcher:
-    proxy: Optional[str] = None
+    proxy: str | None = None
     trust_env: bool = True
     headers: dict[str, str] = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
@@ -57,7 +62,7 @@ class Fetcher:
     _touch_set: set[str] = set()
 
     @classmethod
-    def set_proxy(cls, proxy: Union[Literal["no", "auto"], str]):
+    def set_proxy(cls, proxy: str):
         if proxy == "auto":
             Fetcher.proxy = None
             Fetcher.trust_env = True
@@ -80,33 +85,52 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_text(cls, session: ClientSession, url: str, encoding: Optional[str] = None) -> Optional[str]:
+    async def fetch_text(
+        cls,
+        session: ClientSession,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+        encoding: str | None = None,
+    ) -> str | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
-            async with session.get(url, proxy=Fetcher.proxy) as resp:
+            async with session.get(url, proxy=Fetcher.proxy, params=params) as resp:
                 if not resp.ok:
                     return None
                 return await resp.text(encoding=encoding)
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_bin(cls, session: ClientSession, url: str) -> Optional[bytes]:
+    async def fetch_bin(
+        cls,
+        session: ClientSession,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+    ) -> bytes | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
-            async with session.get(url, proxy=Fetcher.proxy) as resp:
+            async with session.get(url, proxy=Fetcher.proxy, params=params) as resp:
                 if not resp.ok:
                     return None
                 return await resp.read()
 
     @classmethod
     @MaxRetry(2)
-    async def fetch_json(cls, session: ClientSession, url: str) -> Optional[Any]:
+    async def fetch_json(
+        cls,
+        session: ClientSession,
+        url: str,
+        *,
+        params: Mapping[str, str] | None = None,
+    ) -> Any | None:
         async with cls.semaphore:
             Logger.debug(f"Fetch json: {url}")
             Logger.status.next_tick()
-            async with session.get(url, proxy=Fetcher.proxy) as resp:
+            async with session.get(url, proxy=Fetcher.proxy, params=params) as resp:
                 if not resp.ok:
                     return None
                 return await resp.json()
@@ -133,7 +157,7 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
-    async def get_size(cls, session: ClientSession, url: str) -> Optional[int]:
+    async def get_size(cls, session: ClientSession, url: str) -> int | None:
         async with cls.semaphore:
             headers = session.headers.copy()
             headers["Range"] = "bytes=0-1"
@@ -158,7 +182,7 @@ class Fetcher:
             return
         cls._touch_set.add(url)
         async with cls.semaphore:
-            Logger.debug(f"Torch url: {url}")
+            Logger.debug(f"Touch url: {url}")
             async with session.get(
                 url,
                 proxy=Fetcher.proxy,
@@ -174,7 +198,7 @@ class Fetcher:
         mirrors: list[str],
         file_buffer: AsyncFileBuffer,
         offset: int,
-        size: Optional[int],
+        size: int | None,
         stream: bool = True,
     ) -> None:
         async with cls.semaphore:
@@ -192,7 +216,7 @@ class Fetcher:
                     async with session.get(
                         url,
                         headers=headers,
-                        timeout=aiohttp.ClientTimeout(connect=5, sock_read=10),
+                        timeout=aiohttp.ClientTimeout(total=10, connect=3, sock_connect=3, sock_read=7),
                         proxy=Fetcher.proxy,
                         ssl=False,
                     ) as resp:

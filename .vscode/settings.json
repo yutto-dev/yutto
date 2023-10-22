@@ -1,10 +1,10 @@
 {
   "python.languageServer": "Pylance",
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-  "python.formatting.provider": "black",
   "python.analysis.typeCheckingMode": "strict",
   "python.analysis.inlayHints.functionReturnTypes": true,
   "python.analysis.inlayHints.variableTypes": true,
-  // An alternative to avoid the wrong hints, waiting for https://github.com/tamasfe/taplo/issues/204
-  "evenBetterToml.schema.enabled": false
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
 }

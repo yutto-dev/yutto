@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-class aobject(object):
+class aobject:
     """Inheriting this class allows you to define an async __ainit__.
 
     ### Refs

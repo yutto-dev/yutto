@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Final, Literal, NamedTuple, Optional, TypedDict, Union
+from typing import Final, Literal, NamedTuple, TypedDict, Union
 
 # thirt-party imports
 # if system is windows, initialize colorama, which translates UNIX console color sequences into windows color sequences
@@ -100,7 +100,7 @@ code_map: CodeMap = {
 
 
 def colored_string(
-    string: str, fore: Optional[Color] = None, back: Optional[Color] = None, style: Optional[list[Style]] = None
+    string: str, fore: Color | None = None, back: Color | None = None, style: list[Style] | None = None
 ) -> str:
     if _no_color:
         return string

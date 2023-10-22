@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from enum import Enum
 from types import TracebackType
-from typing import Type, Union
+from typing import Union
 
 
 class ErrorCode(Enum):
@@ -17,6 +17,7 @@ class ErrorCode(Enum):
     EPISODE_NOT_FOUND_ERROR = 15
     MAX_RETRY_ERROR = 16
     NOT_FOUND_ERROR = 17
+    NOT_LOGIN_ERROR = 18
 
     # 异常状况，但并不算错误
     PAUSED_DOWNLOAD = 101
@@ -58,7 +59,11 @@ class NotFoundError(YuttoBaseException):
     code = ErrorCode.NOT_FOUND_ERROR
 
 
-def handleUncaughtException(exctype: Type[Exception], exception: Exception, trace: TracebackType):
+class NotLoginError(YuttoBaseException):
+    code = ErrorCode.NOT_LOGIN_ERROR
+
+
+def handleUncaughtException(exctype: type[Exception], exception: Exception, trace: TracebackType):
     oldHook(exctype, exception, trace)
     if isinstance(exception, YuttoBaseException):
         sys.exit(exception.code.value)

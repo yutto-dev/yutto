@@ -7,7 +7,7 @@ import sys
 import aiohttp
 
 from yutto._typing import EpisodeData, EpisodeId
-from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
+from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.exceptions import (
     ErrorCode,
     HttpStatusError,
@@ -16,15 +16,15 @@ from yutto.exceptions import (
     UnSupportedTypeError,
 )
 from yutto.extractor._abc import SingleExtractor
-from yutto.extractor.common import extract_bangumi_data
+from yutto.extractor.common import extract_cheese_data
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 
-class BangumiExtractor(SingleExtractor):
-    """番剧单话"""
+class CheeseExtractor(SingleExtractor):
+    """单课时"""
 
-    REGEX_EP = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
+    REGEX_EP = re.compile(r"https?://www\.bilibili\.com/cheese/play/ep(?P<episode_id>\d+)")
 
     REGEX_EP_ID = re.compile(r"ep(?P<episode_id>\d+)")
 
@@ -34,7 +34,7 @@ class BangumiExtractor(SingleExtractor):
         matched = False
         url = id
         if match_obj := self.REGEX_EP_ID.match(id):
-            url = f"https://www.bilibili.com/bangumi/play/ep{match_obj.group('episode_id')}"
+            url = f"https://www.bilibili.com/cheese/play/ep{match_obj.group('episode_id')}"
             matched = True
         return matched, url
 
@@ -49,25 +49,25 @@ class BangumiExtractor(SingleExtractor):
         self, session: aiohttp.ClientSession, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         season_id = await get_season_id_by_episode_id(session, self.episode_id)
-        bangumi_list = await get_bangumi_list(session, season_id)
-        Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
+        cheese_list = await get_cheese_list(session, season_id)
+        Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         try:
-            for bangumi_item in bangumi_list["pages"]:
-                if bangumi_item["episode_id"] == self.episode_id:
-                    bangumi_list_item = bangumi_item
+            for cheese_item in cheese_list["pages"]:
+                if cheese_item["episode_id"] == self.episode_id:
+                    cheese_list_item = cheese_item
                     break
             else:
                 Logger.error("在列表中未找到该剧集")
                 sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
 
             return CoroutineWrapper(
-                extract_bangumi_data(
+                extract_cheese_data(
                     session,
                     self.episode_id,
-                    bangumi_list_item,
+                    cheese_list_item,
                     args,
                     {
-                        "title": bangumi_list["title"],
+                        "title": cheese_list["title"],
                     },
                     "{name}",
                 )

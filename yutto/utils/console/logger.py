@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Union
+from typing import Any
 
 from yutto.utils.console.colorful import Color, Style, colored_string
 from yutto.utils.console.formatter import get_string_width
@@ -19,17 +19,17 @@ class Badge:
     def __init__(
         self,
         text: str = "CUSTOM",
-        fore: Optional[Color] = None,
-        back: Optional[Color] = None,
-        style: Optional[list[Style]] = None,
+        fore: Color | None = None,
+        back: Color | None = None,
+        style: list[Style] | None = None,
     ):
         self.text: str = text
-        self.fore: Optional[Color] = fore
-        self.back: Optional[Color] = back
-        self.style: Optional[list[Style]] = style
+        self.fore: Color | None = fore
+        self.back: Color | None = back
+        self.style: list[Style] | None = style
 
     def __str__(self):
-        return colored_string(" {} ".format(self.text), fore=self.fore, back=self.back, style=self.style)
+        return colored_string(f" {self.text} ", fore=self.fore, back=self.back, style=self.style)
 
     def __repr__(self):
         return str(self)
@@ -136,7 +136,7 @@ class Logger:
         print(string, *print_args, **print_kwargs)
 
     @classmethod
-    def json(cls, obj: Union[list[Any], dict[str, Any]], *print_args: Any, **print_kwargs: Any):
+    def json(cls, obj: list[Any] | dict[str, Any], *print_args: Any, **print_kwargs: Any):
         Logger.print(json.dumps(obj, indent=2), *print_args, **print_kwargs)
 
     @classmethod

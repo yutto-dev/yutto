@@ -14,10 +14,10 @@ class FFmpegNotFoundError(Exception):
         super().__init__("请配置正确的 FFmpeg 路径")
 
 
-class FFmpeg(object, metaclass=Singleton):
+class FFmpeg(metaclass=Singleton):
     def __init__(self, ffmpeg_path: str = "ffmpeg"):
         try:
-            if subprocess.run([ffmpeg_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode != 1:
+            if subprocess.run([ffmpeg_path], capture_output=True).returncode != 1:
                 raise FFmpegNotFoundError()
         except FileNotFoundError:
             raise FFmpegNotFoundError()
@@ -28,7 +28,9 @@ class FFmpeg(object, metaclass=Singleton):
         cmd = [self.path]
         cmd.extend(args)
         Logger.debug(" ".join(cmd))
-        return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # NOTE(aheadlead): FFmpeg 会谜之从 stdin 读取一个字节，这会让调用 yutto 的 shell 脚本踩到坑
+        # 这个行为在目前最新的 FFmpeg 6.0 仍然存在
+        return subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True)
 
     @cached_property
     def version(self) -> str:

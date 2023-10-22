@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional, TypeVar
+from collections.abc import Iterable
+from typing import TypeVar
 
 T = TypeVar("T")
 
 
-def filter_none_value(l: Iterable[Optional[T]]) -> Iterable[T]:
+def filter_none_value(list_contains_some_none: Iterable[T | None]) -> Iterable[T]:
     """移除列表（迭代器）中的 None
 
     ### Examples
@@ -17,7 +18,7 @@ def filter_none_value(l: Iterable[Optional[T]]) -> Iterable[T]:
     ```
     """
     result: Iterable[T] = []
-    for item in l:
+    for item in list_contains_some_none:
         if item is not None:
             result.append(item)
     return result

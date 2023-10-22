@@ -8,7 +8,8 @@ import sys
 
 import aiohttp
 
-from yutto.api.user_info import is_vip
+from yutto._typing import UserInfo
+from yutto.api.user_info import get_user_info
 from yutto.bilibili_typing.codec import (
     audio_codec_priority_default,
     video_codec_priority_default,
@@ -20,9 +21,10 @@ from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg
+from yutto.utils.filter import Filter
 
 
-def initial_validate(args: argparse.Namespace):
+def initial_validation(args: argparse.Namespace):
     """初始化检查，仅执行一次"""
 
     if not args.no_progress:
@@ -42,7 +44,7 @@ def initial_validate(args: argparse.Namespace):
 
     # proxy 校验
     if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
-        Logger.error("proxy 参数值（{}）错误啦！".format(args.proxy))
+        Logger.error(f"proxy 参数值（{args.proxy}）错误啦！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     Fetcher.set_proxy(args.proxy)
 
@@ -51,10 +53,16 @@ def initial_validate(args: argparse.Namespace):
         Logger.info("未提供 SESSDATA，无法下载会员专享剧集哟～")
     else:
         Fetcher.set_sessdata(args.sessdata)
-        if asyncio.run(vip_validate()):
+        if asyncio.run(validate_user_info({"vip_status": True, "is_login": True})):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
+
+    # 批量下载时的过滤器设置
+    if args.batch_filter_start_time:
+        Filter.set_timer("batch_filter_start_time", args.batch_filter_start_time)
+    if args.batch_filter_end_time:
+        Filter.set_timer("batch_filter_end_time", args.batch_filter_end_time)
 
 
 def validate_basic_arguments(args: argparse.Namespace):
@@ -65,7 +73,7 @@ def validate_basic_arguments(args: argparse.Namespace):
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
     if len(vcodec_splited) != 2:
-        Logger.error("vcodec 参数值（{}）不满足要求哦（并非使用 : 分隔的值）".format(args.vcodec))
+        Logger.error(f"vcodec 参数值（{args.vcodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     video_download_codec, video_save_codec = vcodec_splited
     if video_download_codec not in video_codec_priority_default:
@@ -86,7 +94,7 @@ def validate_basic_arguments(args: argparse.Namespace):
     # acodec 检查
     acodec_splited = args.acodec.split(":")
     if len(acodec_splited) != 2:
-        Logger.error("acodec 参数值（{}）不满足要求哦（并非使用 : 分隔的值）".format(args.acodec))
+        Logger.error(f"acodec 参数值（{args.acodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     audio_download_codec, audio_save_codec = acodec_splited
     if audio_download_codec not in audio_codec_priority_default:
@@ -104,46 +112,30 @@ def validate_basic_arguments(args: argparse.Namespace):
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    # 不下载视频无法嵌入字幕
-    if not args.require_video and args.embed_subtitle:
-        Logger.error("不下载视频时无法嵌入字幕的哦！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 不下载视频无法嵌入弹幕
-    if not args.require_video and args.embed_danmaku:
-        Logger.error("不下载视频时无法嵌入弹幕的哦！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 生成字幕才可以嵌入字幕
-    if args.embed_subtitle and not args.require_subtitle:
-        Logger.error("生成字幕才可以嵌入字幕喔！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 生成 ASS 弹幕才可以嵌入弹幕
-    if args.embed_danmaku and not args.require_danmaku:
-        Logger.error("生成 ASS 弹幕才可以嵌入弹幕喔！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-    # 嵌入弹幕功能仅支持 ASS 弹幕
-    if args.embed_danmaku and args.danmaku_format != "ass":
-        Logger.error("嵌入弹幕功能仅支持 ASS 弹幕喔！")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
 
 def validate_batch_argments(args: argparse.Namespace):
     """检查批量下载相关选项"""
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
     if not validate_episodes_selection(args.episodes):
         # TODO: 错误信息链接到相应文档，当然需要先写文档……
-        Logger.error("选集参数（{}）格式不正确呀～重新检查一下下～".format(args.episodes))
+        Logger.error(f"选集参数（{args.episodes}）格式不正确呀～重新检查一下下～")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-async def vip_validate() -> bool:
+async def validate_user_info(check_option: UserInfo) -> bool:
+    """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
     async with aiohttp.ClientSession(
         headers=Fetcher.headers,
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
         timeout=aiohttp.ClientTimeout(total=5),
     ) as session:
-        return await is_vip(session)
+        if check_option["is_login"] or check_option["vip_status"]:
+            # 需要校验
+            # 这么写 if 是为了少一个 get_user_info 请求
+            user_info = await get_user_info(session)
+            if check_option["is_login"] and not user_info["is_login"]:
+                return False
+            if check_option["vip_status"] and not user_info["vip_status"]:
+                return False
+        return True

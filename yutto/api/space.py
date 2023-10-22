@@ -5,23 +5,31 @@ import math
 from aiohttp import ClientSession
 
 from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
+from yutto.api.user_info import encode_wbi, get_wbi_img
+from yutto.exceptions import NotLoginError
 from yutto.utils.fetcher import Fetcher
 
 
 # 个人空间·全部
 async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> list[AvId]:
-    space_videos_api = (
-        "https://api.bilibili.com/x/space/arc/search?mid={mid}&ps={ps}&tid=0&pn={pn}&order=pubdate&jsonp=jsonp"
-    )
+    space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search"
     # ps 随机设置有时会出现错误，因此暂时固定在 30
     # ps: int = random.randint(3, 6) * 10
     ps = 30
     pn = 1
     total = 1
     all_avid: list[AvId] = []
+    wbi_img = await get_wbi_img(session)
     while pn <= total:
-        space_videos_url = space_videos_api.format(mid=mid, ps=ps, pn=pn)
-        json_data = await Fetcher.fetch_json(session, space_videos_url)
+        params = {
+            "mid": mid,
+            "ps": ps,
+            "tid": 0,
+            "pn": pn,
+            "order": "pubdate",
+        }
+        params = encode_wbi(params, wbi_img)
+        json_data = await Fetcher.fetch_json(session, space_videos_api, params=params)
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["count"] / ps)
         pn += 1
@@ -31,9 +39,11 @@ async def get_user_space_all_videos_avids(session: ClientSession, mid: MId) -> l
 
 # 个人空间·用户名
 async def get_user_name(session: ClientSession, mid: MId) -> str:
-    space_info_api = "https://api.bilibili.com/x/space/acc/info?mid={mid}&jsonp=jsonp"
-    space_info_url = space_info_api.format(mid=mid)
-    user_info = await Fetcher.fetch_json(session, space_info_url)
+    wbi_img = await get_wbi_img(session)
+    params = {"mid": mid}
+    params = encode_wbi(params, wbi_img)
+    space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
+    user_info = await Fetcher.fetch_json(session, space_info_api, params=params)
     assert user_info is not None
     return user_info["data"]["name"]
 
@@ -89,3 +99,14 @@ async def get_medialist_title(session: ClientSession, series_id: SeriesId) -> st
     json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
     assert json_data is not None
     return json_data["data"]["title"]
+
+
+# 个人空间·稍后再看
+async def get_watch_later_avids(session: ClientSession) -> list[AvId]:
+    api = "https://api.bilibili.com/x/v2/history/toview/web"
+    json_data = await Fetcher.fetch_json(session, api)
+    assert json_data is not None
+    if json_data["code"] in [-101, -400]:
+        raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")
+    # TODO: 处理其他code不为0的异常
+    return [BvId(video_info["bvid"]) for video_info in json_data["data"]["list"]]

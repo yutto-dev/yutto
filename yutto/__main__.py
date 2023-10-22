@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import argparse
 import copy
+import os
 import re
 import sys
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Any, Literal
 
 import aiohttp
@@ -20,6 +20,8 @@ from yutto.exceptions import ErrorCode
 from yutto.extractor import (
     BangumiBatchExtractor,
     BangumiExtractor,
+    CheeseBatchExtractor,
+    CheeseExtractor,
     CollectionExtractor,
     FavouritesExtractor,
     SeriesExtractor,
@@ -27,16 +29,19 @@ from yutto.extractor import (
     UgcVideoExtractor,
     UserAllFavouritesExtractor,
     UserAllUgcVideosExtractor,
+    UserWatchLaterExtractor,
 )
 from yutto.processor.downloader import start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils import as_sync
+from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
 from yutto.validator import (
-    initial_validate,
+    initial_validation,
     validate_basic_arguments,
     validate_batch_argments,
+    validate_user_info,
 )
 
 DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku"]
@@ -46,7 +51,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtit
 def main():
     parser = cli()
     args = parser.parse_args()
-    initial_validate(args)
+    initial_validation(args)
     args_list = flatten_args(args, parser)
     try:
         run(args_list)
@@ -105,6 +110,9 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "-af", "--alias-file", type=argparse.FileType("r", encoding="utf-8"), help="设置 url 别名文件路径"
     )
+    group_common.add_argument(
+        "--metadata-format-premiered", default=TIME_DATE_FMT, help="专用于 metadata 文件中 premiered 字段的日期格式"
+    )
 
     # 资源选择
     group_common.add_argument(
@@ -155,21 +163,27 @@ def cli() -> argparse.ArgumentParser:
         action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
         help="仅生成元数据文件",
     )
+
     group_common.set_defaults(
-        require_video=True, require_audio=True, require_subtitle=True, require_metadata=False, require_danmaku=True
+        require_video=True,
+        require_audio=True,
+        require_subtitle=True,
+        require_metadata=False,
+        require_danmaku=True,
     )
-    group_common.add_argument("--metadata-format", default="nfo", choices=["nfo"], help="（待实现）元数据文件类型，目前仅支持 nfo")
-    group_common.add_argument("--embed-danmaku", action="store_true", help="（待实现）将弹幕文件嵌入到视频中")
-    group_common.add_argument("--embed-subtitle", default=None, help="（待实现）将字幕文件嵌入到视频中（需输入语言代码）")
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
     group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
+    group_common.add_argument("--vip-strict", action="store_true", help="启用严格检查大会员生效")
+    group_common.add_argument("--login-strict", action="store_true", help="启用严格检查登录状态")
 
     # 仅批量下载使用
     group_batch = parser.add_argument_group("batch", "批量下载参数")
     group_batch.add_argument("-b", "--batch", action="store_true", help="批量下载")
     group_batch.add_argument("-p", "--episodes", default="1~-1", help="选集")
     group_batch.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
+    group_batch.add_argument("--batch-filter-start-time", help="只下载该时间之后（包含临界值）发布的稿件")
+    group_batch.add_argument("--batch-filter-end-time", help="只下载该时间之前（不包含临界值）发布的稿件")
 
     # 仅任务列表中使用
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
@@ -202,16 +216,19 @@ async def run(args_list: list[argparse.Namespace]):
                 [
                     UgcVideoBatchExtractor(),  # 投稿全集
                     BangumiBatchExtractor(),  # 番剧全集
+                    CheeseBatchExtractor(),  # 课程全集
                     FavouritesExtractor(),  # 用户单一收藏
                     UserAllFavouritesExtractor(),  # 用户全部收藏
                     SeriesExtractor(),  # 视频列表
                     CollectionExtractor(),  # 视频合集
                     UserAllUgcVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
+                    UserWatchLaterExtractor(),  # 用户稍后再看
                 ]
                 if args.batch
                 else [
                     UgcVideoExtractor(),  # 投稿单集
                     BangumiExtractor(),  # 番剧单话
+                    CheeseExtractor(),  # 课程单集
                 ]
             )
 
@@ -222,6 +239,10 @@ async def run(args_list: list[argparse.Namespace]):
                 if matched:
                     break
 
+            # 在开始前校验，减少对第一个视频的请求
+            if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
+                Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
+                sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
             # 重定向到可识别的 url
             try:
                 url = await Fetcher.get_redirected_url(session, url)
@@ -246,6 +267,12 @@ async def run(args_list: list[argparse.Namespace]):
             for i, episode_data_coro in enumerate(download_list):
                 if episode_data_coro is None:
                     continue
+
+                # 中途校验，因为批量下载时可能会失效
+                if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
+                    Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
+                    sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+
                 # 这时候才真正开始解析链接
                 episode_data = await episode_data_coro
                 if episode_data is None:
@@ -255,6 +282,7 @@ async def run(args_list: list[argparse.Namespace]):
                         f"{episode_data['filename']}",
                         Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
+
                 await start_downloader(
                     session,
                     episode_data,
@@ -272,6 +300,10 @@ async def run(args_list: list[argparse.Namespace]):
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
+                        "metadata_format": {
+                            "premiered": args.metadata_format_premiered,
+                            "dateadded": TIME_FULL_FMT,
+                        },
                     },
                 )
                 Logger.new_line()
@@ -288,7 +320,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
         args.url = alias_map[args.url]
 
     # 是否为下载列表
-    if re.match(r"file://", args.url) or Path(args.url).is_file():
+    if re.match(r"file://", args.url) or os.path.isfile(args.url):  # noqa: PTH113
         args_list: list[argparse.Namespace] = []
         # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):
@@ -304,7 +336,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
 
 def create_select_required_action(select: list[DownloadResourceType] = [], deselect: list[DownloadResourceType] = []):
     class SelectRequiredAction(argparse.Action):
-        def __init__(self, option_strings: str, dest: str, nargs: int | str | None = None, **kwargs: dict[str, Any]):
+        def __init__(self, option_strings: str, dest: str, nargs: int | str | None = None, **kwargs: Any):
             if nargs is not None:
                 raise ValueError("nargs not allowed")
             super().__init__(option_strings, dest, nargs=0, **kwargs)

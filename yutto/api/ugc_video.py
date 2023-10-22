@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Optional, TypedDict
+from typing import Any, TypedDict
 
 from aiohttp import ClientSession
 
@@ -24,13 +24,13 @@ from yutto.exceptions import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.metadata import MetaData
-from yutto.utils.time import get_time_str_by_now, get_time_str_by_stamp
+from yutto.utils.metadata import Actor, MetaData
+from yutto.utils.time import get_time_stamp_by_now
 
 
 class _UgcVideoPageInfo(TypedDict):
     part: str
-    first_frame: Optional[str]
+    first_frame: str | None
 
 
 class _UgcVideoInfo(TypedDict):
@@ -45,6 +45,9 @@ class _UgcVideoInfo(TypedDict):
     pubdate: int
     description: str
     pages: list[_UgcVideoPageInfo]
+    genre: list[str]
+    actor: list[Actor]
+    tag: list[str]
 
 
 class UgcVideoListItem(TypedDict):
@@ -57,9 +60,20 @@ class UgcVideoListItem(TypedDict):
 
 class UgcVideoList(TypedDict):
     title: str
-    pubdate: str
+    pubdate: int
     avid: AvId
     pages: list[UgcVideoListItem]
+
+
+async def get_ugc_video_tag(session: ClientSession, avid: AvId) -> list[str]:
+    tags: list[str] = []
+    tag_api = "http://api.bilibili.com/x/tag/archive/tags?aid={aid}&bvid={bvid}"
+    res_json = await Fetcher.fetch_json(session, tag_api.format(**avid.to_dict()))
+    if res_json is None or res_json["code"] != 0:
+        raise NotFoundError(f"无法获取视频 {avid} 标签")
+    for tag in res_json["data"]:
+        tags.append(tag["tag_name"])
+    return tags
 
 
 async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInfo:
@@ -81,6 +95,10 @@ async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInf
     episode_id = EpisodeId("")
     if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
         episode_id = EpisodeId(ep_match.group("episode_id"))
+
+    actors = _parse_actor_info(res_json_data)
+    genres = _parse_genre_info(res_json_data)
+    tags: list[str] = await get_ugc_video_tag(session, avid)
     return {
         "avid": BvId(res_json_data["bvid"]),
         "aid": AId(str(res_json_data["aid"])),
@@ -99,6 +117,9 @@ async def get_ugc_video_info(session: ClientSession, avid: AvId) -> _UgcVideoInf
             }
             for page in res_json_data["pages"]
         ],
+        "actor": actors,
+        "tag": tags,
+        "genre": genres,
     }
 
 
@@ -110,7 +131,7 @@ async def get_ugc_video_list(session: ClientSession, avid: AvId) -> UgcVideoList
     result: UgcVideoList = {
         "title": video_title,
         "avid": avid,
-        "pubdate": get_time_str_by_stamp(video_info["pubdate"], "%Y-%m-%d"),  # TODO: 可自由定制
+        "pubdate": video_info["pubdate"],
         "pages": [],
     }
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
@@ -202,7 +223,7 @@ async def get_ugc_video_playurl(
         if resp_json["data"]["dash"]["audio"]
         else []
     )
-    if resp_json["data"]["dash"]["flac"] is not None:
+    if resp_json["data"]["dash"]["flac"] is not None and resp_json["data"]["dash"]["flac"]["audio"] is not None:
         hi_res_audio_json = resp_json["data"]["dash"]["flac"]["audio"]
         audios.append(
             {
@@ -241,21 +262,72 @@ async def get_ugc_video_subtitles(session: ClientSession, avid: AvId, cid: CId) 
     return []
 
 
-def _parse_ugc_video_metadata(video_info: _UgcVideoInfo, page_info: _UgcVideoPageInfo) -> MetaData:
+def _parse_ugc_video_metadata(
+    video_info: _UgcVideoInfo,
+    page_info: _UgcVideoPageInfo,
+) -> MetaData:
     return MetaData(
         title=page_info["part"],
         show_title=page_info["part"],
         plot=video_info["description"],
         thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
-        premiered=get_time_str_by_stamp(video_info["pubdate"]),
-        dateadded=get_time_str_by_now(),
+        premiered=video_info["pubdate"],
+        dateadded=get_time_stamp_by_now(),
+        actor=video_info["actor"],
+        genre=video_info["genre"],
+        tag=video_info["tag"],
         source="",  # TODO
         original_filename="",  # TODO
+        website=video_info["bvid"].to_url(),
     )
+
+
+def _parse_actor_info(video_info: dict[str, Any]):
+    actors: list[Actor] = []
+    if video_info.get("staff") and isinstance(video_info["staff"], list):
+        _index: int = 0
+        staff_list: list[dict[str, Any]] = video_info["staff"]
+        for staff in staff_list:
+            actors.append(
+                Actor(
+                    name=staff["name"],
+                    role=staff["title"],
+                    thumb=staff["face"],
+                    profile=f"https://space.bilibili.com/{staff['mid']}",
+                    order=_index,
+                )
+            )
+            _index += 1
+    elif video_info.get("owner") and isinstance(video_info["owner"], dict):
+        staff_info: dict[str, Any] = video_info["owner"]
+        actors.append(
+            Actor(
+                name=staff_info["name"],
+                role="UP主",
+                thumb=staff_info["face"],
+                profile=f"https://space.bilibili.com/{staff_info['mid']}",
+                order=0,
+            )
+        )
+    else:
+        Logger.warning("未找到演职人员信息")
+    return actors
+
+
+def _parse_genre_info(video_info: dict[str, Any]) -> list[str]:
+    genres: list[str] = []
+    if video_info.get("tname") and isinstance(video_info["tname"], str):
+        genres.append(video_info["tname"])
+    return genres
 
 
 def _is_meaningless_name(name: str) -> bool:
     """检测名称是否为无意义的名称"""
+    # name 为空
+    if not name:
+        return True
+
+    # name 为视频文件名
     video_ext_list = [".mp4", ".flv", ".mkv", ".avi", ".wmv", ".mov", ".mpg", ".mpeg", ".ts"]
     for video_ext in video_ext_list:
         if name.endswith(video_ext):

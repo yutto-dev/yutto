@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import re
-from typing import Any, Coroutine, Optional
 
 import aiohttp
 
@@ -12,8 +11,10 @@ from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.filter import Filter
 
 
 class UserAllFavouritesExtractor(BatchExtractor):
@@ -32,11 +33,11 @@ class UserAllFavouritesExtractor(BatchExtractor):
 
     async def extract(
         self, session: aiohttp.ClientSession, args: argparse.Namespace
-    ) -> list[Optional[Coroutine[Any, Any, Optional[EpisodeData]]]]:
+    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username = await get_user_name(session, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, str, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         for fav in await get_all_favourites(session, self.mid):
             series_title = fav["title"]
@@ -44,6 +45,9 @@ class UserAllFavouritesExtractor(BatchExtractor):
             for avid in await get_favourite_avids(session, fid):
                 try:
                     ugc_video_list = await get_ugc_video_list(session, avid)
+                    if not Filter.verify_timer(ugc_video_list["pubdate"]):
+                        Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
+                        continue
                     await Fetcher.touch_url(session, avid.to_url())
                     for ugc_video_item in ugc_video_list["pages"]:
                         ugc_video_info_list.append(
@@ -59,18 +63,20 @@ class UserAllFavouritesExtractor(BatchExtractor):
                     continue
 
         return [
-            extract_ugc_video_data(
-                session,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                args,
-                {
-                    "title": title,
-                    "username": username,
-                    "series_title": series_title,
-                    "pubdate": pubdate,
-                },
-                "{username}的收藏夹/{series_title}/{title}/{name}",
+            CoroutineWrapper(
+                extract_ugc_video_data(
+                    session,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    args,
+                    {
+                        "title": title,
+                        "username": username,
+                        "series_title": series_title,
+                        "pubdate": pubdate,
+                    },
+                    "{username}的收藏夹/{series_title}/{title}/{name}",
+                )
             )
             for ugc_video_item, title, pubdate, series_title in ugc_video_info_list
         ]

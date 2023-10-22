@@ -69,16 +69,14 @@ pipx install yutto
 
 pipx 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx 是更推荐的安装方式。
 
-### 从 GitHub 获取最新源码手动安装
+### 从 GitHub 手动拉取源码安装
 
 这同样要求你自行配置 Python 和 FFmpeg 环境
 
 ```bash
 git clone https://github.com/yutto-dev/yutto.git
 cd yutto/
-pip install poetry
-poetry build
-pip install ./dist/yutto-*.whl
+pip install .
 ```
 
 ## 主要功能
@@ -92,7 +90,10 @@ pip install ./dist/yutto-*.whl
 |投稿视频|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
 |番剧|:x:|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
 |番剧|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
+|课程|:x:|:x:|`https://www.bilibili.com/cheese/play/ep6902`|`{name}`|
+|课程|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/cheese/play/ep6902` <br/> `https://www.bilibili.com/cheese/play/ss298`|`{title}/{name}`|
 |用户指定收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create`|`{username}的收藏夹/{series_title}/{title}/{name}`|
+|当前用户稍后再看|:white_check_mark:|:x:|`https://www.bilibili.com/watchlater`|`稍后再看/{title}/{name}`|
 |用户全部收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
 |UP 主个人空间|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
 |合集|:white_check_mark:|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195`|`{series_title}/{title}`|
@@ -305,16 +306,16 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 #### 存放子路径模板
 
 -  参数 `-tp` 或 `--subpath-template`
--  可选参数变量 `title | id | name | username | series_title | pubdate` （以后可能会有更多）
+-  可选参数变量 `title | id | name | username | series_title | pubdate | download_date | owner_uid` （以后可能会有更多）
 -  默认值 `"{auto}"`
 
 通过配置子路径模板可以灵活地控制视频存放位置。
 
 默认情况是由 yutto 自动控制存放位置的。比如下载单个视频时默认就是直接存放在设定的根目录，不会创建一层容器目录，此时自动选择了 `{name}` 作为模板；而批量下载时则会根据视频层级生成多级目录，比如番剧会是 `{title}/{name}`，首先会在设定根目录里生成一个番剧名的目录，其内才会存放各个番剧剧集视频，这样方便了多个不同番剧的管理。当然，如果你仍希望将番剧直接存放在设定根目录下的话，可以修改该参数值为 `{name}`即可。
 
-另外，该功能语法由 Python format 函数模板语法提供，所以也支持一些高级的用法，比如 `{id:0>3}{name}`。
+另外，该功能语法由 Python format 函数模板语法提供，所以也支持一些高级的用法，比如 `{id:0>3}{name}`，此外还专门为时间变量 🕛 增加了自定义时间模板的语法 `{pubdate@%Y-%m-%d %H:%M:%S}`，默认时间模板为 `%Y-%m-%d`。
 
-值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username` 变量当前仅在 UP 主全部投稿视频/收藏夹才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
+值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username`, `owner_uid` 变量当前仅在 UP 主全部投稿视频/收藏夹/稍后再看才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
 
 <!-- prettier-ignore -->
 |Variable|Description|Scope|
@@ -322,10 +323,11 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 |title|系列视频总标题（番剧名/投稿视频标题）|全部|
 |id|系列视频单 p 顺序标号|全部|
 |name|系列视频单 p 标题|全部|
-|username|UP 主用户名|个人空间、收藏夹、合集、视频列表下载|
+|username|UP 主用户名|个人空间、收藏夹、稍后再看、合集、视频列表下载|
 |series_title|合集标题|收藏夹、视频合集、视频列表下载|
-|pubdate|投稿日期|仅投稿视频|
-|download_date|下载日期|全部|
+|pubdate🕛|投稿日期|仅投稿视频|
+|download_date🕛|下载日期|全部|
+|owner_uid|UP 主UID|个人空间、收藏夹、稍后再看、合集、视频列表下载|
 
 > **Note**
 >
@@ -339,21 +341,21 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 指定别名文件路径，别名文件中存放一个别名与其对应的 url，使用空格或者 `=` 分隔，示例如下：
 
 ```
-rimuru1=https://www.bilibili.com/bangumi/play/ss25739/
-rimuru2=https://www.bilibili.com/bangumi/play/ss36170/
-rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+tensura1=https://www.bilibili.com/bangumi/play/ss25739/
+tensura2=https://www.bilibili.com/bangumi/play/ss36170/
+tensura-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 ```
 
 比如将上述内容存储到 `~/.yutto_alias`，则通过以下命令即可解析该文件：
 
 ```bash
-yutto rimuru1 --batch --alias-file='~/.yutto_alias'
+yutto tensura1 --batch --alias-file='~/.yutto_alias'
 ```
 
 当参数值为 `-` 时，会从标准输入中读取：
 
 ```bash
-cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
+cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 ```
 
 #### 仅下载视频流
@@ -404,6 +406,24 @@ cat ~/.yutto_alias | yutto rimuru-nikki --batch --alias-file -
 #### 仅生成媒体元数据文件
 
 -  参数 `--metadata-only`
+-  默认值 `False`
+
+#### 指定媒体元数据值的格式
+
+当前仅支持 `premiered`
+
+-  参数 `--metadata-format-premiered`
+-  默认值 `"%Y-%m-%d"`
+-  常用值 `"%Y-%m-%d %H:%M:%S"`
+
+#### 严格校验大会员状态有效
+
+-  参数 `--vip-strict`
+-  默认值 `False`
+
+#### 严格校验登录状态有效
+
+-  参数 `--login-strict`
 -  默认值 `False`
 
 #### 不显示颜色
@@ -492,6 +512,19 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 -  参数 `-s` 或 `--with-section`
 -  默认值 `False`
 
+#### 指定稿件发布时间范围
+
+-  参数 `--batch-filter-start-time` 和 `--batch-filter-end-time` 分别表示`开始`和`结束`时间，该区间**左闭右开**
+-  默认 `不限制`
+-  支持的格式
+
+   -  `%Y-%m-%d`
+   -  `%Y-%m-%d %H:%M:%S`
+
+   例如仅下载 2020 年投稿的视频，可以这样:
+
+   `--batch-filter-start-time=2020-01-01 --batch-filter-end-time=2021-01-01`
+
 </details>
 
 ## 从 bilili1.x 迁移
@@ -541,13 +574,13 @@ yutto --no-color --no-progress <url> > log
 yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
 
 ```
-rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
+tensura-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 ```
 
 之后下载最新话只需要
 
 ```
-yutto --batch rimuru-nikki --alias-file=/path/to/alias-file
+yutto --batch tensura-nikki --alias-file=/path/to/alias-file
 ```
 
 ### 使用任务列表
@@ -578,8 +611,8 @@ yutto ./path/to/list
 值得注意的是，在文件列表各项里的参数优先级是高于命令里的优先级的，比如文件中使用：
 
 ```
-rimuru1 --batch -p $ --no-danmaku --vcodec="hevc:copy"
-rimuru2 --batch -p $
+tensura1 --batch -p $ --no-danmaku --vcodec="hevc:copy"
+tensura2 --batch -p $
 ```
 
 而命令中则使用
@@ -588,7 +621,7 @@ rimuru2 --batch -p $
 yutto file:///path/to/list --vcodec="avc:copy"
 ```
 
-最终下载的 rimuru1 会是 "hevc:copy"，而 rimuru2 则会是 "avc:copy"
+最终下载的 tensura1 会是 "hevc:copy"，而 tensura2 则会是 "avc:copy"
 
 另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
 
@@ -613,6 +646,10 @@ alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:cop
 ### 名字的由来
 
 [《転スラ日記》第一话 00:24](https://www.bilibili.com/bangumi/play/ep395211?t=24)
+
+### 何谓「任性」？
+
+yutto 添加任何特性都需要以保证可维护性为前提，因此 yutto 不会添加过于复杂的特性，只需要满足够用即可。
 
 ### yutto 会替代 bilili 吗
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import math
 import time
-from typing import Optional, Union
 
 from yutto.utils.console.attributes import get_terminal_size
 from yutto.utils.console.colorful import Color, RGBColor, Style, colored_string
@@ -13,7 +12,7 @@ from yutto.utils.file_buffer import AsyncFileBuffer
 
 
 class ProgressBar:
-    def __init__(self, symbols: Union[str, list[str]] = "▏▎▍▌▋▊▉█", remaining_symbol: str = " ", width: int = 50):
+    def __init__(self, symbols: str | list[str] = "▏▎▍▌▋▊▉█", remaining_symbol: str = " ", width: int = 50):
         super().__init__()
         self.width = width
         self.symbols = symbols
@@ -24,11 +23,11 @@ class ProgressBar:
     def render(
         self,
         data: float,
-        bar_fore_color: Optional[Color] = None,
-        bar_back_color: Optional[Color] = None,
-        remaining_bar_fore_color: Optional[Color] = None,
-        remaining_bar_back_color: Optional[Color] = None,
-        width: Optional[int] = None,  # 如果需要实时调整宽度，可通过此传入
+        bar_fore_color: Color | None = None,
+        bar_back_color: Color | None = None,
+        remaining_bar_fore_color: Color | None = None,
+        remaining_bar_back_color: Color | None = None,
+        width: int | None = None,  # 如果需要实时调整宽度，可通过此传入
     ) -> str:
         width = width or self.width
         if data == 1:
@@ -84,7 +83,7 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
             )
         # 速度文本同时也使用绿色与青色作为速度标志
         speed_text_color: Color = "green" if is_fast else "cyan"
-        speed_text_style: Optional[list[Style]] = ["bold"] if is_fast else None
+        speed_text_style: list[Style] | None = ["bold"] if is_fast else None
         speed_text_suffix: str = "/⚡" if is_fast else "/s"
 
         if num_blocks_in_buffer > num_blocks_in_buffer_threshold:

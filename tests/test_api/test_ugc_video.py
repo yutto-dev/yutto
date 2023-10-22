@@ -33,7 +33,7 @@ async def test_get_ugc_video_info():
         assert video_info["aid"] == aid
         assert video_info["bvid"] == bvid
         assert video_info["episode_id"] == episode_id
-        assert video_info["is_bangumi"] == True
+        assert video_info["is_bangumi"] is True
         assert video_info["cid"] == CId("144541892")
         assert video_info["title"] == "【独播】我的三体之章北海传 第1集"
 
@@ -68,12 +68,14 @@ async def test_get_ugc_video_list():
         assert ugc_video_list[0]["cid"] == CId("222190584")
         assert ugc_video_list[0]["metadata"] is not None
         assert ugc_video_list[0]["metadata"]["title"] == "bilili 特性以及使用方法简单介绍"
+        assert ugc_video_list[0]["metadata"]["website"] == "https://www.bilibili.com/video/BV1vZ4y1M7mQ"
 
         assert ugc_video_list[1]["id"] == 2
         assert ugc_video_list[1]["name"] == "bilili 环境配置方法"
         assert ugc_video_list[1]["cid"] == CId("222200470")
         assert ugc_video_list[1]["metadata"] is not None
         assert ugc_video_list[1]["metadata"]["title"] == "bilili 环境配置方法"
+        assert ugc_video_list[0]["metadata"]["website"] == "https://www.bilibili.com/video/BV1vZ4y1M7mQ"
 
 
 @pytest.mark.api

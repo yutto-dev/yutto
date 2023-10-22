@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from functools import wraps
-from typing import Any, Callable, Coroutine, TypeVar
+from typing import Any, Callable, TypeVar
 
-T = TypeVar("T")
+from typing_extensions import ParamSpec
+
+R = TypeVar("R")
+P = ParamSpec("P")
 
 
-def as_sync(async_func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
+def as_sync(async_func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
     """将异步函数变成同步函数，避免在调用时需要显式使用 asyncio.run
 
     ### Examples
@@ -29,7 +33,7 @@ def as_sync(async_func: Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., 
     """
 
     @wraps(async_func)
-    def sync_func(*args: Any, **kwargs: Any):
+    def sync_func(*args: P.args, **kwargs: P.kwargs) -> R:
         return asyncio.run(async_func(*args, **kwargs))
 
     return sync_func

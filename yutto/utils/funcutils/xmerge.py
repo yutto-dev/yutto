@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from itertools import chain, zip_longest
-from typing import Iterable, TypeVar
+from typing import TypeVar
 
 from .filter_none_value import filter_none_value
 
