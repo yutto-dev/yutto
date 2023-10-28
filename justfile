@@ -14,12 +14,11 @@ test:
   just clean
 
 fmt:
-  poetry run isort .
-  poetry run black .
+  poetry run ruff format .
 
 lint:
   poetry run pyright yutto tests
-  poetry run ruff .
+  poetry run ruff check .
 
 build:
   poetry build
@@ -70,8 +69,7 @@ ci-install:
   poetry install --no-interaction --no-root
 
 ci-fmt-check:
-  poetry run isort --check-only .
-  poetry run black --check --diff .
+  poetry run ruff format --check --diff .
 
 ci-lint:
   just lint

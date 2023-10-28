@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "esbenp.prettier-vscode",
+    "EditorConfig.EditorConfig",
+    "aaron-bond.better-comments",
+    "usernamehw.errorlens",
+    "GitHub.copilot",
+    "seatonjiang.gitmoji-vscode",
+    "skellock.just",
+    "yzhang.markdown-all-in-one"
+  ]
+}
