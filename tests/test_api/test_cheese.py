@@ -40,7 +40,7 @@ async def test_get_cheese_title():
     ) as session:
         cheese_list = await get_cheese_list(session, season_id)
         title = cheese_list["title"]
-        assert title == "林超：给年轻人的跨学科思维课"
+        assert title == "【涨价倒计时】林超：给年轻人的跨学科思维课"
 
 
 @pytest.mark.api
