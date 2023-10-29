@@ -72,8 +72,8 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
         {
             key: illegal_char_remover.sub("", str(params_with_wts[key]))
             for key in sorted(params_with_wts.keys())
-        }  # fmt: skip
-    )
+        }
+    )  # fmt: skip
     w_rid = hashlib.md5((url_encoded_params + mixin_key).encode()).hexdigest()
     all_params = dict(params_with_wts, w_rid=w_rid)
     return all_params

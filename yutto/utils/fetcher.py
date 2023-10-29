@@ -58,7 +58,8 @@ class Fetcher:
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
-    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)  # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
+    # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
+    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)
     _touch_set: set[str] = set()
 
     @classmethod

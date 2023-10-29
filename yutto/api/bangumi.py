@@ -93,7 +93,9 @@ async def get_bangumi_playurl(
     if resp_json is None:
         raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}）")
     if resp_json.get("result") is None:
-        raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}")
+        raise NoAccessPermissionError(
+            f"无法获取该视频链接（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}"
+        )
     if resp_json["result"]["is_preview"] == 1:
         Logger.warning(f"视频（avid: {avid}, cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
     if resp_json["result"].get("dash") is None:
