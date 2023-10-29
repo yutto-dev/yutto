@@ -51,12 +51,6 @@ markers = ["api", "e2e", "processor", "ignore", "ci_skip", "ci_only"]
 [tool.black]
 line-length = 120
 
-[tool.isort]
-profile = "black"
-add_imports = ["from __future__ import annotations"]
-skip = ["setup.py", ".venv"]
-known_first_party = ["yutto"]
-
 [tool.pyright]
 include = ["yutto", "tests"]
 pythonVersion = "3.9"
