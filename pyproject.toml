@@ -84,12 +84,12 @@ ignore = [
   "F841", # local variable is assigned to but never used, duplicate with pyright
 ]
 
-[tool.ruff.per-file-ignores]
-"setup.py" = ["I"]
-
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
 known-first-party = ["yutto"]
+
+[tool.ruff.lint.per-file-ignores]
+"setup.py" = ["I"]
 
 [build-system]
 requires = ["poetry_core>=1.3.0"]
