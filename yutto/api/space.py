@@ -43,6 +43,7 @@ async def get_user_name(session: ClientSession, mid: MId) -> str:
     params = {"mid": mid}
     params = encode_wbi(params, wbi_img)
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
+    await Fetcher.touch_url(session, "https://www.bilibili.com")
     user_info = await Fetcher.fetch_json(session, space_info_api, params=params)
     assert user_info is not None
     return user_info["data"]["name"]
