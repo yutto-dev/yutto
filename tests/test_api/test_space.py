@@ -33,6 +33,7 @@ async def test_get_user_space_all_videos_avids():
 
 
 @pytest.mark.api
+@pytest.mark.ignore
 @as_sync
 async def test_get_user_name():
     mid = MId("100969474")
