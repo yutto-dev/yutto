@@ -11,6 +11,9 @@ hero:
       - theme: alt
         text: 从 bilili 迁移
         link: /migration/
+   image:
+      src: /u1f9ca_u1f43e.png
+      alt: 🧊+🐾
 features:
    - icon: ⚡️
      title: 快速下载
@@ -25,3 +28,25 @@ features:
      title: 支持类型丰富
      details: 支持投稿视频、番剧、视频合集、收藏夹等的下载
 ---
+
+<style>
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(60deg, #34fefe 30%, #8927f2);
+
+  --vp-home-hero-image-background-image: linear-gradient(-60deg, #8927f2 50%, #47caff 50%);
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(68px);
+  }
+}
+</style>

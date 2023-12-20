@@ -4,8 +4,8 @@
 
 :root {
   --vp-c-brand: #29c9cf;
-  --vp-c-brand-light: #46f3f3;
-  --vp-c-brand-lighter: #94fffa;
+  --vp-c-brand-light: #3fe0e0;
+  --vp-c-brand-lighter: #67e8e2;
   --vp-c-brand-dark: #53aaf2;
   --vp-c-brand-darker: #4586e1;
   --vp-c-brand-dimm: rgba(100, 108, 255, 0.08);
@@ -25,15 +25,6 @@
   --vp-button-brand-active-border: var(--vp-c-brand-light);
   --vp-button-brand-active-text: var(--vp-c-text-dark-1);
   --vp-button-brand-active-bg: var(--vp-button-brand-bg);
-}
-
-/**
- * Component: Home
- * -------------------------------------------------------------------------- */
-
-:root {
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(60deg, #34fefe 30%, #8927f2);
 }
 
 /**
