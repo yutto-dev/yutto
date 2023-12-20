@@ -85,10 +85,16 @@ def cli() -> argparse.ArgumentParser:
         help="音频码率等级（30280:320kbps, 30232:128kbps, 30216:64kbps）",
     )
     group_common.add_argument(
-        "--vcodec", default="avc:copy", metavar="DOWNLOAD_VCODEC:SAVE_VCODEC", help="视频编码格式（<下载格式>:<生成格式>）"
+        "--vcodec",
+        default="avc:copy",
+        metavar="DOWNLOAD_VCODEC:SAVE_VCODEC",
+        help="视频编码格式（<下载格式>:<生成格式>）",
     )
     group_common.add_argument(
-        "--acodec", default="mp4a:copy", metavar="DOWNLOAD_ACODEC:SAVE_ACODEC", help="音频编码格式（<下载格式>:<生成格式>）"
+        "--acodec",
+        default="mp4a:copy",
+        metavar="DOWNLOAD_ACODEC:SAVE_ACODEC",
+        help="音频编码格式（<下载格式>:<生成格式>）",
     )
     group_common.add_argument(
         "--output-format", default="infer", choices=["infer", "mp4", "mkv", "mov"], help="输出格式（infer 为自动推断）"
@@ -99,10 +105,16 @@ def cli() -> argparse.ArgumentParser:
         choices=["infer", "aac", "flac", "mp4", "mkv", "mov"],
         help="仅包含音频流时所使用的输出格式（infer 为自动推断）",
     )
-    group_common.add_argument("-df", "--danmaku-format", default="ass", choices=["xml", "ass", "protobuf"], help="弹幕类型")
-    group_common.add_argument("-bs", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB")
+    group_common.add_argument(
+        "-df", "--danmaku-format", default="ass", choices=["xml", "ass", "protobuf"], help="弹幕类型"
+    )
+    group_common.add_argument(
+        "-bs", "--block-size", default=0.5, type=float, help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB"
+    )
     group_common.add_argument("-w", "--overwrite", action="store_true", help="强制覆盖已下载内容")
-    group_common.add_argument("-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）")
+    group_common.add_argument(
+        "-x", "--proxy", default="auto", help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）"
+    )
     group_common.add_argument("-d", "--dir", default="./", help="下载目录，默认为运行目录")
     group_common.add_argument("--tmp-dir", help="用来存放下载过程中临时文件的目录，默认为下载目录")
     group_common.add_argument("-c", "--sessdata", default="", help="Cookies 中的 SESSDATA 字段")
@@ -181,7 +193,9 @@ def cli() -> argparse.ArgumentParser:
     group_batch = parser.add_argument_group("batch", "批量下载参数")
     group_batch.add_argument("-b", "--batch", action="store_true", help="批量下载")
     group_batch.add_argument("-p", "--episodes", default="1~-1", help="选集")
-    group_batch.add_argument("-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）")
+    group_batch.add_argument(
+        "-s", "--with-section", action="store_true", help="同时下载附加剧集（PV、预告以及特别篇等专区内容）"
+    )
     group_batch.add_argument("--batch-filter-start-time", help="只下载该时间之后（包含临界值）发布的稿件")
     group_batch.add_argument("--batch-filter-end-time", help="只下载该时间之前（不包含临界值）发布的稿件")
 

@@ -5,7 +5,7 @@
    <a href="https://pypi.org/project/yutto/" target="_blank"><img src="https://img.shields.io/pypi/v/yutto?style=flat-square" alt="pypi"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/yutto?style=flat-square"></a>
    <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/github/license/yutto-dev/yutto?style=flat-square"></a>
-   <a href="https://github.com/psf/black"><img alt="black" src="https://img.shields.io/badge/code%20style-black-000000?style=flat-square"></a>
+   <a href="https://github.com/astral-sh/ruff"><img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square"></a>
    <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67?style=flat-square" alt="Gitmoji"></a>
    <a href="https://discord.gg/5cQGyFwsqC"><img src="https://img.shields.io/badge/chat-discord-5d24a3?logo=discord&style=flat-square" alt="discord chat"></a>
 </p>
@@ -654,6 +654,12 @@ yutto 添加任何特性都需要以保证可维护性为前提，因此 yutto �
 ### yutto 会替代 bilili 吗
 
 yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～（咳，正式版早着呢，我现在都懒得 rc，一直 beta 下去挺好的 ξ( ✿ ＞ ◡❛)）
+
+## 其他应用
+
+你也可以通过这些应用来使用 yutto
+
+- [KubeSpider](https://github.com/opennaslab/kubespider): 一个多功能全局资源编排下载系统，支持下载、订阅各类资源网站～
 
 ## Roadmap
 

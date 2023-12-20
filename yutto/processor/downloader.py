@@ -217,10 +217,12 @@ async def start_downloader(
 
     # 显示音视频详细信息
     show_videos_info(
-        videos, videos.index(video) if will_download_video else -1  # pyright: ignore [reportGeneralTypeIssues]
+        videos,
+        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportGeneralTypeIssues]
     )
     show_audios_info(
-        audios, audios.index(audio) if will_download_audio else -1  # pyright: ignore [reportGeneralTypeIssues]
+        audios,
+        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportGeneralTypeIssues]
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -257,7 +259,9 @@ async def start_downloader(
             video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
             video["width"] if video is not None else 1920,
         )
-        Logger.custom("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan"))
+        Logger.custom(
+            "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
+        )
 
     # 保存媒体描述文件
     if metadata is not None:

@@ -7,6 +7,7 @@ from aiohttp import ClientSession
 from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
 from yutto.api.user_info import encode_wbi, get_wbi_img
 from yutto.exceptions import NotLoginError
+from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 
 
@@ -43,8 +44,11 @@ async def get_user_name(session: ClientSession, mid: MId) -> str:
     params = {"mid": mid}
     params = encode_wbi(params, wbi_img)
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
+    await Fetcher.touch_url(session, "https://www.bilibili.com")
     user_info = await Fetcher.fetch_json(session, space_info_api, params=params)
     assert user_info is not None
+    if user_info["code"] != 0:
+        Logger.error(f"获取用户名失败，错误信息：{user_info['message']}，可尝试添加参数 `-c` 登录账号后重试")
     return user_info["data"]["name"]
 
 

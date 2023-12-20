@@ -54,11 +54,12 @@ class Fetcher:
     proxy: str | None = None
     trust_env: bool = True
     headers: dict[str, str] = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
         "Referer": "https://www.bilibili.com",
     }
     cookies = {}
-    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)  # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
+    # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
+    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)
     _touch_set: set[str] = set()
 
     @classmethod
