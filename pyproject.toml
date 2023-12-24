@@ -46,9 +46,6 @@ yutto = "yutto.__main__:main"
 [tool.pytest.ini_options]
 markers = ["api", "e2e", "processor", "ignore", "ci_skip", "ci_only"]
 
-[tool.black]
-line-length = 120
-
 [tool.pyright]
 include = ["yutto", "tests"]
 pythonVersion = "3.9"
@@ -77,7 +74,7 @@ select = [
   "RUF100",
 ]
 ignore = [
-  "E501", # line too long, duplicate with black
+  "E501", # line too long, duplicate with ruff fmt
   "F401", # imported but unused, duplicate with pyright
   "F841", # local variable is assigned to but never used, duplicate with pyright
 ]
