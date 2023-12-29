@@ -174,10 +174,17 @@ def merge_video_and_audio(
         ["-strict", "unofficial"],
         ["-tag:v", vtag] if vtag is not None else [],
         ["-threads", str(os.cpu_count())],
-        ["-y", str(output_path)],
+        # Using double dash to make sure that the output file name is not parsed as an option
+        # if the output file name starts with a dash
+        ["-y", "--", str(output_path)],
     ]
 
-    ffmpeg.exec(functools.reduce(lambda prev, cur: prev + cur, args_list))
+    result = ffmpeg.exec(functools.reduce(lambda prev, cur: prev + cur, args_list))
+    if result.returncode != 0:
+        Logger.error("合并失败！")
+        Logger.error(result.stderr.decode())
+        return
+
     Logger.info("合并完成！")
 
     if video is not None:
