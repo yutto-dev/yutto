@@ -31,10 +31,10 @@ brew tap siguremo/tap
 brew install yutto
 ```
 
-使用 yay（Arch 上的 AUR 包管理器）的用户可以尝试下这样的命令（感谢 @ouuan）：
+使用 [paru](https://github.com/Morganamilo/paru)（Arch 上的 AUR 包管理器）的用户可以尝试下这样的命令（感谢 @ouuan）：
 
 ```bash
-yay -S yutto
+paru -S yutto
 ```
 
 ### 使用 Docker <sup>测试中</sup>
@@ -659,7 +659,7 @@ yutto 自诞生以来已经过去一年多了，功能上基本可以替代 bili
 
 你也可以通过这些应用来使用 yutto
 
-- [KubeSpider](https://github.com/opennaslab/kubespider): 一个多功能全局资源编排下载系统，支持下载、订阅各类资源网站～
+-  [KubeSpider](https://github.com/opennaslab/kubespider): 一个多功能全局资源编排下载系统，支持下载、订阅各类资源网站～
 
 ## Roadmap
 
