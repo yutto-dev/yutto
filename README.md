@@ -222,6 +222,12 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 
 当使用自定义下载编码列表时，yutto 会严格按照列表中的顺序进行选择，如果不存在则会认为该视频无视频流。
 
+<!--
+这里渲染会出问题，因为 GitHub 尚不支持嵌套在 summary 中
+更多讨论见
+https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
+-->
+
 > [!IMPORTANT]
 >
 > 如若设置本参数，请总是将 `--download-vcode-priority` 首选编码作为 `--vcodec` 的前半部分，否则可能会导致下载失败。
