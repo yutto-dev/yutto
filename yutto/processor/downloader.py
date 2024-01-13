@@ -217,7 +217,9 @@ async def start_downloader(
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
 
-    video = select_video(videos, options["video_quality"], options["video_download_codec"])
+    video = select_video(
+        videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
+    )
     audio = select_audio(audios, options["audio_quality"], options["audio_download_codec"])
     will_download_video = video is not None and require_video
     will_download_audio = audio is not None and require_audio

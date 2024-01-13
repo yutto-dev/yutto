@@ -97,6 +97,11 @@ def cli() -> argparse.ArgumentParser:
         help="音频编码格式（<下载格式>:<生成格式>）",
     )
     group_common.add_argument(
+        "--download-vcodec-priority",
+        default="auto",
+        help="视频编码格式优先级，使用 `,` 分隔，如 `hevc,avc,av1`，默认为 `auto`，即根据 vcodec 中「下载编码」自动推断",
+    )
+    group_common.add_argument(
         "--output-format", default="infer", choices=["infer", "mp4", "mkv", "mov"], help="输出格式（infer 为自动推断）"
     )
     group_common.add_argument(
@@ -305,6 +310,9 @@ async def run(args_list: list[argparse.Namespace]):
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
+                        "video_download_codec_priority": args.download_vcodec_priority.split(",")
+                        if args.download_vcodec_priority != "auto"
+                        else None,
                         "require_audio": args.require_audio,
                         "audio_quality": args.audio_quality,
                         "audio_download_codec": args.acodec.split(":")[0],

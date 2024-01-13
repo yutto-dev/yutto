@@ -175,6 +175,7 @@ class DownloaderOptions(TypedDict):
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str
+    video_download_codec_priority: list[VideoCodec] | None
     require_audio: bool
     audio_quality: AudioQuality
     audio_download_codec: AudioCodec
