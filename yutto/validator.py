@@ -10,10 +10,7 @@ import aiohttp
 
 from yutto._typing import UserInfo
 from yutto.api.user_info import get_user_info
-from yutto.bilibili_typing.codec import (
-    audio_codec_priority_default,
-    video_codec_priority_default,
-)
+from yutto.bilibili_typing.codec import VideoCodec, audio_codec_priority_default, video_codec_priority_default
 from yutto.exceptions import ErrorCode
 from yutto.processor.selector import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy
@@ -70,19 +67,47 @@ def validate_basic_arguments(args: argparse.Namespace):
 
     ffmpeg = FFmpeg()
 
+    download_vcodec_priority: list[VideoCodec] = video_codec_priority_default
+    if args.download_vcodec_priority != "auto":
+        user_download_vcodec_priority = args.download_vcodec_priority.split(",")
+        if not user_download_vcodec_priority:
+            Logger.error("download_vcodec_priority 参数值为空哦")
+            sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+        for vcodec in user_download_vcodec_priority:
+            if vcodec not in video_codec_priority_default:
+                Logger.error(
+                    "download_vcodec_priority 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
+                        vcodec, ", ".join(video_codec_priority_default)
+                    )
+                )
+                sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+        download_vcodec_priority = user_download_vcodec_priority
+        if len(download_vcodec_priority) < len(video_codec_priority_default):
+            Logger.warning(
+                "download_vcodec_priority（{}）不包含所有下载视频编码（{}），不包含部分将永远不会选择哦".format(
+                    args.download_vcodec_priority, ", ".join(video_codec_priority_default)
+                )
+            )
+
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
     if len(vcodec_splited) != 2:
         Logger.error(f"vcodec 参数值（{args.vcodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     video_download_codec, video_save_codec = vcodec_splited
-    if video_download_codec not in video_codec_priority_default:
+    if video_download_codec not in download_vcodec_priority:
         Logger.error(
             "download_vcodec 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
-                video_download_codec, ", ".join(video_codec_priority_default)
+                video_download_codec, ", ".join(download_vcodec_priority)
             )
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+    if args.download_vcodec_priority != "auto" and download_vcodec_priority[0] != video_download_codec:
+        Logger.warning(
+            "download_vcodec 参数值（{}）不是优先级最高的编码（{}），可能会导致下载失败哦".format(
+                video_download_codec, download_vcodec_priority[0]
+            )
+        )
     if video_save_codec not in ffmpeg.video_encodecs + ["copy"]:
         Logger.error(
             "save_vcodec 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(

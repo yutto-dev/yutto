@@ -24,9 +24,12 @@ def select_video(
     videos: list[VideoUrlMeta],
     video_quality: VideoQuality = 127,
     video_codec: VideoCodec = "hevc",
+    video_download_codec_priority: list[VideoCodec] | None = None,
 ) -> VideoUrlMeta | None:
     video_quality_priority = gen_video_quality_priority(video_quality)
-    video_codec_priority = gen_vcodec_priority(video_codec)
+    video_codec_priority = (
+        gen_vcodec_priority(video_codec) if video_download_codec_priority is None else video_download_codec_priority
+    )
 
     # fmt: off
     video_combined_priority = [
