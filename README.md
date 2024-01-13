@@ -223,12 +223,12 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 当使用自定义下载编码列表时，yutto 会严格按照列表中的顺序进行选择，如果不存在则会认为该视频无视频流。
 
 <!--
-这里渲染会出问题，因为 GitHub 尚不支持嵌套在 summary 中
+这里使用 [!Warning] 渲染会出问题，因为 GitHub 尚不支持嵌套在 summary 中，因此暂时回退到 **Warning** 的写法
 更多讨论见
 https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 -->
 
-> [!IMPORTANT]
+> **Warning**
 >
 > 如若设置本参数，请总是将 `--download-vcode-priority` 首选编码作为 `--vcodec` 的前半部分，否则可能会导致下载失败。
 
@@ -254,7 +254,7 @@ https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 -  如果音频流编码为 `"fLaC"`，则输出格式为 `"flac"`
 -  否则为 `"aac"`
 
-> [!NOTE]
+> **Note**
 >
 > 并不是仅仅在指定 `--audio-only` 时才会仅仅包含视频流，有些视频是仅包含音频流的，此时即便不指定 `--audio-only` 选项也会按照本选项的格式进行输出。
 
@@ -349,7 +349,7 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 |download_date🕛|下载日期|全部|
 |owner_uid|UP 主UID|个人空间、收藏夹、稍后再看、合集、视频列表下载|
 
-> [!NOTE]
+> **Note**
 >
 > 未来可能会对路径变量及默认路径模板进行调整
 
@@ -383,7 +383,7 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--video-only`
 -  默认值 `False`
 
-> [!NOTE]
+> **Note**
 >
 > 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
 >
