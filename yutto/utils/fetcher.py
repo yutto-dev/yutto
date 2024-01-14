@@ -50,14 +50,20 @@ class MaxRetry:
         return connect_n_times
 
 
+DEFAULT_PROXIES = None
+DEFAULT_TRUST_ENV = True
+DEFAULT_HEADERS: dict[str, str] = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Referer": "https://www.bilibili.com",
+}
+DEFAULT_COOKIES = cookies = httpx.Cookies()
+
+
 class Fetcher:
-    proxy: str | None = None
-    trust_env: bool = True
-    headers: dict[str, str] = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-        "Referer": "https://www.bilibili.com",
-    }
-    cookies: dict[str, Any] = {}
+    proxies: str | None = DEFAULT_PROXIES
+    trust_env: bool = DEFAULT_TRUST_ENV
+    headers: dict[str, str] = DEFAULT_HEADERS
+    cookies: httpx.Cookies = DEFAULT_COOKIES
     # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
     semaphore: asyncio.Semaphore = asyncio.Semaphore(8)
     _touch_set: set[str] = set()
@@ -65,20 +71,21 @@ class Fetcher:
     @classmethod
     def set_proxy(cls, proxy: str):
         if proxy == "auto":
-            Fetcher.proxy = None
+            Fetcher.proxies = None
             Fetcher.trust_env = True
         elif proxy == "no":
-            Fetcher.proxy = None
+            Fetcher.proxies = None
             Fetcher.trust_env = False
         else:
-            Fetcher.proxy = proxy
+            Fetcher.proxies = proxy
             Fetcher.trust_env = False
 
     @classmethod
     def set_sessdata(cls, sessdata: str):
+        Fetcher.cookies = httpx.Cookies()
         # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
         # 而番剧无法使用解码后的 SESSDATA
-        Fetcher.cookies["SESSDATA"] = quote(unquote(sessdata))
+        Fetcher.cookies.set("SESSDATA", quote(unquote(sessdata)))
 
     @classmethod
     def set_semaphore(cls, num_workers: int):
@@ -227,10 +234,10 @@ class Fetcher:
 
 
 def create_client(
-    headers: dict[str, str] = Fetcher.headers,
-    cookies: dict[str, str] = Fetcher.cookies,
-    trust_env: bool = Fetcher.trust_env,
-    proxies: str | None = Fetcher.proxy,
+    headers: dict[str, str] = DEFAULT_HEADERS,
+    cookies: httpx.Cookies = DEFAULT_COOKIES,
+    trust_env: bool = DEFAULT_TRUST_ENV,
+    proxies: str | None = DEFAULT_PROXIES,
     timeout: int | httpx.Timeout = 5,
 ) -> AsyncClient:
     client = httpx.AsyncClient(

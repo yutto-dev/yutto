@@ -147,7 +147,11 @@ def validate_batch_argments(args: argparse.Namespace):
 
 async def validate_user_info(check_option: UserInfo) -> bool:
     """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
-    async with create_client() as client:
+    async with create_client(
+        cookies=Fetcher.cookies,
+        trust_env=Fetcher.trust_env,
+        proxies=Fetcher.proxies,
+    ) as client:
         if check_option["is_login"] or check_option["vip_status"]:
             # 需要校验
             # 这么写 if 是为了少一个 get_user_info 请求
