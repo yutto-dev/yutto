@@ -5,7 +5,7 @@ import functools
 import os
 from pathlib import Path
 
-import aiohttp
+import httpx
 
 from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
@@ -87,7 +87,7 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 
 
 async def download_video_and_audio(
-    session: aiohttp.ClientSession,
+    client: httpx.AsyncClient,
     video: VideoUrlMeta | None,
     video_path: Path,
     audio: AudioUrlMeta | None,
@@ -102,10 +102,10 @@ async def download_video_and_audio(
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
-        vsize = await Fetcher.get_size(session, video["url"])
+        vsize = await Fetcher.get_size(client, video["url"])
         video_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
+                Fetcher.download_file_with_offset(client, video["url"], video["mirrors"], vbuf, offset, block_size)
             )
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
         ]
@@ -114,10 +114,10 @@ async def download_video_and_audio(
 
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
-        asize = await Fetcher.get_size(session, audio["url"])
+        asize = await Fetcher.get_size(client, audio["url"])
         audio_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
+                Fetcher.download_file_with_offset(client, audio["url"], audio["mirrors"], abuf, offset, block_size)
             )
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
         ]
@@ -194,7 +194,7 @@ def merge_video_and_audio(
 
 
 async def start_downloader(
-    session: aiohttp.ClientSession,
+    client: httpx.AsyncClient,
     episode_data: EpisodeData,
     options: DownloaderOptions,
 ):
@@ -293,7 +293,7 @@ async def start_downloader(
     audio = audio if will_download_audio else None
 
     # 下载视频 / 音频
-    await download_video_and_audio(session, video, video_path, audio, audio_path, options)
+    await download_video_and_audio(client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
     merge_video_and_audio(video, video_path, audio, audio_path, output_path, options)

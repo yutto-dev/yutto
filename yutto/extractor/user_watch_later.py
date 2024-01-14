@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData
 from yutto.api.space import get_watch_later_avids
@@ -29,25 +29,25 @@ class UserWatchLaterExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         try:
-            avid_list = await get_watch_later_avids(session)
+            avid_list = await get_watch_later_avids(client)
         except NotLoginError as e:
             Logger.error(e.message)
             return []
 
         for avid in avid_list:
             try:
-                ugc_video_list = await get_ugc_video_list(session, avid)
+                ugc_video_list = await get_ugc_video_list(client, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
-                await Fetcher.touch_url(session, avid.to_url())
+                await Fetcher.touch_url(client, avid.to_url())
                 for ugc_video_item in ugc_video_list["pages"]:
                     ugc_video_info_list.append(
                         (
@@ -64,7 +64,7 @@ class UserWatchLaterExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
-                    session,
+                    client,
                     ugc_video_item["avid"],
                     ugc_video_item,
                     args,

@@ -4,7 +4,7 @@ import argparse
 from abc import ABCMeta, abstractmethod
 from typing import TypeVar
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData
 from yutto.utils.asynclib import CoroutineWrapper
@@ -24,32 +24,32 @@ class Extractor(metaclass=ABCMeta):
 
     @abstractmethod
     async def __call__(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         raise NotImplementedError
 
 
 class SingleExtractor(Extractor):
     async def __call__(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        return [await self.extract(session, args)]
+        return [await self.extract(client, args)]
 
     @abstractmethod
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         raise NotImplementedError
 
 
 class BatchExtractor(Extractor):
     async def __call__(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        return await self.extract(session, args)
+        return await self.extract(client, args)
 
     @abstractmethod
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         raise NotImplementedError

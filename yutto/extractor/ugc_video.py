@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 
-import aiohttp
+import httpx
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
@@ -62,15 +62,15 @@ class UgcVideoExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         try:
-            ugc_video_list = await get_ugc_video_list(session, self.avid)
+            ugc_video_list = await get_ugc_video_list(client, self.avid)
             self.avid = ugc_video_list["avid"]  # 当视频撞车时，使用新的 avid 替代原有 avid，见 #96
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
             return CoroutineWrapper(
                 extract_ugc_video_data(
-                    session,
+                    client,
                     self.avid,
                     ugc_video_list["pages"][self.page - 1],
                     args,

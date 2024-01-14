@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData, MId
 from yutto.api.space import get_user_name, get_user_space_all_videos_avids
@@ -32,19 +32,19 @@ class UserAllUgcVideosExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        username = await get_user_name(session, self.mid)
+        username = await get_user_name(client, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
-        for avid in await get_user_space_all_videos_avids(session, self.mid):
+        for avid in await get_user_space_all_videos_avids(client, self.mid):
             try:
-                ugc_video_list = await get_ugc_video_list(session, avid)
+                ugc_video_list = await get_ugc_video_list(client, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
-                await Fetcher.touch_url(session, avid.to_url())
+                await Fetcher.touch_url(client, avid.to_url())
                 for ugc_video_item in ugc_video_list["pages"]:
                     ugc_video_info_list.append(
                         (
@@ -60,7 +60,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
-                    session,
+                    client,
                     ugc_video_item["avid"],
                     ugc_video_item,
                     args,

@@ -4,7 +4,7 @@ import argparse
 import re
 from typing import Any
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData, EpisodeId, SeasonId
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
@@ -46,19 +46,19 @@ class CheeseBatchExtractor(BatchExtractor):
         else:
             return False
 
-    async def _parse_ids(self, session: aiohttp.ClientSession):
+    async def _parse_ids(self, client: httpx.AsyncClient):
         if "episode_id" in self._match_result.groupdict().keys():
             episode_id = EpisodeId(self._match_result.group("episode_id"))
-            self.season_id = await get_season_id_by_episode_id(session, episode_id)
+            self.season_id = await get_season_id_by_episode_id(client, episode_id)
         else:
             self.season_id = SeasonId(self._match_result.group("season_id"))
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        await self._parse_ids(session)
+        await self._parse_ids(client)
 
-        cheese_list = await get_cheese_list(session, self.season_id)
+        cheese_list = await get_cheese_list(client, self.season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         # 选集过滤
         episodes = parse_episodes_selection(args.episodes, len(cheese_list["pages"]))
@@ -66,7 +66,7 @@ class CheeseBatchExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_cheese_data(
-                    session,
+                    client,
                     cheese_item["episode_id"],
                     cheese_item,
                     args,

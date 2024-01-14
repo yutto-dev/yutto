@@ -4,7 +4,7 @@ import argparse
 import re
 import sys
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData, EpisodeId
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
@@ -46,10 +46,10 @@ class CheeseExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
-        season_id = await get_season_id_by_episode_id(session, self.episode_id)
-        cheese_list = await get_cheese_list(session, season_id)
+        season_id = await get_season_id_by_episode_id(client, self.episode_id)
+        cheese_list = await get_cheese_list(client, season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         try:
             for cheese_item in cheese_list["pages"]:
@@ -62,7 +62,7 @@ class CheeseExtractor(SingleExtractor):
 
             return CoroutineWrapper(
                 extract_cheese_data(
-                    session,
+                    client,
                     self.episode_id,
                     cheese_list_item,
                     args,

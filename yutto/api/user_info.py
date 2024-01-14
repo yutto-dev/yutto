@@ -9,7 +9,7 @@ import time
 import urllib.parse
 from typing import Any, TypedDict
 
-from aiohttp import ClientSession
+from httpx import AsyncClient
 
 from yutto._typing import UserInfo
 from yutto.utils.fetcher import Fetcher
@@ -25,9 +25,9 @@ dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable
 dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
 
 
-async def get_user_info(session: ClientSession) -> UserInfo:
+async def get_user_info(client: AsyncClient) -> UserInfo:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(session, info_api)
+    res_json = await Fetcher.fetch_json(client, info_api)
     assert res_json is not None
     res_json_data = res_json.get("data")
     return UserInfo(
@@ -36,12 +36,12 @@ async def get_user_info(session: ClientSession) -> UserInfo:
     )
 
 
-async def get_wbi_img(session: ClientSession) -> WbiImg:
+async def get_wbi_img(client: AsyncClient) -> WbiImg:
     global wbi_img_cache
     if wbi_img_cache is not None:
         return wbi_img_cache
     url = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(session, url)
+    res_json = await Fetcher.fetch_json(client, url)
     assert res_json is not None
     wbi_img: WbiImg = {
         "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
