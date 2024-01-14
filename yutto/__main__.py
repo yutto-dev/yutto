@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import copy
 import os
 import re
@@ -8,7 +9,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any, Literal
 
-import aiohttp
+import httpx
 from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
@@ -34,7 +35,7 @@ from yutto.extractor import (
 from yutto.processor.downloader import start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.funcutils import as_sync
 from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
 from yutto.validator import (
@@ -55,7 +56,7 @@ def main():
     args_list = flatten_args(args, parser)
     try:
         run(args_list)
-    except (SystemExit, KeyboardInterrupt):
+    except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
         Logger.info("已终止下载，再次运行即可继续下载～")
         sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
 
@@ -213,12 +214,7 @@ def cli() -> argparse.ArgumentParser:
 
 @as_sync
 async def run(args_list: list[argparse.Namespace]):
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
+    async with create_client() as client:
         if len(args_list) > 1:
             Logger.info(f"列表里共检测到 {len(args_list)} 项")
 
@@ -264,15 +260,15 @@ async def run(args_list: list[argparse.Namespace]):
                 sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
             # 重定向到可识别的 url
             try:
-                url = await Fetcher.get_redirected_url(session, url)
-            except aiohttp.client_exceptions.InvalidURL:  # type: ignore
+                url = await Fetcher.get_redirected_url(client, url)
+            except httpx.InvalidURL:
                 Logger.error("无效的 url～请检查一下链接是否正确～")
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
             # 提取信息，构造解析任务～
             for extractor in extractors:
                 if extractor.match(url):
-                    download_list = await extractor(session, args)
+                    download_list = await extractor(client, args)
                     break
             else:
                 if args.batch:
@@ -303,7 +299,7 @@ async def run(args_list: list[argparse.Namespace]):
                     )
 
                 await start_downloader(
-                    session,
+                    client,
                     episode_data,
                     {
                         "require_video": args.require_video,

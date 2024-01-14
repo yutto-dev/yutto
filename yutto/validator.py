@@ -6,8 +6,6 @@ import os
 import re
 import sys
 
-import aiohttp
-
 from yutto._typing import UserInfo
 from yutto.api.user_info import get_user_info
 from yutto.bilibili_typing.codec import VideoCodec, audio_codec_priority_default, video_codec_priority_default
@@ -16,7 +14,7 @@ from yutto.processor.selector import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.filter import Filter
 
@@ -149,16 +147,11 @@ def validate_batch_argments(args: argparse.Namespace):
 
 async def validate_user_info(check_option: UserInfo) -> bool:
     """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
+    async with create_client() as client:
         if check_option["is_login"] or check_option["vip_status"]:
             # 需要校验
             # 这么写 if 是为了少一个 get_user_info 请求
-            user_info = await get_user_info(session)
+            user_info = await get_user_info(client)
             if check_option["is_login"] and not user_info["is_login"]:
                 return False
             if check_option["vip_status"] and not user_info["vip_status"]:

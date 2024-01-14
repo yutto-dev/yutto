@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, TypedDict
 
-from aiohttp import ClientSession
+from httpx import AsyncClient
 
 from yutto._typing import (
     AudioUrlMeta,
@@ -39,23 +39,23 @@ class BangumiList(TypedDict):
     pages: list[BangumiListItem]
 
 
-async def get_season_id_by_media_id(session: ClientSession, media_id: MediaId) -> SeasonId:
+async def get_season_id_by_media_id(client: AsyncClient, media_id: MediaId) -> SeasonId:
     media_api = f"https://api.bilibili.com/pgc/review/user?media_id={media_id}"
-    res_json = await Fetcher.fetch_json(session, media_api)
+    res_json = await Fetcher.fetch_json(client, media_api)
     assert res_json is not None
     return SeasonId(str(res_json["result"]["media"]["season_id"]))
 
 
-async def get_season_id_by_episode_id(session: ClientSession, episode_id: EpisodeId) -> SeasonId:
+async def get_season_id_by_episode_id(client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
     episode_api = f"https://api.bilibili.com/pgc/view/web/season?ep_id={episode_id}"
-    res_json = await Fetcher.fetch_json(session, episode_api)
+    res_json = await Fetcher.fetch_json(client, episode_api)
     assert res_json is not None
     return SeasonId(str(res_json["result"]["season_id"]))
 
 
-async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> BangumiList:
+async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
-    resp_json = await Fetcher.fetch_json(session, list_api.format(season_id=season_id))
+    resp_json = await Fetcher.fetch_json(client, list_api.format(season_id=season_id))
     if resp_json is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）")
     if resp_json.get("result") is None:
@@ -85,11 +85,11 @@ async def get_bangumi_list(session: ClientSession, season_id: SeasonId) -> Bangu
 
 
 async def get_bangumi_playurl(
-    session: ClientSession, avid: AvId, episode_id: EpisodeId, cid: CId
+    client: AsyncClient, avid: AvId, episode_id: EpisodeId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1"
 
-    resp_json = await Fetcher.fetch_json(session, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
+    resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
     if resp_json is None:
         raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}）")
     if resp_json.get("result") is None:
@@ -126,16 +126,16 @@ async def get_bangumi_playurl(
     )
 
 
-async def get_bangumi_subtitles(session: ClientSession, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
+async def get_bangumi_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
     subtitile_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    subtitles_json_info = await Fetcher.fetch_json(session, subtitile_url)
+    subtitles_json_info = await Fetcher.fetch_json(client, subtitile_url)
     if subtitles_json_info is None:
         return []
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
-        subtitle_text = await Fetcher.fetch_json(session, "https:" + sub_info["subtitle_url"])
+        subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
         if subtitle_text is None:
             continue
         results.append(
