@@ -94,11 +94,6 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
     # 解析字符串为列表
     Logger.info(f"全 {total} 话")
     if validate_episodes_selection(episodes_str):
-        if "^" in episodes_str:
-            episodes_str = episodes_str.replace("^", "1")
-            Logger.deprecated_warning(
-                "起始符语法糖 ^ 已经被弃用，将会在 2.0.0 正式版移除，请直接使用明确的剧集序号 1 代替，或者在使用范围时，起始为 1 时可以省略"
-            )
         episodes_str = episodes_str.replace("$", "-1")
         episode_list: list[int] = []
         for episode_item in episodes_str.split(","):
