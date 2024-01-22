@@ -227,11 +227,11 @@ async def start_downloader(
     # 显示音视频详细信息
     show_videos_info(
         videos,
-        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportGeneralTypeIssues]
+        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportArgumentType]
     )
     show_audios_info(
         audios,
-        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportGeneralTypeIssues]
+        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportArgumentType]
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
