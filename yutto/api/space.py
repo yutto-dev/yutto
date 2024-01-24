@@ -47,7 +47,9 @@ async def get_user_name(client: AsyncClient, mid: MId) -> str:
     await Fetcher.touch_url(client, "https://www.bilibili.com")
     user_info = await Fetcher.fetch_json(client, space_info_api, params=params)
     assert user_info is not None
-    if user_info["code"] != 0:
+    if user_info["code"] == -404:
+        return f"用户不存在{mid}"
+    elif user_info["code"] != 0:
         Logger.error(f"获取用户名失败，错误信息：{user_info['message']}，可尝试添加参数 `-c` 登录账号后重试")
     return user_info["data"]["name"]
 
