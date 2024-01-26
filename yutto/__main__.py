@@ -217,7 +217,7 @@ async def run(args_list: list[argparse.Namespace]):
     async with create_client(
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
-        proxies=Fetcher.proxies,
+        proxy=Fetcher.proxy,
     ) as client:
         if len(args_list) > 1:
             Logger.info(f"列表里共检测到 {len(args_list)} 项")
