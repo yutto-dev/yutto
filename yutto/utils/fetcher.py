@@ -50,7 +50,7 @@ class MaxRetry:
         return connect_n_times
 
 
-DEFAULT_PROXIES = None
+DEFAULT_PROXY = None
 DEFAULT_TRUST_ENV = True
 DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -60,7 +60,7 @@ DEFAULT_COOKIES = cookies = httpx.Cookies()
 
 
 class Fetcher:
-    proxies: str | None = DEFAULT_PROXIES
+    proxy: str | None = DEFAULT_PROXY
     trust_env: bool = DEFAULT_TRUST_ENV
     headers: dict[str, str] = DEFAULT_HEADERS
     cookies: httpx.Cookies = DEFAULT_COOKIES
@@ -71,13 +71,13 @@ class Fetcher:
     @classmethod
     def set_proxy(cls, proxy: str):
         if proxy == "auto":
-            Fetcher.proxies = None
+            Fetcher.proxy = None
             Fetcher.trust_env = True
         elif proxy == "no":
-            Fetcher.proxies = None
+            Fetcher.proxy = None
             Fetcher.trust_env = False
         else:
-            Fetcher.proxies = proxy
+            Fetcher.proxy = proxy
             Fetcher.trust_env = False
 
     @classmethod
@@ -237,14 +237,14 @@ def create_client(
     headers: dict[str, str] = DEFAULT_HEADERS,
     cookies: httpx.Cookies = DEFAULT_COOKIES,
     trust_env: bool = DEFAULT_TRUST_ENV,
-    proxies: str | None = DEFAULT_PROXIES,
+    proxy: str | None = DEFAULT_PROXY,
     timeout: int | httpx.Timeout = 5,
 ) -> AsyncClient:
     client = httpx.AsyncClient(
         headers=headers,
         cookies=cookies,
         trust_env=trust_env,
-        proxies=proxies,
+        proxy=proxy,
         timeout=timeout,
         follow_redirects=True,
         http2=True,

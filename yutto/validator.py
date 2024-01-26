@@ -150,7 +150,7 @@ async def validate_user_info(check_option: UserInfo) -> bool:
     async with create_client(
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
-        proxies=Fetcher.proxies,
+        proxy=Fetcher.proxy,
     ) as client:
         if check_option["is_login"] or check_option["vip_status"]:
             # 需要校验
