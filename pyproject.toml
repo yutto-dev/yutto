@@ -35,7 +35,7 @@ httpx = {extras = ["http2", "socks"], version = "^0.26.0"}
 pytest = "^8.0.0"
 pyright = "^1.1.336"
 pytest-rerunfailures = "^13.0"
-ruff = "^0.1.6"
+ruff = "^0.2.0"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"
