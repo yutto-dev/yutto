@@ -8,7 +8,6 @@ from typing import Union
 
 class ErrorCode(Enum):
     # 发生错误
-    UNSUPPORTED_PYTHON_VERSION_ERROR = 9
     HTTP_STATUS_ERROR = 10
     NO_ACCESS_PERMISSION_ERROR = 11
     UNSUPPORTED_TYPE_ERROR = 12
