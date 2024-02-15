@@ -46,7 +46,11 @@ async def extract_bangumi_data(
         cid = bangumi_info["cid"]
         name = bangumi_info["name"]
         id = bangumi_info["id"]
-        videos, audios = await get_bangumi_playurl(client, avid, episode_id, cid)
+        videos, audios = (
+            await get_bangumi_playurl(client, avid, episode_id, cid)
+            if args.require_video or args.require_audio
+            else ([], [])
+        )
         subtitles = await get_bangumi_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = bangumi_info["metadata"] if args.require_metadata else None
@@ -92,7 +96,11 @@ async def extract_cheese_data(
         cid = cheese_info["cid"]
         name = cheese_info["name"]
         id = cheese_info["id"]
-        videos, audios = await get_cheese_playurl(client, avid, episode_id, cid)
+        videos, audios = (
+            await get_cheese_playurl(client, avid, episode_id, cid)
+            if args.require_video or args.require_audio
+            else ([], [])
+        )
         subtitles = await get_cheese_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = cheese_info["metadata"] if args.require_metadata else None
@@ -137,7 +145,9 @@ async def extract_ugc_video_data(
         cid = ugc_video_info["cid"]
         name = ugc_video_info["name"]
         id = ugc_video_info["id"]
-        videos, audios = await get_ugc_video_playurl(client, avid, cid)
+        videos, audios = (
+            await get_ugc_video_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
+        )
         subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
