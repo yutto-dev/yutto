@@ -20,6 +20,7 @@ from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.funcutils import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
@@ -131,6 +132,9 @@ async def get_bangumi_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> li
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
     subtitles_json_info = await Fetcher.fetch_json(client, subtitile_url)
     if subtitles_json_info is None:
+        return []
+    if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
+        Logger.warning(f"无法获取该视频的字幕（avid: {avid}, cid: {cid}），原因：{subtitles_json_info.get('message')}")
         return []
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
