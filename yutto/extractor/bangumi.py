@@ -63,7 +63,6 @@ class BangumiExtractor(SingleExtractor):
             return CoroutineWrapper(
                 extract_bangumi_data(
                     client,
-                    self.episode_id,
                     bangumi_list_item,
                     args,
                     {

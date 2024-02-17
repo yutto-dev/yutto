@@ -86,20 +86,22 @@ async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiL
 
 
 async def get_bangumi_playurl(
-    client: AsyncClient, avid: AvId, episode_id: EpisodeId, cid: CId
+    client: AsyncClient, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    play_api = "https://api.bilibili.com/pgc/player/web/playurl?avid={aid}&bvid={bvid}&ep_id={episode_id}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1"
+    play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1"
 
-    resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
+    resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:
         raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}）")
-    if resp_json.get("result") is None:
+    if resp_json.get("result") is None or resp_json["result"].get("video_info") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}"
         )
-    if resp_json["result"]["is_preview"] == 1:
+    video_info = resp_json["result"]["video_info"]
+    if video_info["is_preview"] == 1:
+        # Maybe always 0 in v2 API
         Logger.warning(f"视频（avid: {avid}, cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
-    if resp_json["result"].get("dash") is None:
+    if video_info.get("dash") is None:
         raise UnSupportedTypeError(f"该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式")
     return (
         [
@@ -111,7 +113,7 @@ async def get_bangumi_playurl(
                 "height": video["height"],
                 "quality": video["id"],
             }
-            for video in resp_json["result"]["dash"]["video"]
+            for video in video_info["dash"]["video"]
         ],
         [
             {
@@ -122,7 +124,7 @@ async def get_bangumi_playurl(
                 "height": 0,
                 "quality": audio["id"],
             }
-            for audio in resp_json["result"]["dash"]["audio"]
+            for audio in video_info["dash"]["audio"]
         ],
     )
 

@@ -86,7 +86,6 @@ class BangumiBatchExtractor(BatchExtractor):
             CoroutineWrapper(
                 extract_bangumi_data(
                     client,
-                    bangumi_item["episode_id"],
                     bangumi_item,
                     args,
                     {
