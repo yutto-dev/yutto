@@ -45,6 +45,8 @@ async def extract_bangumi_data(
         cid = bangumi_info["cid"]
         name = bangumi_info["name"]
         id = bangumi_info["id"]
+        if bangumi_info["is_preview"]:
+            Logger.warning(f"视频（avid: {avid}, cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
         videos, audios = (
             await get_bangumi_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )

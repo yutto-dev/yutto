@@ -32,6 +32,7 @@ class BangumiListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
+    is_preview: bool
     metadata: MetaData
 
 
@@ -78,6 +79,7 @@ async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiL
                 "episode_id": EpisodeId(str(item["id"])),
                 "avid": BvId(item["bvid"]),
                 "is_section": i >= len(result["episodes"]),
+                "is_preview": item["badge"] == "预告",  # 并不是一种鲁棒的方式，但目前貌似没有更好的方式了
                 "metadata": _parse_bangumi_metadata(item),
             }
             for i, item in enumerate(result["episodes"] + section_episodes)
