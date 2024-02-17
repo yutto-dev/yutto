@@ -35,7 +35,6 @@ from yutto.utils.danmaku import EmptyDanmakuData
 
 async def extract_bangumi_data(
     client: httpx.AsyncClient,
-    episode_id: EpisodeId,
     bangumi_info: BangumiListItem,
     args: argparse.Namespace,
     subpath_variables: PathTemplateVariableDict,
@@ -47,9 +46,7 @@ async def extract_bangumi_data(
         name = bangumi_info["name"]
         id = bangumi_info["id"]
         videos, audios = (
-            await get_bangumi_playurl(client, avid, episode_id, cid)
-            if args.require_video or args.require_audio
-            else ([], [])
+            await get_bangumi_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
         subtitles = await get_bangumi_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData

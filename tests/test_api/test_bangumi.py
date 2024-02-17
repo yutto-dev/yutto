@@ -67,10 +67,9 @@ async def test_get_bangumi_list():
 @as_sync
 async def test_get_bangumi_playurl():
     avid = BvId("BV1q7411v7Vd")
-    episode_id = EpisodeId("300998")
     cid = CId("144541892")
     async with create_client() as client:
-        playlist = await get_bangumi_playurl(client, avid, episode_id, cid)
+        playlist = await get_bangumi_playurl(client, avid, cid)
         assert len(playlist[0]) > 0
         assert len(playlist[1]) > 0
 
