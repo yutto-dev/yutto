@@ -13,6 +13,7 @@ from yutto._typing import (
     MultiLangSubtitle,
     SeasonId,
     VideoUrlMeta,
+    format_ids,
 )
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
@@ -78,15 +79,15 @@ async def get_cheese_playurl(
     )
     resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
     if resp_json is None:
-        raise NoAccessPermissionError(f"无法获取该视频链接（avid: {avid}, cid: {cid}）")
+        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(
-            f"无法获取该视频链接（avid: {avid}, cid: {cid}），原因：{resp_json.get('message')}"
+            f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
         )
     if resp_json["data"]["is_preview"] == 1:
-        Logger.warning(f"视频（avid: {avid}, cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
+        Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
     if resp_json["data"].get("dash") is None:
-        raise UnSupportedTypeError(f"该视频（avid: {avid}, cid: {cid}）尚不支持 DASH 格式")
+        raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
     return (
         [
             {
@@ -120,7 +121,7 @@ async def get_cheese_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> lis
     if subtitles_json_info is None:
         return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
-        Logger.warning(f"无法获取该视频的字幕（avid: {avid}, cid: {cid}），原因：{subtitles_json_info.get('message')}")
+        Logger.warning(f"无法获取该视频的字幕（{format_ids(avid, cid)}），原因：{subtitles_json_info.get('message')}")
         return []
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []

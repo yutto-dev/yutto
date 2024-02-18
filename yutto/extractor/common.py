@@ -5,7 +5,7 @@ from pathlib import Path
 
 import httpx
 
-from yutto._typing import AvId, EpisodeData, EpisodeId
+from yutto._typing import AvId, EpisodeData, EpisodeId, format_ids
 from yutto.api.bangumi import (
     BangumiListItem,
     get_bangumi_playurl,
@@ -46,7 +46,7 @@ async def extract_bangumi_data(
         name = bangumi_info["name"]
         id = bangumi_info["id"]
         if bangumi_info["is_preview"]:
-            Logger.warning(f"视频（avid: {avid}, cid: {cid}）是预览视频（疑似未登录或非大会员用户）")
+            Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
         videos, audios = (
             await get_bangumi_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
