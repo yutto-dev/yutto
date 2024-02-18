@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
 from typing import NamedTuple, TypedDict
 
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
