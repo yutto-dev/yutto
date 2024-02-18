@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
 from typing import NamedTuple, TypedDict
 
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
@@ -26,8 +25,11 @@ class BilibiliId(NamedTuple):
             return False
         return self.value == other.value
 
+    def to_dict(self) -> dict[str, str]:
+        raise NotImplementedError("请不要直接使用 BilibiliId")
 
-class AvId(BilibiliId, metaclass=ABCMeta):
+
+class AvId(BilibiliId):
     """AId 与 BvId 的统一，大多数 API 只需要其中一种即可正常工作
 
     ### Examples
@@ -53,11 +55,9 @@ class AvId(BilibiliId, metaclass=ABCMeta):
     ```
     """
 
-    @abstractmethod
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
 
-    @abstractmethod
     def to_url(self) -> str:
         raise NotImplementedError("请不要直接使用 AvId")
 
@@ -132,6 +132,12 @@ class SeriesId(BilibiliId):
 
     def to_dict(self):
         return {"series_id": self.value}
+
+
+def format_ids(*id: BilibiliId):
+    id_dicts = [i.to_dict() for i in id]
+    formatted_ids = [f"{k}: {v}" for i in id_dicts for k, v in i.items() if v]
+    return ", ".join(formatted_ids)
 
 
 class VideoUrlMeta(TypedDict):

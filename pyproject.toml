@@ -33,7 +33,7 @@ httpx = { extras = ["http2", "socks"], version = "^0.26.0" }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
-pyright = "^1.1.350"
+pyright = "^1.1.349"
 pytest-rerunfailures = "^13.0"
 ruff = "^0.2.1"
 
