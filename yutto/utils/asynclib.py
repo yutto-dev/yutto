@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import platform
+import time
 from collections.abc import Coroutine, Generator
 from typing import Any, Generic, TypeVar
 
@@ -27,3 +28,11 @@ class CoroutineWrapper(Generic[RetT]):
 
     def __del__(self):
         self.coro.close()
+
+
+async def sleep_with_status_bar_refresh(seconds: float):
+    current_time = start_time = time.time()
+    while current_time - start_time < seconds:
+        Logger.status.next_tick()
+        await asyncio.sleep(min(1, seconds - (current_time - start_time)))
+        current_time = time.time()

@@ -459,6 +459,13 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--login-strict`
 -  默认值 `False`
 
+#### 设置下载间隔
+
+-  参数 `--download-interval`
+-  默认值 `0`
+
+设置两话之间的下载间隔（单位为秒），避免短时间內下载大量视频导致账号被封禁
+
 #### 不显示颜色
 
 -  参数 `--no-color`
