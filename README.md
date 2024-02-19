@@ -428,6 +428,15 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--metadata-only`
 -  默认值 `False`
 
+#### 不生成视频封面
+
+-  参数 `--no-cover`
+-  默认值 `False`
+
+> [!NOTE]
+>
+> 当前仅支持为包含视频流的视频生成封面。
+
 #### 指定媒体元数据值的格式
 
 当前仅支持 `premiered`
