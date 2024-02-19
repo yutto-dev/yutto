@@ -84,20 +84,24 @@ pip install .
 ### 已支持的下载类型
 
 <!-- prettier-ignore -->
-|类型|是否为批量下载|是否支持选集|示例链接|默认路径模板|
-|-|-|-|-|-|
-|投稿视频|:x:|:x:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}`|
-|投稿视频|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
-|番剧|:x:|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
-|番剧|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
-|课程|:x:|:x:|`https://www.bilibili.com/cheese/play/ep6902`|`{name}`|
-|课程|:white_check_mark:|:white_check_mark:|`https://www.bilibili.com/cheese/play/ep6902` <br/> `https://www.bilibili.com/cheese/play/ss298`|`{title}/{name}`|
-|用户指定收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create`|`{username}的收藏夹/{series_title}/{title}/{name}`|
-|当前用户稍后再看|:white_check_mark:|:x:|`https://www.bilibili.com/watchlater`|`稍后再看/{title}/{name}`|
-|用户全部收藏夹|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
-|UP 主个人空间|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
-|合集|:white_check_mark:|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195`|`{series_title}/{title}`|
-|视频列表|:white_check_mark:|:x:|`https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439` <br/> `https://space.bilibili.com/100969474/favlist?fid=270359&ftype=collect`|`{series_title}/{title}/{name}`|
+| 类型 | 是否支持选集 | 示例链接 | 默认路径模板 |
+| - | - | - | - |
+| 投稿视频 | - | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}` |
+| 投稿视频 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}/{name}` |
+| 番剧 | - | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211` | `{name}` |
+| 番剧 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903` | `{title}/{name}` |
+| 课程 | - | `https://www.bilibili.com/cheese/play/ep6902` | `{name}` |
+| 课程 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/cheese/play/ep6902` <br/> `https://www.bilibili.com/cheese/play/ss298` | `{title}/{name}` |
+| 用户指定收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create` | `{username}的收藏夹/{series_title}/{title}/{name}` |
+| 当前用户稍后再看 <sup>批量</sup> | :x: | `https://www.bilibili.com/watchlater` | `稍后再看/{title}/{name}` |
+| 用户全部收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist` | `{username}的收藏夹/{series_title}/{title}/{name}` |
+| UP 主个人空间 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/video` | `{username}的全部投稿视频/{title}/{name}` |
+| 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195` | `{series_title}/{title}` |
+| 视频列表 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439` <br/> `https://space.bilibili.com/100969474/favlist?fid=270359&ftype=collect` | `{series_title}/{title}/{name}` |
+
+> [!NOTE]
+>
+> 标记「批量」的视频都必须通过 `-b/--batch` 参数来下载，否则会按照单个视频来解析下载
 
 ### 基本命令
 
@@ -154,19 +158,19 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 清晰度对应关系如下
 
 <!-- prettier-ignore -->
-|code|清晰度|
-|:-:|:-:|
-|127|8K 超高清|
-|126|杜比视界|
-|125|HDR 真彩|
-|120|4K 超清|
-|116|1080P 60帧|
-|112|1080P 高码率|
-|80|1080P 高清|
-|74|720P 60帧|
-|64|720P 高清|
-|32|480P 清晰|
-|16|360P 流畅|
+| code | 清晰度 |
+| :-: | :-: |
+| 127 | 8K 超高清 |
+| 126 | 杜比视界 |
+| 125 | HDR 真彩 |
+| 120 | 4K 超清 |
+| 116 | 1080P 60帧 |
+| 112 | 1080P 高码率 |
+| 80 | 1080P 高清 |
+| 74 | 720P 60帧 |
+| 64 | 720P 高清 |
+| 32 | 480P 清晰 |
+| 16 | 360P 流畅 |
 
 并不是说指定某个清晰度就一定会下载该清晰度的视频，yutto 只会尽可能满足你的要求，如果不存在指定的清晰度，yutto 就会按照默认的清晰度搜索机制进行调节，比如指定清晰度为 `80`，**首先会依次降清晰度搜索** `74`、`64`、`32`、`16`，如果依然找不到合适的则**继续升清晰度搜索** `112`、`116`、`120`、`125`、`126`、`127`。
 
@@ -181,12 +185,12 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 码率对应关系如下
 
 <!-- prettier-ignore -->
-|code|码率|
-|:-:|:-:|
-|30251| - (Hi-Res) |
-|30280|320kbps|
-|30232|128kbps|
-|30216|64kbps|
+| code | 码率 |
+| :-: | :-: |
+| 30251 |  - (Hi-Res)  |
+| 30280 | 320kbps |
+| 30232 | 128kbps |
+| 30216 | 64kbps |
 
 码率自动调节机制与视频清晰度一致，也采用先降后升的匹配机制。
 
@@ -338,16 +342,16 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 值得注意的是，并不是所有变量在各种场合下都会提供，比如 `username`, `owner_uid` 变量当前仅在 UP 主全部投稿视频/收藏夹/稍后再看才提供，在其它情况下不应使用它。各变量详细作用域描述见下表：
 
 <!-- prettier-ignore -->
-|Variable|Description|Scope|
-|-|-|-|
-|title|系列视频总标题（番剧名/投稿视频标题）|全部|
-|id|系列视频单 p 顺序标号|全部|
-|name|系列视频单 p 标题|全部|
-|username|UP 主用户名|个人空间、收藏夹、稍后再看、合集、视频列表下载|
-|series_title|合集标题|收藏夹、视频合集、视频列表下载|
-|pubdate🕛|投稿日期|仅投稿视频|
-|download_date🕛|下载日期|全部|
-|owner_uid|UP 主UID|个人空间、收藏夹、稍后再看、合集、视频列表下载|
+| Variable | Description | Scope |
+| - | - | - |
+| title | 系列视频总标题（番剧名/投稿视频标题） | 全部 |
+| id | 系列视频单 p 顺序标号 | 全部 |
+| name | 系列视频单 p 标题 | 全部 |
+| username | UP 主用户名 | 个人空间、收藏夹、稍后再看、合集、视频列表下载 |
+| series_title | 合集标题 | 收藏夹、视频合集、视频列表下载 |
+| pubdate🕛 | 投稿日期 | 仅投稿视频 |
+| download_date🕛 | 下载日期 | 全部 |
+| owner_uid | UP 主UID | 个人空间、收藏夹、稍后再看、合集、视频列表下载 |
 
 > **Note**
 >
