@@ -201,6 +201,8 @@ def merge_video_and_audio(
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
+    if cover_data is not None:
+        cover_path.unlink()
 
 
 async def start_downloader(
