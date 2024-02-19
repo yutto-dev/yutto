@@ -32,8 +32,9 @@ from yutto.extractor import (
     UserAllUgcVideosExtractor,
     UserWatchLaterExtractor,
 )
-from yutto.processor.downloader import start_downloader
+from yutto.processor.downloader import DownloadState, start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
+from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.funcutils import as_sync
@@ -131,6 +132,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "--metadata-format-premiered", default=TIME_DATE_FMT, help="专用于 metadata 文件中 premiered 字段的日期格式"
     )
+    group_common.add_argument("--download-interval", default=0, type=int, help="设置下载间隔，单位为秒")
 
     # 资源选择
     group_common.add_argument(
@@ -289,6 +291,8 @@ async def run(args_list: list[argparse.Namespace]):
                     Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
+            current_download_state = DownloadState.SKIP
+
             # 下载～
             for i, episode_data_coro in enumerate(download_list):
                 if episode_data_coro is None:
@@ -298,6 +302,10 @@ async def run(args_list: list[argparse.Namespace]):
                 if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
                     Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
                     sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+
+                if current_download_state != DownloadState.SKIP and args.download_interval > 0:
+                    Logger.info(f"下载间隔 {args.download_interval} 秒")
+                    await sleep_with_status_bar_refresh(args.download_interval)
 
                 # 这时候才真正开始解析链接
                 episode_data = await episode_data_coro
@@ -309,7 +317,7 @@ async def run(args_list: list[argparse.Namespace]):
                         Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
 
-                await start_downloader(
+                current_download_state = await start_downloader(
                     client,
                     episode_data,
                     {

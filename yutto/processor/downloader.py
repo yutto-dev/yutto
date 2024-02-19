@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from enum import Enum
 from pathlib import Path
 
 import httpx
@@ -207,11 +208,16 @@ def merge_video_and_audio(
         cover_path.unlink()
 
 
+class DownloadState(Enum):
+    DONE = 0
+    SKIP = 1
+
+
 async def start_downloader(
     client: httpx.AsyncClient,
     episode_data: EpisodeData,
     options: DownloaderOptions,
-):
+) -> DownloadState:
     """处理单个视频下载任务，包含弹幕、字幕的存储"""
 
     videos = episode_data["videos"]
@@ -296,14 +302,14 @@ async def start_downloader(
     if output_path.exists():
         if not options["overwrite"]:
             Logger.info(f"文件 {filename} 已存在")
-            return
+            return DownloadState.SKIP
         else:
             Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
             output_path.unlink()
 
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
-        return
+        return DownloadState.SKIP
 
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
@@ -316,3 +322,4 @@ async def start_downloader(
 
     # 合并视频 / 音频
     merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, output_path, options)
+    return DownloadState.DONE
