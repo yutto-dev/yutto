@@ -171,6 +171,7 @@ class EpisodeData(TypedDict):
     subtitles: list[MultiLangSubtitle]
     metadata: MetaData | None
     danmaku: DanmakuData
+    cover_data: bytes | None
     output_dir: str
     tmp_dir: str
     filename: str

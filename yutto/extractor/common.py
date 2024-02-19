@@ -31,6 +31,7 @@ from yutto.processor.path_resolver import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
+from yutto.utils.fetcher import Fetcher
 
 
 async def extract_bangumi_data(
@@ -53,6 +54,7 @@ async def extract_bangumi_data(
         subtitles = await get_bangumi_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = bangumi_info["metadata"] if args.require_metadata else None
+        cover_data = await Fetcher.fetch_bin(client, bangumi_info["metadata"]["thumb"]) if args.require_cover else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,
@@ -71,8 +73,9 @@ async def extract_bangumi_data(
             videos=videos,
             audios=audios,
             subtitles=subtitles,
-            danmaku=danmaku,
             metadata=metadata,
+            danmaku=danmaku,
+            cover_data=cover_data,
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
@@ -103,6 +106,7 @@ async def extract_cheese_data(
         subtitles = await get_cheese_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = cheese_info["metadata"] if args.require_metadata else None
+        cover_data = await Fetcher.fetch_bin(client, cheese_info["metadata"]["thumb"]) if args.require_cover else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "name": name,
@@ -121,8 +125,9 @@ async def extract_cheese_data(
             videos=videos,
             audios=audios,
             subtitles=subtitles,
-            danmaku=danmaku,
             metadata=metadata,
+            danmaku=danmaku,
+            cover_data=cover_data,
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
@@ -150,6 +155,9 @@ async def extract_ugc_video_data(
         subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
+        cover_data = (
+            await Fetcher.fetch_bin(client, ugc_video_info["metadata"]["thumb"]) if args.require_cover else None
+        )
         owner_uid: str = (
             ugc_video_info["metadata"]["actor"][0]["profile"].split("/")[-1]
             if ugc_video_info["metadata"]["actor"]
@@ -173,8 +181,9 @@ async def extract_ugc_video_data(
             videos=videos,
             audios=audios,
             subtitles=subtitles,
-            danmaku=danmaku,
             metadata=metadata,
+            danmaku=danmaku,
+            cover_data=cover_data,
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,

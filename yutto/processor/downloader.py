@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import os
 from pathlib import Path
 
@@ -16,7 +15,7 @@ from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.ffmpeg import FFmpeg
+from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.funcutils import filter_none_value, xmerge
 from yutto.utils.metadata import write_metadata
@@ -143,12 +142,15 @@ def merge_video_and_audio(
     video_path: Path,
     audio: AudioUrlMeta | None,
     audio_path: Path,
+    cover_data: bytes | None,
+    cover_path: Path,
     output_path: Path,
     options: DownloaderOptions,
 ):
     """合并音视频"""
 
     ffmpeg = FFmpeg()
+    command_builder = FFmpegCommandBuilder()
     Logger.info("开始合并……")
 
     # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
@@ -165,21 +167,29 @@ def merge_video_and_audio(
     if audio is not None and audio["codec"] == options["audio_save_codec"]:
         options["audio_save_codec"] = "copy"
 
-    args_list: list[list[str]] = [
-        ["-i", str(video_path)] if video is not None else [],
-        ["-i", str(audio_path)] if audio is not None else [],
-        ["-vcodec", options["video_save_codec"]] if video is not None else [],
-        ["-acodec", options["audio_save_codec"]] if audio is not None else [],
-        # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
-        ["-strict", "unofficial"],
-        ["-tag:v", vtag] if vtag is not None else [],
-        ["-threads", str(os.cpu_count())],
-        # Using double dash to make sure that the output file name is not parsed as an option
-        # if the output file name starts with a dash
-        ["-y", "--", str(output_path)],
-    ]
+    output = command_builder.add_output(output_path)
+    if video is not None:
+        video_input = command_builder.add_video_input(video_path)
+        output.use(video_input)
+        output.set_vcodec(options["video_save_codec"])
+    if audio is not None:
+        audio_input = command_builder.add_audio_input(audio_path)
+        output.use(audio_input)
+        output.set_acodec(options["audio_save_codec"])
+    if video is not None and cover_data is not None:
+        cover_input = command_builder.add_video_input(cover_path)
+        output.use(cover_input)
+        output.set_cover(cover_input)
 
-    result = ffmpeg.exec(functools.reduce(lambda prev, cur: prev + cur, args_list))
+    # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
+    output.with_extra_options(["-strict", "unofficial"])
+    if vtag is not None:
+        output.with_extra_options(["-tag:v", vtag])
+
+    command_builder.with_extra_options(["-threads", str(os.cpu_count())])
+    command_builder.with_extra_options(["-y"])
+
+    result = ffmpeg.exec(command_builder.build())
     if result.returncode != 0:
         Logger.error("合并失败！")
         Logger.error(result.stderr.decode())
@@ -205,6 +215,7 @@ async def start_downloader(
     subtitles = episode_data["subtitles"]
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
+    cover_data = episode_data["cover_data"]
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
@@ -216,6 +227,7 @@ async def start_downloader(
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
+    cover_path = tmp_dir.joinpath(filename + "_cover.jpg")
 
     video = select_video(
         videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
@@ -292,8 +304,11 @@ async def start_downloader(
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
 
+    if cover_data is not None:
+        cover_path.write_bytes(cover_data)
+
     # 下载视频 / 音频
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    merge_video_and_audio(video, video_path, audio, audio_path, output_path, options)
+    merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, output_path, options)
