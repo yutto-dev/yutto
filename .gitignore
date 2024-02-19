@@ -130,6 +130,7 @@ dmypy.json
 *.ass
 *.srt
 *.nfo
+*.jpg
 
 # test files
 *.test.py

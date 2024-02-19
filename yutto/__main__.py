@@ -45,8 +45,8 @@ from yutto.validator import (
     validate_user_info,
 )
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku"]
-DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
 
 
 def main():
@@ -181,6 +181,12 @@ def cli() -> argparse.ArgumentParser:
         action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
         help="仅生成元数据文件",
     )
+    group_common.add_argument(
+        "--no-cover",
+        dest="require_cover",
+        action=create_select_required_action(deselect=["cover"]),
+        help="不生成封面",
+    )
 
     group_common.set_defaults(
         require_video=True,
@@ -188,6 +194,7 @@ def cli() -> argparse.ArgumentParser:
         require_subtitle=True,
         require_metadata=False,
         require_danmaku=True,
+        require_cover=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")

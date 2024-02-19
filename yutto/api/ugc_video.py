@@ -155,7 +155,7 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
             "name": item["part"],
             "avid": avid,
             "cid": CId(str(item["cid"])),
-            "metadata": _parse_ugc_video_metadata(video_info, page_info),
+            "metadata": _parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
         }
         for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
     ]
@@ -268,12 +268,17 @@ async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> 
 def _parse_ugc_video_metadata(
     video_info: _UgcVideoInfo,
     page_info: _UgcVideoPageInfo,
+    is_first_page: bool = False,
 ) -> MetaData:
+    thumb = page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"]
+    # Only the non-first page use the first frame as the thumbnail
+    if is_first_page:
+        thumb = video_info["picture"]
     return MetaData(
         title=page_info["part"],
         show_title=page_info["part"],
         plot=video_info["description"],
-        thumb=page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"],
+        thumb=thumb,
         premiered=video_info["pubdate"],
         dateadded=get_time_stamp_by_now(),
         actor=video_info["actor"],
