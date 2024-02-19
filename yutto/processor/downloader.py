@@ -172,6 +172,8 @@ def merge_video_and_audio(
         video_input = command_builder.add_video_input(video_path)
         output.use(video_input)
         output.set_vcodec(options["video_save_codec"])
+        if vtag is not None:
+            output.with_extra_options([f"-tag:v:{video_input.stream_id}", vtag])
     if audio is not None:
         audio_input = command_builder.add_audio_input(audio_path)
         output.use(audio_input)
@@ -183,8 +185,6 @@ def merge_video_and_audio(
 
     # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
     output.with_extra_options(["-strict", "unofficial"])
-    if vtag is not None:
-        output.with_extra_options(["-tag:v", vtag])
 
     command_builder.with_extra_options(["-threads", str(os.cpu_count())])
     command_builder.with_extra_options(["-y"])
@@ -194,6 +194,8 @@ def merge_video_and_audio(
         Logger.error("合并失败！")
         Logger.error(result.stderr.decode())
         return
+    else:
+        Logger.debug(result.stderr.decode())
 
     Logger.info("合并完成！")
 
