@@ -39,6 +39,8 @@ class MaxRetry:
                     return await connect_once(*args, **kwargs)
                 except httpx.TimeoutException:
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
+                except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
+                    raise e
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__

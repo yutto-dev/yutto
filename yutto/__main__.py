@@ -275,7 +275,15 @@ async def run(args_list: list[argparse.Namespace]):
             try:
                 url = await Fetcher.get_redirected_url(client, url)
             except httpx.InvalidURL:
-                Logger.error("无效的 url～请检查一下链接是否正确～")
+                Logger.error(f"无效的 url({url})～请检查一下链接是否正确～")
+                sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+            except httpx.UnsupportedProtocol:
+                error_text = f"无效的 url 协议（{url}）～请检查一下链接协议是否正确"
+                if not args.batch:
+                    error_text += (
+                        "，如使用裸 id 功能，请确认该类型 id 是否支持当前单话模式，如不支持需要添加 `-b` 以使用批量模式"
+                    )
+                Logger.error(error_text)
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
             # 提取信息，构造解析任务～
