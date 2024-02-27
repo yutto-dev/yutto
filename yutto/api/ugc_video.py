@@ -31,7 +31,7 @@ from yutto.utils.time import get_time_stamp_by_now
 
 class _UgcVideoPageInfo(TypedDict):
     part: str
-    first_frame: str | None
+    first_frame: str | None  # 该属性已经废弃，可能会在未来彻底移除
 
 
 class _UgcVideoInfo(TypedDict):
@@ -270,15 +270,11 @@ def _parse_ugc_video_metadata(
     page_info: _UgcVideoPageInfo,
     is_first_page: bool = False,
 ) -> MetaData:
-    thumb = page_info["first_frame"] if page_info["first_frame"] is not None else video_info["picture"]
-    # Only the non-first page use the first frame as the thumbnail
-    if is_first_page:
-        thumb = video_info["picture"]
     return MetaData(
         title=page_info["part"],
         show_title=page_info["part"],
         plot=video_info["description"],
-        thumb=thumb,
+        thumb=video_info["picture"],
         premiered=video_info["pubdate"],
         dateadded=get_time_stamp_by_now(),
         actor=video_info["actor"],
