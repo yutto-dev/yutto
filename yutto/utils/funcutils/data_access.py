@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 
-class Undefined:
-    ...
+class Undefined: ...
 
 
 def data_has_chained_keys(data: Any, keys: list[str]) -> bool:

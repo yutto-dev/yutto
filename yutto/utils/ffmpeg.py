@@ -85,12 +85,10 @@ class FFmpegInput:
         return f"FFmpegInput({self.path})"
 
 
-class FFmpegVideoInput(FFmpegInput):
-    ...
+class FFmpegVideoInput(FFmpegInput): ...
 
 
-class FFmpegAudioInput(FFmpegInput):
-    ...
+class FFmpegAudioInput(FFmpegInput): ...
 
 
 class FFmpegOutput:
