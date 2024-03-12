@@ -102,9 +102,7 @@ def validate_basic_arguments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     if args.download_vcodec_priority != "auto" and download_vcodec_priority[0] != video_download_codec:
         Logger.warning(
-            "download_vcodec 参数值（{}）不是优先级最高的编码（{}），可能会导致下载失败哦".format(
-                video_download_codec, download_vcodec_priority[0]
-            )
+            f"download_vcodec 参数值（{video_download_codec}）不是优先级最高的编码（{download_vcodec_priority[0]}），可能会导致下载失败哦"
         )
     if video_save_codec not in ffmpeg.video_encodecs + ["copy"]:
         Logger.error(
