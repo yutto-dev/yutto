@@ -20,7 +20,7 @@ yutto，一个可爱且任性的 B 站下载器（CLI）
 
 ## 从安装开始～
 
-### 包管理器一键安装啦 <sup>测试中</sup>
+### 包管理器一键安装啦
 
 目前 yutto 已经可以通过部分包管理器直接安装～
 
@@ -37,7 +37,7 @@ brew install yutto
 paru -S yutto
 ```
 
-### 使用 Docker <sup>测试中</sup>
+### 使用 Docker
 
 你也可以尝试使用 docker 直接运行 yutto（具体如何运行需要参考下后面的内容～）
 
