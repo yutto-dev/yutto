@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yutto"
-version = "2.0.0-beta.36"
+version = "2.0.0-beta.37"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 authors = ["Nyakku Shigure <sigure.qaq@gmail.com>"]
 license = "GPL-3.0"
@@ -35,7 +35,7 @@ httpx = { extras = ["http2", "socks"], version = "^0.27.0" }
 pytest = "^8.0.0"
 pyright = "^1.1.351"
 pytest-rerunfailures = "^13.0"
-ruff = "^0.3.0"
+ruff = "^0.3.4"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"
