@@ -12,10 +12,10 @@ class Media(Enum):
 
 
 VideoQuality = Literal[127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
-AudioQuality = Literal[30251, 30280, 30232, 30216]
+AudioQuality = Literal[30251, 30255, 30250, 30280, 30232, 30216]
 
 video_quality_priority_default: list[VideoQuality] = [127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
-audio_quality_priority_default: list[AudioQuality] = [30251, 30280, 30232, 30216]
+audio_quality_priority_default: list[AudioQuality] = [30251, 30255, 30250, 30280, 30232, 30216]
 
 video_quality_map = {
     127: {
@@ -80,6 +80,14 @@ audio_quality_map = {
         "description": "Hi-Res",
         "bitrate": 999,
     },  # Example: BV1eV4y1P7fc
+    30255: {
+        "description": "杜比音效",  # Dolby Audio
+        "bitrate": 999,
+    },  # Example: BV1Fa41127J4，但现在好像没了，也没找到其他的杜比音效选项
+    30250: {
+        "description": "杜比全景声",  # Dolby Atmos
+        "bitrate": 999,
+    },  # Example: BV1eV411W7tt
     30280: {
         "description": "320kbps",
         "bitrate": 320,

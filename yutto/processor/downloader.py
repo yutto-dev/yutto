@@ -261,14 +261,14 @@ async def start_downloader(
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
             output_format = "." + options["output_format_audio_only"]
-        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".flac"
         else:
             output_format = ".aac"
     else:
         if options["output_format"] != "infer":
             output_format = "." + options["output_format"]
-        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)

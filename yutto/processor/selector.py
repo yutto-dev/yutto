@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import sys
 
-from yutto.api.ugc_video import AudioUrlMeta, VideoUrlMeta
+from yutto._typing import AudioUrlMeta, VideoUrlMeta
 from yutto.bilibili_typing.codec import (
     AudioCodec,
     VideoCodec,
@@ -31,14 +31,12 @@ def select_video(
         gen_vcodec_priority(video_codec) if video_download_codec_priority is None else video_download_codec_priority
     )
 
-    # fmt: off
     video_combined_priority = [
         (vqn, vcodec)
         for vqn in video_quality_priority
         # TODO: Dolby Selector
         for vcodec in video_codec_priority
-    ]
-    # fmt: on
+    ]  # fmt: skip
 
     for vqn, vcodec in video_combined_priority:
         for video in videos:
@@ -55,13 +53,11 @@ def select_audio(
     audio_quality_priority = gen_audio_quality_priority(audio_quality)
     audio_codec_priority = gen_acodec_priority(audio_codec)
 
-    # fmt: off
     audio_combined_priority = [
         (aqn, acodec)
         for aqn in audio_quality_priority
         for acodec in audio_codec_priority
-    ]
-    # fmt: on
+    ]  # fmt: skip
 
     for aqn, acodec in audio_combined_priority:
         for audio in audios:

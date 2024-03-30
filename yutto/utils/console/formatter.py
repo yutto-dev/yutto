@@ -26,7 +26,6 @@ def size_format(size: float, ndigits: int = 2, base_unit_size: Literal[1024, 100
 
 def get_char_width(char: str) -> int:
     """计算单个字符的宽度"""
-    # fmt: off
     widths = [
         (126, 1), (159, 0), (687, 1), (710, 0), (711, 1),
         (727, 0), (733, 1), (879, 0), (1154, 1), (1161, 0),
@@ -36,8 +35,7 @@ def get_char_width(char: str) -> int:
         (55203, 2), (63743, 1), (64106, 2), (65039, 1), (65059, 0),
         (65131, 2), (65279, 1), (65376, 2), (65500, 1), (65510, 2),
         (120831, 1), (262141, 2), (1114109, 1),
-    ]
-    # fmt: on
+    ]  # fmt: skip
 
     o = ord(char)
     if o == 0xE or o == 0xF:
