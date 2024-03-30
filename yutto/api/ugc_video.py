@@ -177,25 +177,6 @@ async def get_ugc_video_playurl(
         )
     if resp_json["data"].get("dash") is None:
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
-    # TODO: 处理 resp_json["data"]["dash"]["dolby"]，应当是 Dolby 的音频流
-    # {
-    #   "type": 1 | 2, (1: Dolby Audio 杜比音效（例：BV1Fa41127J4），2: Dolby Atmos 杜比全景声（例：BV1eV411W7tt）)
-    #   "audio": [
-    #     {
-    #       "id": 30255 | 30250，（好像是只有这俩，分别对应上面两个）
-    #       "base_url": "xxxx",
-    #       "backup_url": ["xxxx", "xxxx"],
-    #       "bandwidth": xxx,
-    #       "mime_type": "audio/mp4",
-    #       "codecs": "ec-3",
-    #       "segment_base": {
-    #         "initialization": "xxx",
-    #         "index_range": "xxx",
-    #       },
-    #       "size": xxx,
-    #     }
-    #   ],
-    # }
     videos: list[VideoUrlMeta] = (
         [
             {
@@ -226,13 +207,26 @@ async def get_ugc_video_playurl(
         if resp_json["data"]["dash"]["audio"]
         else []
     )
+    if resp_json["data"]["dash"]["dolby"] is not None and resp_json["data"]["dash"]["dolby"]["audio"] is not None:
+        dolby_audios_json = resp_json["data"]["dash"]["dolby"]["audio"]
+        audios.extend(
+            {
+                "url": dolby_audio_json["base_url"],
+                "mirrors": dolby_audio_json["backup_url"] if dolby_audio_json["backup_url"] is not None else [],
+                "codec": "eac3",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
+                "width": 0,
+                "height": 0,
+                "quality": dolby_audio_json["id"],
+            }
+            for dolby_audio_json in dolby_audios_json
+        )
     if resp_json["data"]["dash"]["flac"] is not None and resp_json["data"]["dash"]["flac"]["audio"] is not None:
         hi_res_audio_json = resp_json["data"]["dash"]["flac"]["audio"]
         audios.append(
             {
                 "url": hi_res_audio_json["base_url"],
                 "mirrors": hi_res_audio_json["backup_url"] if hi_res_audio_json["backup_url"] is not None else [],
-                "codec": "fLaC",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
+                "codec": "flac",  # TODO: 同上，硬编码
                 "width": 0,
                 "height": 0,
                 "quality": hi_res_audio_json["id"],

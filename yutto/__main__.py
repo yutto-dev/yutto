@@ -76,7 +76,7 @@ def cli() -> argparse.ArgumentParser:
         default=127,
         choices=video_quality_priority_default,
         type=int,
-        help="视频清晰度等级（127:8K, 126: Dolby Vision, 125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
+        help="视频清晰度等级（127:8K, 126:Dolby Vision, 125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
     )
     group_common.add_argument(
         "-aq",
@@ -84,7 +84,7 @@ def cli() -> argparse.ArgumentParser:
         default=30251,
         choices=audio_quality_priority_default,
         type=int,
-        help="音频码率等级（30280:320kbps, 30232:128kbps, 30216:64kbps）",
+        help="音频码率等级（30251:Hi-Res, 30255:Dolby Audio, 30250:Dolby Atmos, 30280:320kbps, 30232:128kbps, 30216:64kbps）",
     )
     group_common.add_argument(
         "--vcodec",
