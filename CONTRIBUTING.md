@@ -26,7 +26,7 @@ pip install poetry
 
 ### 编辑器 Visual Studio Code
 
-[VS Code](https://github.com/microsoft/vscode) 是一款功能强大的编辑器，由于 yutto 全面使用了 [Type Hints](https://docs.python.org/3/library/typing.html)，所以这里建议使用 VS Code + 扩展 pylance 来保证类型提示的准确性，同时配置格式化工具 black 以保证代码格式的一致性。
+[VS Code](https://github.com/microsoft/vscode) 是一款功能强大的编辑器，由于 yutto 全面使用了 [Type Hints](https://docs.python.org/3/library/typing.html)，所以这里建议使用 VS Code + 扩展 pylance 来保证类型提示的准确性，同时配置 Format/Lint 工具 [Ruff](https://github.com/astral-sh/ruff) 以保证代码格式的一致性。
 
 当然，如果你有更熟悉的编辑器或 IDE 的话，也是完全可以的。
 
@@ -165,7 +165,7 @@ just test
 
 ## 代码格式化
 
-yutto 使用 black 对代码进行格式化，如果你的编辑器或 IDE 没有自动使用 black 进行格式化，请使用下面的命令对代码进行格式化
+yutto 使用 Ruff 对代码进行格式化，如果你的编辑器或 IDE 没有自动使用 Ruff 进行格式化，请使用下面的命令对代码进行格式化
 
 ```bash
 just fmt

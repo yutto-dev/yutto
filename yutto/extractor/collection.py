@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import re
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData, MId, SeriesId
 from yutto.api.collection import get_collection_details
@@ -49,11 +49,11 @@ class CollectionExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, collection_details = await asyncio.gather(
-            get_user_name(session, self.mid),
-            get_collection_details(session, self.series_id, self.mid),
+            get_user_name(client, self.mid),
+            get_collection_details(client, self.series_id, self.mid),
         )
         collection_title = collection_details["title"]
         Logger.custom(collection_title, Badge("视频合集", fore="black", back="cyan"))
@@ -67,11 +67,11 @@ class CollectionExtractor(BatchExtractor):
         for item in collection_details["pages"]:
             try:
                 avid = item["avid"]
-                ugc_video_list = await get_ugc_video_list(session, avid)
+                ugc_video_list = await get_ugc_video_list(client, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
-                await Fetcher.touch_url(session, avid.to_url())
+                await Fetcher.touch_url(client, avid.to_url())
                 if len(ugc_video_list["pages"]) != 1:
                     Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")
                 for ugc_video_item in ugc_video_list["pages"]:
@@ -89,7 +89,7 @@ class CollectionExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
-                    session,
+                    client,
                     ugc_video_item["avid"],
                     ugc_video_item,
                     args,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import aiohttp
 import pytest
 
 from yutto._typing import AId, BvId, CId, EpisodeId
@@ -10,7 +9,7 @@ from yutto.api.ugc_video import (
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
 )
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import create_client
 from yutto.utils.funcutils import as_sync
 
 
@@ -22,13 +21,8 @@ async def test_get_ugc_video_info():
     aid = AId("84271171")
     avid = bvid
     episode_id = EpisodeId("300998")
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
-        video_info = await get_ugc_video_info(session, avid=avid)
+    async with create_client() as client:
+        video_info = await get_ugc_video_info(client, avid=avid)
         assert video_info["avid"] == aid or video_info["avid"] == bvid
         assert video_info["aid"] == aid
         assert video_info["bvid"] == bvid
@@ -42,13 +36,8 @@ async def test_get_ugc_video_info():
 @as_sync
 async def test_get_ugc_video_title():
     avid = BvId("BV1vZ4y1M7mQ")
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
-        title = (await get_ugc_video_list(session, avid))["title"]
+    async with create_client() as client:
+        title = (await get_ugc_video_list(client, avid))["title"]
         assert title == "用 bilili 下载 B 站视频"
 
 
@@ -56,13 +45,8 @@ async def test_get_ugc_video_title():
 @as_sync
 async def test_get_ugc_video_list():
     avid = BvId("BV1vZ4y1M7mQ")
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
-        ugc_video_list = (await get_ugc_video_list(session, avid))["pages"]
+    async with create_client() as client:
+        ugc_video_list = (await get_ugc_video_list(client, avid))["pages"]
         assert ugc_video_list[0]["id"] == 1
         assert ugc_video_list[0]["name"] == "bilili 特性以及使用方法简单介绍"
         assert ugc_video_list[0]["cid"] == CId("222190584")
@@ -84,13 +68,8 @@ async def test_get_ugc_video_list():
 async def test_get_ugc_video_playurl():
     avid = BvId("BV1vZ4y1M7mQ")
     cid = CId("222190584")
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
-        playlist = await get_ugc_video_playurl(session, avid, cid)
+    async with create_client() as client:
+        playlist = await get_ugc_video_playurl(client, avid, cid)
         assert len(playlist[0]) > 0
         assert len(playlist[1]) > 0
 
@@ -100,12 +79,7 @@ async def test_get_ugc_video_playurl():
 async def test_get_ugc_video_subtitles():
     avid = BvId("BV1Ra411A7kN")
     cid = CId("253246252")
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
-        subtitles = await get_ugc_video_subtitles(session, avid=avid, cid=cid)
+    async with create_client() as client:
+        subtitles = await get_ugc_video_subtitles(client, avid=avid, cid=cid)
         assert len(subtitles) > 0
         assert len(subtitles[0]["lines"]) > 0

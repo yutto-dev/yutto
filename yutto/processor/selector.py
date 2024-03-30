@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import sys
 
-from yutto.api.ugc_video import AudioUrlMeta, VideoUrlMeta
+from yutto._typing import AudioUrlMeta, VideoUrlMeta
 from yutto.bilibili_typing.codec import (
     AudioCodec,
     VideoCodec,
@@ -24,18 +24,19 @@ def select_video(
     videos: list[VideoUrlMeta],
     video_quality: VideoQuality = 127,
     video_codec: VideoCodec = "hevc",
+    video_download_codec_priority: list[VideoCodec] | None = None,
 ) -> VideoUrlMeta | None:
     video_quality_priority = gen_video_quality_priority(video_quality)
-    video_codec_priority = gen_vcodec_priority(video_codec)
+    video_codec_priority = (
+        gen_vcodec_priority(video_codec) if video_download_codec_priority is None else video_download_codec_priority
+    )
 
-    # fmt: off
     video_combined_priority = [
         (vqn, vcodec)
         for vqn in video_quality_priority
         # TODO: Dolby Selector
         for vcodec in video_codec_priority
-    ]
-    # fmt: on
+    ]  # fmt: skip
 
     for vqn, vcodec in video_combined_priority:
         for video in videos:
@@ -52,13 +53,11 @@ def select_audio(
     audio_quality_priority = gen_audio_quality_priority(audio_quality)
     audio_codec_priority = gen_acodec_priority(audio_codec)
 
-    # fmt: off
     audio_combined_priority = [
         (aqn, acodec)
         for aqn in audio_quality_priority
         for acodec in audio_codec_priority
-    ]
-    # fmt: on
+    ]  # fmt: skip
 
     for aqn, acodec in audio_combined_priority:
         for audio in audios:
@@ -91,11 +90,6 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
     # 解析字符串为列表
     Logger.info(f"全 {total} 话")
     if validate_episodes_selection(episodes_str):
-        if "^" in episodes_str:
-            episodes_str = episodes_str.replace("^", "1")
-            Logger.deprecated_warning(
-                "起始符语法糖 ^ 已经被弃用，将会在 2.0.0 正式版移除，请直接使用明确的剧集序号 1 代替，或者在使用范围时，起始为 1 时可以省略"
-            )
         episodes_str = episodes_str.replace("$", "-1")
         episode_list: list[int] = []
         for episode_item in episodes_str.split(","):

@@ -4,7 +4,7 @@ import asyncio
 import math
 from typing import TypedDict
 
-from aiohttp import ClientSession
+from httpx import AsyncClient
 
 from yutto._typing import AvId, BvId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
@@ -21,10 +21,10 @@ class CollectionDetails(TypedDict):
     pages: list[CollectionDetailsItem]
 
 
-async def get_collection_details(session: ClientSession, series_id: SeriesId, mid: MId) -> CollectionDetails:
+async def get_collection_details(client: AsyncClient, series_id: SeriesId, mid: MId) -> CollectionDetails:
     title, avids = await asyncio.gather(
-        _get_collection_title(session, series_id),
-        _get_collection_avids(session, series_id, mid),
+        _get_collection_title(client, series_id),
+        _get_collection_avids(client, series_id, mid),
     )
     return CollectionDetails(
         title=title,
@@ -39,7 +39,7 @@ async def get_collection_details(session: ClientSession, series_id: SeriesId, mi
     )
 
 
-async def _get_collection_avids(session: ClientSession, series_id: SeriesId, mid: MId) -> list[AvId]:
+async def _get_collection_avids(client: AsyncClient, series_id: SeriesId, mid: MId) -> list[AvId]:
     api = "https://api.bilibili.com/x/polymer/space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
     ps = 30
     pn = 1
@@ -48,7 +48,7 @@ async def _get_collection_avids(session: ClientSession, series_id: SeriesId, mid
 
     while pn <= total:
         space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn, mid=mid)
-        json_data = await Fetcher.fetch_json(session, space_videos_url)
+        json_data = await Fetcher.fetch_json(client, space_videos_url)
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["total"] / ps)
         pn += 1
@@ -56,8 +56,8 @@ async def _get_collection_avids(session: ClientSession, series_id: SeriesId, mid
     return all_avid
 
 
-async def _get_collection_title(session: ClientSession, series_id: SeriesId) -> str:
+async def _get_collection_title(client: AsyncClient, series_id: SeriesId) -> str:
     api = "https://api.bilibili.com/x/v1/medialist/info?type=8&biz_id={series_id}"
-    json_data = await Fetcher.fetch_json(session, api.format(series_id=series_id))
+    json_data = await Fetcher.fetch_json(client, api.format(series_id=series_id))
     assert json_data is not None
     return json_data["data"]["title"]

@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 
-import aiohttp
+import httpx
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
@@ -54,10 +54,10 @@ class UgcVideoBatchExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         try:
-            ugc_video_list = await get_ugc_video_list(session, self.avid)
+            ugc_video_list = await get_ugc_video_list(client, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except NotFoundError as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
@@ -71,7 +71,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
-                    session,
+                    client,
                     ugc_video_item["avid"],
                     ugc_video_item,
                     args,

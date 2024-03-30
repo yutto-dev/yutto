@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
 from typing import NamedTuple, TypedDict
 
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
@@ -26,8 +25,11 @@ class BilibiliId(NamedTuple):
             return False
         return self.value == other.value
 
+    def to_dict(self) -> dict[str, str]:
+        raise NotImplementedError("请不要直接使用 BilibiliId")
 
-class AvId(BilibiliId, metaclass=ABCMeta):
+
+class AvId(BilibiliId):
     """AId 与 BvId 的统一，大多数 API 只需要其中一种即可正常工作
 
     ### Examples
@@ -53,11 +55,9 @@ class AvId(BilibiliId, metaclass=ABCMeta):
     ```
     """
 
-    @abstractmethod
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
 
-    @abstractmethod
     def to_url(self) -> str:
         raise NotImplementedError("请不要直接使用 AvId")
 
@@ -134,6 +134,12 @@ class SeriesId(BilibiliId):
         return {"series_id": self.value}
 
 
+def format_ids(*id: BilibiliId):
+    id_dicts = [i.to_dict() for i in id]
+    formatted_ids = [f"{k}: {v}" for i in id_dicts for k, v in i.items() if v]
+    return ", ".join(formatted_ids)
+
+
 class VideoUrlMeta(TypedDict):
     url: str
     mirrors: list[str]
@@ -165,6 +171,7 @@ class EpisodeData(TypedDict):
     subtitles: list[MultiLangSubtitle]
     metadata: MetaData | None
     danmaku: DanmakuData
+    cover_data: bytes | None
     output_dir: str
     tmp_dir: str
     filename: str
@@ -175,6 +182,7 @@ class DownloaderOptions(TypedDict):
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str
+    video_download_codec_priority: list[VideoCodec] | None
     require_audio: bool
     audio_quality: AudioQuality
     audio_download_codec: AudioCodec

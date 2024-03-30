@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import random
 import re
+import string
 import time
 import urllib.parse
 from typing import Any, TypedDict
 
-from aiohttp import ClientSession
+from httpx import AsyncClient
 
 from yutto._typing import UserInfo
 from yutto.utils.fetcher import Fetcher
@@ -18,25 +21,27 @@ class WbiImg(TypedDict):
 
 
 wbi_img_cache: WbiImg | None = None  # Simulate the LocalStorage of the browser
+dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(16, 64))).encode())[:-2].decode()  # fmt: skip
+dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
 
 
-async def get_user_info(session: ClientSession) -> UserInfo:
+async def get_user_info(client: AsyncClient) -> UserInfo:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(session, info_api)
+    res_json = await Fetcher.fetch_json(client, info_api)
     assert res_json is not None
     res_json_data = res_json.get("data")
     return UserInfo(
         vip_status=res_json_data.get("vipStatus") == 1,  # API 返回的是 int，如果未登录就没这个值
-        is_login=res_json_data.get("isLogin"),  # API返回的是bool
+        is_login=res_json_data.get("isLogin"),  # API 返回的是 bool
     )
 
 
-async def get_wbi_img(session: ClientSession) -> WbiImg:
+async def get_wbi_img(client: AsyncClient) -> WbiImg:
     global wbi_img_cache
     if wbi_img_cache is not None:
         return wbi_img_cache
     url = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(session, url)
+    res_json = await Fetcher.fetch_json(client, url)
     assert res_json is not None
     wbi_img: WbiImg = {
         "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
@@ -68,12 +73,18 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
     mixin_key = _get_mixin_key(img_key + sub_key)
     time_stamp = int(time.time())
     params_with_wts = dict(params, wts=time_stamp)
+    params_with_dm = {
+        **params_with_wts,
+        "dm_img_list": "[]",
+        "dm_img_str": dm_img_str_cache,
+        "dm_cover_img_str": dm_cover_img_str_cache,
+    }
     url_encoded_params = urllib.parse.urlencode(
         {
-            key: illegal_char_remover.sub("", str(params_with_wts[key]))
-            for key in sorted(params_with_wts.keys())
+            key: illegal_char_remover.sub("", str(params_with_dm[key]))
+            for key in sorted(params_with_dm.keys())
         }
     )  # fmt: skip
     w_rid = hashlib.md5((url_encoded_params + mixin_key).encode()).hexdigest()
-    all_params = dict(params_with_wts, w_rid=w_rid)
+    all_params = dict(params_with_dm, w_rid=w_rid)
     return all_params

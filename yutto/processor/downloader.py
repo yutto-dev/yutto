@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import os
+from enum import Enum
 from pathlib import Path
 
-import aiohttp
+import httpx
 
 from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
@@ -16,7 +16,7 @@ from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.ffmpeg import FFmpeg
+from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.funcutils import filter_none_value, xmerge
 from yutto.utils.metadata import write_metadata
@@ -87,7 +87,7 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
 
 
 async def download_video_and_audio(
-    session: aiohttp.ClientSession,
+    client: httpx.AsyncClient,
     video: VideoUrlMeta | None,
     video_path: Path,
     audio: AudioUrlMeta | None,
@@ -102,10 +102,10 @@ async def download_video_and_audio(
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
-        vsize = await Fetcher.get_size(session, video["url"])
+        vsize = await Fetcher.get_size(client, video["url"])
         video_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(session, video["url"], video["mirrors"], vbuf, offset, block_size)
+                Fetcher.download_file_with_offset(client, video["url"], video["mirrors"], vbuf, offset, block_size)
             )
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
         ]
@@ -114,10 +114,10 @@ async def download_video_and_audio(
 
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
-        asize = await Fetcher.get_size(session, audio["url"])
+        asize = await Fetcher.get_size(client, audio["url"])
         audio_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(session, audio["url"], audio["mirrors"], abuf, offset, block_size)
+                Fetcher.download_file_with_offset(client, audio["url"], audio["mirrors"], abuf, offset, block_size)
             )
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
         ]
@@ -143,12 +143,15 @@ def merge_video_and_audio(
     video_path: Path,
     audio: AudioUrlMeta | None,
     audio_path: Path,
+    cover_data: bytes | None,
+    cover_path: Path,
     output_path: Path,
     options: DownloaderOptions,
 ):
     """合并音视频"""
 
     ffmpeg = FFmpeg()
+    command_builder = FFmpegCommandBuilder()
     Logger.info("开始合并……")
 
     # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
@@ -165,32 +168,56 @@ def merge_video_and_audio(
     if audio is not None and audio["codec"] == options["audio_save_codec"]:
         options["audio_save_codec"] = "copy"
 
-    args_list: list[list[str]] = [
-        ["-i", str(video_path)] if video is not None else [],
-        ["-i", str(audio_path)] if audio is not None else [],
-        ["-vcodec", options["video_save_codec"]] if video is not None else [],
-        ["-acodec", options["audio_save_codec"]] if audio is not None else [],
-        # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
-        ["-strict", "unofficial"],
-        ["-tag:v", vtag] if vtag is not None else [],
-        ["-threads", str(os.cpu_count())],
-        ["-y", str(output_path)],
-    ]
+    output = command_builder.add_output(output_path)
+    if video is not None:
+        video_input = command_builder.add_video_input(video_path)
+        output.use(video_input)
+        output.set_vcodec(options["video_save_codec"])
+        if vtag is not None:
+            output.with_extra_options([f"-tag:v:{video_input.stream_id}", vtag])
+    if audio is not None:
+        audio_input = command_builder.add_audio_input(audio_path)
+        output.use(audio_input)
+        output.set_acodec(options["audio_save_codec"])
+    if video is not None and cover_data is not None:
+        cover_input = command_builder.add_video_input(cover_path)
+        output.use(cover_input)
+        output.set_cover(cover_input)
 
-    ffmpeg.exec(functools.reduce(lambda prev, cur: prev + cur, args_list))
+    # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
+    output.with_extra_options(["-strict", "unofficial"])
+
+    command_builder.with_extra_options(["-threads", str(os.cpu_count())])
+    command_builder.with_extra_options(["-y"])
+
+    result = ffmpeg.exec(command_builder.build())
+    if result.returncode != 0:
+        Logger.error("合并失败！")
+        Logger.error(result.stderr.decode())
+        return
+    else:
+        Logger.debug(result.stderr.decode())
+
     Logger.info("合并完成！")
 
     if video is not None:
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
+    if cover_data is not None:
+        cover_path.unlink()
+
+
+class DownloadState(Enum):
+    DONE = 0
+    SKIP = 1
 
 
 async def start_downloader(
-    session: aiohttp.ClientSession,
+    client: httpx.AsyncClient,
     episode_data: EpisodeData,
     options: DownloaderOptions,
-):
+) -> DownloadState:
     """处理单个视频下载任务，包含弹幕、字幕的存储"""
 
     videos = episode_data["videos"]
@@ -198,6 +225,7 @@ async def start_downloader(
     subtitles = episode_data["subtitles"]
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
+    cover_data = episode_data["cover_data"]
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
@@ -209,8 +237,11 @@ async def start_downloader(
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
+    cover_path = tmp_dir.joinpath(filename + "_cover.jpg")
 
-    video = select_video(videos, options["video_quality"], options["video_download_codec"])
+    video = select_video(
+        videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
+    )
     audio = select_audio(audios, options["audio_quality"], options["audio_download_codec"])
     will_download_video = video is not None and require_video
     will_download_audio = audio is not None and require_audio
@@ -218,11 +249,11 @@ async def start_downloader(
     # 显示音视频详细信息
     show_videos_info(
         videos,
-        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportGeneralTypeIssues]
+        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportArgumentType]
     )
     show_audios_info(
         audios,
-        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportGeneralTypeIssues]
+        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportArgumentType]
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -230,14 +261,14 @@ async def start_downloader(
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
             output_format = "." + options["output_format_audio_only"]
-        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".flac"
         else:
             output_format = ".aac"
     else:
         if options["output_format"] != "infer":
             output_format = "." + options["output_format"]
-        elif will_download_audio and audio["codec"] == "fLaC":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
@@ -271,20 +302,24 @@ async def start_downloader(
     if output_path.exists():
         if not options["overwrite"]:
             Logger.info(f"文件 {filename} 已存在")
-            return
+            return DownloadState.SKIP
         else:
             Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
             output_path.unlink()
 
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
-        return
+        return DownloadState.SKIP
 
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
 
+    if cover_data is not None:
+        cover_path.write_bytes(cover_data)
+
     # 下载视频 / 音频
-    await download_video_and_audio(session, video, video_path, audio, audio_path, options)
+    await download_video_and_audio(client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    merge_video_and_audio(video, video_path, audio, audio_path, output_path, options)
+    merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, output_path, options)
+    return DownloadState.DONE

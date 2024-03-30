@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import copy
 import os
 import re
@@ -8,7 +9,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any, Literal
 
-import aiohttp
+import httpx
 from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
@@ -31,10 +32,11 @@ from yutto.extractor import (
     UserAllUgcVideosExtractor,
     UserWatchLaterExtractor,
 )
-from yutto.processor.downloader import start_downloader
+from yutto.processor.downloader import DownloadState, start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
+from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.funcutils import as_sync
 from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
 from yutto.validator import (
@@ -44,8 +46,8 @@ from yutto.validator import (
     validate_user_info,
 )
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku"]
-DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
 
 
 def main():
@@ -55,7 +57,7 @@ def main():
     args_list = flatten_args(args, parser)
     try:
         run(args_list)
-    except (SystemExit, KeyboardInterrupt):
+    except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
         Logger.info("已终止下载，再次运行即可继续下载～")
         sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
 
@@ -74,7 +76,7 @@ def cli() -> argparse.ArgumentParser:
         default=127,
         choices=video_quality_priority_default,
         type=int,
-        help="视频清晰度等级（127:8K, 126: Dolby Vision, 125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
+        help="视频清晰度等级（127:8K, 126:Dolby Vision, 125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
     )
     group_common.add_argument(
         "-aq",
@@ -82,7 +84,7 @@ def cli() -> argparse.ArgumentParser:
         default=30251,
         choices=audio_quality_priority_default,
         type=int,
-        help="音频码率等级（30280:320kbps, 30232:128kbps, 30216:64kbps）",
+        help="音频码率等级（30251:Hi-Res, 30255:Dolby Audio, 30250:Dolby Atmos, 30280:320kbps, 30232:128kbps, 30216:64kbps）",
     )
     group_common.add_argument(
         "--vcodec",
@@ -95,6 +97,11 @@ def cli() -> argparse.ArgumentParser:
         default="mp4a:copy",
         metavar="DOWNLOAD_ACODEC:SAVE_ACODEC",
         help="音频编码格式（<下载格式>:<生成格式>）",
+    )
+    group_common.add_argument(
+        "--download-vcodec-priority",
+        default="auto",
+        help="视频编码格式优先级，使用 `,` 分隔，如 `hevc,avc,av1`，默认为 `auto`，即根据 vcodec 中「下载编码」自动推断",
     )
     group_common.add_argument(
         "--output-format", default="infer", choices=["infer", "mp4", "mkv", "mov"], help="输出格式（infer 为自动推断）"
@@ -125,6 +132,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "--metadata-format-premiered", default=TIME_DATE_FMT, help="专用于 metadata 文件中 premiered 字段的日期格式"
     )
+    group_common.add_argument("--download-interval", default=0, type=int, help="设置下载间隔，单位为秒")
 
     # 资源选择
     group_common.add_argument(
@@ -175,6 +183,12 @@ def cli() -> argparse.ArgumentParser:
         action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
         help="仅生成元数据文件",
     )
+    group_common.add_argument(
+        "--no-cover",
+        dest="require_cover",
+        action=create_select_required_action(deselect=["cover"]),
+        help="不生成封面",
+    )
 
     group_common.set_defaults(
         require_video=True,
@@ -182,6 +196,7 @@ def cli() -> argparse.ArgumentParser:
         require_subtitle=True,
         require_metadata=False,
         require_danmaku=True,
+        require_cover=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
@@ -208,12 +223,11 @@ def cli() -> argparse.ArgumentParser:
 
 @as_sync
 async def run(args_list: list[argparse.Namespace]):
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
+    async with create_client(
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
+        proxy=Fetcher.proxy,
+    ) as client:
         if len(args_list) > 1:
             Logger.info(f"列表里共检测到 {len(args_list)} 项")
 
@@ -259,15 +273,23 @@ async def run(args_list: list[argparse.Namespace]):
                 sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
             # 重定向到可识别的 url
             try:
-                url = await Fetcher.get_redirected_url(session, url)
-            except aiohttp.client_exceptions.InvalidURL:  # type: ignore
-                Logger.error("无效的 url～请检查一下链接是否正确～")
+                url = await Fetcher.get_redirected_url(client, url)
+            except httpx.InvalidURL:
+                Logger.error(f"无效的 url({url})～请检查一下链接是否正确～")
+                sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+            except httpx.UnsupportedProtocol:
+                error_text = f"无效的 url 协议（{url}）～请检查一下链接协议是否正确"
+                if not args.batch:
+                    error_text += (
+                        "，如使用裸 id 功能，请确认该类型 id 是否支持当前单话模式，如不支持需要添加 `-b` 以使用批量模式"
+                    )
+                Logger.error(error_text)
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
             # 提取信息，构造解析任务～
             for extractor in extractors:
                 if extractor.match(url):
-                    download_list = await extractor(session, args)
+                    download_list = await extractor(client, args)
                     break
             else:
                 if args.batch:
@@ -276,6 +298,8 @@ async def run(args_list: list[argparse.Namespace]):
                 else:
                     Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+
+            current_download_state = DownloadState.SKIP
 
             # 下载～
             for i, episode_data_coro in enumerate(download_list):
@@ -287,6 +311,10 @@ async def run(args_list: list[argparse.Namespace]):
                     Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
                     sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
 
+                if current_download_state != DownloadState.SKIP and args.download_interval > 0:
+                    Logger.info(f"下载间隔 {args.download_interval} 秒")
+                    await sleep_with_status_bar_refresh(args.download_interval)
+
                 # 这时候才真正开始解析链接
                 episode_data = await episode_data_coro
                 if episode_data is None:
@@ -297,14 +325,17 @@ async def run(args_list: list[argparse.Namespace]):
                         Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
 
-                await start_downloader(
-                    session,
+                current_download_state = await start_downloader(
+                    client,
                     episode_data,
                     {
                         "require_video": args.require_video,
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
+                        "video_download_codec_priority": args.download_vcodec_priority.split(",")
+                        if args.download_vcodec_priority != "auto"
+                        else None,
                         "require_audio": args.require_audio,
                         "audio_quality": args.audio_quality,
                         "audio_download_codec": args.acodec.split(":")[0],

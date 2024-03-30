@@ -6,20 +6,15 @@ import os
 import re
 import sys
 
-import aiohttp
-
 from yutto._typing import UserInfo
 from yutto.api.user_info import get_user_info
-from yutto.bilibili_typing.codec import (
-    audio_codec_priority_default,
-    video_codec_priority_default,
-)
+from yutto.bilibili_typing.codec import VideoCodec, audio_codec_priority_default, video_codec_priority_default
 from yutto.exceptions import ErrorCode
 from yutto.processor.selector import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.filter import Filter
 
@@ -70,19 +65,45 @@ def validate_basic_arguments(args: argparse.Namespace):
 
     ffmpeg = FFmpeg()
 
+    download_vcodec_priority: list[VideoCodec] = video_codec_priority_default
+    if args.download_vcodec_priority != "auto":
+        user_download_vcodec_priority = args.download_vcodec_priority.split(",")
+        if not user_download_vcodec_priority:
+            Logger.error("download_vcodec_priority 参数值为空哦")
+            sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+        for vcodec in user_download_vcodec_priority:
+            if vcodec not in video_codec_priority_default:
+                Logger.error(
+                    "download_vcodec_priority 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
+                        vcodec, ", ".join(video_codec_priority_default)
+                    )
+                )
+                sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+        download_vcodec_priority = user_download_vcodec_priority
+        if len(download_vcodec_priority) < len(video_codec_priority_default):
+            Logger.warning(
+                "download_vcodec_priority（{}）不包含所有下载视频编码（{}），不包含部分将永远不会选择哦".format(
+                    args.download_vcodec_priority, ", ".join(video_codec_priority_default)
+                )
+            )
+
     # vcodec 检查
     vcodec_splited = args.vcodec.split(":")
     if len(vcodec_splited) != 2:
         Logger.error(f"vcodec 参数值（{args.vcodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
     video_download_codec, video_save_codec = vcodec_splited
-    if video_download_codec not in video_codec_priority_default:
+    if video_download_codec not in download_vcodec_priority:
         Logger.error(
             "download_vcodec 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
-                video_download_codec, ", ".join(video_codec_priority_default)
+                video_download_codec, ", ".join(download_vcodec_priority)
             )
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+    if args.download_vcodec_priority != "auto" and download_vcodec_priority[0] != video_download_codec:
+        Logger.warning(
+            f"download_vcodec 参数值（{video_download_codec}）不是优先级最高的编码（{download_vcodec_priority[0]}），可能会导致下载失败哦"
+        )
     if video_save_codec not in ffmpeg.video_encodecs + ["copy"]:
         Logger.error(
             "save_vcodec 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
@@ -124,16 +145,15 @@ def validate_batch_argments(args: argparse.Namespace):
 
 async def validate_user_info(check_option: UserInfo) -> bool:
     """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
-    async with aiohttp.ClientSession(
-        headers=Fetcher.headers,
+    async with create_client(
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
-        timeout=aiohttp.ClientTimeout(total=5),
-    ) as session:
+        proxy=Fetcher.proxy,
+    ) as client:
         if check_option["is_login"] or check_option["vip_status"]:
             # 需要校验
             # 这么写 if 是为了少一个 get_user_info 请求
-            user_info = await get_user_info(session)
+            user_info = await get_user_info(client)
             if check_option["is_login"] and not user_info["is_login"]:
                 return False
             if check_option["vip_status"] and not user_info["vip_status"]:

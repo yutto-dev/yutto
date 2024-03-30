@@ -4,7 +4,7 @@ import argparse
 import re
 from typing import Any
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
@@ -58,22 +58,22 @@ class BangumiBatchExtractor(BatchExtractor):
         else:
             return False
 
-    async def _parse_ids(self, session: aiohttp.ClientSession):
+    async def _parse_ids(self, client: httpx.AsyncClient):
         if "episode_id" in self._match_result.groupdict().keys():
             episode_id = EpisodeId(self._match_result.group("episode_id"))
-            self.season_id = await get_season_id_by_episode_id(session, episode_id)
+            self.season_id = await get_season_id_by_episode_id(client, episode_id)
         elif "season_id" in self._match_result.groupdict().keys():
             self.season_id = SeasonId(self._match_result.group("season_id"))
         else:
             media_id = MediaId(self._match_result.group("media_id"))
-            self.season_id = await get_season_id_by_media_id(session, media_id)
+            self.season_id = await get_season_id_by_media_id(client, media_id)
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        await self._parse_ids(session)
+        await self._parse_ids(client)
 
-        bangumi_list = await get_bangumi_list(session, self.season_id)
+        bangumi_list = await get_bangumi_list(client, self.season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         # 如果没有 with_section 则不需要专区内容
         bangumi_list["pages"] = list(
@@ -85,8 +85,7 @@ class BangumiBatchExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_bangumi_data(
-                    session,
-                    bangumi_item["episode_id"],
+                    client,
                     bangumi_item,
                     args,
                     {

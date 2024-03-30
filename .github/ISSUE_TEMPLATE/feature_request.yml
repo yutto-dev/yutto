@@ -37,3 +37,5 @@ body:
           required: true
         - label: 本 issue 在 [issues](https://github.com/yutto-dev/yutto/issues) 和 [discussion](https://github.com/yutto-dev/yutto/discussions) 中并没有重复问题
           required: true
+        - label: 确认所希望下载的资源是本人有权限获取的，yutto 不提供任何超出本人权限的资源下载方式
+          required: true

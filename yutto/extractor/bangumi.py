@@ -4,7 +4,7 @@ import argparse
 import re
 import sys
 
-import aiohttp
+import httpx
 
 from yutto._typing import EpisodeData, EpisodeId
 from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
@@ -46,10 +46,10 @@ class BangumiExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, session: aiohttp.ClientSession, args: argparse.Namespace
+        self, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
-        season_id = await get_season_id_by_episode_id(session, self.episode_id)
-        bangumi_list = await get_bangumi_list(session, season_id)
+        season_id = await get_season_id_by_episode_id(client, self.episode_id)
+        bangumi_list = await get_bangumi_list(client, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         try:
             for bangumi_item in bangumi_list["pages"]:
@@ -62,8 +62,7 @@ class BangumiExtractor(SingleExtractor):
 
             return CoroutineWrapper(
                 extract_bangumi_data(
-                    session,
-                    self.episode_id,
+                    client,
                     bangumi_list_item,
                     args,
                     {
