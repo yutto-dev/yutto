@@ -20,9 +20,9 @@
   "devDependencies": {
     "@moefy-canvas/core": "^0.5.2",
     "@moefy-canvas/theme-sparkler": "^0.5.2",
-    "vite": "^5.0.10",
-    "vitepress": "1.0.0-rc.32",
-    "vue": "^3.3.13"
+    "vite": "^5.2.7",
+    "vitepress": "1.0.1",
+    "vue": "^3.4.21"
   },
   "pnpm": {
     "peerDependencyRules": {
