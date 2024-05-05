@@ -252,7 +252,7 @@ https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 #### 指定在仅包含音频流时的输出格式
 
 -  参数 `--output-format-audio-only`
--  可选值 `"infer" | "aac" | "flac" | "mp4" | "mkv" | "mov"`
+-  可选值 `"infer" | "aac" | "mp3" | "flac" | "mp4" | "mkv" | "mov"`
 -  默认值 `"infer"`
 
 在仅包含音频流时所使用的输出格式，默认选值 `"infer"` 表示自动根据情况进行推导以保证输出的可用，推导规则如下：
