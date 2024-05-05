@@ -49,6 +49,7 @@ clean:
   find . -name "*.mkv" -print0 | xargs -0 rm -f
   find . -name "*.mov" -print0 | xargs -0 rm -f
   find . -name "*.aac" -print0 | xargs -0 rm -f
+  find . -name "*.mp3" -print0 | xargs -0 rm -f
   find . -name "*.flac" -print0 | xargs -0 rm -f
   find . -name "*.srt" -print0 | xargs -0 rm -f
   find . -name "*.xml" -print0 | xargs -0 rm -f
