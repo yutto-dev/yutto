@@ -21,6 +21,7 @@ lint:
   poetry run ruff check .
 
 build:
+  touch yutto/py.typed
   poetry build
 
 release:
