@@ -26,14 +26,14 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.9.0"
 aiofiles = "^23.2.1"
-biliass = "1.3.7"
+biliass = "1.3.9"
 colorama = { version = "^0.4.6", markers = "sys_platform == 'win32'" }
 typing-extensions = { version = "^4.12.0rc1", allow-prereleases = true }
 dict2xml = "1.7.5"
 httpx = { extras = ["http2", "socks"], version = "^0.27.0" }
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.0"
+pytest = "^8.2.1"
 pyright = "^1.1.363"
 pytest-rerunfailures = "^14.0"
 ruff = "^0.4.4"
