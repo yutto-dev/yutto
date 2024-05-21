@@ -35,13 +35,13 @@ trio = ["trio (>=0.23)"]
 
 [[package]]
 name = "biliass"
-version = "1.3.10"
+version = "1.3.11"
 description = "将 B 站 XML 弹幕转换为 ASS 弹幕"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "biliass-1.3.10-py3-none-any.whl", hash = "sha256:71b2799ccad19e1e71fed3ab795ea555bc11fdd31fa481671e581b34a67ea72a"},
-    {file = "biliass-1.3.10.tar.gz", hash = "sha256:99f1d2687d417f04927110f0153825f47ffb0d3aae312039970031ef18d41ae7"},
+    {file = "biliass-1.3.11-py3-none-any.whl", hash = "sha256:e84defc6123ad3dd3c47907d91580a42a3e891e1b752a793b5f6794edf6f64b0"},
+    {file = "biliass-1.3.11.tar.gz", hash = "sha256:64c1b185cfbf1560c77516528e76042b9e71ca17b126f9625f08b771abbfc8fb"},
 ]
 
 [package.dependencies]
@@ -417,4 +417,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9.0"
-content-hash = "9f5b59a915490a352c2d7019cb9f4964ae2395797f57cacdd66779259b060a44"
+content-hash = "e4217b3e9b7afed2332a7b66944075a149689abe4d91431bb0b36b5d069b6378"
