@@ -468,6 +468,13 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 设置两话之间的下载间隔（单位为秒），避免短时间內下载大量视频导致账号被封禁
 
+#### 禁用下载镜像
+
+-  参数 `--banned-mirrors-pattern`
+-  默认值 `None`
+
+使用正则禁用特定镜像，比如 `--banned-mirrors-pattern "mirrorali"` 将禁用 url 中包含 `mirrorali` 的镜像
+
 #### 不显示颜色
 
 -  参数 `--no-color`

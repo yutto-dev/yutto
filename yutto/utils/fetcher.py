@@ -200,7 +200,7 @@ class Fetcher:
         size: int | None,
     ) -> None:
         async with cls.semaphore:
-            Logger.debug(f"Start download (offset {offset}) {url}")
+            Logger.debug(f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}")
             done = False
             headers = client.headers.copy()
             url_pool = [url] + mirrors
@@ -229,10 +229,12 @@ class Fetcher:
 
                 except httpx.TimeoutException:
                     Logger.warning(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...")
+                    Logger.debug(f"超时链接：{url}")
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
                     Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...")
+                    Logger.debug(f"超时链接：{url}")
 
 
 def create_client(
