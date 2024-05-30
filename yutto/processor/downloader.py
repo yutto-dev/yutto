@@ -105,7 +105,9 @@ async def download_video_and_audio(
         vsize = await Fetcher.get_size(client, video["url"])
         video_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(client, video["url"], video["mirrors"], vbuf, offset, block_size)
+                Fetcher.download_file_with_offset(
+                    client, video["url"], video["mirrors"], options["banned_mirror_regex"], vbuf, offset, block_size
+                )
             )
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
         ]
@@ -117,7 +119,9 @@ async def download_video_and_audio(
         asize = await Fetcher.get_size(client, audio["url"])
         audio_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(client, audio["url"], audio["mirrors"], abuf, offset, block_size)
+                Fetcher.download_file_with_offset(
+                    client, audio["url"], audio["mirrors"], options["banned_mirror_regex"], abuf, offset, block_size
+                )
             )
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
         ]

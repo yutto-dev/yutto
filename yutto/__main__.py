@@ -133,6 +133,7 @@ def cli() -> argparse.ArgumentParser:
         "--metadata-format-premiered", default=TIME_DATE_FMT, help="专用于 metadata 文件中 premiered 字段的日期格式"
     )
     group_common.add_argument("--download-interval", default=0, type=int, help="设置下载间隔，单位为秒")
+    group_common.add_argument("--banned-mirror-regex", default=None, help="禁用下载链接的镜像源，使用正则匹配")
 
     # 资源选择
     group_common.add_argument(
@@ -349,6 +350,7 @@ async def run(args_list: list[argparse.Namespace]):
                             "premiered": args.metadata_format_premiered,
                             "dateadded": TIME_FULL_FMT,
                         },
+                        "banned_mirror_regex": args.banned_mirror_regex,
                     },
                 )
                 Logger.new_line()

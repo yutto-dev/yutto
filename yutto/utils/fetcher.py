@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import re
 from collections.abc import Coroutine, Mapping
 from typing import Any, Callable, TypeVar
 from urllib.parse import quote, unquote
@@ -38,12 +39,14 @@ class MaxRetry:
                 try:
                     return await connect_once(*args, **kwargs)
                 except httpx.TimeoutException:
+                    print(args)
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
                     raise e
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
+                    print(args)
                     Logger.warning(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次")
                 finally:
                     retry -= 1
@@ -195,6 +198,7 @@ class Fetcher:
         client: AsyncClient,
         url: str,
         mirrors: list[str],
+        banned_mirror_regex: str | None,
         file_buffer: AsyncFileBuffer,
         offset: int,
         size: int | None,
@@ -204,6 +208,12 @@ class Fetcher:
             done = False
             headers = client.headers.copy()
             url_pool = [url] + mirrors
+            if banned_mirror_regex is not None:
+                filtered_url_pool = list(filter(lambda url: not re.search(banned_mirror_regex, url), url_pool))
+                if len(filtered_url_pool) > 0:
+                    url_pool = filtered_url_pool
+                else:
+                    Logger.warning(f"所有镜像均被禁用，禁用正则：{banned_mirror_regex}，将使用原始链接下载...")
             block_offset = 0
             while not done:
                 try:
