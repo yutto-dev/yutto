@@ -470,10 +470,10 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 #### 禁用下载镜像
 
--  参数 `--banned-mirror-regex`
+-  参数 `--banned-mirrors-pattern`
 -  默认值 `None`
 
-使用正则禁用特定镜像，比如 `--banned-mirror-regex "mirrorali"` 将禁用 url 中包含 `mirrorali` 的镜像
+使用正则禁用特定镜像，比如 `--banned-mirrors-pattern "mirrorali"` 将禁用 url 中包含 `mirrorali` 的镜像
 
 #### 不显示颜色
 

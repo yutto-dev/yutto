@@ -88,12 +88,12 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
         Logger.info(log)
 
 
-def create_mirrors_filter(banned_mirror_regex: str | None) -> Callable[[list[str]], list[str]]:
+def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[str]], list[str]]:
     mirror_filter: Callable[[str], bool]
-    if banned_mirror_regex is None:
+    if banned_mirrors_pattern is None:
         mirror_filter = lambda _: True  # noqa: E731
     else:
-        regex_banned_pattern = re.compile(banned_mirror_regex)
+        regex_banned_pattern = re.compile(banned_mirrors_pattern)
         mirror_filter = lambda url: not regex_banned_pattern.search(url)  # noqa: E731
 
     def mirrors_filter(mirrors: list[str]) -> list[str]:
@@ -115,7 +115,7 @@ async def download_video_and_audio(
     buffers: list[AsyncFileBuffer | None] = [None, None]
     sizes: list[int | None] = [None, None]
     coroutines_list: list[list[CoroutineWrapper[None]]] = []
-    mirrors_filter = create_mirrors_filter(options["banned_mirror_regex"])
+    mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])

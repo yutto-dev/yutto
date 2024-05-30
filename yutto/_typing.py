@@ -193,7 +193,7 @@ class DownloaderOptions(TypedDict):
     block_size: int
     num_workers: int
     metadata_format: dict[str, str]
-    banned_mirror_regex: str | None
+    banned_mirrors_pattern: str | None
 
 
 class FavouriteMetaData(TypedDict):
