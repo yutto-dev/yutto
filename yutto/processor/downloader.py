@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from enum import Enum
 from pathlib import Path
+from typing import Callable
 
 import httpx
 
@@ -86,6 +88,20 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
         Logger.info(log)
 
 
+def create_mirrors_filter(banned_mirror_regex: str | None) -> Callable[[list[str]], list[str]]:
+    mirror_filter: Callable[[str], bool]
+    if banned_mirror_regex is None:
+        mirror_filter = lambda _: True  # noqa: E731
+    else:
+        regex_banned_pattern = re.compile(banned_mirror_regex)
+        mirror_filter = lambda url: not regex_banned_pattern.search(url)  # noqa: E731
+
+    def mirrors_filter(mirrors: list[str]) -> list[str]:
+        return list(filter(mirror_filter, mirrors))
+
+    return mirrors_filter
+
+
 async def download_video_and_audio(
     client: httpx.AsyncClient,
     video: VideoUrlMeta | None,
@@ -99,6 +115,7 @@ async def download_video_and_audio(
     buffers: list[AsyncFileBuffer | None] = [None, None]
     sizes: list[int | None] = [None, None]
     coroutines_list: list[list[CoroutineWrapper[None]]] = []
+    mirrors_filter = create_mirrors_filter(options["banned_mirror_regex"])
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
@@ -106,7 +123,12 @@ async def download_video_and_audio(
         video_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
-                    client, video["url"], video["mirrors"], options["banned_mirror_regex"], vbuf, offset, block_size
+                    client,
+                    video["url"],
+                    mirrors_filter(video["mirrors"]),
+                    vbuf,
+                    offset,
+                    block_size,
                 )
             )
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
@@ -120,7 +142,12 @@ async def download_video_and_audio(
         audio_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
-                    client, audio["url"], audio["mirrors"], options["banned_mirror_regex"], abuf, offset, block_size
+                    client,
+                    audio["url"],
+                    mirrors_filter(audio["mirrors"]),
+                    abuf,
+                    offset,
+                    block_size,
                 )
             )
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])

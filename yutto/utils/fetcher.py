@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import random
-import re
 from collections.abc import Coroutine, Mapping
 from typing import Any, Callable, TypeVar
 from urllib.parse import quote, unquote
@@ -196,22 +195,15 @@ class Fetcher:
         client: AsyncClient,
         url: str,
         mirrors: list[str],
-        banned_mirror_regex: str | None,
         file_buffer: AsyncFileBuffer,
         offset: int,
         size: int | None,
     ) -> None:
         async with cls.semaphore:
-            Logger.debug(f"Start download (offset {offset}) {url}")
+            Logger.debug(f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}")
             done = False
             headers = client.headers.copy()
             url_pool = [url] + mirrors
-            if banned_mirror_regex is not None:
-                filtered_url_pool = list(filter(lambda url: not re.search(banned_mirror_regex, url), url_pool))
-                if len(filtered_url_pool) > 0:
-                    url_pool = filtered_url_pool
-                else:
-                    Logger.warning(f"所有镜像均被禁用，禁用正则：{banned_mirror_regex}，将使用原始链接下载...")
             block_offset = 0
             while not done:
                 try:
