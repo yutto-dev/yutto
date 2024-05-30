@@ -39,14 +39,12 @@ class MaxRetry:
                 try:
                     return await connect_once(*args, **kwargs)
                 except httpx.TimeoutException:
-                    print(args)
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
                     raise e
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
-                    print(args)
                     Logger.warning(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次")
                 finally:
                     retry -= 1
@@ -239,10 +237,12 @@ class Fetcher:
 
                 except httpx.TimeoutException:
                     Logger.warning(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...")
+                    Logger.debug(f"超时链接：{url}")
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
                     Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...")
+                    Logger.debug(f"超时链接：{url}")
 
 
 def create_client(
