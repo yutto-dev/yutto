@@ -46,8 +46,8 @@ from yutto.validator import (
     validate_user_info,
 )
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
-DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter"]
 
 
 def main():
@@ -191,6 +191,13 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
 
+    group_common.add_argument(
+        "--chapter",
+        dest="require_chapter",
+        action=create_select_required_action(select=["chapter"]),
+        help="生成章节信息",
+    )
+
     group_common.set_defaults(
         require_video=True,
         require_audio=True,
@@ -198,6 +205,7 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=False,
         require_danmaku=True,
         require_cover=True,
+        require_chapter=False,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
@@ -260,7 +268,6 @@ async def run(args_list: list[argparse.Namespace]):
                     CheeseExtractor(),  # 课程单集
                 ]
             )
-
             url: str = args.url
             # 将 shortcut 转为完整 url
             for extractor in extractors:
@@ -331,6 +338,7 @@ async def run(args_list: list[argparse.Namespace]):
                     episode_data,
                     {
                         "require_video": args.require_video,
+                        "require_chapter": args.require_chapter,
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],

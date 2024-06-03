@@ -7,7 +7,6 @@ from dict2xml import dict2xml  # type: ignore
 
 from yutto.utils.time import get_time_str_by_stamp
 
-
 class Actor(TypedDict):
     name: str
     role: str
@@ -15,6 +14,8 @@ class Actor(TypedDict):
     profile: str
     order: int
 
+class ChapterData(TypedDict):
+    position: dict[str, str]
 
 class MetaData(TypedDict):
     title: str
@@ -29,6 +30,7 @@ class MetaData(TypedDict):
     source: str
     original_filename: str
     website: str
+    episodebookmark: list[ChapterData]
 
 
 def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str]) -> dict[str, Any]:

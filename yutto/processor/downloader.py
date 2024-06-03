@@ -260,8 +260,10 @@ async def start_downloader(
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
+    chapter = episode_data["chapter"]
     require_video = options["require_video"]
     require_audio = options["require_audio"]
+    require_chapter = options["require_chapter"]
     metadata_format = options["metadata_format"]
 
     Logger.info(f"开始处理视频 {filename}")
@@ -327,6 +329,8 @@ async def start_downloader(
 
     # 保存媒体描述文件
     if metadata is not None:
+        if require_chapter and chapter is not None:
+            metadata["episodebookmark"] = chapter
         write_metadata(metadata, output_path, metadata_format)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 

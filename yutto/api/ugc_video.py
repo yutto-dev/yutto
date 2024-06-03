@@ -15,6 +15,7 @@ from yutto._typing import (
     EpisodeId,
     MultiLangSubtitle,
     VideoUrlMeta,
+    ChapterData,
     format_ids,
 )
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
@@ -25,6 +26,7 @@ from yutto.exceptions import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.funcutils.data_access import data_has_chained_keys
 from yutto.utils.metadata import Actor, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
@@ -57,6 +59,7 @@ class UgcVideoListItem(TypedDict):
     avid: AvId
     cid: CId
     metadata: MetaData
+    aid: AId
 
 
 class UgcVideoList(TypedDict):
@@ -156,6 +159,7 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
             "avid": avid,
             "cid": CId(str(item["cid"])),
             "metadata": _parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
+            "aid": video_info["aid"],
         }
         for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
     ]
@@ -258,6 +262,24 @@ async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> 
         return results
     return []
 
+async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterData]:
+    chapter_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}"
+    chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
+    chapter_json_info = await Fetcher.fetch_json(client, chapter_url)
+    if chapter_json_info is None:
+        return []
+    if not data_has_chained_keys(chapter_json_info, ["data", "view_points"]):
+        Logger.warning(f"无法获取该视频的章节信息（{format_ids(avid, cid)}），原因：{chapter_json_info.get('message')}")
+        return []
+    
+    raw_chapter_info = chapter_json_info["data"]["view_points"]
+    chapters : list[ChapterData] = []
+    for chapter_info in raw_chapter_info:
+        chapters.append({
+            "position": chapter_info["to"]
+        })
+    return chapters
+
 
 def _parse_ugc_video_metadata(
     video_info: _UgcVideoInfo,
@@ -277,6 +299,7 @@ def _parse_ugc_video_metadata(
         source="",  # TODO
         original_filename="",  # TODO
         website=video_info["bvid"].to_url(),
+        episodebookmark=[],
     )
 
 

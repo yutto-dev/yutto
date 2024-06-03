@@ -5,7 +5,7 @@ from typing import NamedTuple, TypedDict
 from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
 from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
 from yutto.utils.danmaku import DanmakuData
-from yutto.utils.metadata import MetaData
+from yutto.utils.metadata import MetaData, ChapterData
 from yutto.utils.subtitle import SubtitleData
 
 
@@ -175,10 +175,12 @@ class EpisodeData(TypedDict):
     output_dir: str
     tmp_dir: str
     filename: str
+    chapter: list[ChapterData] | None
 
 
 class DownloaderOptions(TypedDict):
     require_video: bool
+    require_chapter: bool
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str
