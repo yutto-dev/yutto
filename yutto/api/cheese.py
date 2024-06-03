@@ -153,4 +153,5 @@ def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
         tag=[],  # TODO
         website="",  # TODO
         original_filename="",  # TODO
+        episodebookmark=[], # TODO
     )
