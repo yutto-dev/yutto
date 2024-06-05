@@ -81,7 +81,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         Logger.warning("该剧集列表无任何剧集，猜测正片尚未上线，如果想要下载 PV 等特殊剧集，请添加参数 -s")
         return []
 
-    def resolve_negetive(value: int) -> int:
+    def resolve_negative(value: int) -> int:
         if value == 0:
             Logger.error("不可使用 0 作为剧集号（剧集号从 1 开始计算）")
             sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
@@ -94,21 +94,21 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         episode_list: list[int] = []
         for episode_item in episodes_str.split(","):
             if "~" in episode_item:
-                splitted = episode_item.split("~")
-                if len(splitted) != 2:
+                split_range = episode_item.split("~")
+                if len(split_range) != 2:
                     Logger.error(f"{episode_item} 选集参数每部分至多包含一个 ~")
                     sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-                start, end = splitted
+                start, end = split_range
                 start, end = "1" if not start else start, "-1" if not end else end
                 start, end = int(start), int(end)
-                start, end = resolve_negetive(start), resolve_negetive(end)
+                start, end = resolve_negative(start), resolve_negative(end)
                 if not (end >= start):
                     Logger.error(f"终点值（{end}）应不小于起点值（{start}）")
                     sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
                 episode_list.extend(list(range(start, end + 1)))
             else:
                 episode_item = int(episode_item)
-                episode_item = resolve_negetive(episode_item)
+                episode_item = resolve_negative(episode_item)
                 episode_list.append(episode_item)
     else:
         episode_list = []
