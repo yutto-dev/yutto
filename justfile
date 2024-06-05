@@ -19,6 +19,7 @@ fmt:
 lint:
   poetry run pyright yutto tests
   poetry run ruff check .
+  poetry run typos
 
 build:
   touch yutto/py.typed

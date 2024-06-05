@@ -42,7 +42,7 @@ from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
 from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
-    validate_batch_argments,
+    validate_batch_arguments,
     validate_user_info,
 )
 
@@ -238,7 +238,7 @@ async def run(args_list: list[argparse.Namespace]):
 
             # 验证批量参数
             if args.batch:
-                validate_batch_argments(args)
+                validate_batch_arguments(args)
 
             # 初始化各种提取器
             extractors = (

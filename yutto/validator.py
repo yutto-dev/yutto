@@ -88,11 +88,11 @@ def validate_basic_arguments(args: argparse.Namespace):
             )
 
     # vcodec 检查
-    vcodec_splited = args.vcodec.split(":")
-    if len(vcodec_splited) != 2:
+    vcodec_split = args.vcodec.split(":")
+    if len(vcodec_split) != 2:
         Logger.error(f"vcodec 参数值（{args.vcodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-    video_download_codec, video_save_codec = vcodec_splited
+    video_download_codec, video_save_codec = vcodec_split
     if video_download_codec not in download_vcodec_priority:
         Logger.error(
             "download_vcodec 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
@@ -113,11 +113,11 @@ def validate_basic_arguments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
     # acodec 检查
-    acodec_splited = args.acodec.split(":")
-    if len(acodec_splited) != 2:
+    acodec_split = args.acodec.split(":")
+    if len(acodec_split) != 2:
         Logger.error(f"acodec 参数值（{args.acodec}）不满足要求哦（并非使用 : 分隔的值）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-    audio_download_codec, audio_save_codec = acodec_splited
+    audio_download_codec, audio_save_codec = acodec_split
     if audio_download_codec not in audio_codec_priority_default:
         Logger.error(
             "download_acodec 参数值（{}）不满足要求哦（允许值：{{{}}}）".format(
@@ -134,7 +134,7 @@ def validate_basic_arguments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-def validate_batch_argments(args: argparse.Namespace):
+def validate_batch_arguments(args: argparse.Namespace):
     """检查批量下载相关选项"""
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
     if not validate_episodes_selection(args.episodes):

@@ -124,7 +124,7 @@ class FFmpegOutput:
         selected_inputs = concat_commands([["-map", str(input.input_id)] for input in self.used_inputs])
         vcodec = ["-vcodec", self.vcodec] if self.vcodec else []
         acodec = ["-acodec", self.acodec] if self.acodec else []
-        # Refer to `-disposition` opiton in https://www.ffmpeg.org/ffmpeg.html#toc-Main-options
+        # Refer to `-disposition` option in https://www.ffmpeg.org/ffmpeg.html#toc-Main-options
         cover_options = (
             [
                 f"-c:v:{self.cover_input.stream_id}",
