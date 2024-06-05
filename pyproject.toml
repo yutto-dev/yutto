@@ -37,6 +37,7 @@ pytest = "^8.2.1"
 pyright = "1.1.364"
 pytest-rerunfailures = "^14.0"
 ruff = "^0.4.5"
+typos = "^1.22.0"
 
 [tool.poetry.scripts]
 yutto = "yutto.__main__:main"

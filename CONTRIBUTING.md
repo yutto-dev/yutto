@@ -100,7 +100,7 @@ poetry run yutto -v
     │   ├── parser.py                  # 文件解析器（解析任务列表、alias 文件）
     │   ├── path_resolver.py           # 路径处理器（需处理路径变量）
     │   └── progressbar.py             # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
-    ├── utils                          # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extrator、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
+    ├── utils                          # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
     │   ├── __init__.py
     │   ├── asynclib.py                # 封装部分异步相关方法
     │   ├── console                    # 命令行打印相关
@@ -129,14 +129,14 @@ poetry run yutto -v
 1. 解析参数并利用 [yutto/validator.py](./yutto/validator.py) 验证参数的正确性，虽然 argparse 已经做了基本的验证，但 validator 会进一步的验证。另外目前 validator 还会顺带做全局状态的设置的工作，这部分以后可能修改。
 2. 利用 [yutto/processor/parser.py](./yutto/processor/parser.py) 解析 alias 和任务列表
 3. 遍历任务列表下载：
-   1. 初始化提取器 [yutto/extrator/](./yutto/extractor/)
+   1. 初始化提取器 [yutto/extractor/](./yutto/extractor/)
    2. 利用所有提取器处理 id 为可识别的 url
    3. 重定向一下入口 url 到可识别的 url
    4. 从入口 url 提取信息，构造解析任务
-      1. 如果是单话下载（继承 `yutto.extrator._abc.SingleExtrator`）
+      1. 如果是单话下载（继承 `yutto.extractor._abc.SingleExtractor`）
          1. 解析有用信息以提供给路径变量
-         2. 使用 `yutto.extrator.common` 里的低阶提取器构造链接解析任务
-      2. 如果是批量下载（继承 `yutto.extrator._abc.BatchExtrator`）
+         2. 使用 `yutto.extractor.common` 里的低阶提取器构造链接解析任务
+      2. 如果是批量下载（继承 `yutto.extractor._abc.BatchExtractor`）
          1. 循环解析列表
          2. 展平列表
          3. 选集（如果支持的话）
