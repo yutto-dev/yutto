@@ -21,7 +21,7 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.funcutils import filter_none_value, xmerge
-from yutto.utils.metadata import write_metadata
+from yutto.utils.metadata import write_chapter, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 
@@ -176,6 +176,7 @@ def merge_video_and_audio(
     audio_path: Path,
     cover_data: bytes | None,
     cover_path: Path,
+    chapter_path: Path,
     output_path: Path,
     options: DownloaderOptions,
 ):
@@ -221,6 +222,10 @@ def merge_video_and_audio(
     command_builder.with_extra_options(["-threads", str(os.cpu_count())])
     command_builder.with_extra_options(["-y"])
 
+    # Add chapter data
+    command_builder.with_extra_options(["-i", str(chapter_path)])
+    command_builder.with_extra_options(["-map_metadata", "1"])
+
     result = ffmpeg.exec(command_builder.build())
     if result.returncode != 0:
         Logger.error("合并失败！")
@@ -260,10 +265,8 @@ async def start_downloader(
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
-    chapter = episode_data["chapter"]
     require_video = options["require_video"]
     require_audio = options["require_audio"]
-    require_chapter = options["require_chapter"]
     metadata_format = options["metadata_format"]
 
     Logger.info(f"开始处理视频 {filename}")
@@ -271,6 +274,7 @@ async def start_downloader(
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
     cover_path = tmp_dir.joinpath(filename + "_cover.jpg")
+    chapter_path = tmp_dir.joinpath(filename + ".ini")
 
     video = select_video(
         videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
@@ -329,10 +333,11 @@ async def start_downloader(
 
     # 保存媒体描述文件
     if metadata is not None:
-        if require_chapter and chapter is not None:
-            metadata["episodebookmark"] = chapter
         write_metadata(metadata, output_path, metadata_format)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+
+        if metadata["chapter_data"] and options["require_chapter"]:
+            write_chapter(metadata, chapter_path)
 
     if output_path.exists():
         if not options["overwrite"]:
@@ -356,5 +361,5 @@ async def start_downloader(
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, output_path, options)
+    merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, chapter_path, output_path, options)
     return DownloadState.DONE

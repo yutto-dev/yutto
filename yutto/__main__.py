@@ -192,10 +192,10 @@ def cli() -> argparse.ArgumentParser:
     )
 
     group_common.add_argument(
-        "--chapter",
+        "--no-chapter-info",
         dest="require_chapter",
-        action=create_select_required_action(select=["chapter"]),
-        help="生成章节信息",
+        action=create_select_required_action(deselect=["chapter"]),
+        help="不封装章节信息",
     )
 
     group_common.set_defaults(
@@ -205,7 +205,7 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=False,
         require_danmaku=True,
         require_cover=True,
-        require_chapter=False,
+        require_chapter=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")

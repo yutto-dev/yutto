@@ -15,7 +15,9 @@ class Actor(TypedDict):
     order: int
 
 class ChapterData(TypedDict):
-    position: dict[str, str]
+    start: int
+    end: int
+    content: str
 
 class MetaData(TypedDict):
     title: str
@@ -30,7 +32,7 @@ class MetaData(TypedDict):
     source: str
     original_filename: str
     website: str
-    episodebookmark: list[ChapterData]
+    chapter_data: list[ChapterData]
 
 
 def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str]) -> dict[str, Any]:
@@ -51,3 +53,15 @@ def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[s
     xml_content = dict2xml(user_formatted_metadata, wrap=custom_root, indent="  ")  # type: ignore
     with metadata_path.open("w", encoding="utf-8") as f:  # type: ignore
         f.write(xml_content)  # type: ignore
+
+# https://wklchris.github.io/blog/FFmpeg/FFmpeg.html#id26
+def write_chapter(metadata: MetaData, chapter_path: Path):
+    with chapter_path.open("w", encoding="utf-8") as f:
+        f.write(";FFMETADATA1\n")
+        f.write(f"title={metadata['title']}\n")
+        for chapter in metadata["chapter_data"]:
+            f.write("[CHAPTER]\n")
+            f.write(f"TIMEBASE=1/1\n")
+            f.write(f"START={chapter['start']}\n")
+            f.write(f"END={chapter['end']}\n")
+            f.write(f"title={chapter['content']}\n")

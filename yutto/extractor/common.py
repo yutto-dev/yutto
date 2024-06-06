@@ -80,7 +80,6 @@ async def extract_bangumi_data(
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
-            chapter=None,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -133,7 +132,6 @@ async def extract_cheese_data(
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
-            chapter=None,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -150,16 +148,16 @@ async def extract_ugc_video_data(
 ) -> EpisodeData | None:
     try:
         cid = ugc_video_info["cid"]
-        aid = ugc_video_info["aid"]
         name = ugc_video_info["name"]
         id = ugc_video_info["id"]
         videos, audios = (
             await get_ugc_video_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
         subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
-        chapters = await get_ugc_video_chapters(client, aid, cid) if args.require_chapter else []
+        chapters = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
+        metadata.update({"chapter_data": chapters}) if metadata and chapters else None
         cover_data = (
             await Fetcher.fetch_bin(client, ugc_video_info["metadata"]["thumb"]) if args.require_cover else None
         )
@@ -192,7 +190,6 @@ async def extract_ugc_video_data(
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
-            chapter=chapters,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
