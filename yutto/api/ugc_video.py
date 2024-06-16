@@ -26,7 +26,7 @@ from yutto.exceptions import (
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils.data_access import data_has_chained_keys
-from yutto.utils.metadata import Actor, ChapterData, MetaData
+from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 
@@ -260,7 +260,7 @@ async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> 
     return []
 
 
-async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterData]:
+async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterInfoData]:
     chapter_api = "https://api.bilibili.com/x/player/v2?avid={aid}&bvid={bvid}&cid={cid}"
     chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
     chapter_json_info = await Fetcher.fetch_json(client, chapter_url)
@@ -295,7 +295,7 @@ def _parse_ugc_video_metadata(
         source="",  # TODO
         original_filename="",  # TODO
         website=video_info["bvid"].to_url(),
-        chapter_data=[],
+        chapter_info_data=[],
     )
 
 

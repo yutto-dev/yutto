@@ -16,7 +16,7 @@ class Actor(TypedDict):
     order: int
 
 
-class ChapterData(TypedDict):
+class ChapterInfoData(TypedDict):
     start: int
     end: int
     content: str
@@ -35,7 +35,7 @@ class MetaData(TypedDict):
     source: str
     original_filename: str
     website: str
-    chapter_data: list[ChapterData]
+    chapter_info_data: list[ChapterInfoData]
 
 
 def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str]) -> dict[str, Any]:
@@ -63,7 +63,7 @@ def write_chapter(metadata: MetaData, chapter_path: Path):
     with chapter_path.open("w", encoding="utf-8") as f:
         f.write(";FFMETADATA1\n")
         f.write(f"title={metadata['title']}\n")
-        for chapter in metadata["chapter_data"]:
+        for chapter in metadata["chapter_info_data"]:
             f.write("[CHAPTER]\n")
             f.write("TIMEBASE=1/1\n")
             f.write(f"START={chapter['start']}\n")

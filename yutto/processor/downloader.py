@@ -336,7 +336,7 @@ async def start_downloader(
         write_metadata(metadata, output_path, metadata_format)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
-        if metadata["chapter_data"] and options["require_chapter"]:
+        if metadata["chapter_info_data"] and options["require_chapter_info"]:
             write_chapter(metadata, chapter_path)
 
     if output_path.exists():

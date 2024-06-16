@@ -153,5 +153,5 @@ def _parse_cheese_metadata(item: dict[str, Any]) -> MetaData:
         tag=[],  # TODO
         website="",  # TODO
         original_filename="",  # TODO
-        chapter_data=[],  # There are no chapter info in cheese for now
+        chapter_info_data=[],  # There are no chapter info in cheese for now
     )

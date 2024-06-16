@@ -154,10 +154,10 @@ async def extract_ugc_video_data(
             await get_ugc_video_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
         subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
-        chapters = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter else []
+        chapters = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter_info else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
-        metadata.update({"chapter_data": chapters}) if metadata and chapters else None
+        metadata.update({"chapter_info_data": chapters}) if metadata and chapters else None
         cover_data = (
             await Fetcher.fetch_bin(client, ugc_video_info["metadata"]["thumb"]) if args.require_cover else None
         )

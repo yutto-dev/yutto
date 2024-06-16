@@ -201,7 +201,7 @@ def cli() -> argparse.ArgumentParser:
 
     group_common.add_argument(
         "--no-chapter-info",
-        dest="require_chapter",
+        dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter"]),
         help="不封装章节信息",
     )
@@ -213,7 +213,7 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=False,
         require_danmaku=True,
         require_cover=True,
-        require_chapter=True,
+        require_chapter_info=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
@@ -346,7 +346,7 @@ async def run(args_list: list[argparse.Namespace]):
                     episode_data,
                     {
                         "require_video": args.require_video,
-                        "require_chapter": args.require_chapter,
+                        "require_chapter_info": args.require_chapter_info,
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
