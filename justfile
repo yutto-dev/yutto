@@ -60,6 +60,7 @@ clean:
   find . -name "*.pb" -print0 | xargs -0 rm -f
   find . -name "*.pyc" -print0 | xargs -0 rm -f
   find . -name "*.jpg" -print0 | xargs -0 rm -f
+  find . -name "*.ini" -print0 | xargs -0 rm -f
   rm -rf .pytest_cache/
   rm -rf .mypy_cache/
   find . -maxdepth 3 -type d -empty -print0 | xargs -0 -r rm -r

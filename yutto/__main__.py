@@ -46,8 +46,16 @@ from yutto.validator import (
     validate_user_info,
 )
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
-DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
+    "video",
+    "audio",
+    "subtitle",
+    "metadata",
+    "danmaku",
+    "cover",
+    "chapter_info",
+]
 
 
 def main():
@@ -191,6 +199,13 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
 
+    group_common.add_argument(
+        "--no-chapter-info",
+        dest="require_chapter_info",
+        action=create_select_required_action(deselect=["chapter_info"]),
+        help="不封装章节信息",
+    )
+
     group_common.set_defaults(
         require_video=True,
         require_audio=True,
@@ -198,6 +213,7 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=False,
         require_danmaku=True,
         require_cover=True,
+        require_chapter_info=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
@@ -260,7 +276,6 @@ async def run(args_list: list[argparse.Namespace]):
                     CheeseExtractor(),  # 课程单集
                 ]
             )
-
             url: str = args.url
             # 将 shortcut 转为完整 url
             for extractor in extractors:
@@ -331,12 +346,15 @@ async def run(args_list: list[argparse.Namespace]):
                     episode_data,
                     {
                         "require_video": args.require_video,
+                        "require_chapter_info": args.require_chapter_info,
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
-                        "video_download_codec_priority": args.download_vcodec_priority.split(",")
-                        if args.download_vcodec_priority != "auto"
-                        else None,
+                        "video_download_codec_priority": (
+                            args.download_vcodec_priority.split(",")
+                            if args.download_vcodec_priority != "auto"
+                            else None
+                        ),
                         "require_audio": args.require_audio,
                         "audio_quality": args.audio_quality,
                         "audio_download_codec": args.acodec.split(":")[0],
