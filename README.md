@@ -407,6 +407,13 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--no-danmaku`
 -  默认值 `False`
 
+#### 不生成章节信息
+
+-  参数 `--no-chapter-info`
+-  默认值 `False`
+
+不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
+
 #### 仅生成弹幕文件
 
 -  参数 `--danmaku-only`
