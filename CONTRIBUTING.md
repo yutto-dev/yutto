@@ -10,13 +10,13 @@
 
 ### 依赖管理工具 poetry
 
-[poetry](https://github.com/python-poetry/poetry) 是 yutto 用来进行依赖管理的工具，通过 pip 就可以很方便地安装它：
+[poetry](https://github.com/python-poetry/poetry) 是 yutto 用来进行依赖管理的工具，通过 pip/pipx 就可以很方便地安装它：
 
 ```bash
-pip install poetry
+pipx install poetry
 ```
 
-> 替代方案（非常不建议）：自行使用 pip 安装依赖，依赖项在 pyproject.toml 中可以找到。
+> 替代方案（非常不建议）：自行使用 `pip` 安装依赖，依赖项在 `pyproject.toml` 中可以找到。
 
 ### 命令执行工具 just
 
@@ -32,7 +32,7 @@ pip install poetry
 
 ## 本地调试
 
-如果你想要本地调试，最佳实践是从 github 上下载最新的源码来运行
+如果你想要本地调试，最佳实践是从 GitHub 上下载最新的源码来运行
 
 ```bash
 git clone git@github.com:yutto-dev/yutto.git
@@ -49,20 +49,22 @@ poetry run yutto -v
 
 这部分内容带你了解下 yutto 的主要模块结构与工作流程。
 
-> 本部分内容可能略有滞后，这里列出的是 2022-04-08 时 [5662caefed372558ffa7dd7124800284d61a7557](https://github.com/yutto-dev/yutto/tree/5662caefed372558ffa7dd7124800284d61a7557) 的模块结构，
+> 本部分内容可能略有滞后，这里列出的是 2024-06-16 时 [2b35887a3dc40f405297a38c53694e18c04cb8e6](https://github.com/yutto-dev/yutto/tree/2b35887a3dc40f405297a38c53694e18c04cb8e6) 的模块结构，
 
 ### 模块结构
 
 ```text
 .
 ├── Dockerfile                         # 一个轻量的 yutto docker
+├── _typos.toml                        # typos 配置
 ├── justfile                           # just 命令启动文件
-├── pyproject.toml                     # poetry 依赖清单
+├── pyproject.toml                     # Python 统一配置，含各种工具链配置、poetry 依赖项声明等
 ├── tests                              # 测试文件
 │   ├── __init__.py
 │   ├── test_api                       # API 测试模块，对应 yutto/api
+│   ├── test_e2e.py                    # 端到端测试
 │   ├── test_processor.py              # processor 测试模块，对应 yutto/processor
-│   └── test_e2e.py                    # 端到端测试
+│   └── test_utils.py                  # utils 测试模块，对应 yutto/utils
 └── yutto
     ├── __init__.py
     ├── __main__.py                    # 命令行入口，含所有命令选项
@@ -71,6 +73,8 @@ poetry run yutto -v
     ├── api                            # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
     │   ├── __init__.py
     │   ├── bangumi.py                 # 番剧相关
+    │   ├── cheese.py                  # 课程相关
+    │   ├── collection.py              # 合集相关
     │   ├── danmaku.py                 # 弹幕相关（xml、protobuf）
     │   ├── space.py                   # 个人空间相关（收藏夹、合集、列表）
     │   ├── ugc_video.py               # 投稿视频相关
@@ -85,21 +89,24 @@ poetry run yutto -v
     │   ├── _abc.py                    # 基本抽象类
     │   ├── bangumi.py                 # 番剧单话
     │   ├── bangumi_batch.py           # 番剧全集
+    │   ├── cheese.py                  # 课程单话
+    │   ├── cheese_batch.py            # 课程全集
     │   ├── collection.py              # 合集
-    │   ├── common.py                  # 低阶提取器（投稿视频、番剧），每种视频类型对应一个低阶提取器
+    │   ├── common.py                  # 低阶提取器（投稿视频、番剧、课程），每种视频类型对应一个低阶提取器
     │   ├── favourites.py              # 收藏夹
     │   ├── series.py                  # 视频列表
     │   ├── ugc_video.py               # 投稿视频单集
     │   ├── ugc_video_batch.py         # 投稿视频批量
-    │   ├── user_all_favourites.py.py  # 全部收藏夹
-    │   └── user_all_ugc_videos.py     # 个人空间全部
+    │   ├── user_all_favourites.py     # 全部收藏夹
+    │   ├── user_all_ugc_videos.py     # 个人空间全部
+    │   └── user_watch_later.py        # 稍后再看
     ├── processor                      # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
     │   ├── __init__.py
     │   ├── downloader.py              # 下载器
-    │   ├── selector.py                # 选集、内容过滤器（本部分可修改成支持交互的）
     │   ├── parser.py                  # 文件解析器（解析任务列表、alias 文件）
     │   ├── path_resolver.py           # 路径处理器（需处理路径变量）
-    │   └── progressbar.py             # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
+    │   ├── progressbar.py             # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
+    │   └── selector.py                # 选集、内容过滤器（本部分可修改成支持交互的）
     ├── utils                          # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
     │   ├── __init__.py
     │   ├── asynclib.py                # 封装部分异步相关方法
@@ -114,7 +121,8 @@ poetry run yutto -v
     │   ├── fetcher.py                 # 基本抓取器
     │   ├── ffmpeg.py                  # FFmpeg 驱动单例模块
     │   ├── file_buffer.py             # 文件缓冲器（yutto 下载原理的核心）
-    │   ├── functools                  # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
+    │   ├── filter.py                  # 数据过滤器（根据时间过滤选择的剧集）
+    │   ├── funcutils                  # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
     │   ├── metadata.py                # 「资源文件」描述文件基本封装
     │   ├── priority.py                # 资源优先级判定（用于 codec、quality 判定）
     │   ├── subtitle.py                # 「资源文件」字幕基本封装
@@ -179,7 +187,7 @@ just fmt
 # 首先在 GitHub 上 fork
 git clone git@github.com:<YOUR_USER_NAME>/yutto.git         # 将你的 repo clone 到本地
 cd yutto/                                                   # cd 到该目录
-git remote add upstream git@github.com:yutto-dev/yutto.git   # 将原分支绑定在 upstream
+git remote add upstream git@github.com:yutto-dev/yutto.git  # 将原分支绑定在 upstream
 git checkout -b <NEW_BRANCH>                                # 新建一个分支，名称随意，最好含有你本次改动的语义
 git push origin <NEW_BRANCH>                                # 将该分支推送到 origin （也就是你 fork 后的 repo）
 # 对源码进行修改、并通过测试
@@ -244,7 +252,7 @@ just release
 just publish
 ```
 
-### 构建镜像并到 DockerHub
+### 构建镜像并发布到 DockerHub
 
 ⚠️ 必须在发布到 PyPI 之后
 
