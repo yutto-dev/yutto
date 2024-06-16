@@ -15,9 +15,9 @@ from yutto.api.cheese import CheeseListItem, get_cheese_playurl, get_cheese_subt
 from yutto.api.danmaku import get_danmaku
 from yutto.api.ugc_video import (
     UgcVideoListItem,
+    get_ugc_video_chapters,
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
-    get_ugc_video_chapters,
 )
 from yutto.exceptions import (
     HttpStatusError,

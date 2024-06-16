@@ -7,6 +7,7 @@ from dict2xml import dict2xml  # type: ignore
 
 from yutto.utils.time import get_time_str_by_stamp
 
+
 class Actor(TypedDict):
     name: str
     role: str
@@ -14,10 +15,12 @@ class Actor(TypedDict):
     profile: str
     order: int
 
+
 class ChapterData(TypedDict):
     start: int
     end: int
     content: str
+
 
 class MetaData(TypedDict):
     title: str
@@ -54,6 +57,7 @@ def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[s
     with metadata_path.open("w", encoding="utf-8") as f:  # type: ignore
         f.write(xml_content)  # type: ignore
 
+
 # https://wklchris.github.io/blog/FFmpeg/FFmpeg.html#id26
 def write_chapter(metadata: MetaData, chapter_path: Path):
     with chapter_path.open("w", encoding="utf-8") as f:
@@ -61,7 +65,7 @@ def write_chapter(metadata: MetaData, chapter_path: Path):
         f.write(f"title={metadata['title']}\n")
         for chapter in metadata["chapter_data"]:
             f.write("[CHAPTER]\n")
-            f.write(f"TIMEBASE=1/1\n")
+            f.write("TIMEBASE=1/1\n")
             f.write(f"START={chapter['start']}\n")
             f.write(f"END={chapter['end']}\n")
             f.write(f"title={chapter['content']}\n")

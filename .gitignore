@@ -131,6 +131,7 @@ dmypy.json
 *.srt
 *.nfo
 *.jpg
+*.ini
 
 # test files
 *.test.py

@@ -47,7 +47,15 @@ from yutto.validator import (
 )
 
 DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter"]
-DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
+    "video",
+    "audio",
+    "subtitle",
+    "metadata",
+    "danmaku",
+    "cover",
+    "chapter",
+]
 
 
 def main():
@@ -342,9 +350,11 @@ async def run(args_list: list[argparse.Namespace]):
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
-                        "video_download_codec_priority": args.download_vcodec_priority.split(",")
-                        if args.download_vcodec_priority != "auto"
-                        else None,
+                        "video_download_codec_priority": (
+                            args.download_vcodec_priority.split(",")
+                            if args.download_vcodec_priority != "auto"
+                            else None
+                        ),
                         "require_audio": args.require_audio,
                         "audio_quality": args.audio_quality,
                         "audio_download_codec": args.acodec.split(":")[0],

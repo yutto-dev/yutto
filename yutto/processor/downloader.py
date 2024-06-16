@@ -361,5 +361,7 @@ async def start_downloader(
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, chapter_path, output_path, options)
+    merge_video_and_audio(
+        video, video_path, audio, audio_path, cover_data, cover_path, chapter_path, output_path, options
+    )
     return DownloadState.DONE

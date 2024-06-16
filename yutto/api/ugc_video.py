@@ -26,7 +26,7 @@ from yutto.exceptions import (
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils.data_access import data_has_chained_keys
-from yutto.utils.metadata import Actor, MetaData, ChapterData
+from yutto.utils.metadata import Actor, ChapterData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 
@@ -259,6 +259,7 @@ async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> 
         return results
     return []
 
+
 async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterData]:
     chapter_api = "https://api.bilibili.com/x/player/v2?avid={aid}&bvid={bvid}&cid={cid}"
     chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
@@ -268,7 +269,7 @@ async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> l
     if not data_has_chained_keys(chapter_json_info, ["data", "view_points"]):
         Logger.warning(f"无法获取该视频的章节信息（{format_ids(avid, cid)}），原因：{chapter_json_info.get('message')}")
         return []
-    
+
     raw_chapter_info = chapter_json_info["data"]["view_points"]
     return [
         {"content": chapter_info["content"], "start": chapter_info["from"], "end": chapter_info["to"]}
