@@ -58,12 +58,16 @@ def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[s
         f.write(xml_content)  # type: ignore
 
 
+def attach_chapter_info(metadata: MetaData, chapter_info_data: list[ChapterInfoData]):
+    metadata["chapter_info_data"] = chapter_info_data
+
+
 # https://wklchris.github.io/blog/FFmpeg/FFmpeg.html#id26
-def write_chapter(metadata: MetaData, chapter_path: Path):
+def write_chapter_info(title: str, chapter_info_data: list[ChapterInfoData], chapter_path: Path):
     with chapter_path.open("w", encoding="utf-8") as f:
         f.write(";FFMETADATA1\n")
-        f.write(f"title={metadata['title']}\n")
-        for chapter in metadata["chapter_info_data"]:
+        f.write(f"title={title}\n")
+        for chapter in chapter_info_data:
             f.write("[CHAPTER]\n")
             f.write("TIMEBASE=1/1\n")
             f.write(f"START={chapter['start']}\n")

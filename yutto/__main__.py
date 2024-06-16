@@ -46,7 +46,7 @@ from yutto.validator import (
     validate_user_info,
 )
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
 DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "video",
     "audio",
@@ -54,7 +54,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "metadata",
     "danmaku",
     "cover",
-    "chapter",
+    "chapter_info",
 ]
 
 
@@ -202,7 +202,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "--no-chapter-info",
         dest="require_chapter_info",
-        action=create_select_required_action(deselect=["chapter"]),
+        action=create_select_required_action(deselect=["chapter_info"]),
         help="不封装章节信息",
     )
 

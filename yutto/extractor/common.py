@@ -33,6 +33,7 @@ from yutto.processor.path_resolver import (
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
+from yutto.utils.metadata import attach_chapter_info
 
 
 async def extract_bangumi_data(
@@ -77,6 +78,7 @@ async def extract_bangumi_data(
             metadata=metadata,
             danmaku=danmaku,
             cover_data=cover_data,
+            chapter_info_data=[],
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
@@ -129,6 +131,7 @@ async def extract_cheese_data(
             metadata=metadata,
             danmaku=danmaku,
             cover_data=cover_data,
+            chapter_info_data=[],
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
@@ -154,10 +157,11 @@ async def extract_ugc_video_data(
             await get_ugc_video_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
         subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
-        chapters = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter_info else []
+        chapter_info_data = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter_info else []
         danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
-        metadata.update({"chapter_info_data": chapters}) if metadata and chapters else None
+        if metadata and chapter_info_data:
+            attach_chapter_info(metadata, chapter_info_data)
         cover_data = (
             await Fetcher.fetch_bin(client, ugc_video_info["metadata"]["thumb"]) if args.require_cover else None
         )
@@ -187,6 +191,7 @@ async def extract_ugc_video_data(
             metadata=metadata,
             danmaku=danmaku,
             cover_data=cover_data,
+            chapter_info_data=chapter_info_data,
             output_dir=output_dir,
             tmp_dir=args.tmp_dir or output_dir,
             filename=filename,
