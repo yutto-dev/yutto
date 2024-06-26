@@ -7,12 +7,13 @@ import os
 import re
 import sys
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 import httpx
 from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
+from yutto._typing import EpisodeData
 from yutto.bilibili_typing.quality import (
     audio_quality_priority_default,
     video_quality_priority_default,
@@ -34,6 +35,7 @@ from yutto.extractor import (
 )
 from yutto.processor.downloader import DownloadState, start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
+from yutto.processor.path_resolver import create_unique_path_resolver
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, create_client
@@ -240,6 +242,7 @@ def cli() -> argparse.ArgumentParser:
 
 @as_sync
 async def run(args_list: list[argparse.Namespace]):
+    unique_path = create_unique_path_resolver()
     async with create_client(
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
@@ -335,6 +338,8 @@ async def run(args_list: list[argparse.Namespace]):
                 episode_data = await episode_data_coro
                 if episode_data is None:
                     continue
+                # 保证路径唯一
+                episode_data = ensure_unique_path(episode_data, unique_path)
                 if args.batch:
                     Logger.custom(
                         f"{episode_data['filename']}",
@@ -423,6 +428,15 @@ def create_select_required_action(select: list[DownloadResourceType] = [], desel
 
 def invert_selection(select: list[DownloadResourceType]) -> list[DownloadResourceType]:
     return [tp for tp in DOWNLOAD_RESOURCE_TYPES if tp not in select]
+
+
+def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable[[str], str]) -> EpisodeData:
+    original_filename = episode_data["filename"]
+    new_name = unique_name_resolver(original_filename)
+    episode_data["filename"] = new_name
+    if original_filename != new_name:
+        Logger.warning(f"文件名重复，已重命名为 {new_name}")
+    return episode_data
 
 
 if __name__ == "__main__":

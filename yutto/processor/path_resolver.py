@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from html import unescape
+from pathlib import Path
 from typing import Literal, Union
 
 from yutto.utils.console.logger import Logger
@@ -90,3 +91,21 @@ def resolve_path_template(
         time_formatter = create_time_formatter(var, value)
         path_template = time_formatter(path_template)
     return path_template.format(auto=auto_path_template.format(**subpath_variables), **subpath_variables)
+
+
+def create_unique_path_resolver():
+    """确保同一次下载不会存在相同的路径
+    如分 P 命名完全相同（BV1Ua4y1W7cq）
+    """
+    seen_path_count: dict[str, int] = {}
+
+    def unique_path(path_str: str) -> str:
+        """确保路径唯一"""
+        seen_path_count.setdefault(path_str, -1)
+        seen_path_count[path_str] += 1
+        if seen_path_count[path_str] == 0:
+            return path_str
+        path = Path(path_str)
+        return str(path.parent / f"{path.stem} ({seen_path_count[path_str]}){path.suffix}")
+
+    return unique_path
