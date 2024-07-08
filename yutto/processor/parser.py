@@ -21,12 +21,12 @@ def alias_parser(f_alias: TextIO | None) -> dict[str, str]:
         return {}
     f_alias.seek(0)
     result: dict[str, str] = {}
-    re_alias_spliter = re.compile(r"[\s=]")
+    re_alias_splitter = re.compile(r"[\s=]")
     for line in f_alias:
         line = line.strip()
         if not line or is_comment(line):
             continue
-        alias, url = re_alias_spliter.split(line, maxsplit=1)
+        alias, url = re_alias_splitter.split(line, maxsplit=1)
         result[alias] = url
     return result
 
