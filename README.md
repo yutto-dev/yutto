@@ -77,7 +77,7 @@ pipx/uv 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其�
 ```bash
 pip install git+https://github.com/yutto-dev/yutto@main                 # 通过 pip
 pipx install git+https://github.com/yutto-dev/yutto@main                # 通过 pipx
-uv tool install yutto@git+https://github.com/yutto-dev/yutto.git@main   # 通过 uv
+uv tool install git+https://github.com/yutto-dev/yutto.git@main         # 通过 uv
 ```
 
 ## 主要功能
