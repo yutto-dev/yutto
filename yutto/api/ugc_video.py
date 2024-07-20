@@ -83,7 +83,7 @@ async def get_ugc_video_info(client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
     res_json = await Fetcher.fetch_json(client, info_api.format(**avid.to_dict()))
     if res_json is None:
-        raise NotFoundError(f"无法该视频 {avid} 信息")
+        raise NotFoundError(f"无法获取该视频 {avid} 信息")
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
