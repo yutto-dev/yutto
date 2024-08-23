@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
@@ -13,14 +13,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-          cache: 'poetry'
+          python-version: "3.x"
 
       - name: Install just
         uses: extractions/setup-just@v2

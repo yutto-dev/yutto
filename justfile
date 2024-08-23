@@ -1,27 +1,28 @@
 set positional-arguments
 
-VERSION := `poetry run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+VERSION := `uv run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
 DOCKER_NAME := "siguremo/yutto"
 
 run *ARGS:
-  poetry run python -m yutto {{ARGS}}
+  uv run python -m yutto {{ARGS}}
 
 install:
-  poetry install
+  uv sync
 
 test:
-  poetry run pytest -m '(api or e2e or processor) and not (ci_only or ignore)'
+  uv run pytest -m '(api or e2e or processor) and not (ci_only or ignore)'
   just clean
 
 fmt:
-  poetry run ruff format .
+  uv run ruff format .
 
 lint:
-  poetry run pyright yutto tests
-  poetry run ruff check .
+  uv run pyright src/yutto tests
+  uv run ruff check .
+  uv run typos
 
 build:
-  poetry build
+  uv tool run --from build python -m build --installer uv .
 
 release:
   @echo 'Tagging v{{VERSION}}...'
@@ -29,19 +30,12 @@ release:
   @echo 'Push to GitHub to trigger publish process...'
   git push --tags
 
-publish:
-  touch yutto/py.typed
-  poetry publish --build
-  git tag "v{{VERSION}}"
-  git push --tags
-  just clean-builds
-
-upgrade:
-  just build
-  python3 -m pip install ./dist/yutto-*.whl
-
-upgrade-from-pypi:
-  python3 -m pip install --upgrade --pre yutto
+# Missing command for uv
+# publish:
+#   poetry publish --build
+#   git tag "v{{VERSION}}"
+#   git push --tags
+#   just clean-builds
 
 clean:
   find . -name "*.m4s" -print0 | xargs -0 rm -f
@@ -49,6 +43,7 @@ clean:
   find . -name "*.mkv" -print0 | xargs -0 rm -f
   find . -name "*.mov" -print0 | xargs -0 rm -f
   find . -name "*.aac" -print0 | xargs -0 rm -f
+  find . -name "*.mp3" -print0 | xargs -0 rm -f
   find . -name "*.flac" -print0 | xargs -0 rm -f
   find . -name "*.srt" -print0 | xargs -0 rm -f
   find . -name "*.xml" -print0 | xargs -0 rm -f
@@ -57,6 +52,7 @@ clean:
   find . -name "*.pb" -print0 | xargs -0 rm -f
   find . -name "*.pyc" -print0 | xargs -0 rm -f
   find . -name "*.jpg" -print0 | xargs -0 rm -f
+  find . -name "*.ini" -print0 | xargs -0 rm -f
   rm -rf .pytest_cache/
   rm -rf .mypy_cache/
   find . -maxdepth 3 -type d -empty -print0 | xargs -0 -r rm -r
@@ -67,20 +63,20 @@ clean-builds:
   rm -rf yutto.egg-info/
 
 ci-install:
-  poetry install --no-interaction --no-root
+  uv sync --all-extras --dev
 
 ci-fmt-check:
-  poetry run ruff format --check --diff .
+  uv run ruff format --check --diff .
 
 ci-lint:
   just lint
 
 ci-test:
-  poetry run pytest -m "(api or processor) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
+  uv run pytest -m "(api or processor) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
   just clean
 
 ci-e2e-test:
-  poetry run pytest -m "e2e and not (ci_skip or ignore)"
+  uv run pytest -m "e2e and not (ci_skip or ignore)"
   just clean
 
 docker-run *ARGS:

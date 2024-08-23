@@ -78,7 +78,10 @@ class FFmpegInput:
         self.input_id = input_id
         self.stream_id = stream_id
 
-    def build(self) -> list[str]:
+    def build_select_command(self) -> list[str]:
+        return ["-map", str(self.input_id)]
+
+    def build_input_command(self) -> list[str]:
         return ["-i", str(self.path)]
 
     def __repr__(self):
@@ -91,6 +94,11 @@ class FFmpegVideoInput(FFmpegInput): ...
 class FFmpegAudioInput(FFmpegInput): ...
 
 
+class FFmpegMetadataInput(FFmpegInput):
+    def build_select_command(self) -> list[str]:
+        return ["-map_metadata", str(self.input_id)]
+
+
 class FFmpegOutput:
     def __init__(self, path: Path | str):
         self.path = path
@@ -98,6 +106,7 @@ class FFmpegOutput:
         self.vcodec: str | None = None
         self.acodec: str | None = None
         self.cover_input: FFmpegVideoInput | None = None
+        self.metadata_input: FFmpegMetadataInput | None = None
         self.extra_commands: list[str] = []
 
     def use(self, input: FFmpegInput):
@@ -116,15 +125,19 @@ class FFmpegOutput:
         self.cover_input = cover
         return self
 
+    def set_metadata(self, metadata: FFmpegMetadataInput):
+        self.metadata_input = metadata
+        return self
+
     def with_extra_options(self, command: list[str]):
         self.extra_commands.extend(command)
         return self
 
     def build(self) -> list[str]:
-        selected_inputs = concat_commands([["-map", str(input.input_id)] for input in self.used_inputs])
+        selected_inputs = concat_commands([input.build_select_command() for input in self.used_inputs])
         vcodec = ["-vcodec", self.vcodec] if self.vcodec else []
         acodec = ["-acodec", self.acodec] if self.acodec else []
-        # Refer to `-disposition` opiton in https://www.ffmpeg.org/ffmpeg.html#toc-Main-options
+        # Refer to `-disposition` option in https://www.ffmpeg.org/ffmpeg.html#toc-Main-options
         cover_options = (
             [
                 f"-c:v:{self.cover_input.stream_id}",
@@ -166,6 +179,12 @@ class FFmpegCommandBuilder:
         self.inputs.append(input)
         return input
 
+    def add_metadata_input(self, path: Path | str):
+        input = FFmpegMetadataInput(path, self.num_inputs, 0)
+        self.num_inputs += 1
+        self.inputs.append(input)
+        return input
+
     def with_extra_options(self, command: list[str]):
         self.extra_commands.extend(command)
         return self
@@ -176,7 +195,7 @@ class FFmpegCommandBuilder:
         return output
 
     def build(self):
-        input_commands = concat_commands([input.build() for input in self.inputs])
+        input_commands = concat_commands([input.build_input_command() for input in self.inputs])
         output_commands = concat_commands([output.build() for output in self.outputs])
         return input_commands + self.extra_commands + output_commands
 

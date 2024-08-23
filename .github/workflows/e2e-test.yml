@@ -12,22 +12,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13-dev"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} e2e test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
       - name: Install python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
-          cache: "poetry"
 
       - name: Install tools
         run: |
@@ -41,13 +40,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          poetry install
+          just ci-install
 
       - name: e2e without subprocess
         run: |
-          poetry run yutto -v
-          poetry run yutto -h
-          poetry run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
+          uv run yutto -v
+          uv run yutto -h
+          uv run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
           just clean
 
       - name: e2e test

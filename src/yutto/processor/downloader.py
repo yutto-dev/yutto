@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from enum import Enum
 from pathlib import Path
+from typing import Callable
 
 import httpx
 
@@ -19,7 +21,7 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.funcutils import filter_none_value, xmerge
-from yutto.utils.metadata import write_metadata
+from yutto.utils.metadata import ChapterInfoData, write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 
@@ -86,6 +88,20 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
         Logger.info(log)
 
 
+def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[str]], list[str]]:
+    mirror_filter: Callable[[str], bool]
+    if banned_mirrors_pattern is None:
+        mirror_filter = lambda _: True  # noqa: E731
+    else:
+        regex_banned_pattern = re.compile(banned_mirrors_pattern)
+        mirror_filter = lambda url: not regex_banned_pattern.search(url)  # noqa: E731
+
+    def mirrors_filter(mirrors: list[str]) -> list[str]:
+        return list(filter(mirror_filter, mirrors))
+
+    return mirrors_filter
+
+
 async def download_video_and_audio(
     client: httpx.AsyncClient,
     video: VideoUrlMeta | None,
@@ -99,13 +115,21 @@ async def download_video_and_audio(
     buffers: list[AsyncFileBuffer | None] = [None, None]
     sizes: list[int | None] = [None, None]
     coroutines_list: list[list[CoroutineWrapper[None]]] = []
+    mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await Fetcher.get_size(client, video["url"])
         video_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(client, video["url"], video["mirrors"], vbuf, offset, block_size)
+                Fetcher.download_file_with_offset(
+                    client,
+                    video["url"],
+                    mirrors_filter(video["mirrors"]),
+                    vbuf,
+                    offset,
+                    block_size,
+                )
             )
             for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
         ]
@@ -117,7 +141,14 @@ async def download_video_and_audio(
         asize = await Fetcher.get_size(client, audio["url"])
         audio_coroutines = [
             CoroutineWrapper(
-                Fetcher.download_file_with_offset(client, audio["url"], audio["mirrors"], abuf, offset, block_size)
+                Fetcher.download_file_with_offset(
+                    client,
+                    audio["url"],
+                    mirrors_filter(audio["mirrors"]),
+                    abuf,
+                    offset,
+                    block_size,
+                )
             )
             for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
         ]
@@ -145,6 +176,8 @@ def merge_video_and_audio(
     audio_path: Path,
     cover_data: bytes | None,
     cover_path: Path,
+    chapter_info_data: list[ChapterInfoData],
+    chapter_info_path: Path,
     output_path: Path,
     options: DownloaderOptions,
 ):
@@ -184,6 +217,10 @@ def merge_video_and_audio(
         output.use(cover_input)
         output.set_cover(cover_input)
 
+    if video is not None and chapter_info_data:
+        metadata_input = command_builder.add_metadata_input(chapter_info_path)
+        output.use(metadata_input)
+
     # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
     output.with_extra_options(["-strict", "unofficial"])
 
@@ -206,6 +243,8 @@ def merge_video_and_audio(
         audio_path.unlink()
     if cover_data is not None:
         cover_path.unlink()
+    if chapter_info_data:
+        chapter_info_path.unlink()
 
 
 class DownloadState(Enum):
@@ -226,6 +265,7 @@ async def start_downloader(
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
+    chapter_info_data = episode_data["chapter_info_data"]
     output_dir = Path(episode_data["output_dir"])
     tmp_dir = Path(episode_data["tmp_dir"])
     filename = episode_data["filename"]
@@ -238,6 +278,7 @@ async def start_downloader(
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
     cover_path = tmp_dir.joinpath(filename + "_cover.jpg")
+    chapter_info_path = tmp_dir.joinpath(filename + "_chapter_info.ini")
 
     video = select_video(
         videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
@@ -314,6 +355,11 @@ async def start_downloader(
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
 
+    # 保存章节信息
+    if chapter_info_data:
+        write_chapter_info(filename, chapter_info_data, chapter_info_path)
+
+    # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
 
@@ -321,5 +367,16 @@ async def start_downloader(
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    merge_video_and_audio(video, video_path, audio, audio_path, cover_data, cover_path, output_path, options)
+    merge_video_and_audio(
+        video,
+        video_path,
+        audio,
+        audio_path,
+        cover_data,
+        cover_path,
+        chapter_info_data,
+        chapter_info_path,
+        output_path,
+        options,
+    )
     return DownloadState.DONE

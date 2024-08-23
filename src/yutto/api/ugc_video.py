@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from httpx import AsyncClient
 
@@ -25,7 +25,8 @@ from yutto.exceptions import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
-from yutto.utils.metadata import Actor, MetaData
+from yutto.utils.funcutils.data_access import data_has_chained_keys
+from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 
@@ -82,7 +83,7 @@ async def get_ugc_video_info(client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
     res_json = await Fetcher.fetch_json(client, info_api.format(**avid.to_dict()))
     if res_json is None:
-        raise NotFoundError(f"无法该视频 {avid} 信息")
+        raise NotFoundError(f"无法获取该视频 {avid} 信息")
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
@@ -142,7 +143,7 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
         return result
 
     # 对无意义的分 p 视频名进行修改
-    for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"])):
+    for i, (item, page_info) in enumerate(zip(cast(list[Any], res_json["data"]), video_info["pages"])):
         # TODO: 这里 part 出现了两次，需要都修改，后续去除其中一个冗余数据
         if _is_meaningless_name(item["part"]):
             item["part"] = f"{video_title}_P{i+1:02}"
@@ -157,7 +158,7 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
             "cid": CId(str(item["cid"])),
             "metadata": _parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
         }
-        for i, (item, page_info) in enumerate(zip(res_json["data"], video_info["pages"]))
+        for i, (item, page_info) in enumerate(zip(cast(list[Any], res_json["data"]), video_info["pages"]))
     ]
     return result
 
@@ -259,6 +260,23 @@ async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> 
     return []
 
 
+async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterInfoData]:
+    chapter_api = "https://api.bilibili.com/x/player/v2?avid={aid}&bvid={bvid}&cid={cid}"
+    chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
+    chapter_json_info = await Fetcher.fetch_json(client, chapter_url)
+    if chapter_json_info is None:
+        return []
+    if not data_has_chained_keys(chapter_json_info, ["data", "view_points"]):
+        Logger.warning(f"无法获取该视频的章节信息（{format_ids(avid, cid)}），原因：{chapter_json_info.get('message')}")
+        return []
+
+    raw_chapter_info = chapter_json_info["data"]["view_points"]
+    return [
+        {"content": chapter_info["content"], "start": chapter_info["from"], "end": chapter_info["to"]}
+        for chapter_info in raw_chapter_info
+    ]
+
+
 def _parse_ugc_video_metadata(
     video_info: _UgcVideoInfo,
     page_info: _UgcVideoPageInfo,
@@ -277,6 +295,7 @@ def _parse_ugc_video_metadata(
         source="",  # TODO
         original_filename="",  # TODO
         website=video_info["bvid"].to_url(),
+        chapter_info_data=[],
     )
 
 

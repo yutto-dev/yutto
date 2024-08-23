@@ -184,4 +184,5 @@ def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
         tag=[],  # TODO
         website="",  # TODO
         original_filename="",  # TODO
+        chapter_info_data=[],  # There are no chapter info in bangumi for now
     )

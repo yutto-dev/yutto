@@ -47,36 +47,37 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 
 与直接运行 yutto 不同的是，这里的下载目标路径是通过 `-v <path>:/app` 指定的，也就是说 docker 里的 yutto 会将内容下载到 docker 里的 `/app` 目录下，与之相对应的挂载点 `<path>` 就是下载路径。你也可以直接挂载到 `$(pwd)`，此时就和本机 yutto 的默认行为一致啦，也是下载到当前目录下～
 
-### pip/pipx 安装
+### pip/pipx/uv 安装
 
-在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
+> [!TIP]
+>
+> 在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
 
 ```bash
 pip install --pre yutto
 ```
 
-如果想要尝试 Nightly 版本，可尝试
+当然，你也可以通过 [pipx](https://github.com/pypa/pipx)/[uv](https://github.com/astral-sh/uv) 来安装 yutto（当然，前提是你要自己先安装它）
 
 ```bash
-pip install git+https://github.com/yutto-dev/yutto@main
+pipx install yutto      # 使用 pipx
+uv tool install yutto   # 或者使用 uv
 ```
 
-当然，你也可以通过 [pipx](https://github.com/pypa/pipx) 来安装 yutto（当然，前提是你要自己先安装它）
+pipx/uv 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx/uv 是更推荐的安装方式（uv 会比 pipx 更快些～）。
+
+### 体验 main 分支最新特性
+
+> [!TIP]
+>
+> 这同样要求你自行配置 Python 和 FFmpeg 环境
+
+有些时候有一些在 main 分支还没有发布的新特性或者 bugfix，你可以尝试直接安装 main 分支的代码，最快的方式仍然是通过 pip 安装，只不过需要使用 git 描述符
 
 ```bash
-pipx install yutto
-```
-
-pipx 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx 是更推荐的安装方式。
-
-### 从 GitHub 手动拉取源码安装
-
-这同样要求你自行配置 Python 和 FFmpeg 环境
-
-```bash
-git clone https://github.com/yutto-dev/yutto.git
-cd yutto/
-pip install .
+pip install git+https://github.com/yutto-dev/yutto@main                 # 通过 pip
+pipx install git+https://github.com/yutto-dev/yutto@main                # 通过 pipx
+uv tool install git+https://github.com/yutto-dev/yutto.git@main         # 通过 uv
 ```
 
 ## 主要功能
@@ -252,7 +253,7 @@ https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 #### 指定在仅包含音频流时的输出格式
 
 -  参数 `--output-format-audio-only`
--  可选值 `"infer" | "aac" | "flac" | "mp4" | "mkv" | "mov"`
+-  可选值 `"infer" | "aac" | "mp3" | "flac" | "mp4" | "mkv" | "mov"`
 -  默认值 `"infer"`
 
 在仅包含音频流时所使用的输出格式，默认选值 `"infer"` 表示自动根据情况进行推导以保证输出的可用，推导规则如下：
@@ -407,6 +408,13 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--no-danmaku`
 -  默认值 `False`
 
+#### 不生成章节信息
+
+-  参数 `--no-chapter-info`
+-  默认值 `False`
+
+不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
+
 #### 仅生成弹幕文件
 
 -  参数 `--danmaku-only`
@@ -467,6 +475,13 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  默认值 `0`
 
 设置两话之间的下载间隔（单位为秒），避免短时间內下载大量视频导致账号被封禁
+
+#### 禁用下载镜像
+
+-  参数 `--banned-mirrors-pattern`
+-  默认值 `None`
+
+使用正则禁用特定镜像，比如 `--banned-mirrors-pattern "mirrorali"` 将禁用 url 中包含 `mirrorali` 的镜像
 
 #### 不显示颜色
 
@@ -695,7 +710,7 @@ yutto 添加任何特性都需要以保证可维护性为前提，因此 yutto �
 
 ### yutto 会替代 bilili 吗
 
-yutto 自诞生以来已经过去两年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～（咳，正式版早着呢，我现在都懒得 RC，一直 beta 下去挺好的 ξ( ✿ ＞ ◡❛)）
+yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～（咳，正式版早着呢，我现在都懒得 RC，一直 beta 下去挺好的 ξ( ✿ ＞ ◡❛)）
 
 ## 其他应用
 
@@ -718,7 +733,7 @@ yutto 自诞生以来已经过去两年多了，功能上基本可以替代 bili
 -  [x] refactor: 整理路径变量名
 -  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
 -  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Disscusing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
+-  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future

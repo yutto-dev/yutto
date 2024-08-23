@@ -7,12 +7,13 @@ import os
 import re
 import sys
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 import httpx
 from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
+from yutto._typing import EpisodeData
 from yutto.bilibili_typing.quality import (
     audio_quality_priority_default,
     video_quality_priority_default,
@@ -34,6 +35,7 @@ from yutto.extractor import (
 )
 from yutto.processor.downloader import DownloadState, start_downloader
 from yutto.processor.parser import alias_parser, file_scheme_parser
+from yutto.processor.path_resolver import create_unique_path_resolver
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, create_client
@@ -42,12 +44,20 @@ from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
 from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
-    validate_batch_argments,
+    validate_batch_arguments,
     validate_user_info,
 )
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
-DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = ["video", "audio", "subtitle", "metadata", "danmaku", "cover"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
+DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
+    "video",
+    "audio",
+    "subtitle",
+    "metadata",
+    "danmaku",
+    "cover",
+    "chapter_info",
+]
 
 
 def main():
@@ -109,7 +119,7 @@ def cli() -> argparse.ArgumentParser:
     group_common.add_argument(
         "--output-format-audio-only",
         default="infer",
-        choices=["infer", "aac", "flac", "mp4", "mkv", "mov"],
+        choices=["infer", "aac", "mp3", "flac", "mp4", "mkv", "mov"],
         help="仅包含音频流时所使用的输出格式（infer 为自动推断）",
     )
     group_common.add_argument(
@@ -133,6 +143,7 @@ def cli() -> argparse.ArgumentParser:
         "--metadata-format-premiered", default=TIME_DATE_FMT, help="专用于 metadata 文件中 premiered 字段的日期格式"
     )
     group_common.add_argument("--download-interval", default=0, type=int, help="设置下载间隔，单位为秒")
+    group_common.add_argument("--banned-mirrors-pattern", default=None, help="禁用下载链接的镜像源，使用正则匹配")
 
     # 资源选择
     group_common.add_argument(
@@ -190,6 +201,13 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
 
+    group_common.add_argument(
+        "--no-chapter-info",
+        dest="require_chapter_info",
+        action=create_select_required_action(deselect=["chapter_info"]),
+        help="不封装章节信息",
+    )
+
     group_common.set_defaults(
         require_video=True,
         require_audio=True,
@@ -197,6 +215,7 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=False,
         require_danmaku=True,
         require_cover=True,
+        require_chapter_info=True,
     )
     group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
     group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
@@ -223,6 +242,7 @@ def cli() -> argparse.ArgumentParser:
 
 @as_sync
 async def run(args_list: list[argparse.Namespace]):
+    unique_path = create_unique_path_resolver()
     async with create_client(
         cookies=Fetcher.cookies,
         trust_env=Fetcher.trust_env,
@@ -237,7 +257,7 @@ async def run(args_list: list[argparse.Namespace]):
 
             # 验证批量参数
             if args.batch:
-                validate_batch_argments(args)
+                validate_batch_arguments(args)
 
             # 初始化各种提取器
             extractors = (
@@ -259,7 +279,6 @@ async def run(args_list: list[argparse.Namespace]):
                     CheeseExtractor(),  # 课程单集
                 ]
             )
-
             url: str = args.url
             # 将 shortcut 转为完整 url
             for extractor in extractors:
@@ -319,6 +338,8 @@ async def run(args_list: list[argparse.Namespace]):
                 episode_data = await episode_data_coro
                 if episode_data is None:
                     continue
+                # 保证路径唯一
+                episode_data = ensure_unique_path(episode_data, unique_path)
                 if args.batch:
                     Logger.custom(
                         f"{episode_data['filename']}",
@@ -330,12 +351,15 @@ async def run(args_list: list[argparse.Namespace]):
                     episode_data,
                     {
                         "require_video": args.require_video,
+                        "require_chapter_info": args.require_chapter_info,
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
-                        "video_download_codec_priority": args.download_vcodec_priority.split(",")
-                        if args.download_vcodec_priority != "auto"
-                        else None,
+                        "video_download_codec_priority": (
+                            args.download_vcodec_priority.split(",")
+                            if args.download_vcodec_priority != "auto"
+                            else None
+                        ),
                         "require_audio": args.require_audio,
                         "audio_quality": args.audio_quality,
                         "audio_download_codec": args.acodec.split(":")[0],
@@ -349,6 +373,7 @@ async def run(args_list: list[argparse.Namespace]):
                             "premiered": args.metadata_format_premiered,
                             "dateadded": TIME_FULL_FMT,
                         },
+                        "banned_mirrors_pattern": args.banned_mirrors_pattern,
                     },
                 )
                 Logger.new_line()
@@ -403,6 +428,15 @@ def create_select_required_action(select: list[DownloadResourceType] = [], desel
 
 def invert_selection(select: list[DownloadResourceType]) -> list[DownloadResourceType]:
     return [tp for tp in DOWNLOAD_RESOURCE_TYPES if tp not in select]
+
+
+def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable[[str], str]) -> EpisodeData:
+    original_filename = episode_data["filename"]
+    new_name = unique_name_resolver(original_filename)
+    episode_data["filename"] = new_name
+    if original_filename != new_name:
+        Logger.warning(f"文件名重复，已重命名为 {new_name}")
+    return episode_data
 
 
 if __name__ == "__main__":

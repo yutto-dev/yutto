@@ -131,12 +131,10 @@ dmypy.json
 *.srt
 *.nfo
 *.jpg
+*.ini
 
 # test files
 *.test.py
-
-# stub files
-py.typed
 
 # logs
 log
