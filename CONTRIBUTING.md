@@ -8,15 +8,9 @@
 
 这些工具都是可选的，都有一定的替代方案，不过可能会稍微麻烦些……
 
-### 依赖管理工具 poetry
+### 项目管理工具 uv
 
-[poetry](https://github.com/python-poetry/poetry) 是 yutto 用来进行依赖管理的工具，通过 pip/pipx 就可以很方便地安装它：
-
-```bash
-pipx install poetry
-```
-
-> 替代方案（非常不建议）：自行使用 `pip` 安装依赖，依赖项在 `pyproject.toml` 中可以找到。
+[uv](https://docs.astral.sh/uv/) 是 yutto 用来进行项目管理的工具，你可以从[安装指南](https://docs.astral.sh/uv/getting-started/installation/)找到合适的安装方式～
 
 ### 命令执行工具 just
 
@@ -37,8 +31,8 @@ pipx install poetry
 ```bash
 git clone git@github.com:yutto-dev/yutto.git
 cd yutto/
-poetry install
-poetry run yutto -v
+uv sync
+uv run yutto -v
 ```
 
 注意本地调试请不要直接使用 `yutto` 命令，那只会运行从 pip 安装的 yutto，而不是本地调试的 yutto。
@@ -58,7 +52,7 @@ poetry run yutto -v
 ├── Dockerfile                         # 一个轻量的 yutto docker
 ├── _typos.toml                        # typos 配置
 ├── justfile                           # just 命令启动文件
-├── pyproject.toml                     # Python 统一配置，含各种工具链配置、poetry 依赖项声明等
+├── pyproject.toml                     # Python 统一配置，含各种工具链配置、依赖项声明等
 ├── tests                              # 测试文件
 │   ├── __init__.py
 │   ├── test_api                       # API 测试模块，对应 yutto/api
@@ -132,12 +126,12 @@ poetry run yutto -v
 
 ### 工作流程
 
-切入代码的最好方式自然是从入口开始啦～ yutto 的命令行入口是 [yutto/\_\_main\_\_.py](./yutto/__main__.py)，这里列出了 yutto 整个的工作流程：
+切入代码的最好方式自然是从入口开始啦～ yutto 的命令行入口是 [`src/yutto/__main__.py`](./src/yutto/__main__.py)，这里列出了 yutto 整个的工作流程：
 
-1. 解析参数并利用 [yutto/validator.py](./yutto/validator.py) 验证参数的正确性，虽然 argparse 已经做了基本的验证，但 validator 会进一步的验证。另外目前 validator 还会顺带做全局状态的设置的工作，这部分以后可能修改。
-2. 利用 [yutto/processor/parser.py](./yutto/processor/parser.py) 解析 alias 和任务列表
+1. 解析参数并利用 [yutto/validator.py](./src/yutto/validator.py) 验证参数的正确性，虽然 argparse 已经做了基本的验证，但 validator 会进一步的验证。另外目前 validator 还会顺带做全局状态的设置的工作，这部分以后可能修改。
+2. 利用 [yutto/processor/parser.py](./src/yutto/processor/parser.py) 解析 alias 和任务列表
 3. 遍历任务列表下载：
-   1. 初始化提取器 [yutto/extractor/](./yutto/extractor/)
+   1. 初始化提取器 [yutto/extractor/](./src/yutto/extractor/)
    2. 利用所有提取器处理 id 为可识别的 url
    3. 重定向一下入口 url 到可识别的 url
    4. 从入口 url 提取信息，构造解析任务
@@ -150,7 +144,7 @@ poetry run yutto -v
          3. 选集（如果支持的话）
          4. 根据列表构造协程任务（任务包含了解析信息和利用低阶提取器提取）
          5. 构造解析任务
-   5. 依次执行解析任务，并将结果依次传入 [yutto/utils/downloader.py](yutto/utils/../processor/downloader.py) 进行下载
+   5. 依次执行解析任务，并将结果依次传入 [`src/yutto/utils/downloader.py`](src/yutto/utils/../processor/downloader.py) 进行下载
       1. 选择清晰度
       2. 显示详细信息
       3. 字幕、弹幕、描述文件等额外资源下载
@@ -232,9 +226,9 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 
 现阶段书写版本号的代码包括以下几个文件，发布版本前需要全部更改：
 
--  [Dockerfile](./Dockerfile)
--  [pyproject.toml](./pyproject.toml)
--  [yutto/\_\_version\_\_.py](./yutto/__version__.py)
+-  [`Dockerfile`](./Dockerfile)
+-  [`pyproject.toml`](./pyproject.toml)
+-  [`yutto/__version__.py`](./src/yutto/__version__.py)
 
 ### 发布到 PyPI
 
