@@ -22,7 +22,7 @@ lint:
   uv run typos
 
 build:
-  uv tool run --from build python -m build --installer uv .
+  uv build
 
 release:
   @echo 'Tagging v{{VERSION}}...'
