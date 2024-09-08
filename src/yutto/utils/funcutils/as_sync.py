@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Coroutine
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from typing_extensions import ParamSpec
+
+if TYPE_CHECKING:
+    from collections.abc import Coroutine
 
 R = TypeVar("R")
 P = ParamSpec("P")

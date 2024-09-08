@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import argparse
 import asyncio
 import re
-
-import httpx
+from typing import TYPE_CHECKING
 
 from yutto._typing import EpisodeData, MId, SeriesId
 from yutto.api.collection import get_collection_details
@@ -18,6 +16,11 @@ from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import Filter
+
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
 
 
 class CollectionExtractor(BatchExtractor):

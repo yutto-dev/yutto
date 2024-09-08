@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from dict2xml import dict2xml  # type: ignore
 
 from yutto.utils.time import get_time_str_by_stamp
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class Actor(TypedDict):

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, TypedDict
-
-from httpx import AsyncClient
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto._typing import (
     AudioUrlMeta,
@@ -24,6 +22,9 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 
 class BangumiListItem(TypedDict):

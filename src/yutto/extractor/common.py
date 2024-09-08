@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
-
-import httpx
+from typing import TYPE_CHECKING
 
 from yutto._typing import AvId, EpisodeData, EpisodeId, format_ids
 from yutto.api.bangumi import (
@@ -34,6 +32,11 @@ from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import attach_chapter_info
+
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
 
 
 async def extract_bangumi_data(
