@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, TypedDict, cast
-
-from httpx import AsyncClient
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from yutto._typing import (
     AId,
@@ -28,6 +26,9 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils.data_access import data_has_chained_keys
 from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 
 class _UgcVideoPageInfo(TypedDict):

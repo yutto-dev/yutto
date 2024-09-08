@@ -7,12 +7,13 @@ import re
 import string
 import time
 import urllib.parse
-from typing import Any, TypedDict
-
-from httpx import AsyncClient
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto._typing import UserInfo
 from yutto.utils.fetcher import Fetcher
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 
 class WbiImg(TypedDict):
@@ -62,7 +63,7 @@ def _get_mixin_key(string: str) -> str:
         40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57,
         62, 11, 36, 20, 34, 44, 52,
     ]  # fmt: skip
-    return "".join(list(map(lambda idx: string[idx], char_indices[:32])))
+    return "".join([string[idx] for idx in char_indices[:32]])
 
 
 def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):

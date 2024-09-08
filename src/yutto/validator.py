@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import argparse
 import asyncio
 import os
 import re
 import sys
+from typing import TYPE_CHECKING
 
-from yutto._typing import UserInfo
 from yutto.api.user_info import get_user_info
 from yutto.bilibili_typing.codec import VideoCodec, audio_codec_priority_default, video_codec_priority_default
 from yutto.exceptions import ErrorCode
@@ -17,6 +16,11 @@ from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.filter import Filter
+
+if TYPE_CHECKING:
+    import argparse
+
+    from yutto._typing import UserInfo
 
 
 def initial_validation(args: argparse.Namespace):

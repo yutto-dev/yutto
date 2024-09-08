@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from itertools import chain, zip_longest
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from .filter_none_value import filter_none_value
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 T = TypeVar("T")
 

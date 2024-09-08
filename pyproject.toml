@@ -69,12 +69,32 @@ select = [
   "W",
   # Isort
   "I",
+  # Comprehensions
+  "C4",
+  # Debugger
+  "T100",
   # Pyupgrade
   "UP",
   # Flake8-pyi
   "PYI",
+  # Bugbear
+  "B",
+  # Pylint
+  "PLE",
+  # Flake8-simplify
+  "SIM101",
   # Flake8-use-pathlib
   "PTH",
+  # Pygrep-hooks
+  "PGH004",
+  # Flake8-type-checking
+  "TCH",
+  # Flake8-raise
+  "RSE",
+  # Refurb
+  "FURB",
+  # Flake8-future-annotations
+  "FA",
   # Yesqa
   "RUF100",
 ]

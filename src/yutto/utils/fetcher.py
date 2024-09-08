@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
-from collections.abc import Coroutine, Mapping
-from typing import Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from urllib.parse import quote, unquote
 
 import httpx
@@ -12,7 +11,11 @@ from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
 from yutto.utils.console.logger import Logger
-from yutto.utils.file_buffer import AsyncFileBuffer
+
+if TYPE_CHECKING:
+    from collections.abc import Coroutine, Mapping
+
+    from yutto.utils.file_buffer import AsyncFileBuffer
 
 RetT = TypeVar("RetT")
 InputT = ParamSpec("InputT")

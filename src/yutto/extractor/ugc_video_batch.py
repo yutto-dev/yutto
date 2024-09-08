@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import argparse
 import re
-
-import httpx
+from typing import TYPE_CHECKING
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
@@ -13,6 +11,11 @@ from yutto.extractor.common import extract_ugc_video_data
 from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
+
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
 
 
 class UgcVideoBatchExtractor(BatchExtractor):

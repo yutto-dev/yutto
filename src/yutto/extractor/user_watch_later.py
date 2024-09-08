@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import argparse
 import re
+from typing import TYPE_CHECKING
 
-import httpx
-
-from yutto._typing import EpisodeData
 from yutto.api.space import get_watch_later_avids
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NotFoundError, NotLoginError
@@ -15,6 +12,13 @@ from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import Filter
+
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
+
+    from yutto._typing import EpisodeData
 
 
 class UserWatchLaterExtractor(BatchExtractor):

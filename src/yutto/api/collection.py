@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import math
-from typing import TypedDict
-
-from httpx import AsyncClient
+from typing import TYPE_CHECKING, TypedDict
 
 from yutto._typing import AvId, BvId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 
 class CollectionDetailsItem(TypedDict):

@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import platform
 import time
-from collections.abc import Coroutine, Generator
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from yutto.utils.console.logger import Logger
+
+if TYPE_CHECKING:
+    from collections.abc import Coroutine, Generator
 
 RetT = TypeVar("RetT")
 

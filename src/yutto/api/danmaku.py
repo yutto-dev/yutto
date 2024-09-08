@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-import httpx
+from typing import TYPE_CHECKING
 
-from yutto._typing import CId
-from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
 from yutto.utils.fetcher import Fetcher
+
+if TYPE_CHECKING:
+    import httpx
+
+    from yutto._typing import CId
+    from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
 
 
 async def get_xml_danmaku(client: httpx.AsyncClient, cid: CId) -> str:

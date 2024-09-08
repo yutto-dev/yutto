@@ -20,9 +20,9 @@ class FFmpeg(metaclass=Singleton):
     def __init__(self, ffmpeg_path: str = "ffmpeg"):
         try:
             if subprocess.run([ffmpeg_path], capture_output=True).returncode != 1:
-                raise FFmpegNotFoundError()
+                raise FFmpegNotFoundError
         except FileNotFoundError:
-            raise FFmpegNotFoundError()
+            raise FFmpegNotFoundError from None
 
         self.path = os.path.normpath(ffmpeg_path)
 

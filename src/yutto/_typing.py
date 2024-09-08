@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import NamedTuple, TypedDict
+from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
-from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
-from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
-from yutto.utils.danmaku import DanmakuData
-from yutto.utils.metadata import ChapterInfoData, MetaData
-from yutto.utils.subtitle import SubtitleData
+if TYPE_CHECKING:
+    from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
+    from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
+    from yutto.utils.danmaku import DanmakuData
+    from yutto.utils.metadata import ChapterInfoData, MetaData
+    from yutto.utils.subtitle import SubtitleData
 
 
 class BilibiliId(NamedTuple):
