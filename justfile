@@ -10,7 +10,7 @@ install:
   uv sync
 
 test:
-  uv run pytest -m '(api or e2e or processor) and not (ci_only or ignore)'
+  uv run pytest -m '(api or e2e or processor or biliass) and not (ci_only or ignore)'
   just clean
 
 fmt:
@@ -72,7 +72,7 @@ ci-lint:
   just lint
 
 ci-test:
-  uv run pytest -m "(api or processor) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
+  uv run pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
   just clean
 
 ci-e2e-test:
@@ -87,3 +87,6 @@ docker-build:
 
 docker-publish:
   docker buildx build --no-cache --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
+
+compile-protobuf:
+  cd packages/biliass; protoc protobuf/danmaku.proto --python_out=src/biliass --pyi_out=src/biliass
