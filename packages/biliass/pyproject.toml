@@ -25,10 +25,10 @@ classifiers = [
 dependencies = ["protobuf>=5.28.0"]
 
 [project.urls]
-Homepage = "https://github.com/yutto-dev/biliass"
-Documentation = "https://github.com/yutto-dev/biliass"
-Repository = "https://github.com/yutto-dev/biliass"
-Issues = "https://github.com/yutto-dev/biliass/issues"
+Homepage = "https://github.com/yutto-dev/yutto/tree/main/packages/biliass"
+Documentation = "https://github.com/yutto-dev/yutto/tree/main/packages/biliass"
+Repository = "https://github.com/yutto-dev/yutto"
+Issues = "https://github.com/yutto-dev/yutto/issues"
 
 [project.scripts]
 biliass = "biliass.__main__:main"
