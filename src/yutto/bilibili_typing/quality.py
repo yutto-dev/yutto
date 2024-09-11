@@ -11,10 +11,10 @@ class Media(Enum):
     AUDIO = 30200
 
 
-VideoQuality = Literal[127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
+VideoQuality = Literal[127, 126, 125, 120, 116, 112, 100, 80, 74, 64, 32, 16]
 AudioQuality = Literal[30251, 30255, 30250, 30280, 30232, 30216]
 
-video_quality_priority_default: list[VideoQuality] = [127, 126, 125, 120, 116, 112, 80, 74, 64, 32, 16]
+video_quality_priority_default: list[VideoQuality] = [127, 126, 125, 120, 116, 112, 100, 80, 74, 64, 32, 16]
 audio_quality_priority_default: list[AudioQuality] = [30251, 30255, 30250, 30280, 30232, 30216]
 
 video_quality_map = {
@@ -48,6 +48,11 @@ video_quality_map = {
         "width": 1920,
         "height": 1080,
     },
+    100: {
+        "description": "智能修复",
+        "width": 1440,
+        "height": 1080,
+    },  # Example: ep327108
     80: {
         "description": "1080P 高清",
         "width": 1920,
