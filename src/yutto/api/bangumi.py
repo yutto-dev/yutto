@@ -92,7 +92,7 @@ async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiL
 async def get_bangumi_playurl(
     client: AsyncClient, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1"
+    play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1&support_multi_audio=true&from_client=BROWSER"
 
     resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:
