@@ -48,8 +48,14 @@ dev-dependencies = [
   "typos>=1.23.7",
 ]
 
+[tool.uv.sources]
+biliass = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
 [tool.pytest.ini_options]
-markers = ["api", "e2e", "processor", "ignore", "ci_skip", "ci_only"]
+markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
 
 [tool.pyright]
 include = ["yutto", "tests"]

@@ -1,0 +1,33 @@
+// From: https://github.com/SocialSisterYi/bilibili-API-collect/issues/133
+
+syntax = "proto3";
+
+// DanmakuElem .
+message DanmakuElem {
+    // 弹幕id
+    int64 id = 1;
+    // 弹幕位置
+    int32 progress = 2;
+    // 弹幕类型
+    int32 mode = 3;
+    // 弹幕字体
+    int32 fontsize = 4;
+    // 弹幕颜色
+    uint32 color = 5;
+    // 弹幕发送者md5哈希
+    string mid_hash = 6;
+    // 弹幕文本内容
+    string content = 7;
+    // 弹幕发送时间  时间戳
+    int64 ctime = 8;
+    // 弹幕动作
+    string action = 9;
+    // 弹幕池
+    int32 pool = 10;
+    // 弹幕id_str
+    string id_str = 11;
+}
+
+message DanmakuEvent {
+    repeated DanmakuElem elems = 1;
+}
