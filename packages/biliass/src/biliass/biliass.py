@@ -6,10 +6,12 @@ import math
 import random
 import re
 import xml.dom.minidom
-from collections.abc import Callable, Generator
-from typing import TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar, Union
 
 from biliass.protobuf.danmaku_pb2 import DanmakuEvent
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
 
 #
 # ReadComments**** protocol
@@ -43,9 +45,7 @@ T = TypeVar("T")
 Comment = tuple[float, float, int, str, Union[int, str], int, float, float, float]
 
 
-def ReadCommentsBilibiliXml(
-    text: str | bytes, fontsize: float
-) -> Generator[Comment, None, None]:
+def ReadCommentsBilibiliXml(text: str | bytes, fontsize: float) -> Generator[Comment, None, None]:
     if isinstance(text, bytes):
         text = text.decode()
     text = FilterBadChars(text)
@@ -58,9 +58,7 @@ def ReadCommentsBilibiliXml(
         return ReadCommentsBilibiliXmlV2(text, fontsize)
 
 
-def ReadCommentsBilibiliXmlV1(
-    text: str, fontsize: float
-) -> Generator[Comment, None, None]:
+def ReadCommentsBilibiliXmlV1(text: str, fontsize: float) -> Generator[Comment, None, None]:
     dom = xml.dom.minidom.parseString(text)
     comment_element = dom.getElementsByTagName("d")
     for i, comment in enumerate(comment_element):
@@ -103,9 +101,7 @@ def ReadCommentsBilibiliXmlV1(
             continue
 
 
-def ReadCommentsBilibiliXmlV2(
-    text: str, fontsize: float
-) -> Generator[Comment, None, None]:
+def ReadCommentsBilibiliXmlV2(text: str, fontsize: float) -> Generator[Comment, None, None]:
     dom = xml.dom.minidom.parseString(text)
     comment_element = dom.getElementsByTagName("d")
     for i, comment in enumerate(comment_element):
@@ -139,9 +135,7 @@ def ReadCommentsBilibiliXmlV2(
             continue
 
 
-def ReadCommentsBilibiliProtobuf(
-    protobuf: bytes | str, fontsize: float
-) -> Generator[Comment, None, None]:
+def ReadCommentsBilibiliProtobuf(protobuf: bytes | str, fontsize: float) -> Generator[Comment, None, None]:
     assert isinstance(protobuf, bytes), "protobuf 仅支持使用 bytes 转换"
     target = DanmakuEvent()
     target.ParseFromString(protobuf)
@@ -201,10 +195,7 @@ class AssText:
                 if InputPos > 1:
                     return ZoomFactor[0] * InputPos + ZoomFactor[isHeight + 1]
                 else:
-                    return (
-                        BiliPlayerSize[isHeight] * ZoomFactor[0] * InputPos
-                        + ZoomFactor[isHeight + 1]
-                    )
+                    return BiliPlayerSize[isHeight] * ZoomFactor[0] * InputPos + ZoomFactor[isHeight + 1]
             else:
                 try:
                     InputPos = int(InputPos)
@@ -235,12 +226,8 @@ class AssText:
             delay = int(comment_args.get(10, 0))
             fontface = comment_args.get(12)
             isborder = comment_args.get(11, "true")
-            from_rotarg = ConvertFlashRotation(
-                rotate_y, rotate_z, from_x, from_y, width, height
-            )
-            to_rotarg = ConvertFlashRotation(
-                rotate_y, rotate_z, to_x, to_y, width, height
-            )
+            from_rotarg = ConvertFlashRotation(rotate_y, rotate_z, from_x, from_y, width, height)
+            to_rotarg = ConvertFlashRotation(rotate_y, rotate_z, to_x, to_y, width, height)
             styles = ["\\org(%d, %d)" % (width / 2, height / 2)]
             if from_rotarg[0:2] == to_rotarg[0:2]:
                 styles.append("\\pos({:.0f}, {:.0f})".format(*from_rotarg[0:2]))
@@ -250,18 +237,10 @@ class AssText:
                         *(from_rotarg[0:2] + to_rotarg[0:2] + (delay, delay + duration))
                     )
                 )
-            styles.append(
-                "\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(
-                    *from_rotarg[2:7]
-                )
-            )
+            styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*from_rotarg[2:7]))
             if (from_x, from_y) != (to_x, to_y):
                 styles.append(f"\\t({delay:d}, {delay + duration:d}, ")
-                styles.append(
-                    "\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(
-                        *to_rotarg[2:7]
-                    )
-                )
+                styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*to_rotarg[2:7]))
                 styles.append(")")
             if fontface:
                 styles.append(f"\\fn{ASSEscape(fontface)}")
@@ -340,10 +319,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         text = ASSEscape(c[3])
         styles = []
         if c[4] == 1:
-            styles.append(
-                "\\an8\\pos(%(halfwidth)d, %(row)d)"
-                % {"halfwidth": width / 2, "row": row}
-            )
+            styles.append("\\an8\\pos(%(halfwidth)d, %(row)d)" % {"halfwidth": width / 2, "row": row})
             duration = duration_still
         elif c[4] == 2:
             styles.append(
@@ -443,24 +419,15 @@ def ConvertFlashRotation(rotY, rotZ, X, Y, width, height):
     else:
         rotY *= math.pi / 180.0
         rotZ *= math.pi / 180.0
-        outY = (
-            math.atan2(-math.sin(rotY) * math.cos(rotZ), math.cos(rotY)) * 180 / math.pi
-        )
-        outZ = (
-            math.atan2(-math.cos(rotY) * math.sin(rotZ), math.cos(rotZ)) * 180 / math.pi
-        )
+        outY = math.atan2(-math.sin(rotY) * math.cos(rotZ), math.cos(rotY)) * 180 / math.pi
+        outZ = math.atan2(-math.cos(rotY) * math.sin(rotZ), math.cos(rotZ)) * 180 / math.pi
         outX = math.asin(math.sin(rotY) * math.sin(rotZ)) * 180 / math.pi
     trX = (
         (X * math.cos(rotZ) + Y * math.sin(rotZ)) / math.cos(rotY)
         + (1 - math.cos(rotZ) / math.cos(rotY)) * width / 2
         - math.sin(rotZ) / math.cos(rotY) * height / 2
     )
-    trY = (
-        Y * math.cos(rotZ)
-        - X * math.sin(rotZ)
-        + math.sin(rotZ) * width / 2
-        + (1 - math.cos(rotZ)) * height / 2
-    )
+    trY = Y * math.cos(rotZ) - X * math.sin(rotZ) + math.sin(rotZ) * width / 2 + (1 - math.cos(rotZ)) * height / 2
     trZ = (trX - width / 2) * math.sin(rotY)
     FOV = width * math.tan(2 * math.pi / 9.0) / 2
     try:
@@ -474,9 +441,7 @@ def ConvertFlashRotation(rotY, rotZ, X, Y, width, height):
         scaleXY = -scaleXY
         outX += 180
         outY += 180
-        logging.error(
-            f"Rotation makes object behind the camera: trZ == {trZ:.0f} < {FOV:.0f}"
-        )
+        logging.error(f"Rotation makes object behind the camera: trZ == {trZ:.0f} < {FOV:.0f}")
     return (
         trX,
         trY,
@@ -570,9 +535,7 @@ def ProcessComments(
     return ass.to_string()
 
 
-def TestFreeRows(
-    rows, c, row, width, height, bottomReserved, duration_marquee, duration_still
-):
+def TestFreeRows(rows, c, row, width, height, bottomReserved, duration_marquee, duration_still):
     res = 0
     rowmax = height - bottomReserved
     targetRow = None
@@ -595,9 +558,7 @@ def TestFreeRows(
                 try:
                     if targetRow and (
                         targetRow[0] > thresholdTime
-                        or targetRow[0]
-                        + targetRow[8] * duration_marquee / (targetRow[8] + width)
-                        > c[0]
+                        or targetRow[0] + targetRow[8] * duration_marquee / (targetRow[8] + width) > c[0]
                     ):
                         break
                 except ZeroDivisionError:
@@ -638,11 +599,7 @@ def ASSEscape(s):
 
     return "\\N".join(
         ReplaceLeadingSpace(i) or " "
-        for i in str(s)
-        .replace("\\", "\\\\")
-        .replace("{", "\\{")
-        .replace("}", "\\}")
-        .split("\n")
+        for i in str(s).replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").split("\n")
     )
 
 
@@ -674,21 +631,9 @@ def ConvertColor(RGB, width=1280, height=576):
             return 255 if x > 255 else 0 if x < 0 else round(x)
 
         return "{:02X}{:02X}{:02X}".format(  # noqa: UP032
-            ClipByte(
-                R * 0.00956384088080656
-                + G * 0.03217254540203729
-                + B * 0.95826361371715607
-            ),
-            ClipByte(
-                R * -0.10493933142075390
-                + G * 1.17231478191855154
-                + B * -0.06737545049779757
-            ),
-            ClipByte(
-                R * 0.91348912373987645
-                + G * 0.07858536372532510
-                + B * 0.00792551253479842
-            ),
+            ClipByte(R * 0.00956384088080656 + G * 0.03217254540203729 + B * 0.95826361371715607),
+            ClipByte(R * -0.10493933142075390 + G * 1.17231478191855154 + B * -0.06737545049779757),
+            ClipByte(R * 0.91348912373987645 + G * 0.07858536372532510 + B * 0.00792551253479842),
         )
 
 
@@ -734,7 +679,7 @@ def Danmaku2ASS(
             if comment_filter:
                 filters_regex.append(re.compile(comment_filter))
         except:  # noqa: E722
-            raise ValueError(f"Invalid regular expression: {comment_filter}")
+            raise ValueError(f"Invalid regular expression: {comment_filter}") from None
 
     comments: list[Comment] = []
     if not isinstance(inputs, list):
