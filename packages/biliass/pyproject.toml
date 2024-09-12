@@ -38,12 +38,6 @@ include = ["src/biliass"]
 pythonVersion = "3.9"
 typeCheckingMode = "basic"
 
-[tool.ruff]
-exclude = ["*_pb2.py"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["biliass"]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

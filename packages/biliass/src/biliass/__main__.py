@@ -4,20 +4,15 @@ import argparse
 import logging
 import sys
 
-from biliass import Danmaku2ASS
-from biliass import __version__ as biliass_version
+from biliass import Danmaku2ASS, __version__ as biliass_version
 
 
 def main():
     logging.basicConfig(format="%(levelname)s: %(message)s")
     if len(sys.argv) == 1:
         sys.argv.append("--help")
-    parser = argparse.ArgumentParser(
-        description="bilibili ASS Danmaku converter", prog="biliass"
-    )
-    parser.add_argument(
-        "-v", "--version", action="version", version=f"%(prog)s {biliass_version}"
-    )
+    parser = argparse.ArgumentParser(description="bilibili ASS Danmaku converter", prog="biliass")
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {biliass_version}")
     parser.add_argument("-o", "--output", metavar="OUTPUT", help="Output file")
     parser.add_argument(
         "-s",
@@ -41,9 +36,7 @@ def main():
         type=float,
         default=25.0,
     )
-    parser.add_argument(
-        "-a", "--alpha", metavar="ALPHA", help="Text opacity", type=float, default=1.0
-    )
+    parser.add_argument("-a", "--alpha", metavar="ALPHA", help="Text opacity", type=float, default=1.0)
     parser.add_argument(
         "-dm",
         "--duration-marquee",
@@ -87,32 +80,26 @@ def main():
         default="xml",
         help="Input danmaku format (xml or protobuf)",
     )
-    parser.add_argument(
-        "file", metavar="FILE", nargs="+", help="Comment file to be processed"
-    )
+    parser.add_argument("file", metavar="FILE", nargs="+", help="Comment file to be processed")
     args = parser.parse_args()
     try:
         width, height = str(args.size).split("x", 1)
         width = int(width)
         height = int(height)
     except ValueError:
-        raise ValueError(f"Invalid stage size: {args.size!r}")
+        raise ValueError(f"Invalid stage size: {args.size!r}") from None
 
     inputs: list[str | bytes] = []
     for file in args.file:
         try:
-            with open(file, "r" if args.format == "xml" else "rb") as f:
+            with open(file, "r" if args.format == "xml" else "rb") as f:  # noqa: PTH123
                 inputs.append(f.read())
         except UnicodeDecodeError:
-            logging.error(
-                f"Failed to decode file {file}, if it is a protobuf file, please use `-f protobuf`"
-            )
+            logging.error(f"Failed to decode file {file}, if it is a protobuf file, please use `-f protobuf`")
             sys.exit(1)
 
     if args.output:
-        fout = open(
-            args.output, "w", encoding="utf-8-sig", errors="replace", newline="\r\n"
-        )
+        fout = open(args.output, "w", encoding="utf-8-sig", errors="replace", newline="\r\n")  # noqa: PTH123
     else:
         fout = sys.stdout
     output = Danmaku2ASS(
