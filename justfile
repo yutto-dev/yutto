@@ -1,6 +1,7 @@
 set positional-arguments
 
 VERSION := `uv run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+BILIASS_VERSION := `uv run python -c "import sys; from biliass.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
 DOCKER_NAME := "siguremo/yutto"
 
 run *ARGS:
@@ -88,5 +89,15 @@ docker-build:
 docker-publish:
   docker buildx build --no-cache --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
 
+# biliass specific
 compile-protobuf:
   cd packages/biliass; protoc protobuf/danmaku.proto --python_out=src/biliass --pyi_out=src/biliass
+
+build-biliass:
+  uv build --package biliass
+
+release-biliass:
+  @echo 'Tagging biliass@{{BILIASS_VERSION}}...'
+  git tag "biliass@{{BILIASS_VERSION}}"
+  @echo 'Push to GitHub to trigger publish process...'
+  git push --tags
