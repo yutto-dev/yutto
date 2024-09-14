@@ -98,6 +98,6 @@ build-biliass:
 
 release-biliass:
   @echo 'Tagging biliass@{{BILIASS_VERSION}}...'
-  git tag "biliass@{{VERSION}}"
+  git tag "biliass@{{BILIASS_VERSION}}"
   @echo 'Push to GitHub to trigger publish process...'
   git push --tags
