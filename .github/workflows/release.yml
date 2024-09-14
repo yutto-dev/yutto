@@ -30,12 +30,21 @@ jobs:
         run: |
           just ci-install
           just build
+          just build-biliass
 
-      - name: upload dists
+      - name: upload dists (yutto)
+        if: "startsWith(github.ref, 'refs/tags/v')"
         uses: actions/upload-artifact@v4
         with:
           name: release-dists
           path: dist/
+
+      - name: upload dists (biliass)
+        if: "startsWith(github.ref, 'refs/tags/biliass')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dists
+          path: packages/biliass/dist/
 
   publish-pypi:
     runs-on: ubuntu-latest

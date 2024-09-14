@@ -18,5 +18,3 @@ from .biliass import (  # noqa: E402
     ReadCommentsBilibiliProtobuf as ReadCommentsBilibiliProtobuf,
     ReadCommentsBilibiliXml as ReadCommentsBilibiliXml,
 )
-
-__version__ = "1.3.12"
