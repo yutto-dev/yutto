@@ -2,7 +2,9 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "biliass*" # # Push events to matching biliass*, i.e. biliass@1.0.0
   workflow_dispatch:
 
 jobs:
