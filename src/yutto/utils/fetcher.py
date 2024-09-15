@@ -255,5 +255,6 @@ def create_client(
         timeout=timeout,
         follow_redirects=True,
         http2=True,
+        verify=False,
     )
     return client
