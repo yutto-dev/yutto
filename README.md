@@ -723,28 +723,21 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 ## Roadmap
 
-### 2.0.0-beta
-
--  [x] feat: 支持 bare name (bare id, bare path)
--  [x] refactor: url 列表能够预线性展开
--  [x] feat: 添加各种 return code
--  [x] test: 编写单元测试
-
 ### 2.0.0-rc
 
 -  [x] feat: 投稿视频描述文件支持
 -  [x] refactor: 整理路径变量名
 -  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
+-  [ ] refactor: 重写 biliass
+
+### 2.0.0
+
 -  [ ] refactor: 针对视频合集优化路径变量
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 
--  [ ] feat: 增加参数 `--reverse` 以允许逆序下载（不清楚是否有必要诶……可能只是我个人的需求）
--  [ ] feat: 字幕、弹幕嵌入视频支持（也许？）
--  [ ] feat: 封面下载支持（也许？）
--  [ ] refactor: 以插件形式支持更多音视频处理方面的功能，比如类似 autosub 的工具（也许？）
 -  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
 -  [ ] feat: 更多批下载支持
 -  [ ] feat: 以及更加可爱～
