@@ -6,7 +6,7 @@ import httpx
 import pytest
 from biliass import ReadCommentsBilibiliProtobuf
 
-from ..conftest import BILIBILI_HEADERS, TEST_DIR
+from ..conftest import DEFAULT_HEADERS, TEST_DIR
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -18,7 +18,7 @@ def gen_protobuf(base_dir: Path):
     cid = "18678311"
     resp = httpx.get(
         f"http://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid={cid}&segment_index={1}",
-        headers=BILIBILI_HEADERS,
+        headers=DEFAULT_HEADERS,
     )
     with filepath.open("wb") as f:
         f.write(resp.content)

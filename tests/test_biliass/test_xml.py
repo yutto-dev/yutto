@@ -6,7 +6,7 @@ import httpx
 import pytest
 from biliass import ReadCommentsBilibiliXml
 
-from ..conftest import BILIBILI_HEADERS, TEST_DIR
+from ..conftest import DEFAULT_HEADERS, TEST_DIR
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -18,7 +18,7 @@ def gen_xml_v1(base_dir: Path):
     cid = "18678311"
     resp = httpx.get(
         f"http://comment.bilibili.com/{cid}.xml",
-        headers=BILIBILI_HEADERS,
+        headers=DEFAULT_HEADERS,
         follow_redirects=True,
     )
     resp.encoding = "utf-8"

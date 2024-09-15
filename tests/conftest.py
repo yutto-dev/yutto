@@ -4,14 +4,12 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from yutto.utils.fetcher import DEFAULT_HEADERS as DEFAULT_HEADERS
+
 if TYPE_CHECKING:
     import pytest
 
 TEST_DIR = Path("./__test_files__")
-BILIBILI_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Referer": "https://www.bilibili.com/",
-}
 
 
 def pytest_sessionstart(session: pytest.Session):

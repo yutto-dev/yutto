@@ -58,7 +58,7 @@ class MaxRetry:
 DEFAULT_PROXY = None
 DEFAULT_TRUST_ENV = True
 DEFAULT_HEADERS: dict[str, str] = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
     "Referer": "https://www.bilibili.com",
 }
 DEFAULT_COOKIES = httpx.Cookies()
@@ -255,5 +255,6 @@ def create_client(
         timeout=timeout,
         follow_redirects=True,
         http2=True,
+        verify=False,
     )
     return client
