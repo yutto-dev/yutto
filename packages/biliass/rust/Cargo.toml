@@ -1,0 +1,18 @@
+[package]
+name = "docstring-parser"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "docstring_parser"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22.2", features = ["abi3-py39"] }
+bytes = "1.7.1"
+prost = "0.13.2"
+
+[build-dependencies]
+prost-build = "0.13.2"
+protox = "0.7.1"

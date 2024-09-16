@@ -1,3 +1,5 @@
+# pyright: basic
+
 from __future__ import annotations
 
 import json
@@ -8,6 +10,7 @@ import re
 import xml.dom.minidom
 from typing import TYPE_CHECKING, TypeVar, Union
 
+from biliass._core import DmSegMobileReply
 from biliass.protobuf.danmaku_pb2 import DanmakuEvent
 
 if TYPE_CHECKING:
@@ -51,7 +54,7 @@ def ReadCommentsBilibiliXml(text: str | bytes, fontsize: float) -> Generator[Com
     text = FilterBadChars(text)
     dom = xml.dom.minidom.parseString(text)
     version = dom.version
-    assert version in ["1.0", "2.0"], f"未知的 XML 版本号 {version}"
+    assert version in ["1.0", "2.0"], f"Unknown XML version {version}"
     if version == "1.0":
         return ReadCommentsBilibiliXmlV1(text, fontsize)
     else:
@@ -136,10 +139,10 @@ def ReadCommentsBilibiliXmlV2(text: str, fontsize: float) -> Generator[Comment, 
 
 
 def ReadCommentsBilibiliProtobuf(protobuf: bytes | str, fontsize: float) -> Generator[Comment, None, None]:
-    assert isinstance(protobuf, bytes), "protobuf 仅支持使用 bytes 转换"
-    target = DanmakuEvent()
-    target.ParseFromString(protobuf)
-    for i, elem in enumerate(target.elems):
+    assert isinstance(protobuf, bytes), "protobuf supports bytes only"
+    replies = DmSegMobileReply.decode(protobuf)
+
+    for i, elem in enumerate(replies.elems):
         try:
             assert elem.mode in (1, 4, 5, 6, 7, 8)
             if elem.mode in (1, 4, 5, 6):

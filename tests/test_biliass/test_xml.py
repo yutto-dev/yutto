@@ -30,11 +30,11 @@ def gen_xml_v1(base_dir: Path):
 def test_xml_v1_text():
     gen_xml_v1(TEST_DIR)
     with TEST_DIR.joinpath("test_v1.xml").open("r") as f:
-        ReadCommentsBilibiliXml(f.read(), 10)
+        list(ReadCommentsBilibiliXml(f.read(), 10))
 
 
 @pytest.mark.biliass
 def test_xml_v1_bytes():
     gen_xml_v1(TEST_DIR)
     with TEST_DIR.joinpath("test_v1.xml").open("rb") as f:
-        ReadCommentsBilibiliXml(f.read(), 10)
+        list(ReadCommentsBilibiliXml(f.read(), 10))
