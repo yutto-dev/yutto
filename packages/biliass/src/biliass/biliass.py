@@ -1,3 +1,5 @@
+# pyright: basic
+
 from __future__ import annotations
 
 import json
@@ -8,7 +10,7 @@ import re
 import xml.dom.minidom
 from typing import TYPE_CHECKING, TypeVar, Union
 
-from biliass.protobuf.danmaku_pb2 import DanmakuEvent
+from biliass._core import DmSegMobileReply
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -51,7 +53,7 @@ def ReadCommentsBilibiliXml(text: str | bytes, fontsize: float) -> Generator[Com
     text = FilterBadChars(text)
     dom = xml.dom.minidom.parseString(text)
     version = dom.version
-    assert version in ["1.0", "2.0"], f"未知的 XML 版本号 {version}"
+    assert version in ["1.0", "2.0"], f"Unknown XML version {version}"
     if version == "1.0":
         return ReadCommentsBilibiliXmlV1(text, fontsize)
     else:
@@ -136,10 +138,10 @@ def ReadCommentsBilibiliXmlV2(text: str, fontsize: float) -> Generator[Comment, 
 
 
 def ReadCommentsBilibiliProtobuf(protobuf: bytes | str, fontsize: float) -> Generator[Comment, None, None]:
-    assert isinstance(protobuf, bytes), "protobuf 仅支持使用 bytes 转换"
-    target = DanmakuEvent()
-    target.ParseFromString(protobuf)
-    for i, elem in enumerate(target.elems):
+    assert isinstance(protobuf, bytes), "protobuf supports bytes only"
+    replies = DmSegMobileReply.decode(protobuf)
+
+    for i, elem in enumerate(replies.elems):
         try:
             assert elem.mode in (1, 4, 5, 6, 7, 8)
             if elem.mode in (1, 4, 5, 6):
@@ -215,15 +217,15 @@ class AssText:
             to_x = GetPosition(to_x, False)
             to_y = GetPosition(to_y, True)
             alpha = safe_list(str(comment_args.get(2, "1")).split("-"))
-            from_alpha = float(alpha.get(0, 1))
-            to_alpha = float(alpha.get(1, from_alpha))
+            from_alpha = float(alpha.get(0, 1))  # pyright: ignore
+            to_alpha = float(alpha.get(1, from_alpha))  # pyright: ignore
             from_alpha = 255 - round(from_alpha * 255)
             to_alpha = 255 - round(to_alpha * 255)
-            rotate_z = int(comment_args.get(5, 0))
-            rotate_y = int(comment_args.get(6, 0))
+            rotate_z = int(comment_args.get(5, 0))  # pyright: ignore
+            rotate_y = int(comment_args.get(6, 0))  # pyright: ignore
             lifetime = float(wrap_default(comment_args.get(3, 4500), 4500))
-            duration = int(comment_args.get(9, lifetime * 1000))
-            delay = int(comment_args.get(10, 0))
+            duration = int(comment_args.get(9, lifetime * 1000))  # pyright: ignore
+            delay = int(comment_args.get(10, 0))  # pyright: ignore
             fontface = comment_args.get(12)
             isborder = comment_args.get(11, "true")
             from_rotarg = ConvertFlashRotation(rotate_y, rotate_z, from_x, from_y, width, height)
@@ -689,7 +691,7 @@ def Danmaku2ASS(
             comments.extend(ReadCommentsBilibiliXml(input, font_size))
         else:
             if isinstance(input, str):
-                logging.warning("Protobuf 只能使用 bytes 转换")
+                logging.warning("Protobuf can only be read from bytes")
             comments.extend(ReadCommentsBilibiliProtobuf(input, font_size))
     comments.sort()
     return ProcessComments(

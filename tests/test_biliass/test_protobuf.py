@@ -28,4 +28,4 @@ def gen_protobuf(base_dir: Path):
 def test_protobuf():
     gen_protobuf(TEST_DIR)
     with TEST_DIR.joinpath("test.pb").open("rb") as f:
-        ReadCommentsBilibiliProtobuf(f.read(), 10)
+        list(ReadCommentsBilibiliProtobuf(f.read(), 10))

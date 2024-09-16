@@ -8,13 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint-and-fmt:
+  lint-and-fmt-python:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.9"]
         architecture: ["x64"]
-    name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} lint and format check
+    name: Lint and Format (Python)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,3 +44,33 @@ jobs:
       - name: format check
         run: |
           just ci-fmt-check
+
+  lint-and-fmt-rust:
+    name: Lint and Format (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+      - uses: actions/cache@v4
+        id: cargo-cache
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format with rustfmt
+        working-directory: packages/biliass
+        run: |
+          cargo fmt --all -- --check
+      - name: Lint with clippy
+        working-directory: packages/biliass
+        run: |
+          cargo clippy --all-targets --all-features -- -D warnings

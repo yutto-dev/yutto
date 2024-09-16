@@ -1,7 +1,7 @@
 set positional-arguments
 
-VERSION := `uv run python -c "import sys; from yutto.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
-BILIASS_VERSION := `uv run python -c "import sys; from biliass.__version__ import VERSION as yutto_version; sys.stdout.write(yutto_version)"`
+VERSION := `uv run script/get-version.py src/yutto/__version__.py`
+BILIASS_VERSION := `uv run script/get-version.py packages/biliass/src/biliass/__version__.py`
 DOCKER_NAME := "siguremo/yutto"
 
 run *ARGS:
@@ -90,11 +90,11 @@ docker-publish:
   docker buildx build --no-cache --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
 
 # biliass specific
-compile-protobuf:
-  cd packages/biliass; protoc protobuf/danmaku.proto --python_out=src/biliass --pyi_out=src/biliass
-
 build-biliass:
-  uv build --package biliass
+  cd packages/biliass; maturin build
+
+develop-biliass:
+  cd packages/biliass; maturin develop --uv
 
 release-biliass:
   @echo 'Tagging biliass@{{BILIASS_VERSION}}...'
