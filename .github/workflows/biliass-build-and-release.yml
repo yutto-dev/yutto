@@ -10,10 +10,6 @@ on:
   merge_group:
   workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: packages/biliass
-
 permissions:
   contents: read
 
@@ -47,11 +43,12 @@ jobs:
           args: --release --out dist
           sccache: "true"
           manylinux: auto
+          working-directory: packages/biliass
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-${{ matrix.platform.target }}
-          path: dist
+          path: packages/biliass/dist
 
   musllinux:
     runs-on: ${{ matrix.platform.runner }}
@@ -78,11 +75,12 @@ jobs:
           args: --release --out dist
           sccache: "true"
           manylinux: musllinux_1_2
+          working-directory: packages/biliass
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
-          path: dist
+          path: packages/biliass/dist
 
   windows:
     runs-on: ${{ matrix.platform.runner }}
@@ -105,11 +103,12 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: "true"
+          working-directory: packages/biliass
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.platform.target }}
-          path: dist
+          path: packages/biliass/dist
 
   macos:
     runs-on: ${{ matrix.platform.runner }}
@@ -131,11 +130,12 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist
           sccache: "true"
+          working-directory: packages/biliass
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}
-          path: dist
+          path: packages/biliass/dist
 
   sdist:
     runs-on: ubuntu-latest
@@ -146,11 +146,12 @@ jobs:
         with:
           command: sdist
           args: --out dist
+          working-directory: packages/biliass
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
           name: wheels-sdist
-          path: dist
+          path: packages/biliass/dist
 
   publish-pypi:
     runs-on: ubuntu-latest
