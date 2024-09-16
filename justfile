@@ -90,9 +90,6 @@ docker-publish:
   docker buildx build --no-cache --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
 
 # biliass specific
-compile-protobuf:
-  cd packages/biliass; protoc protobuf/danmaku.proto --python_out=src/biliass --pyi_out=src/biliass
-
 build-biliass:
   cd packages/biliass; maturin build
 

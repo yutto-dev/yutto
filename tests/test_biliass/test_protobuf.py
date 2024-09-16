@@ -27,7 +27,5 @@ def gen_protobuf(base_dir: Path):
 @pytest.mark.biliass
 def test_protobuf():
     gen_protobuf(TEST_DIR)
-    from biliass._core import DmSegMobileReply
-
     with TEST_DIR.joinpath("test.pb").open("rb") as f:
         list(ReadCommentsBilibiliProtobuf(f.read(), 10))

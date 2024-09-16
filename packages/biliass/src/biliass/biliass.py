@@ -11,7 +11,6 @@ import xml.dom.minidom
 from typing import TYPE_CHECKING, TypeVar, Union
 
 from biliass._core import DmSegMobileReply
-from biliass.protobuf.danmaku_pb2 import DanmakuEvent
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -692,7 +691,7 @@ def Danmaku2ASS(
             comments.extend(ReadCommentsBilibiliXml(input, font_size))
         else:
             if isinstance(input, str):
-                logging.warning("Protobuf 只能使用 bytes 转换")
+                logging.warning("Protobuf can only be read from bytes")
             comments.extend(ReadCommentsBilibiliProtobuf(input, font_size))
     comments.sort()
     return ProcessComments(
