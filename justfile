@@ -39,21 +39,24 @@ release:
 #   just clean-builds
 
 clean:
-  find . -name "*.m4s" -print0 | xargs -0 rm -f
-  find . -name "*.mp4" -print0 | xargs -0 rm -f
-  find . -name "*.mkv" -print0 | xargs -0 rm -f
-  find . -name "*.mov" -print0 | xargs -0 rm -f
-  find . -name "*.aac" -print0 | xargs -0 rm -f
-  find . -name "*.mp3" -print0 | xargs -0 rm -f
-  find . -name "*.flac" -print0 | xargs -0 rm -f
-  find . -name "*.srt" -print0 | xargs -0 rm -f
-  find . -name "*.xml" -print0 | xargs -0 rm -f
-  find . -name "*.ass" -print0 | xargs -0 rm -f
-  find . -name "*.nfo" -print0 | xargs -0 rm -f
-  find . -name "*.pb" -print0 | xargs -0 rm -f
-  find . -name "*.pyc" -print0 | xargs -0 rm -f
-  find . -name "*.jpg" -print0 | xargs -0 rm -f
-  find . -name "*.ini" -print0 | xargs -0 rm -f
+  fd \
+    -E tests/test_biliass/test_corpus/ \
+    -e m4s \
+    -e mp4 \
+    -e mkv \
+    -e mov \
+    -e aac \
+    -e mp3 \
+    -e flac \
+    -e srt \
+    -e xml \
+    -e ass \
+    -e nfo \
+    -e pb \
+    -e pyc \
+    -e jpg \
+    -e ini \
+    -x rm
   rm -rf .pytest_cache/
   rm -rf .mypy_cache/
   find . -maxdepth 3 -type d -empty -print0 | xargs -0 -r rm -r
@@ -101,3 +104,9 @@ release-biliass:
   git tag "biliass@{{BILIASS_VERSION}}"
   @echo 'Push to GitHub to trigger publish process...'
   git push --tags
+
+snapshot-update:
+  uv run pytest tests/test_biliass/test_corpus --snapshot-update
+
+fetch-corpus:
+  cd tests/test_biliass/test_corpus; uv run scripts/fetch-corpus.py

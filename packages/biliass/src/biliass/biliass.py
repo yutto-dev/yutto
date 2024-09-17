@@ -8,43 +8,43 @@ import math
 import random
 import re
 import xml.dom.minidom
-from typing import TYPE_CHECKING, TypeVar, Union
+from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
 
 from biliass._core import DmSegMobileReply
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
-#
-# ReadComments**** protocol
-#
-# Input:
-#     text:         Input XML string
-#     fontsize:  Default font size
-#
-# Output:
-#     yield a tuple:
-#         (timeline, timestamp, no, comment, pos, color, size, height, width)
-#     timeline:  The position when the comment is replayed
-#     timestamp: The UNIX timestamp when the comment is submitted
-#     no:        A sequence of 1, 2, 3, ..., used for sorting
-#     comment:   The content of the comment
-#     pos:       0 for regular moving comment,
-#                1 for bottom centered comment,
-#                2 for top centered comment,
-#                3 for reversed moving comment
-#     color:     Font color represented in 0xRRGGBB,
-#                e.g. 0xffffff for white
-#     size:      Font size
-#     height:    The estimated height in pixels
-#                i.e. (comment.count('\n')+1)*size
-#     width:     The estimated width in pixels
-#                i.e. calculate_length(comment)*size
-#
-
 
 T = TypeVar("T")
-Comment = tuple[float, float, int, str, Union[int, str], int, float, float, float]
+
+
+# Comment = tuple[float, float, int, str, Union[int, str], int, float, float, float]
+class Comment(NamedTuple):
+    # The position when the comment is replayed
+    timeline: float
+    # The UNIX timestamp when the comment is submitted
+    timestamp: float
+    # A sequence of 1, 2, 3, ..., used for sorting
+    no: int
+    # The content of the comment
+    comment: str
+    # 0 for regular moving comment,
+    # 1 for bottom centered comment,
+    # 2 for top centered comment,
+    # 3 for reversed moving comment
+    pos: int | str
+    # Font color represented in 0xRRGGBB,
+    # e.g. 0xffffff for white
+    color: int
+    # Font size
+    size: float
+    # The estimated height in pixels
+    # i.e. (comment.count('\n')+1)*size
+    height: float
+    # The estimated width in pixels
+    # i.e. calculate_length(comment)*size
+    width: float
 
 
 def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> Generator[Comment, None, None]:
@@ -72,7 +72,7 @@ def read_comments_bilibili_xml_v1(text: str, fontsize: float) -> Generator[Comme
                 if p[1] in ("1", "4", "5", "6"):
                     c = str(comment.childNodes[0].wholeText).replace("/n", "\n")
                     size = int(p[2]) * fontsize / 25.0
-                    yield (
+                    yield Comment(
                         float(p[0]),
                         int(p[4]),
                         i,
@@ -85,7 +85,7 @@ def read_comments_bilibili_xml_v1(text: str, fontsize: float) -> Generator[Comme
                     )
                 elif p[1] == "7":  # positioned comment
                     c = str(comment.childNodes[0].wholeText)
-                    yield (
+                    yield Comment(
                         float(p[0]),
                         int(p[4]),
                         i,
@@ -116,7 +116,7 @@ def read_comments_bilibili_xml_v2(text: str, fontsize: float) -> Generator[Comme
                 if p[3] in ("1", "4", "5", "6"):
                     c = str(comment.childNodes[0].wholeText).replace("/n", "\n")
                     size = int(p[4]) * fontsize / 25.0
-                    yield (
+                    yield Comment(
                         time,
                         int(p[6]),
                         i,
@@ -129,7 +129,7 @@ def read_comments_bilibili_xml_v2(text: str, fontsize: float) -> Generator[Comme
                     )
                 elif p[3] == "7":  # positioned comment
                     c = str(comment.childNodes[0].wholeText)
-                    yield (time, int(p[6]), i, c, "bilipos", int(p[5]), int(p[4]), 0, 0)
+                    yield Comment(time, int(p[6]), i, c, "bilipos", int(p[5]), int(p[4]), 0, 0)
                 elif p[3] == "8":
                     pass  # ignore scripted comment
         except (AssertionError, AttributeError, IndexError, TypeError, ValueError):
@@ -147,7 +147,7 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> G
             if elem.mode in (1, 4, 5, 6):
                 c = elem.content.replace("/n", "\n")
                 size = int(elem.fontsize) * fontsize / 25.0
-                yield (
+                yield Comment(
                     elem.progress / 1000,  # 视频内出现的时间
                     elem.ctime,  # 弹幕的发送时间（时间戳）
                     i,
@@ -160,7 +160,7 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> G
                 )
             elif elem.mode == 7:  # positioned comment
                 c = elem.content
-                yield (
+                yield Comment(
                     elem.progress / 1000,
                     elem.ctime,
                     i,
@@ -473,23 +473,23 @@ def process_comments(
     ass = AssText()
     ass.write_head(width, height, fontface, fontsize, alpha, styleid)
     rows = [[None] * (height - bottom_reserved + 1) for i in range(4)]
-    for idx, i in enumerate(comments):
+    for idx, comment in enumerate(comments):
         if progress_callback and idx % 1000 == 0:
             progress_callback(idx, len(comments))
-        if isinstance(i[4], int):
+        if isinstance(comment.pos, int):
             skip = False
             for filter_regex in filters_regex:
-                if filter_regex and filter_regex.search(i[3]):
+                if filter_regex and filter_regex.search(comment.comment):
                     skip = True
                     break
             if skip:
                 continue
             row = 0
-            rowmax = height - bottom_reserved - i[7]
+            rowmax = height - bottom_reserved - comment.height
             while row <= rowmax:
                 freerows = test_free_rows(
                     rows,
-                    i,
+                    comment,
                     row,
                     width,
                     height,
@@ -497,10 +497,10 @@ def process_comments(
                     duration_marquee,
                     duration_still,
                 )
-                if freerows >= i[7]:
-                    mark_comment_row(rows, i, row)
+                if freerows >= comment.height:
+                    mark_comment_row(rows, comment, row)
                     ass.write_comment(
-                        i,
+                        comment,
                         row,
                         width,
                         height,
@@ -515,10 +515,10 @@ def process_comments(
                     row += freerows or 1
             else:
                 if not reduced:
-                    row = find_alternative_row(rows, i, height, bottom_reserved)
-                    mark_comment_row(rows, i, row)
+                    row = find_alternative_row(rows, comment, height, bottom_reserved)
+                    mark_comment_row(rows, comment, row)
                     ass.write_comment(
-                        i,
+                        comment,
                         row,
                         width,
                         height,
@@ -528,39 +528,39 @@ def process_comments(
                         duration_still,
                         styleid,
                     )
-        elif i[4] == "bilipos":
-            ass.write_comment_bilibili_positioned(i, width, height, styleid)
+        elif comment.pos == "bilipos":
+            ass.write_comment_bilibili_positioned(comment, width, height, styleid)
         else:
-            logging.warning(f"Invalid comment: {i[3]!r}")
+            logging.warning(f"Invalid comment: {comment.comment!r}")
     if progress_callback:
         progress_callback(len(comments), len(comments))
     return ass.to_string()
 
 
-def test_free_rows(rows, c, row, width, height, bottom_reserved, duration_marquee, duration_still):
+def test_free_rows(rows, comment: Comment, row, width, height, bottom_reserved, duration_marquee, duration_still):
     res = 0
     rowmax = height - bottom_reserved
-    targetRow = None
-    if c[4] in (1, 2):
-        while row < rowmax and res < c[7]:
-            if targetRow != rows[c[4]][row]:
-                targetRow = rows[c[4]][row]
-                if targetRow and targetRow[0] + duration_still > c[0]:
+    target_row = None
+    if comment.pos in (1, 2):
+        while row < rowmax and res < comment[7]:
+            if target_row != rows[comment.pos][row]:
+                target_row = rows[comment.pos][row]
+                if target_row and target_row[0] + duration_still > comment.timeline:
                     break
             row += 1
             res += 1
     else:
         try:
-            thresholdTime = c[0] - duration_marquee * (1 - width / (c[8] + width))
+            threshold_time = comment.timeline - duration_marquee * (1 - width / (comment.width + width))
         except ZeroDivisionError:
-            thresholdTime = c[0] - duration_marquee
-        while row < rowmax and res < c[7]:
-            if targetRow != rows[c[4]][row]:
-                targetRow = rows[c[4]][row]
+            threshold_time = comment.timeline - duration_marquee
+        while row < rowmax and res < comment.height:
+            if target_row != rows[comment.pos][row]:
+                target_row = rows[comment.pos][row]
                 try:
-                    if targetRow and (
-                        targetRow[0] > thresholdTime
-                        or targetRow[0] + targetRow[8] * duration_marquee / (targetRow[8] + width) > c[0]
+                    if target_row and (
+                        target_row[0] > threshold_time
+                        or target_row[0] + target_row[8] * duration_marquee / (target_row[8] + width) > comment.timeline
                     ):
                         break
                 except ZeroDivisionError:
