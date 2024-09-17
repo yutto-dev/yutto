@@ -46,8 +46,8 @@ jobs:
         run: |
           uv run yutto -v
           uv run yutto -h
-          uv run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
-          just clean
+          uv run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w -d __test_files__
+          rm -rf __test_files__
 
       - name: e2e test
         run: |

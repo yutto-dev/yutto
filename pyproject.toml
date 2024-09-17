@@ -46,6 +46,7 @@ dev-dependencies = [
   "pytest-rerunfailures>=14.0",
   "ruff>=0.6.2",
   "typos>=1.23.7",
+  "syrupy>=4.7.1",
 ]
 
 [tool.uv.sources]
