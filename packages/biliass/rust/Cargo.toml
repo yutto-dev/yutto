@@ -1,5 +1,5 @@
 [package]
-name = "docstring-parser"
+name = "biliass-core"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,6 +12,8 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.22.2", features = ["abi3-py39"] }
 bytes = "1.7.1"
 prost = "0.13.2"
+thiserror = "1.0.63"
+quick-xml = "0.36.1"
 
 [build-dependencies]
 prost-build = "0.13.2"

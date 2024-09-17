@@ -10,7 +10,7 @@ import re
 import xml.dom.minidom
 from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
-from biliass._core import DmSegMobileReply
+from biliass._core import DmSegMobileReply, read_comments_from_xml
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -50,6 +50,7 @@ def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> Generator[
     if isinstance(text, bytes):
         text = text.decode()
     text = filter_bad_chars(text)
+    read_comments_from_xml(text, fontsize)
     dom = xml.dom.minidom.parseString(text)
     version = dom.version
     assert version in ["1.0", "2.0"], f"Unknown XML version {version}"
