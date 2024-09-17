@@ -8,7 +8,7 @@ import math
 import random
 import re
 import xml.dom.minidom
-from typing import TYPE_CHECKING, NamedTuple, TypeVar, Union
+from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
 from biliass._core import DmSegMobileReply
 
@@ -19,32 +19,31 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-# Comment = tuple[float, float, int, str, Union[int, str], int, float, float, float]
 class Comment(NamedTuple):
     # The position when the comment is replayed
-    timeline: float
+    timeline: float  # 0
     # The UNIX timestamp when the comment is submitted
-    timestamp: float
+    timestamp: float  # 1
     # A sequence of 1, 2, 3, ..., used for sorting
-    no: int
+    no: int  # 2
     # The content of the comment
-    comment: str
+    comment: str  # 3
     # 0 for regular moving comment,
     # 1 for bottom centered comment,
     # 2 for top centered comment,
     # 3 for reversed moving comment
-    pos: int | str
+    pos: int | str  # 4
     # Font color represented in 0xRRGGBB,
     # e.g. 0xffffff for white
-    color: int
+    color: int  # 5
     # Font size
-    size: float
+    size: float  # 6
     # The estimated height in pixels
     # i.e. (comment.count('\n')+1)*size
-    height: float
+    height: float  # 7
     # The estimated width in pixels
     # i.e. calculate_length(comment)*size
-    width: float
+    width: float  # 8
 
 
 def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> Generator[Comment, None, None]:
@@ -537,12 +536,21 @@ def process_comments(
     return ass.to_string()
 
 
-def test_free_rows(rows, comment: Comment, row, width, height, bottom_reserved, duration_marquee, duration_still):
+def test_free_rows(
+    rows: list[Comment | None],
+    comment: Comment,
+    row: int,
+    width,
+    height,
+    bottom_reserved,
+    duration_marquee,
+    duration_still,
+):
     res = 0
     rowmax = height - bottom_reserved
     target_row = None
     if comment.pos in (1, 2):
-        while row < rowmax and res < comment[7]:
+        while row < rowmax and res < comment.height:
             if target_row != rows[comment.pos][row]:
                 target_row = rows[comment.pos][row]
                 if target_row and target_row[0] + duration_still > comment.timeline:
@@ -570,20 +578,20 @@ def test_free_rows(rows, comment: Comment, row, width, height, bottom_reserved, 
     return res
 
 
-def find_alternative_row(rows, c, height, bottom_reserved):
+def find_alternative_row(rows, comment: Comment, height, bottom_reserved):
     res = 0
-    for row in range(height - bottom_reserved - math.ceil(c[7])):
-        if not rows[c[4]][row]:
+    for row in range(height - bottom_reserved - math.ceil(comment.height)):
+        if not rows[comment.pos][row]:
             return row
-        elif rows[c[4]][row][0] < rows[c[4]][res][0]:
+        elif rows[comment.pos][row][0] < rows[comment.pos][res][0]:
             res = row
     return res
 
 
-def mark_comment_row(rows, c, row):
+def mark_comment_row(rows: list[Comment | None], comment: Comment, row: int):
     try:
-        for i in range(row, row + math.ceil(c[7])):
-            rows[c[4]][i] = c
+        for i in range(row, row + math.ceil(comment.height)):
+            rows[comment.pos][i] = comment
     except IndexError:
         pass
 

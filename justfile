@@ -40,6 +40,7 @@ release:
 
 clean:
   fd \
+    -u \
     -E tests/test_biliass/test_corpus/ \
     -e m4s \
     -e mp4 \
