@@ -77,11 +77,9 @@ ci-lint:
 
 ci-test:
   uv run pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
-  just clean
 
 ci-e2e-test:
   uv run pytest -m "e2e and not (ci_skip or ignore)"
-  just clean
 
 docker-run *ARGS:
   docker run --rm -it -v `pwd`:/app {{DOCKER_NAME}} {{ARGS}}
