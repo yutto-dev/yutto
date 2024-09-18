@@ -9,7 +9,7 @@ import random
 import re
 from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
-from biliass._core import CommentPosition, DmSegMobileReply, read_comments_from_xml
+from biliass._core import CommentPosition, DmSegMobileReply, read_comments_from_protobuf, read_comments_from_xml
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -73,19 +73,68 @@ def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> Generator[
 
 def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> Generator[Comment, None, None]:
     assert isinstance(protobuf, bytes), "protobuf supports bytes only"
+    res_rs = list(read_comments_bilibili_protobuf_rs(protobuf, fontsize))
+    res_py = list(read_comments_bilibili_protobuf_py(protobuf, fontsize))
+    assert len(res_rs) == len(
+        res_py
+    ), f"Protobuf parsing results have different lengths, rs {len(res_rs)} != py {len(res_py)}"
+    for comment_rs, comment_py in zip(res_rs, res_py):
+        assert (
+            comment_rs.timeline == comment_py.timeline
+        ), f"timeline, rs: {comment_rs.timeline}, py: {comment_py.timeline}"
+        assert (
+            comment_rs.timestamp == comment_py.timestamp
+        ), f"timestamp, rs: {comment_rs.timestamp}, py: {comment_py.timestamp}"
+        assert comment_rs.no == comment_py.no, f"no, rs: {comment_rs.no}, py: {comment_py.no}"
+        assert comment_rs.comment == comment_py.comment, f"comment, rs: {comment_rs.comment}, py: {comment_py.comment}"
+        assert comment_rs.pos == comment_py.pos, f"pos, rs: {comment_rs.pos}, py: {comment_py.pos}"
+        assert comment_rs.color == comment_py.color, f"color, rs: {comment_rs.color}, py: {comment_py.color}"
+        assert comment_rs.size == comment_py.size, f"size, rs: {comment_rs.size}, py: {comment_py.size}"
+        assert comment_rs.height == comment_py.height, f"height, rs: {comment_rs.height}, py: {comment_py.height}"
+        assert comment_rs.width == comment_py.width, f"width, rs: {comment_rs.width}, py: {comment_py.width}"
+
+    assert res_rs == res_py, "Protobuf parsing results are different"
+    return (comment for comment in res_rs)
+
+
+def read_comments_bilibili_protobuf_rs(protobuf: bytes, fontsize: float) -> Generator[Comment, None, None]:
+    res_rs = read_comments_from_protobuf(protobuf, fontsize)
+    return (
+        Comment(
+            comment_rs.timeline,
+            comment_rs.timestamp,
+            comment_rs.no,
+            comment_rs.comment,
+            {
+                CommentPosition.Scroll: 0,
+                CommentPosition.Bottom: 1,
+                CommentPosition.Top: 2,
+                CommentPosition.Reversed: 3,
+                CommentPosition.Special: "bilipos",
+            }[comment_rs.pos],
+            comment_rs.color,
+            comment_rs.size,
+            comment_rs.height,
+            comment_rs.width,
+        )
+        for comment_rs in res_rs
+    )
+
+
+def read_comments_bilibili_protobuf_py(protobuf: bytes, fontsize: float) -> Generator[Comment, None, None]:
     replies = DmSegMobileReply.decode(protobuf)
 
     for i, elem in enumerate(replies.elems):
         try:
             assert elem.mode in (1, 4, 5, 6, 7, 8)
             if elem.mode in (1, 4, 5, 6):
-                c = elem.content.replace("/n", "\n")
+                c = filter_bad_chars(elem.content.replace("/n", "\n"))
                 size = int(elem.fontsize) * fontsize / 25.0
                 yield Comment(
                     elem.progress / 1000,  # 视频内出现的时间
                     elem.ctime,  # 弹幕的发送时间（时间戳）
                     i,
-                    filter_bad_chars(c),
+                    c,
                     {1: 0, 4: 2, 5: 1, 6: 3}[elem.mode],
                     elem.color,
                     size,

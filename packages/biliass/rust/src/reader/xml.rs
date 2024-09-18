@@ -1,5 +1,6 @@
 use crate::comment::{Comment, CommentPosition};
 use crate::error::{BiliassError, DecodeError, ParseError};
+use crate::reader::utils;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
 
@@ -45,17 +46,6 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
     ))
 }
 
-fn calculate_length(s: &str) -> f32 {
-    s.split('\n')
-        .map(|line| line.chars().count())
-        .max()
-        .unwrap_or(0) as f32
-}
-
-fn unescape_newline(s: &str) -> String {
-    s.replace("/n", "\n")
-}
-
 fn parse_comment_item(
     raw_p: &str,
     content: &str,
@@ -98,11 +88,11 @@ fn parse_comment_item(
                 .map_err(|e| ParseError::XMLParseError(format!("Error parsing size: {}", e)))?;
             let (comment_content, size, height, width) = if comment_pos != CommentPosition::Special
             {
-                let comment_content = unescape_newline(content);
+                let comment_content = utils::unescape_newline(content);
                 let size = (size as f32) * fontsize / 25.0;
                 let height =
                     (comment_content.chars().filter(|&c| c == '\n').count() as f32 + 1.0) * size;
-                let width = calculate_length(&comment_content) * size;
+                let width = utils::calculate_length(&comment_content) * size;
                 (comment_content, size, height, width)
             } else {
                 (content.to_string(), size as f32, 0., 0.)
@@ -145,27 +135,8 @@ fn parse_comment(
     Ok(parsed_p)
 }
 
-fn filter_bad_chars(string: &str) -> String {
-    string
-        .chars()
-        .map(|c| {
-            if ('\u{00}'..='\u{08}').contains(&c)
-                || c == '\u{0b}'
-                || c == '\u{0c}'
-                || c == '\u{2028}'
-                || c == '\u{2029}'
-                || ('\u{0e}'..='\u{1f}').contains(&c)
-            {
-                '\u{fffd}'
-            } else {
-                c
-            }
-        })
-        .collect()
-}
-
 pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>, BiliassError> {
-    let filtered_text = filter_bad_chars(text);
+    let filtered_text = utils::filter_bad_chars(text);
     let mut reader = Reader::from_str(&filtered_text);
 
     let mut buf = Vec::new();
