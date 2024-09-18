@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 class DanmakuElem:
     @property
     def id(self) -> int: ...
@@ -31,3 +33,24 @@ class DmSegMobileReply:
     def elems(self) -> list[DanmakuElem]: ...
     @staticmethod
     def decode(data: bytes) -> DmSegMobileReply: ...
+
+class CommentPosition:
+    Scroll: ClassVar[CommentPosition]
+    Top: ClassVar[CommentPosition]
+    Bottom: ClassVar[CommentPosition]
+    Reversed: ClassVar[CommentPosition]
+    Normal: ClassVar[CommentPosition]
+    Special: ClassVar[CommentPosition]
+
+class Comment:
+    timeline: float
+    timestamp: int
+    no: int
+    comment: str
+    pos: CommentPosition
+    color: int
+    size: float
+    height: float
+    width: float
+
+def read_comments_from_xml(text: str, fontsize: float) -> list[Comment]: ...
