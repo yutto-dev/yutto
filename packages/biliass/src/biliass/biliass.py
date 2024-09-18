@@ -140,7 +140,10 @@ class AssText:
                 return get_position(InputPos, isHeight)
 
         try:
-            comment_args = safe_list(json.loads(c[3]))
+            special_comment_data = json.loads(c[3])
+            if not isinstance(special_comment_data, list):
+                raise ValueError("Invalid comment")
+            comment_args = safe_list(special_comment_data)
             text = ass_escape(str(comment_args[4]).replace("/n", "\n"))
             from_x = comment_args.get(0, 0)
             from_y = comment_args.get(1, 0)
@@ -588,8 +591,11 @@ def convert_type2(row, height, bottom_reserved):
 
 class safe_list(list):
     def get(self, index, default=None):
+        def is_empty(value):
+            return value is None or value == ""
+
         try:
-            return self[index]
+            return self[index] if not is_empty(self[index]) else default
         except IndexError:
             return default
 
