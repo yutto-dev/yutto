@@ -145,8 +145,26 @@ fn parse_comment(
     Ok(parsed_p)
 }
 
+fn filter_bad_chars(string: &str) -> String {
+    string
+        .chars()
+        .map(|c| {
+            if ('\u{00}'..='\u{08}').contains(&c)
+                || c == '\u{0b}'
+                || c == '\u{0c}'
+                || ('\u{0e}'..='\u{1f}').contains(&c)
+            {
+                '\u{fffd}'
+            } else {
+                c
+            }
+        })
+        .collect()
+}
+
 pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>, BiliassError> {
-    let mut reader = Reader::from_str(text);
+    let filtered_text = filter_bad_chars(text);
+    let mut reader = Reader::from_str(&filtered_text);
 
     let mut buf = Vec::new();
     let mut comments: Vec<Comment> = Vec::new();

@@ -7,7 +7,6 @@ import logging
 import math
 import random
 import re
-import xml.dom.minidom
 from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
 from biliass._core import CommentPosition, DmSegMobileReply, read_comments_from_xml
@@ -49,7 +48,6 @@ class Comment(NamedTuple):
 def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> Generator[Comment, None, None]:
     if isinstance(text, bytes):
         text = text.decode()
-    text = filter_bad_chars(text)
     res_rs = read_comments_from_xml(text, fontsize)
     return (
         Comment(
@@ -586,10 +584,6 @@ def convert_color(RGB, width=1280, height=576):
 
 def convert_type2(row, height, bottom_reserved):
     return height - bottom_reserved - row
-
-
-def filter_bad_chars(string: str) -> str:
-    return re.sub("[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]", "\ufffd", string)
 
 
 class safe_list(list):
