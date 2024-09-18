@@ -85,7 +85,7 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> G
                     elem.progress / 1000,  # 视频内出现的时间
                     elem.ctime,  # 弹幕的发送时间（时间戳）
                     i,
-                    c,
+                    filter_bad_chars(c),
                     {1: 0, 4: 2, 5: 1, 6: 3}[elem.mode],
                     elem.color,
                     size,
@@ -98,7 +98,7 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> G
                     elem.progress / 1000,
                     elem.ctime,
                     i,
-                    c,
+                    filter_bad_chars(c),
                     "bilipos",
                     elem.color,
                     elem.fontsize,
@@ -587,6 +587,10 @@ def convert_color(RGB, width=1280, height=576):
 
 def convert_type2(row, height, bottom_reserved):
     return height - bottom_reserved - row
+
+
+def filter_bad_chars(string: str) -> str:
+    return re.sub("[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\u2028\u2029]", "\ufffd", string)
 
 
 class safe_list(list):

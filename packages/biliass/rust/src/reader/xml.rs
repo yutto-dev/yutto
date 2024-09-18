@@ -152,6 +152,8 @@ fn filter_bad_chars(string: &str) -> String {
             if ('\u{00}'..='\u{08}').contains(&c)
                 || c == '\u{0b}'
                 || c == '\u{0c}'
+                || c == '\u{2028}'
+                || c == '\u{2029}'
                 || ('\u{0e}'..='\u{1f}').contains(&c)
             {
                 '\u{fffd}'
