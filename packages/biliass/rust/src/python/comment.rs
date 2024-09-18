@@ -1,8 +1,8 @@
 use crate::comment;
 use pyo3::prelude::*;
 
-#[pyclass(name = "CommentPosition", eq, eq_int)]
-#[derive(PartialEq)]
+#[pyclass(name = "CommentPosition", eq, eq_int, hash, frozen)]
+#[derive(PartialEq, Hash)]
 pub enum PyCommentPosition {
     Scroll,
     Bottom,
@@ -25,7 +25,7 @@ impl PyComment {
 #[pymethods]
 impl PyComment {
     #[getter]
-    fn timeline(&self) -> PyResult<f32> {
+    fn timeline(&self) -> PyResult<f64> {
         Ok(self.inner.timeline)
     }
 

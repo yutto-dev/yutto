@@ -15,7 +15,7 @@ pub enum CommentPosition {
 #[derive(Debug)]
 pub struct Comment {
     /// The position when the comment is replayed
-    pub timeline: f32,
+    pub timeline: f64,
     /// The UNIX timestamp when the comment is submitted
     pub timestamp: u64,
     /// A sequence of 1, 2, 3, ..., used for sorting

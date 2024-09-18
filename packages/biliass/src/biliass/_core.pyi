@@ -38,8 +38,9 @@ class CommentPosition:
     Scroll: ClassVar[CommentPosition]
     Top: ClassVar[CommentPosition]
     Bottom: ClassVar[CommentPosition]
-    Reverse: ClassVar[CommentPosition]
+    Reversed: ClassVar[CommentPosition]
     Normal: ClassVar[CommentPosition]
+    Special: ClassVar[CommentPosition]
 
 class Comment:
     timeline: float

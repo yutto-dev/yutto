@@ -52,6 +52,10 @@ fn calculate_length(s: &str) -> f32 {
         .unwrap_or(0) as f32
 }
 
+fn unescape_newline(s: &str) -> String {
+    s.replace("/n", "\n")
+}
+
 fn parse_comment_item(
     raw_p: &str,
     content: &str,
@@ -70,7 +74,7 @@ fn parse_comment_item(
     match danmaku_type_id {
         "1" | "4" | "5" | "6" | "7" => {
             let mut timeline = split_p[p_offset]
-                .parse::<f32>()
+                .parse::<f64>()
                 .map_err(|e| ParseError::XMLParseError(format!("Error parsing timeline: {}", e)))?;
             if version == XmlVersion::V2 {
                 timeline /= 1000.0;
@@ -78,7 +82,6 @@ fn parse_comment_item(
             let timestamp = split_p[4 + p_offset].parse::<u64>().map_err(|e| {
                 ParseError::XMLParseError(format!("Error parsing timestamp: {}", e))
             })?;
-            let comment_content = content.replace("/n", "\n");
             let comment_pos = match danmaku_type_id {
                 "1" => CommentPosition::Scroll,
                 "4" => CommentPosition::Top,
@@ -93,14 +96,16 @@ fn parse_comment_item(
             let size = split_p[2 + p_offset]
                 .parse::<i32>()
                 .map_err(|e| ParseError::XMLParseError(format!("Error parsing size: {}", e)))?;
-            let (size, height, width) = if comment_pos != CommentPosition::Special {
+            let (comment_content, size, height, width) = if comment_pos != CommentPosition::Special
+            {
+                let comment_content = unescape_newline(content);
                 let size = (size as f32) * fontsize / 25.0;
                 let height =
                     (comment_content.chars().filter(|&c| c == '\n').count() as f32 + 1.0) * size;
                 let width = calculate_length(&comment_content) * size;
-                (size, height, width)
+                (comment_content, size, height, width)
             } else {
-                (size as f32, 0., 0.)
+                (content.to_string(), size as f32, 0., 0.)
             };
             Ok(Some(Comment {
                 timeline,
@@ -142,7 +147,6 @@ fn parse_comment(
 
 pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>, BiliassError> {
     let mut reader = Reader::from_str(text);
-    reader.config_mut().trim_text(true);
 
     let mut buf = Vec::new();
     let mut comments: Vec<Comment> = Vec::new();
@@ -181,7 +185,6 @@ pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>,
                         parse_comment(&mut reader, e, version.clone().unwrap(), fontsize, count)
                     {
                         if let Some(comment) = comment_option {
-                            println!("{:?}", comment);
                             comments.push(comment);
                         }
                     } else {
@@ -195,5 +198,5 @@ pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>,
         buf.clear();
     }
 
-    Ok(vec![])
+    Ok(comments)
 }

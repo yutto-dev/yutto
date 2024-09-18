@@ -10,7 +10,7 @@ import re
 import xml.dom.minidom
 from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
-from biliass._core import DmSegMobileReply, read_comments_from_xml
+from biliass._core import CommentPosition, DmSegMobileReply, read_comments_from_xml
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -50,7 +50,36 @@ def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> Generator[
     if isinstance(text, bytes):
         text = text.decode()
     text = filter_bad_chars(text)
-    read_comments_from_xml(text, fontsize)
+    result_rs = read_comments_bilibili_xml_rs(text, fontsize)
+    result_py = read_comments_bilibili_xml_py(text, fontsize)
+    return result_rs
+
+
+def read_comments_bilibili_xml_rs(text: str, fontsize: float) -> Generator[Comment, None, None]:
+    res_rs = read_comments_from_xml(text, fontsize)
+    return (
+        Comment(
+            comment_rs.timeline,
+            comment_rs.timestamp,
+            comment_rs.no,
+            comment_rs.comment,
+            {
+                CommentPosition.Scroll: 0,
+                CommentPosition.Bottom: 1,
+                CommentPosition.Top: 2,
+                CommentPosition.Reversed: 3,
+                CommentPosition.Special: "bilipos",
+            }[comment_rs.pos],
+            comment_rs.color,
+            comment_rs.size,
+            comment_rs.height,
+            comment_rs.width,
+        )
+        for comment_rs in res_rs
+    )
+
+
+def read_comments_bilibili_xml_py(text: str, fontsize: float) -> Generator[Comment, None, None]:
     dom = xml.dom.minidom.parseString(text)
     version = dom.version
     assert version in ["1.0", "2.0"], f"Unknown XML version {version}"
