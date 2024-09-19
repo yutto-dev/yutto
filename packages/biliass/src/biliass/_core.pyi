@@ -39,8 +39,10 @@ class CommentPosition:
     Top: ClassVar[CommentPosition]
     Bottom: ClassVar[CommentPosition]
     Reversed: ClassVar[CommentPosition]
-    Normal: ClassVar[CommentPosition]
     Special: ClassVar[CommentPosition]
+
+    @property
+    def id(self) -> int: ...
 
 class Comment:
     timeline: float
