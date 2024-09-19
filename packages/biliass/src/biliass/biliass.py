@@ -9,98 +9,31 @@ import random
 import re
 from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
-from biliass._core import CommentPosition, read_comments_from_protobuf, read_comments_from_xml
+from biliass._core import Comment, CommentPosition, read_comments_from_protobuf, read_comments_from_xml
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable
 
 
 T = TypeVar("T")
 
 
-class Comment(NamedTuple):
-    # The position when the comment is replayed
-    timeline: float  # 0
-    # The UNIX timestamp when the comment is submitted
-    timestamp: float  # 1
-    # A sequence of 1, 2, 3, ..., used for sorting
-    no: int  # 2
-    # The content of the comment
-    comment: str  # 3
-    # 0 for regular moving comment,
-    # 1 for bottom centered comment,
-    # 2 for top centered comment,
-    # 3 for reversed moving comment
-    pos: int | str  # 4
-    # Font color represented in 0xRRGGBB,
-    # e.g. 0xffffff for white
-    color: int  # 5
-    # Font size
-    size: float  # 6
-    # The estimated height in pixels
-    # i.e. (comment.count('\n')+1)*size
-    height: float  # 7
-    # The estimated width in pixels
-    # i.e. calculate_length(comment)*size
-    width: float  # 8
-
-
 def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> list[Comment]:
     if isinstance(text, bytes):
         text = text.decode()
-    res_rs = read_comments_from_xml(text, fontsize)
-    return [
-        Comment(
-            comment_rs.timeline,
-            comment_rs.timestamp,
-            comment_rs.no,
-            comment_rs.comment,
-            {
-                CommentPosition.Scroll: 0,
-                CommentPosition.Bottom: 1,
-                CommentPosition.Top: 2,
-                CommentPosition.Reversed: 3,
-                CommentPosition.Special: "bilipos",
-            }[comment_rs.pos],
-            comment_rs.color,
-            comment_rs.size,
-            comment_rs.height,
-            comment_rs.width,
-        )
-        for comment_rs in res_rs
-    ]
+    return read_comments_from_xml(text, fontsize)
 
 
 def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> list[Comment]:
     assert isinstance(protobuf, bytes), "protobuf supports bytes only"
-    res_rs = read_comments_from_protobuf(protobuf, fontsize)
-    return [
-        Comment(
-            comment_rs.timeline,
-            comment_rs.timestamp,
-            comment_rs.no,
-            comment_rs.comment,
-            {
-                CommentPosition.Scroll: 0,
-                CommentPosition.Bottom: 1,
-                CommentPosition.Top: 2,
-                CommentPosition.Reversed: 3,
-                CommentPosition.Special: "bilipos",
-            }[comment_rs.pos],
-            comment_rs.color,
-            comment_rs.size,
-            comment_rs.height,
-            comment_rs.width,
-        )
-        for comment_rs in res_rs
-    ]
+    return read_comments_from_protobuf(protobuf, fontsize)
 
 
 class AssText:
     def __init__(self):
         self._text = ""
 
-    def write_comment_bilibili_positioned(self, c, width, height, styleid):
+    def write_comment_special(self, comment: Comment, width, height, styleid):
         # BiliPlayerSize = (512, 384)  # Bilibili player version 2010
         # BiliPlayerSize = (540, 384)  # Bilibili player version 2012
         # BiliPlayerSize = (672, 438)  # Bilibili player version 2014
@@ -124,7 +57,7 @@ class AssText:
                 return get_position(InputPos, isHeight)
 
         try:
-            special_comment_data = json.loads(c[3])
+            special_comment_data = json.loads(comment.comment)
             if not isinstance(special_comment_data, list):
                 raise ValueError("Invalid comment")
             comment_args = safe_list(special_comment_data)
@@ -167,10 +100,10 @@ class AssText:
                 styles.append(")")
             if fontface:
                 styles.append(f"\\fn{ass_escape(fontface)}")
-            styles.append("\\fs%.0f" % (c[6] * ZoomFactor[0]))
-            if c[5] != 0xFFFFFF:
-                styles.append(f"\\c&H{convert_color(c[5])}&")
-                if c[5] == 0x000000:
+            styles.append("\\fs%.0f" % (comment.size * ZoomFactor[0]))
+            if comment.color != 0xFFFFFF:
+                styles.append(f"\\c&H{convert_color(comment.color)}&")
+                if comment.color == 0x000000:
                     styles.append("\\3c&HFFFFFF&")
             if from_alpha == to_alpha:
                 styles.append(f"\\alpha&H{from_alpha:02X}")
@@ -185,17 +118,17 @@ class AssText:
             if isborder == "false":
                 styles.append("\\bord0")
             self._text += "Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n".format(
-                start=convert_timestamp(c[0]),
-                end=convert_timestamp(c[0] + lifetime),
+                start=convert_timestamp(comment.timeline),
+                end=convert_timestamp(comment.timeline + lifetime),
                 styles="".join(styles),
                 text=text,
                 styleid=styleid,
             )
         except (IndexError, ValueError):
             try:
-                logging.warning(f"Invalid comment: {c[3]!r}")
+                logging.warning(f"Invalid comment: {comment.comment!r}")
             except IndexError:
-                logging.warning(f"Invalid comment: {c!r}")
+                logging.warning(f"Invalid comment: {comment!r}")
 
     def write_head(self, width, height, fontface, fontsize, alpha, styleid):
         self._text += """[Script Info]
@@ -229,7 +162,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def write_comment(
         self,
-        c,
+        comment: Comment,
         row,
         width,
         height,
@@ -239,12 +172,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         duration_still,
         styleid,
     ):
-        text = ass_escape(c[3])
+        text = ass_escape(comment.comment)
         styles = []
-        if c[4] == 1:
+        if comment.pos == CommentPosition.Bottom:
             styles.append("\\an8\\pos(%(halfwidth)d, %(row)d)" % {"halfwidth": width / 2, "row": row})
             duration = duration_still
-        elif c[4] == 2:
+        elif comment.pos == CommentPosition.Top:
             styles.append(
                 "\\an2\\pos(%(halfwidth)d, %(row)d)"
                 % {
@@ -253,27 +186,27 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 }
             )
             duration = duration_still
-        elif c[4] == 3:
+        elif comment.pos == CommentPosition.Reversed:
             styles.append(
                 "\\move(%(neglen)d, %(row)d, %(width)d, %(row)d)"
-                % {"width": width, "row": row, "neglen": -math.ceil(c[8])}
+                % {"width": width, "row": row, "neglen": -math.ceil(comment.width)}
             )
             duration = duration_marquee
         else:
             styles.append(
                 "\\move(%(width)d, %(row)d, %(neglen)d, %(row)d)"
-                % {"width": width, "row": row, "neglen": -math.ceil(c[8])}
+                % {"width": width, "row": row, "neglen": -math.ceil(comment.width)}
             )
             duration = duration_marquee
-        if not (-1 < c[6] - fontsize < 1):
-            styles.append(f"\\fs{c[6]:.0f}")
-        if c[5] != 0xFFFFFF:
-            styles.append(f"\\c&H{convert_color(c[5])}&")
-            if c[5] == 0x000000:
+        if not (-1 < comment.size - fontsize < 1):
+            styles.append(f"\\fs{comment.size:.0f}")
+        if comment.color != 0xFFFFFF:
+            styles.append(f"\\c&H{convert_color(comment.color)}&")
+            if comment.color == 0x000000:
                 styles.append("\\3c&HFFFFFF&")
         self._text += "Dialogue: 2,{start},{end},{styleid},,0000,0000,0000,,{{{styles}}}{text}\n".format(
-            start=convert_timestamp(c[0]),
-            end=convert_timestamp(c[0] + duration),
+            start=convert_timestamp(comment.timeline),
+            end=convert_timestamp(comment.timeline + duration),
             styles="".join(styles),
             text=text,
             styleid=styleid,
@@ -288,32 +221,32 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 # Result: (f, dx, dy)
 # To convert: NewX = f*x+dx, NewY = f*y+dy
-def get_zoom_factor(SourceSize, TargetSize):
+def get_zoom_factor(source_size, target_size):
     try:
-        if (SourceSize, TargetSize) == get_zoom_factor.cached_size:
+        if (source_size, target_size) == get_zoom_factor.cached_size:
             return get_zoom_factor.cached_result
     except AttributeError:
         pass
-    get_zoom_factor.cached_size = (SourceSize, TargetSize)
+    get_zoom_factor.cached_size = (source_size, target_size)
     try:
-        SourceAspect = SourceSize[0] / SourceSize[1]
-        TargetAspect = TargetSize[0] / TargetSize[1]
-        if TargetAspect < SourceAspect:  # narrower
-            ScaleFactor = TargetSize[0] / SourceSize[0]
+        source_aspect = source_size[0] / source_size[1]
+        target_aspect = target_size[0] / target_size[1]
+        if target_aspect < source_aspect:  # narrower
+            ScaleFactor = target_size[0] / source_size[0]
             get_zoom_factor.cached_result = (
                 ScaleFactor,
                 0,
-                (TargetSize[1] - TargetSize[0] / SourceAspect) / 2,
+                (target_size[1] - target_size[0] / source_aspect) / 2,
             )
-        elif TargetAspect > SourceAspect:  # wider
-            ScaleFactor = TargetSize[1] / SourceSize[1]
+        elif target_aspect > source_aspect:  # wider
+            ScaleFactor = target_size[1] / source_size[1]
             get_zoom_factor.cached_result = (
                 ScaleFactor,
-                (TargetSize[0] - TargetSize[1] * SourceAspect) / 2,
+                (target_size[0] - target_size[1] * source_aspect) / 2,
                 0,
             )
         else:
-            get_zoom_factor.cached_result = (TargetSize[0] / SourceSize[0], 0, 0)
+            get_zoom_factor.cached_result = (target_size[0] / source_size[0], 0, 0)
         return get_zoom_factor.cached_result
     except ZeroDivisionError:
         get_zoom_factor.cached_result = (1, 0, 0)
@@ -397,7 +330,12 @@ def process_comments(
     for idx, comment in enumerate(comments):
         if progress_callback and idx % 1000 == 0:
             progress_callback(idx, len(comments))
-        if isinstance(comment.pos, int):
+        if comment.pos in (
+            CommentPosition.Scroll,
+            CommentPosition.Bottom,
+            CommentPosition.Top,
+            CommentPosition.Reversed,
+        ):
             skip = False
             for filter_regex in filters_regex:
                 if filter_regex and filter_regex.search(comment.comment):
@@ -449,8 +387,8 @@ def process_comments(
                         duration_still,
                         styleid,
                     )
-        elif comment.pos == "bilipos":
-            ass.write_comment_bilibili_positioned(comment, width, height, styleid)
+        elif comment.pos == CommentPosition.Special:
+            ass.write_comment_special(comment, width, height, styleid)
         else:
             logging.warning(f"Invalid comment: {comment.comment!r}")
     if progress_callback:
@@ -471,11 +409,12 @@ def test_free_rows(
     res = 0
     rowmax = height - bottom_reserved
     target_row = None
-    if comment.pos in (1, 2):
+    comment_pos_id = comment.pos.id
+    if comment.pos in (CommentPosition.Bottom, CommentPosition.Top):
         while row < rowmax and res < comment.height:
-            if target_row != rows[comment.pos][row]:
-                target_row = rows[comment.pos][row]
-                if target_row and target_row[0] + duration_still > comment.timeline:
+            if target_row != rows[comment_pos_id][row]:
+                target_row = rows[comment_pos_id][row]
+                if target_row and target_row.timeline + duration_still > comment.timeline:
                     break
             row += 1
             res += 1
@@ -485,12 +424,13 @@ def test_free_rows(
         except ZeroDivisionError:
             threshold_time = comment.timeline - duration_marquee
         while row < rowmax and res < comment.height:
-            if target_row != rows[comment.pos][row]:
-                target_row = rows[comment.pos][row]
+            if target_row != rows[comment_pos_id][row]:
+                target_row = rows[comment_pos_id][row]
                 try:
                     if target_row and (
-                        target_row[0] > threshold_time
-                        or target_row[0] + target_row[8] * duration_marquee / (target_row[8] + width) > comment.timeline
+                        target_row.timeline > threshold_time
+                        or target_row.timeline + target_row.width * duration_marquee / (target_row.width + width)
+                        > comment.timeline
                     ):
                         break
                 except ZeroDivisionError:
@@ -502,18 +442,20 @@ def test_free_rows(
 
 def find_alternative_row(rows, comment: Comment, height, bottom_reserved):
     res = 0
+    comment_pos_id = comment.pos.id
     for row in range(height - bottom_reserved - math.ceil(comment.height)):
-        if not rows[comment.pos][row]:
+        if not rows[comment_pos_id][row]:
             return row
-        elif rows[comment.pos][row][0] < rows[comment.pos][res][0]:
+        elif rows[comment_pos_id][row].timeline < rows[comment_pos_id][res].timeline:
             res = row
     return res
 
 
 def mark_comment_row(rows: list[Comment | None], comment: Comment, row: int):
+    comment_pos_id = comment.pos.id
     try:
         for i in range(row, row + math.ceil(comment.height)):
-            rows[comment.pos][i] = comment
+            rows[comment_pos_id][i] = comment
     except IndexError:
         pass
 
@@ -618,7 +560,19 @@ def Danmaku2ASS(
             if isinstance(input, str):
                 logging.warning("Protobuf can only be read from bytes")
             comments.extend(read_comments_bilibili_protobuf(input, font_size))
-    comments.sort()
+    comments.sort(
+        key=lambda comment: (
+            comment.timeline,
+            comment.timestamp,
+            comment.no,
+            comment.comment,
+            comment.pos,
+            comment.color,
+            comment.size,
+            comment.height,
+            comment.width,
+        )
+    )
     return process_comments(
         comments,
         stage_width,
