@@ -1,3 +1,5 @@
+use cached::proc_macro::cached;
+
 fn divmod(a: f64, b: f64) -> (f64, f64) {
     (a / b, a % b)
 }
@@ -72,5 +74,32 @@ pub fn convert_color(rgb: u32, width: Option<u32>, height: Option<u32>) -> Strin
                 .clamp(0.0, 255.0)
                 .round() as u8,
         )
+    }
+}
+
+#[cached]
+pub fn get_zoom_factor(source_size: (u32, u32), target_size: (u32, u32)) -> (f32, f32, f32) {
+    let source_size = (source_size.0 as f32, source_size.1 as f32);
+    let target_size = (target_size.0 as f32, target_size.1 as f32);
+    let source_aspect = source_size.0 / source_size.1;
+    let target_aspect = target_size.0 / target_size.1;
+    if target_aspect < source_aspect {
+        // narrower
+        let scale_factor = target_size.0 / source_size.0;
+        (
+            scale_factor,
+            0.0,
+            (target_size.1 - target_size.0 / source_aspect) / 2.0,
+        )
+    } else if target_aspect > source_aspect {
+        // wider
+        let scale_factor = target_size.1 / source_size.1;
+        (
+            scale_factor,
+            (target_size.0 - target_size.1 * source_aspect) / 2.0,
+            0.0,
+        )
+    } else {
+        (target_size.0 / source_size.0, 0.0, 0.0)
     }
 }

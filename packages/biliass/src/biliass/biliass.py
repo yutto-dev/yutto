@@ -15,6 +15,7 @@ from biliass._core import (
     ass_escape,
     convert_color,
     convert_timestamp,
+    get_zoom_factor,
     read_comments_from_protobuf,
     read_comments_from_xml,
 )
@@ -225,40 +226,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def to_string(self):
         return self._text
-
-
-# Result: (f, dx, dy)
-# To convert: NewX = f*x+dx, NewY = f*y+dy
-def get_zoom_factor(source_size, target_size):
-    try:
-        if (source_size, target_size) == get_zoom_factor.cached_size:
-            return get_zoom_factor.cached_result
-    except AttributeError:
-        pass
-    get_zoom_factor.cached_size = (source_size, target_size)
-    try:
-        source_aspect = source_size[0] / source_size[1]
-        target_aspect = target_size[0] / target_size[1]
-        if target_aspect < source_aspect:  # narrower
-            ScaleFactor = target_size[0] / source_size[0]
-            get_zoom_factor.cached_result = (
-                ScaleFactor,
-                0,
-                (target_size[1] - target_size[0] / source_aspect) / 2,
-            )
-        elif target_aspect > source_aspect:  # wider
-            ScaleFactor = target_size[1] / source_size[1]
-            get_zoom_factor.cached_result = (
-                ScaleFactor,
-                (target_size[0] - target_size[1] * source_aspect) / 2,
-                0,
-            )
-        else:
-            get_zoom_factor.cached_result = (target_size[0] / source_size[0], 0, 0)
-        return get_zoom_factor.cached_result
-    except ZeroDivisionError:
-        get_zoom_factor.cached_result = (1, 0, 0)
-        return get_zoom_factor.cached_result
 
 
 # Calculation is based on https://github.com/jabbany/CommentCoreLibrary/issues/5#issuecomment-40087282
