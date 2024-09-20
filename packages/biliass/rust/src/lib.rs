@@ -29,5 +29,6 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_ass_escape, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_convert_color, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_get_zoom_factor, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_convert_flash_rotation, m)?)?;
     Ok(())
 }
