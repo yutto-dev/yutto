@@ -126,7 +126,7 @@ pub fn convert_flash_rotation(
     }
     let (out_x, out_y, out_z, rot_y, rot_z) = if rot_y == 0. || rot_z == 0. {
         let out_x = 0.;
-        let out_y = -rot_y;
+        let out_y = -rot_y; // Positive value means clockwise in Flash
         let out_z = -rot_z;
         let rot_y_rad = rot_y * pi_angle;
         let rot_z_rad = rot_z * pi_angle;
