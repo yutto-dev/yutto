@@ -3,6 +3,7 @@ mod error;
 mod proto;
 mod python;
 mod reader;
+mod writer;
 
 use error::BiliassError;
 use pyo3::exceptions::PyValueError;
@@ -24,5 +25,6 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<python::PyCommentPosition>()?;
     m.add_function(wrap_pyfunction!(python::py_read_comments_from_xml, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_read_comments_from_protobuf, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_convert_timestamp, m)?)?;
     Ok(())
 }
