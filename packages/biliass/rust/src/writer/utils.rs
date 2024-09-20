@@ -54,15 +54,6 @@ pub fn convert_color(rgb: u32, width: Option<u32>, height: Option<u32>) -> Strin
     if width < 1280 && height < 576 {
         format!("{:02X}{:02X}{:02X}", b, g, r)
     } else {
-        let clip_byte = |x: f64| -> u8 {
-            if x > 255.0 {
-                255
-            } else if x < 0.0 {
-                0
-            } else {
-                x.round() as u8
-            }
-        };
         format!(
             "{:02X}{:02X}{:02X}",
             (r as f64 * 0.009_563_840_880_806_56
