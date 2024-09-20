@@ -13,6 +13,7 @@ from biliass._core import (
     Comment,
     CommentPosition,
     ass_escape,
+    convert_color,
     convert_timestamp,
     read_comments_from_protobuf,
     read_comments_from_xml,
@@ -465,45 +466,6 @@ def mark_comment_row(rows: list[Comment | None], comment: Comment, row: int):
             rows[comment_pos_id][i] = comment
     except IndexError:
         pass
-
-
-def ass_escape_py(s):
-    def replace_leading_space(s):
-        sstrip = s.strip(" ")
-        slen = len(s)
-        if slen == len(sstrip):
-            return s
-        else:
-            llen = slen - len(s.lstrip(" "))
-            rlen = slen - len(s.rstrip(" "))
-            return "".join(("\u2007" * llen, sstrip, "\u2007" * rlen))
-
-    return "\\N".join(
-        replace_leading_space(i) or " "
-        for i in str(s).replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").split("\n")
-    )
-
-
-def convert_color(RGB, width=1280, height=576):
-    if RGB == 0x000000:
-        return "000000"
-    elif RGB == 0xFFFFFF:
-        return "FFFFFF"
-    R = (RGB >> 16) & 0xFF
-    G = (RGB >> 8) & 0xFF
-    B = RGB & 0xFF
-    if width < 1280 and height < 576:
-        return f"{B:02X}{G:02X}{R:02X}"
-    else:  # VobSub always uses BT.601 colorspace, convert to BT.709
-
-        def clip_byte(x):
-            return 255 if x > 255 else 0 if x < 0 else round(x)
-
-        return "{:02X}{:02X}{:02X}".format(  # noqa: UP032
-            clip_byte(R * 0.00956384088080656 + G * 0.03217254540203729 + B * 0.95826361371715607),
-            clip_byte(R * -0.10493933142075390 + G * 1.17231478191855154 + B * -0.06737545049779757),
-            clip_byte(R * 0.91348912373987645 + G * 0.07858536372532510 + B * 0.00792551253479842),
-        )
 
 
 def convert_type2(row, height, bottom_reserved):

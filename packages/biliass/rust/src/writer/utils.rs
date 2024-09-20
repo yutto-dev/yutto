@@ -39,3 +39,38 @@ pub fn ass_escape(text: &str) -> String {
         .collect::<Vec<_>>()
         .join("\\N")
 }
+
+pub fn convert_color(rgb: u32, width: Option<u32>, height: Option<u32>) -> String {
+    let width = width.unwrap_or(1280);
+    let height = height.unwrap_or(576);
+    if rgb == 0x000000 {
+        return "000000".to_owned();
+    } else if rgb == 0xFFFFFF {
+        return "FFFFFF".to_owned();
+    }
+    let r = (rgb >> 16) & 0xFF;
+    let g = (rgb >> 8) & 0xFF;
+    let b = rgb & 0xFF;
+    if width < 1280 && height < 576 {
+        format!("{:02X}{:02X}{:02X}", b, g, r)
+    } else {
+        format!(
+            "{:02X}{:02X}{:02X}",
+            (r as f64 * 0.009_563_840_880_806_56
+                + g as f64 * 0.032_172_545_402_037_29
+                + b as f64 * 0.958_263_613_717_156_1)
+                .clamp(0.0, 255.0)
+                .round() as u8,
+            (r as f64 * -0.104_939_331_420_753_9
+                + g as f64 * 1.172_314_781_918_551_5
+                + b as f64 * -0.067_375_450_497_797_57)
+                .clamp(0.0, 255.0)
+                .round() as u8,
+            (r as f64 * 0.913_489_123_739_876_5
+                + g as f64 * 0.078_585_363_725_325_1
+                + b as f64 * 0.007_925_512_534_798_42)
+                .clamp(0.0, 255.0)
+                .round() as u8,
+        )
+    }
+}
