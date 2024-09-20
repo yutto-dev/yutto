@@ -7,7 +7,7 @@ import logging
 import math
 import random
 import re
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, TypeVar, Union
 
 from biliass._core import (
     Comment,
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
+Rows = list[list[Union[Comment, None]]]
 
 
 def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> list[Comment]:
@@ -314,7 +315,7 @@ def process_comments(
 
 
 def test_free_rows(
-    rows: list[Comment | None],
+    rows: Rows,
     comment: Comment,
     row: int,
     width,
@@ -357,7 +358,7 @@ def test_free_rows(
     return res
 
 
-def find_alternative_row(rows, comment: Comment, height, bottom_reserved):
+def find_alternative_row(rows: Rows, comment: Comment, height, bottom_reserved):
     res = 0
     comment_pos_id = comment.pos.id
     for row in range(height - bottom_reserved - math.ceil(comment.height)):
@@ -368,7 +369,7 @@ def find_alternative_row(rows, comment: Comment, height, bottom_reserved):
     return res
 
 
-def mark_comment_row(rows: list[Comment | None], comment: Comment, row: int):
+def mark_comment_row(rows: Rows, comment: Comment, row: int):
     comment_pos_id = comment.pos.id
     try:
         for i in range(row, row + math.ceil(comment.height)):
