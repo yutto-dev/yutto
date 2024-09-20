@@ -103,3 +103,77 @@ pub fn get_zoom_factor(source_size: (u32, u32), target_size: (u32, u32)) -> (f32
         (target_size.0 / source_size.0, 0.0, 0.0)
     }
 }
+
+// Calculation is based on https://github.com/jabbany/CommentCoreLibrary/issues/5#issuecomment-40087282
+//                      and https://github.com/m13253/danmaku2ass/issues/7#issuecomment-41489422
+// ASS FOV = width*4/3.0
+// But Flash FOV = width/math.tan(100*math.pi/360.0)/2 will be used instead
+// Result: (trans_x, trans_y, rot_x, rot_y, rot_z, scale_x, scale_y)
+pub fn convert_flash_rotation(
+    rot_y: f64,
+    rot_z: f64,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> (f64, f64, f64, f64, f64, f64, f64) {
+    let wrap_angle = |deg: f64| -> f64 { 180.0 - ((180.0 - deg).rem_euclid(360.0)) };
+    let mut rot_y = wrap_angle(rot_y);
+    let rot_z = wrap_angle(rot_z);
+    let pi_angle = std::f64::consts::PI / 180.0;
+    if rot_y == 90.0 || rot_y == -90.0 {
+        rot_y -= 1.0;
+    }
+    let (out_x, out_y, out_z, rot_y, rot_z) = if rot_y == 0. || rot_z == 0. {
+        let out_x = 0.;
+        let out_y = -rot_y; // Positive value means clockwise in Flash
+        let out_z = -rot_z;
+        let rot_y_rad = rot_y * pi_angle;
+        let rot_z_rad = rot_z * pi_angle;
+        (out_x, out_y, out_z, rot_y_rad, rot_z_rad)
+    } else {
+        let rot_y_rad = rot_y * pi_angle;
+        let rot_z_rad = rot_z * pi_angle;
+        let out_y = (-rot_y_rad.sin() * rot_z_rad.cos()).atan2(rot_y_rad.cos()) / pi_angle;
+        let out_z = (-rot_y_rad.cos() * rot_z_rad.sin()).atan2(rot_z_rad.cos()) / pi_angle;
+        let out_x = (rot_y_rad.sin() * rot_z_rad.sin()).asin() / pi_angle;
+        (out_x, out_y, out_z, rot_y_rad, rot_z_rad)
+    };
+    let trans_x = (x * rot_z.cos() + y * rot_z.sin()) / rot_y.cos()
+        + (1.0 - rot_z.cos() / rot_y.cos()) * width / 2.0
+        - rot_z.sin() / rot_y.cos() * height / 2.0;
+    let trans_y = y * rot_z.cos() - x * rot_z.sin()
+        + rot_z.sin() * width / 2.0
+        + (1.0 - rot_z.cos()) * height / 2.0;
+    let trans_z = (trans_x - width / 2.0) * rot_y.sin();
+    let fov = width * (2.0 * std::f64::consts::PI / 9.0).tan() / 2.0;
+    let scale_xy = if fov + trans_z != 0.0 {
+        fov / (fov + trans_z)
+    } else {
+        // eprintln!(
+        //     "Rotation makes object behind the camera: trZ == {:.0}",
+        //     trans_z
+        // );
+        1.
+    };
+    let trans_x = (trans_x - width / 2.0) * scale_xy + width / 2.0;
+    let trans_y = (trans_y - height / 2.0) * scale_xy + height / 2.0;
+    let (scale_xy, out_x, out_y) = if scale_xy < 0. {
+        // eprintln!(
+        //     "Rotation makes object behind the camera: trZ == {:.0} < {:.0}",
+        //     trans_z, fov
+        // );
+        (-scale_xy, out_x + 180., out_y + 180.)
+    } else {
+        (scale_xy, out_x, out_y)
+    };
+    (
+        trans_x,
+        trans_y,
+        wrap_angle(out_x),
+        wrap_angle(out_y),
+        wrap_angle(out_z),
+        scale_xy * 100.,
+        scale_xy * 100.,
+    )
+}

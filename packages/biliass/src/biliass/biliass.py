@@ -14,6 +14,7 @@ from biliass._core import (
     CommentPosition,
     ass_escape,
     convert_color,
+    convert_flash_rotation,
     convert_timestamp,
     get_zoom_factor,
     read_comments_from_protobuf,
@@ -221,67 +222,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             styleid=styleid,
         )
 
-    def to_file(self, f):
-        f.write(self._text)
-
     def to_string(self):
         return self._text
-
-
-# Calculation is based on https://github.com/jabbany/CommentCoreLibrary/issues/5#issuecomment-40087282
-#                     and https://github.com/m13253/danmaku2ass/issues/7#issuecomment-41489422
-# ASS FOV = width*4/3.0
-# But Flash FOV = width/math.tan(100*math.pi/360.0)/2 will be used instead
-# Result: (transX, transY, rotX, rotY, rotZ, scaleX, scaleY)
-def convert_flash_rotation(rotY, rotZ, X, Y, width, height):
-    def wrap_angle(deg):
-        return 180 - ((180 - deg) % 360)
-
-    rotY = wrap_angle(rotY)
-    rotZ = wrap_angle(rotZ)
-    if rotY in (90, -90):
-        rotY -= 1
-    if rotY == 0 or rotZ == 0:
-        outX = 0
-        outY = -rotY  # Positive value means clockwise in Flash
-        outZ = -rotZ
-        rotY *= math.pi / 180.0
-        rotZ *= math.pi / 180.0
-    else:
-        rotY *= math.pi / 180.0
-        rotZ *= math.pi / 180.0
-        outY = math.atan2(-math.sin(rotY) * math.cos(rotZ), math.cos(rotY)) * 180 / math.pi
-        outZ = math.atan2(-math.cos(rotY) * math.sin(rotZ), math.cos(rotZ)) * 180 / math.pi
-        outX = math.asin(math.sin(rotY) * math.sin(rotZ)) * 180 / math.pi
-    trX = (
-        (X * math.cos(rotZ) + Y * math.sin(rotZ)) / math.cos(rotY)
-        + (1 - math.cos(rotZ) / math.cos(rotY)) * width / 2
-        - math.sin(rotZ) / math.cos(rotY) * height / 2
-    )
-    trY = Y * math.cos(rotZ) - X * math.sin(rotZ) + math.sin(rotZ) * width / 2 + (1 - math.cos(rotZ)) * height / 2
-    trZ = (trX - width / 2) * math.sin(rotY)
-    FOV = width * math.tan(2 * math.pi / 9.0) / 2
-    try:
-        scaleXY = FOV / (FOV + trZ)
-    except ZeroDivisionError:
-        logging.error(f"Rotation makes object behind the camera: trZ == {trZ:.0f}")
-        scaleXY = 1
-    trX = (trX - width / 2) * scaleXY + width / 2
-    trY = (trY - height / 2) * scaleXY + height / 2
-    if scaleXY < 0:
-        scaleXY = -scaleXY
-        outX += 180
-        outY += 180
-        logging.error(f"Rotation makes object behind the camera: trZ == {trZ:.0f} < {FOV:.0f}")
-    return (
-        trX,
-        trY,
-        wrap_angle(outX),
-        wrap_angle(outY),
-        wrap_angle(outZ),
-        scaleXY * 100,
-        scaleXY * 100,
-    )
 
 
 def process_comments(

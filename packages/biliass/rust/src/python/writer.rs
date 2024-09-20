@@ -25,3 +25,17 @@ pub fn py_get_zoom_factor(
 ) -> PyResult<(f32, f32, f32)> {
     Ok(writer::utils::get_zoom_factor(source_size, target_size))
 }
+
+#[pyfunction(name = "convert_flash_rotation")]
+pub fn py_convert_flash_rotation(
+    rot_y: f64,
+    rot_z: f64,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+) -> PyResult<(f64, f64, f64, f64, f64, f64, f64)> {
+    Ok(writer::utils::convert_flash_rotation(
+        rot_y, rot_z, x, y, width, height,
+    ))
+}
