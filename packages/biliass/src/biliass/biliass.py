@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, TypeVar
 from biliass._core import (
     Comment,
     CommentPosition,
+    ass_escape,
     convert_timestamp,
     read_comments_from_protobuf,
     read_comments_from_xml,
@@ -466,7 +467,7 @@ def mark_comment_row(rows: list[Comment | None], comment: Comment, row: int):
         pass
 
 
-def ass_escape(s):
+def ass_escape_py(s):
     def replace_leading_space(s):
         sstrip = s.strip(" ")
         slen = len(s)

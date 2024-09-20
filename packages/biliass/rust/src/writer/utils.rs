@@ -14,3 +14,28 @@ pub fn convert_timestamp(timestamp: f64) -> String {
 
     format!("{}:{:02}:{:02}.{:02}", hour, minute, second, centsecond)
 }
+
+pub fn ass_escape(text: &str) -> String {
+    text.replace("\\", "\\\\")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+        .split('\n')
+        .map(|line| {
+            let stripped = line.trim_matches(' ');
+            let size = line.len();
+            if stripped.len() == size {
+                line.to_owned()
+            } else {
+                let leading_spaces = line.len() - line.trim_start_matches(' ').len();
+                let trailing_spaces = line.len() - line.trim_end_matches(' ').len();
+                format!(
+                    "{}{}{}",
+                    "\u{2007}".repeat(leading_spaces),
+                    stripped,
+                    "\u{2007}".repeat(trailing_spaces)
+                )
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\\N")
+}
