@@ -7,9 +7,15 @@ import logging
 import math
 import random
 import re
-from typing import TYPE_CHECKING, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
-from biliass._core import Comment, CommentPosition, read_comments_from_protobuf, read_comments_from_xml
+from biliass._core import (
+    Comment,
+    CommentPosition,
+    convert_timestamp,
+    read_comments_from_protobuf,
+    read_comments_from_xml,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -475,14 +481,6 @@ def ass_escape(s):
         replace_leading_space(i) or " "
         for i in str(s).replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").split("\n")
     )
-
-
-def convert_timestamp(timestamp):
-    timestamp = round(timestamp * 100.0)
-    hour, minute = divmod(timestamp, 360000)
-    minute, second = divmod(minute, 6000)
-    second, centsecond = divmod(second, 100)
-    return "%d:%02d:%02d.%02d" % (int(hour), int(minute), int(second), int(centsecond))
 
 
 def convert_color(RGB, width=1280, height=576):
