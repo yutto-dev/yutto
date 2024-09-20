@@ -26,5 +26,6 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_read_comments_from_xml, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_read_comments_from_protobuf, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_convert_timestamp, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_ass_escape, m)?)?;
     Ok(())
 }
