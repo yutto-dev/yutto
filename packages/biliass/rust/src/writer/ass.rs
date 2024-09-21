@@ -97,64 +97,7 @@ pub fn write_comment(
     format!("Dialogue: 2,{start},{end},{styleid},,0000,0000,0000,,{{{styles}}}{text}\n")
 }
 
-// def write_normal_comment(
-//     self,
-//     rows: Rows,
-//     comment: Comment,
-//     width: int,
-//     height: int,
-//     bottom_reserved: int,
-//     fontsize: float,
-//     duration_marquee: float,
-//     duration_still: float,
-//     styleid: str,
-//     reduced: bool,
-// ):
-//     row = 0
-//     rowmax = height - bottom_reserved - comment.height
-//     while row <= rowmax:
-//         freerows = test_free_rows(
-//             rows,
-//             comment,
-//             row,
-//             width,
-//             height,
-//             bottom_reserved,
-//             duration_marquee,
-//             duration_still,
-//         )
-//         if freerows >= comment.height:
-//             mark_comment_row(rows, comment, row)
-//             self.write_comment(
-//                 comment,
-//                 row,
-//                 width,
-//                 height,
-//                 bottom_reserved,
-//                 fontsize,
-//                 duration_marquee,
-//                 duration_still,
-//                 styleid,
-//             )
-//             break
-//         else:
-//             row += freerows or 1
-//     else:
-//         if not reduced:
-//             row = find_alternative_row(rows, comment, height, bottom_reserved)
-//             mark_comment_row(rows, comment, row)
-//             self.write_comment(
-//                 comment,
-//                 row,
-//                 width,
-//                 height,
-//                 bottom_reserved,
-//                 fontsize,
-//                 duration_marquee,
-//                 duration_still,
-//                 styleid,
-//             )
-
+#[allow(clippy::too_many_arguments)]
 pub fn write_normal_comment(
     rows: &mut rows::Rows,
     comment: &Comment,
