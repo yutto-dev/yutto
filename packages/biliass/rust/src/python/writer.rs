@@ -110,3 +110,13 @@ pub fn py_find_alternative_row(
         bottom_reserved,
     ))
 }
+
+#[pyfunction(name = "mark_comment_row")]
+pub fn py_mark_comment_row(
+    rows: &mut python::writer::PyRows,
+    comment: &crate::python::PyComment,
+    row: usize,
+) -> PyResult<()> {
+    writer::rows::mark_comment_row(&mut rows.inner, &comment.inner, row);
+    Ok(())
+}
