@@ -1,5 +1,4 @@
 use crate::python;
-use crate::writer::ass::write_comment;
 use crate::writer::{self, rows};
 
 use pyo3::prelude::*;
@@ -101,8 +100,8 @@ pub fn py_test_free_rows(
 pub fn py_find_alternative_row(
     rows: &python::writer::PyRows,
     comment: &crate::python::PyComment,
-    height: usize,
-    bottom_reserved: usize,
+    height: u32,
+    bottom_reserved: u32,
 ) -> PyResult<usize> {
     Ok(writer::rows::find_alternative_row(
         &rows.inner,
@@ -145,11 +144,11 @@ pub fn py_write_comment(
     height: u32,
     bottom_reserved: u32,
     fontsize: f32,
-    duration_marquee: f32,
-    duration_still: f32,
+    duration_marquee: f64,
+    duration_still: f64,
     styleid: &str,
 ) -> PyResult<String> {
-    Ok(write_comment(
+    Ok(writer::ass::write_comment(
         &comment.inner,
         row,
         width,
@@ -161,3 +160,43 @@ pub fn py_write_comment(
         styleid,
     ))
 }
+
+#[allow(clippy::too_many_arguments)]
+#[pyfunction(name = "write_normal_comment")]
+pub fn py_write_normal_comment(
+    rows: &mut python::writer::PyRows,
+    comment: &crate::python::PyComment,
+    width: u32,
+    height: u32,
+    bottom_reserved: u32,
+    fontsize: f32,
+    duration_marquee: f64,
+    duration_still: f64,
+    styleid: &str,
+    reduced: bool,
+) -> PyResult<String> {
+    Ok(writer::ass::write_normal_comment(
+        &mut rows.inner,
+        &comment.inner,
+        width,
+        height,
+        bottom_reserved,
+        fontsize,
+        duration_marquee,
+        duration_still,
+        styleid,
+        reduced,
+    ))
+}
+// pub fn write_normal_comment(
+//     rows: &mut rows::Rows,
+//     comment: &Comment,
+//     width: u32,
+//     height: u32,
+//     bottom_reserved: u32,
+//     fontsize: f32,
+//     duration_marquee: f64,
+//     duration_still: f64,
+//     styleid: &str,
+//     reduced: bool,
+// ) -> String {

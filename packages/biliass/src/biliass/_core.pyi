@@ -103,3 +103,15 @@ def write_comment(
     duration_still: float,
     styleid: str,
 ) -> str: ...
+def write_normal_comment(
+    rows: Rows,
+    comment: Comment,
+    width: int,
+    height: int,
+    bottom_reserved: int,
+    fontsize: float,
+    duration_marquee: float,
+    duration_still: float,
+    styleid: str,
+    reduced: bool,
+) -> str: ...

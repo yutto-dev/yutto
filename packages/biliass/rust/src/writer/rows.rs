@@ -61,12 +61,12 @@ pub fn test_free_rows(
 pub fn find_alternative_row(
     rows: &Rows,
     comment: &Comment,
-    height: usize,
-    bottom_reserved: usize,
+    height: u32,
+    bottom_reserved: u32,
 ) -> usize {
     let mut res = 0;
     let comment_pos_id = comment.pos.clone() as usize;
-    for row in 0..(height - bottom_reserved - comment.height.ceil() as usize) {
+    for row in 0..(height as usize - bottom_reserved as usize - comment.height.ceil() as usize) {
         match &rows[comment_pos_id][row] {
             None => return row,
             Some(comment) => {
