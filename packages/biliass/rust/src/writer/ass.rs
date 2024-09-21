@@ -1,4 +1,5 @@
 use crate::comment::{Comment, CommentPosition};
+use crate::writer::rows;
 use crate::writer::utils;
 
 pub fn write_head(
@@ -47,8 +48,8 @@ pub fn write_comment(
     height: u32,
     bottom_reserved: u32,
     fontsize: f32,
-    duration_marquee: f32,
-    duration_still: f32,
+    duration_marquee: f64,
+    duration_still: f64,
     styleid: &str,
 ) -> String {
     let text = utils::ass_escape(&comment.comment);
@@ -94,4 +95,122 @@ pub fn write_comment(
     let end = utils::convert_timestamp(comment.timeline + duration as f64);
     let styles = styles.join("");
     format!("Dialogue: 2,{start},{end},{styleid},,0000,0000,0000,,{{{styles}}}{text}\n")
+}
+
+// def write_normal_comment(
+//     self,
+//     rows: Rows,
+//     comment: Comment,
+//     width: int,
+//     height: int,
+//     bottom_reserved: int,
+//     fontsize: float,
+//     duration_marquee: float,
+//     duration_still: float,
+//     styleid: str,
+//     reduced: bool,
+// ):
+//     row = 0
+//     rowmax = height - bottom_reserved - comment.height
+//     while row <= rowmax:
+//         freerows = test_free_rows(
+//             rows,
+//             comment,
+//             row,
+//             width,
+//             height,
+//             bottom_reserved,
+//             duration_marquee,
+//             duration_still,
+//         )
+//         if freerows >= comment.height:
+//             mark_comment_row(rows, comment, row)
+//             self.write_comment(
+//                 comment,
+//                 row,
+//                 width,
+//                 height,
+//                 bottom_reserved,
+//                 fontsize,
+//                 duration_marquee,
+//                 duration_still,
+//                 styleid,
+//             )
+//             break
+//         else:
+//             row += freerows or 1
+//     else:
+//         if not reduced:
+//             row = find_alternative_row(rows, comment, height, bottom_reserved)
+//             mark_comment_row(rows, comment, row)
+//             self.write_comment(
+//                 comment,
+//                 row,
+//                 width,
+//                 height,
+//                 bottom_reserved,
+//                 fontsize,
+//                 duration_marquee,
+//                 duration_still,
+//                 styleid,
+//             )
+
+pub fn write_normal_comment(
+    rows: &mut rows::Rows,
+    comment: &Comment,
+    width: u32,
+    height: u32,
+    bottom_reserved: u32,
+    fontsize: f32,
+    duration_marquee: f64,
+    duration_still: f64,
+    styleid: &str,
+    reduced: bool,
+) -> String {
+    let mut row: usize = 0;
+    let rowmax = height - bottom_reserved - comment.height as u32;
+    while row <= rowmax as usize {
+        let freerows = rows::test_free_rows(
+            rows,
+            comment,
+            row,
+            width,
+            height,
+            bottom_reserved,
+            duration_marquee,
+            duration_still,
+        );
+        if freerows >= comment.height as usize {
+            rows::mark_comment_row(rows, comment, row);
+            return write_comment(
+                comment,
+                row,
+                width,
+                height,
+                bottom_reserved,
+                fontsize,
+                duration_marquee,
+                duration_still,
+                styleid,
+            );
+        } else {
+            row += if freerows == 0 { 1 } else { freerows };
+        }
+    }
+    if !reduced {
+        row = rows::find_alternative_row(rows, comment, height, bottom_reserved);
+        rows::mark_comment_row(rows, comment, row);
+        return write_comment(
+            comment,
+            row,
+            width,
+            height,
+            bottom_reserved,
+            fontsize,
+            duration_marquee,
+            duration_still,
+            styleid,
+        );
+    }
+    "".to_owned()
 }
