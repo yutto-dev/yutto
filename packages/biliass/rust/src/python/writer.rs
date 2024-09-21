@@ -120,3 +120,17 @@ pub fn py_mark_comment_row(
     writer::rows::mark_comment_row(&mut rows.inner, &comment.inner, row);
     Ok(())
 }
+
+#[pyfunction(name = "write_head")]
+pub fn py_write_head(
+    width: i32,
+    height: i32,
+    fontface: &str,
+    fontsize: f32,
+    alpha: f32,
+    styleid: &str,
+) -> PyResult<String> {
+    Ok(writer::ass::write_head(
+        width, height, fontface, fontsize, alpha, styleid,
+    ))
+}
