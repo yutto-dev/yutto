@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 import random
 import re
 from typing import TYPE_CHECKING, TypeVar
@@ -20,7 +19,6 @@ from biliass._core import (
     get_zoom_factor,
     read_comments_from_protobuf,
     read_comments_from_xml,
-    write_comment,
     write_head,
     write_normal_comment,
 )
@@ -146,30 +144,6 @@ class AssText:
 
     def write_head(self, width: int, height: int, fontface: str, fontsize: float, alpha: float, styleid: str) -> None:
         self._text += write_head(width, height, fontface, fontsize, alpha, styleid)
-
-    def write_comment(
-        self,
-        comment: Comment,
-        row: int,
-        width: int,
-        height: int,
-        bottom_reserved: int,
-        fontsize: float,
-        duration_marquee: float,
-        duration_still: float,
-        styleid: str,
-    ):
-        self._text += write_comment(
-            comment,
-            row,
-            width,
-            height,
-            bottom_reserved,
-            fontsize,
-            duration_marquee,
-            duration_still,
-            styleid,
-        )
 
     def write_normal_comment(
         self,

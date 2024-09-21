@@ -3,8 +3,6 @@ use crate::writer::{self, rows};
 
 use pyo3::prelude::*;
 
-use super::PyOptionComment;
-
 #[pyfunction(name = "convert_timestamp")]
 pub fn py_convert_timestamp(timestamp: f64) -> PyResult<String> {
     Ok(writer::utils::convert_timestamp(timestamp))
@@ -62,63 +60,6 @@ impl PyRows {
         }
         PyRows { inner: rows }
     }
-
-    fn get(&self, row: usize, col: usize) -> PyOptionComment {
-        PyOptionComment::new(self.inner[row][col].clone())
-    }
-
-    fn set(&mut self, row: usize, col: usize, value: PyRef<PyOptionComment>) {
-        self.inner[row][col] = value.inner.clone();
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-#[pyfunction(name = "test_free_rows")]
-pub fn py_test_free_rows(
-    rows: &python::writer::PyRows,
-    comment: &crate::python::PyComment,
-    row: usize,
-    width: u32,
-    height: u32,
-    bottom_reserved: u32,
-    duration_marquee: f64,
-    duration_still: f64,
-) -> PyResult<usize> {
-    Ok(writer::rows::test_free_rows(
-        &rows.inner,
-        &comment.inner,
-        row,
-        width,
-        height,
-        bottom_reserved,
-        duration_marquee,
-        duration_still,
-    ))
-}
-
-#[pyfunction(name = "find_alternative_row")]
-pub fn py_find_alternative_row(
-    rows: &python::writer::PyRows,
-    comment: &crate::python::PyComment,
-    height: u32,
-    bottom_reserved: u32,
-) -> PyResult<usize> {
-    Ok(writer::rows::find_alternative_row(
-        &rows.inner,
-        &comment.inner,
-        height,
-        bottom_reserved,
-    ))
-}
-
-#[pyfunction(name = "mark_comment_row")]
-pub fn py_mark_comment_row(
-    rows: &mut python::writer::PyRows,
-    comment: &crate::python::PyComment,
-    row: usize,
-) -> PyResult<()> {
-    writer::rows::mark_comment_row(&mut rows.inner, &comment.inner, row);
-    Ok(())
 }
 
 #[pyfunction(name = "write_head")]
@@ -132,32 +73,6 @@ pub fn py_write_head(
 ) -> PyResult<String> {
     Ok(writer::ass::write_head(
         width, height, fontface, fontsize, alpha, styleid,
-    ))
-}
-
-#[allow(clippy::too_many_arguments)]
-#[pyfunction(name = "write_comment")]
-pub fn py_write_comment(
-    comment: &crate::python::PyComment,
-    row: usize,
-    width: u32,
-    height: u32,
-    bottom_reserved: u32,
-    fontsize: f32,
-    duration_marquee: f64,
-    duration_still: f64,
-    styleid: &str,
-) -> PyResult<String> {
-    Ok(writer::ass::write_comment(
-        &comment.inner,
-        row,
-        width,
-        height,
-        bottom_reserved,
-        fontsize,
-        duration_marquee,
-        duration_still,
-        styleid,
     ))
 }
 
