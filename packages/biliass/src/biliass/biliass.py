@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, TypeVar
 from biliass._core import (
     Comment,
     CommentPosition,
-    OptionComment,
     Rows,
     ass_escape,
     convert_color,
@@ -20,6 +19,7 @@ from biliass._core import (
     convert_timestamp,
     find_alternative_row,
     get_zoom_factor,
+    mark_comment_row,
     read_comments_from_protobuf,
     read_comments_from_xml,
     test_free_rows,
@@ -315,15 +315,6 @@ def process_comments(
     if progress_callback:
         progress_callback(len(comments), len(comments))
     return ass.to_string()
-
-
-def mark_comment_row(rows: Rows, comment: Comment, row: int):
-    comment_pos_id = comment.pos.id
-    try:
-        for i in range(row, row + math.ceil(comment.height)):
-            rows.set(comment_pos_id, i, OptionComment.from_comment(comment))
-    except IndexError:
-        pass
 
 
 def convert_type2(row, height, bottom_reserved):

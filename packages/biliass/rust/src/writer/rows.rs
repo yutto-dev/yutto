@@ -2,6 +2,8 @@ use crate::comment::{Comment, CommentPosition};
 
 pub type Rows = Vec<Vec<Option<Comment>>>;
 
+// TODO(SigureMo): Remove clone in the future
+
 #[allow(clippy::too_many_arguments)]
 pub fn test_free_rows(
     rows: &Rows,
@@ -76,4 +78,22 @@ pub fn find_alternative_row(
         }
     }
     res
+}
+
+// def mark_comment_row(rows: Rows, comment: Comment, row: int):
+//     comment_pos_id = comment.pos.id
+//     try:
+//         for i in range(row, row + math.ceil(comment.height)):
+//             rows.set(comment_pos_id, i, OptionComment.from_comment(comment))
+//     except IndexError:
+//         pass
+
+pub fn mark_comment_row(rows: &mut Rows, comment: &Comment, row: usize) {
+    let comment_pos_id = comment.pos.clone() as usize;
+    for i in row..(row + comment.height.ceil() as usize) {
+        if i >= rows[comment_pos_id].len() {
+            break;
+        }
+        rows[comment_pos_id][i] = Some(comment.clone());
+    }
 }
