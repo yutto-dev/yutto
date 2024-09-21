@@ -9,13 +9,13 @@ name = "biliass_core"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.22.2", features = ["abi3-py39"] }
-bytes = "1.7.1"
-prost = "0.13.2"
+pyo3 = { version = "0.22.3", features = ["abi3-py39"] }
+bytes = "1.7.2"
+prost = "0.13.3"
 thiserror = "1.0.63"
-quick-xml = "0.36.1"
+quick-xml = "0.36.2"
 cached = "0.53.1"
 
 [build-dependencies]
-prost-build = "0.13.2"
+prost-build = "0.13.3"
 protox = "0.7.1"
