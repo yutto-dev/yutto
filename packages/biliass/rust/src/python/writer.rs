@@ -95,3 +95,18 @@ pub fn py_test_free_rows(
         duration_still,
     ))
 }
+
+#[pyfunction(name = "find_alternative_row")]
+pub fn py_find_alternative_row(
+    rows: &python::writer::PyRows,
+    comment: &crate::python::PyComment,
+    height: usize,
+    bottom_reserved: usize,
+) -> PyResult<usize> {
+    Ok(writer::rows::find_alternative_row(
+        &rows.inner,
+        &comment.inner,
+        height,
+        bottom_reserved,
+    ))
+}

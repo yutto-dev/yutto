@@ -55,3 +55,25 @@ pub fn test_free_rows(
     }
     res
 }
+
+pub fn find_alternative_row(
+    rows: &Rows,
+    comment: &Comment,
+    height: usize,
+    bottom_reserved: usize,
+) -> usize {
+    let mut res = 0;
+    let comment_pos_id = comment.pos.clone() as usize;
+    for row in 0..(height - bottom_reserved - comment.height.ceil() as usize) {
+        match &rows[comment_pos_id][row] {
+            None => return row,
+            Some(comment) => {
+                let comment_res = &rows[comment_pos_id][res].as_ref().expect("res is None");
+                if comment.timeline < comment_res.timeline {
+                    res = row;
+                }
+            }
+        }
+    }
+    res
+}
