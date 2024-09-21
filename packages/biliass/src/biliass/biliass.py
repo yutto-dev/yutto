@@ -13,6 +13,7 @@ from biliass._core import (
     Comment,
     CommentPosition,
     OptionComment,
+    Rows,
     ass_escape,
     convert_color,
     convert_flash_rotation,
@@ -20,6 +21,7 @@ from biliass._core import (
     get_zoom_factor,
     read_comments_from_protobuf,
     read_comments_from_xml,
+    test_free_rows,
 )
 
 if TYPE_CHECKING:
@@ -27,7 +29,6 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
-Rows = list[list[OptionComment]]
 
 
 def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> list[Comment]:
@@ -245,7 +246,7 @@ def process_comments(
     styleid = f"biliass_{random.randint(0, 0xFFFF):04x}"
     ass = AssText()
     ass.write_head(width, height, fontface, fontsize, alpha, styleid)
-    rows = [[OptionComment.none()] * (height - bottom_reserved + 1) for i in range(4)]
+    rows = Rows(4, height - bottom_reserved + 1)
     for idx, comment in enumerate(comments):
         if progress_callback and idx % 1000 == 0:
             progress_callback(idx, len(comments))
@@ -315,58 +316,13 @@ def process_comments(
     return ass.to_string()
 
 
-def test_free_rows(
-    rows: Rows,
-    comment: Comment,
-    row: int,
-    width: int,
-    height: int,
-    bottom_reserved: int,
-    duration_marquee: float,
-    duration_still: float,
-) -> int:
-    res = 0
-    rowmax = height - bottom_reserved
-    target_row = OptionComment.none()
-    comment_pos_id = comment.pos.id
-    if comment.pos in (CommentPosition.Bottom, CommentPosition.Top):
-        while row < rowmax and res < comment.height:
-            if target_row != rows[comment_pos_id][row]:
-                target_row = rows[comment_pos_id][row]
-                if target_row.is_some() and target_row.unwrap().timeline + duration_still > comment.timeline:
-                    break
-            row += 1
-            res += 1
-    else:
-        try:
-            threshold_time = comment.timeline - duration_marquee * (1 - width / (comment.width + width))
-        except ZeroDivisionError:
-            threshold_time = comment.timeline - duration_marquee
-        while row < rowmax and res < comment.height:
-            if target_row != rows[comment_pos_id][row]:
-                target_row = rows[comment_pos_id][row]
-                try:
-                    if target_row.is_some() and (
-                        target_row.unwrap().timeline > threshold_time
-                        or target_row.unwrap().timeline
-                        + target_row.unwrap().width * duration_marquee / (target_row.unwrap().width + width)
-                        > comment.timeline
-                    ):
-                        break
-                except ZeroDivisionError:
-                    pass
-            row += 1
-            res += 1
-    return res
-
-
 def find_alternative_row(rows: Rows, comment: Comment, height, bottom_reserved):
     res = 0
     comment_pos_id = comment.pos.id
     for row in range(height - bottom_reserved - math.ceil(comment.height)):
-        if rows[comment_pos_id][row].is_none():
+        if rows.get(comment_pos_id, row).is_none():
             return row
-        elif rows[comment_pos_id][row].unwrap().timeline < rows[comment_pos_id][res].unwrap().timeline:
+        elif rows.get(comment_pos_id, row).unwrap().timeline < rows.get(comment_pos_id, res).unwrap().timeline:
             res = row
     return res
 
@@ -375,7 +331,7 @@ def mark_comment_row(rows: Rows, comment: Comment, row: int):
     comment_pos_id = comment.pos.id
     try:
         for i in range(row, row + math.ceil(comment.height)):
-            rows[comment_pos_id][i] = OptionComment.from_comment(comment)
+            rows.set(comment_pos_id, i, OptionComment.from_comment(comment))
     except IndexError:
         pass
 

@@ -73,3 +73,18 @@ def get_zoom_factor(source_size: tuple[int, int], target_size: tuple[int, int]) 
 def convert_flash_rotation(
     rot_y: float, rot_z: float, x: float, y: float, width: float, height: float
 ) -> tuple[float, float, float, float, float, float, float]: ...
+def test_free_rows(
+    rows: Rows,
+    comment: Comment,
+    row: int,
+    width: int,
+    height: int,
+    bottom_reserved: int,
+    duration_marquee: float,
+    duration_still: float,
+) -> int: ...
+
+class Rows:
+    def __init__(self, num_types: int, capacity: int) -> None: ...
+    def get(self, row: int, col: int) -> OptionComment: ...
+    def set(self, row: int, col: int, OptionComment) -> None: ...

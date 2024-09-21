@@ -1,6 +1,9 @@
-use crate::writer;
+use crate::python;
+use crate::writer::{self, rows};
 
 use pyo3::prelude::*;
+
+use super::PyOptionComment;
 
 #[pyfunction(name = "convert_timestamp")]
 pub fn py_convert_timestamp(timestamp: f64) -> PyResult<String> {
@@ -40,7 +43,55 @@ pub fn py_convert_flash_rotation(
     ))
 }
 
-// #[pyfunction(name = "test_rows")]
-// pub fn py_test_rows(rows: Vec<Vec<PyRef<crate::python::PyOptionComment>>>) -> PyResult<()> {
-//     Ok(())
-// }
+#[pyclass(name = "Rows")]
+pub struct PyRows {
+    pub inner: rows::Rows,
+}
+
+#[pymethods]
+impl PyRows {
+    #[new]
+    fn new(num_types: usize, capacity: usize) -> Self {
+        let mut rows: rows::Rows = Vec::new();
+        for _ in 0..num_types {
+            let mut type_rows = Vec::with_capacity(capacity);
+            for _ in 0..capacity {
+                type_rows.push(None);
+            }
+            rows.push(type_rows);
+        }
+        PyRows { inner: rows }
+    }
+
+    fn get(&self, row: usize, col: usize) -> PyOptionComment {
+        PyOptionComment::new(self.inner[row][col].clone())
+    }
+
+    fn set(&mut self, row: usize, col: usize, value: PyRef<PyOptionComment>) {
+        self.inner[row][col] = value.inner.clone();
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+#[pyfunction(name = "test_free_rows")]
+pub fn py_test_free_rows(
+    rows: &python::writer::PyRows,
+    comment: &crate::python::PyComment,
+    row: usize,
+    width: u32,
+    height: u32,
+    bottom_reserved: u32,
+    duration_marquee: f64,
+    duration_still: f64,
+) -> PyResult<usize> {
+    Ok(writer::rows::test_free_rows(
+        &rows.inner,
+        &comment.inner,
+        row,
+        width,
+        height,
+        bottom_reserved,
+        duration_marquee,
+        duration_still,
+    ))
+}
