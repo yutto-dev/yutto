@@ -229,15 +229,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 
 def process_comments(
-    comments,
-    width,
-    height,
-    bottom_reserved,
+    comments: list[Comment],
+    width: int,
+    height: int,
+    bottom_reserved: int,
     fontface,
     fontsize,
     alpha,
-    duration_marquee,
-    duration_still,
+    duration_marquee: float,
+    duration_still: float,
     filters_regex,
     reduced,
     progress_callback,
@@ -319,12 +319,12 @@ def test_free_rows(
     rows: Rows,
     comment: Comment,
     row: int,
-    width,
-    height,
-    bottom_reserved,
-    duration_marquee,
-    duration_still,
-):
+    width: int,
+    height: int,
+    bottom_reserved: int,
+    duration_marquee: float,
+    duration_still: float,
+) -> int:
     res = 0
     rowmax = height - bottom_reserved
     target_row = OptionComment.none()
@@ -404,7 +404,7 @@ def Danmaku2ASS(
     stage_width: int,
     stage_height: int,
     input_format: str = "xml",
-    reserve_blank: float = 0,
+    reserve_blank: int = 0,
     font_face: str = "sans-serif",
     font_size: float = 25.0,
     text_opacity: float = 1.0,
