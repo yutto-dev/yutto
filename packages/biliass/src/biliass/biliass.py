@@ -18,6 +18,7 @@ from biliass._core import (
     convert_color,
     convert_flash_rotation,
     convert_timestamp,
+    find_alternative_row,
     get_zoom_factor,
     read_comments_from_protobuf,
     read_comments_from_xml,
@@ -314,17 +315,6 @@ def process_comments(
     if progress_callback:
         progress_callback(len(comments), len(comments))
     return ass.to_string()
-
-
-def find_alternative_row(rows: Rows, comment: Comment, height, bottom_reserved):
-    res = 0
-    comment_pos_id = comment.pos.id
-    for row in range(height - bottom_reserved - math.ceil(comment.height)):
-        if rows.get(comment_pos_id, row).is_none():
-            return row
-        elif rows.get(comment_pos_id, row).unwrap().timeline < rows.get(comment_pos_id, res).unwrap().timeline:
-            res = row
-    return res
 
 
 def mark_comment_row(rows: Rows, comment: Comment, row: int):
