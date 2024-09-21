@@ -36,5 +36,6 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_find_alternative_row, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_mark_comment_row, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_write_head, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_write_comment, m)?)?;
     Ok(())
 }

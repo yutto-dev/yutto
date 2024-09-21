@@ -92,3 +92,14 @@ class Rows:
 def find_alternative_row(rows: Rows, comment: Comment, height: int, bottom_reserved: int) -> int: ...
 def mark_comment_row(rows: Rows, comment: Comment, row: int) -> None: ...
 def write_head(width: int, height: int, fontface: str, fontsize: float, alpha: float, styleid: str) -> str: ...
+def write_comment(
+    comment: Comment,
+    row: int,
+    width: int,
+    height: int,
+    bottom_reserved: int,
+    fontsize: float,
+    duration_marquee: float,
+    duration_still: float,
+    styleid: str,
+) -> str: ...

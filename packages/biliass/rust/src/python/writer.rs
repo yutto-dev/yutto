@@ -1,4 +1,5 @@
 use crate::python;
+use crate::writer::ass::write_comment;
 use crate::writer::{self, rows};
 
 use pyo3::prelude::*;
@@ -123,8 +124,8 @@ pub fn py_mark_comment_row(
 
 #[pyfunction(name = "write_head")]
 pub fn py_write_head(
-    width: i32,
-    height: i32,
+    width: u32,
+    height: u32,
     fontface: &str,
     fontsize: f32,
     alpha: f32,
@@ -132,5 +133,31 @@ pub fn py_write_head(
 ) -> PyResult<String> {
     Ok(writer::ass::write_head(
         width, height, fontface, fontsize, alpha, styleid,
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+#[pyfunction(name = "write_comment")]
+pub fn py_write_comment(
+    comment: &crate::python::PyComment,
+    row: usize,
+    width: u32,
+    height: u32,
+    bottom_reserved: u32,
+    fontsize: f32,
+    duration_marquee: f32,
+    duration_still: f32,
+    styleid: &str,
+) -> PyResult<String> {
+    Ok(write_comment(
+        &comment.inner,
+        row,
+        width,
+        height,
+        bottom_reserved,
+        fontsize,
+        duration_marquee,
+        duration_still,
+        styleid,
     ))
 }
