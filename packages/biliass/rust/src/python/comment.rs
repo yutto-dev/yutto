@@ -93,3 +93,45 @@ impl PyComment {
         format!("Comment({:?})", self.inner)
     }
 }
+
+#[pyclass(name = "OptionComment", frozen)]
+pub struct PyOptionComment {
+    inner: Option<comment::Comment>,
+}
+
+impl PyOptionComment {
+    pub fn new(inner: Option<comment::Comment>) -> Self {
+        PyOptionComment { inner }
+    }
+}
+
+#[pymethods]
+impl PyOptionComment {
+    fn is_none(&self) -> bool {
+        self.inner.is_none()
+    }
+
+    fn is_some(&self) -> bool {
+        self.inner.is_some()
+    }
+
+    fn unwrap(&self) -> PyComment {
+        PyComment::new(self.inner.clone().unwrap())
+    }
+
+    #[staticmethod]
+    fn from_comment(comment: &PyComment) -> Self {
+        PyOptionComment {
+            inner: Some(comment.inner.clone()),
+        }
+    }
+
+    #[staticmethod]
+    fn none() -> Self {
+        PyOptionComment { inner: None }
+    }
+
+    fn __eq__(&self, other: &PyOptionComment) -> bool {
+        self.inner == other.inner
+    }
+}

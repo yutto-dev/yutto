@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CommentPosition {
     /// Regular moving comment
     Scroll,
@@ -12,7 +12,7 @@ pub enum CommentPosition {
     Special,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Comment {
     /// The position when the comment is replayed
     pub timeline: f64,

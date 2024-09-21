@@ -39,3 +39,8 @@ pub fn py_convert_flash_rotation(
         rot_y, rot_z, x, y, width, height,
     ))
 }
+
+// #[pyfunction(name = "test_rows")]
+// pub fn py_test_rows(rows: Vec<Vec<PyRef<crate::python::PyOptionComment>>>) -> PyResult<()> {
+//     Ok(())
+// }
