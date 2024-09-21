@@ -92,7 +92,7 @@ pub fn write_comment(
         }
     }
     let start = utils::convert_timestamp(comment.timeline);
-    let end = utils::convert_timestamp(comment.timeline + duration as f64);
+    let end = utils::convert_timestamp(comment.timeline + duration);
     let styles = styles.join("");
     format!("Dialogue: 2,{start},{end},{styleid},,0000,0000,0000,,{{{styles}}}{text}\n")
 }
