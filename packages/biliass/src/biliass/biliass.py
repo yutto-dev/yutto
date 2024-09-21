@@ -23,6 +23,7 @@ from biliass._core import (
     read_comments_from_protobuf,
     read_comments_from_xml,
     test_free_rows,
+    write_comment,
     write_head,
 )
 
@@ -160,44 +161,16 @@ class AssText:
         duration_still: float,
         styleid: str,
     ):
-        text = ass_escape(comment.comment)
-        styles = []
-        if comment.pos == CommentPosition.Bottom:
-            styles.append("\\an8\\pos(%(halfwidth)d, %(row)d)" % {"halfwidth": width / 2, "row": row})
-            duration = duration_still
-        elif comment.pos == CommentPosition.Top:
-            styles.append(
-                "\\an2\\pos(%(halfwidth)d, %(row)d)"
-                % {
-                    "halfwidth": width / 2,
-                    "row": convert_type2(row, height, bottom_reserved),
-                }
-            )
-            duration = duration_still
-        elif comment.pos == CommentPosition.Reversed:
-            styles.append(
-                "\\move(%(neglen)d, %(row)d, %(width)d, %(row)d)"
-                % {"width": width, "row": row, "neglen": -math.ceil(comment.width)}
-            )
-            duration = duration_marquee
-        else:
-            styles.append(
-                "\\move(%(width)d, %(row)d, %(neglen)d, %(row)d)"
-                % {"width": width, "row": row, "neglen": -math.ceil(comment.width)}
-            )
-            duration = duration_marquee
-        if not (-1 < comment.size - fontsize < 1):
-            styles.append(f"\\fs{comment.size:.0f}")
-        if comment.color != 0xFFFFFF:
-            styles.append(f"\\c&H{convert_color(comment.color)}&")
-            if comment.color == 0x000000:
-                styles.append("\\3c&HFFFFFF&")
-        self._text += "Dialogue: 2,{start},{end},{styleid},,0000,0000,0000,,{{{styles}}}{text}\n".format(
-            start=convert_timestamp(comment.timeline),
-            end=convert_timestamp(comment.timeline + duration),
-            styles="".join(styles),
-            text=text,
-            styleid=styleid,
+        self._text += write_comment(
+            comment,
+            row,
+            width,
+            height,
+            bottom_reserved,
+            fontsize,
+            duration_marquee,
+            duration_still,
+            styleid,
         )
 
     def to_string(self):
