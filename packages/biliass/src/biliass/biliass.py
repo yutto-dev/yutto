@@ -173,6 +173,64 @@ class AssText:
             styleid,
         )
 
+    def write_normal_comment(
+        self,
+        rows: Rows,
+        comment: Comment,
+        width: int,
+        height: int,
+        bottom_reserved: int,
+        fontsize: float,
+        duration_marquee: float,
+        duration_still: float,
+        styleid: str,
+        reduced: bool,
+    ):
+        row = 0
+        rowmax = height - bottom_reserved - comment.height
+        while row <= rowmax:
+            freerows = test_free_rows(
+                rows,
+                comment,
+                row,
+                width,
+                height,
+                bottom_reserved,
+                duration_marquee,
+                duration_still,
+            )
+            if freerows >= comment.height:
+                mark_comment_row(rows, comment, row)
+                self.write_comment(
+                    comment,
+                    row,
+                    width,
+                    height,
+                    bottom_reserved,
+                    fontsize,
+                    duration_marquee,
+                    duration_still,
+                    styleid,
+                )
+                break
+            else:
+                row += freerows or 1
+        else:
+            if not reduced:
+                row = find_alternative_row(rows, comment, height, bottom_reserved)
+                mark_comment_row(rows, comment, row)
+                self.write_comment(
+                    comment,
+                    row,
+                    width,
+                    height,
+                    bottom_reserved,
+                    fontsize,
+                    duration_marquee,
+                    duration_still,
+                    styleid,
+                )
+
     def to_string(self):
         return self._text
 
@@ -211,50 +269,18 @@ def process_comments(
                     break
             if skip:
                 continue
-            row = 0
-            rowmax = height - bottom_reserved - comment.height
-            while row <= rowmax:
-                freerows = test_free_rows(
-                    rows,
-                    comment,
-                    row,
-                    width,
-                    height,
-                    bottom_reserved,
-                    duration_marquee,
-                    duration_still,
-                )
-                if freerows >= comment.height:
-                    mark_comment_row(rows, comment, row)
-                    ass.write_comment(
-                        comment,
-                        row,
-                        width,
-                        height,
-                        bottom_reserved,
-                        fontsize,
-                        duration_marquee,
-                        duration_still,
-                        styleid,
-                    )
-                    break
-                else:
-                    row += freerows or 1
-            else:
-                if not reduced:
-                    row = find_alternative_row(rows, comment, height, bottom_reserved)
-                    mark_comment_row(rows, comment, row)
-                    ass.write_comment(
-                        comment,
-                        row,
-                        width,
-                        height,
-                        bottom_reserved,
-                        fontsize,
-                        duration_marquee,
-                        duration_still,
-                        styleid,
-                    )
+            ass.write_normal_comment(
+                rows,
+                comment,
+                width,
+                height,
+                bottom_reserved,
+                fontsize,
+                duration_marquee,
+                duration_still,
+                styleid,
+                reduced,
+            )
         elif comment.pos == CommentPosition.Special:
             ass.write_comment_special(comment, width, height, styleid)
         else:
