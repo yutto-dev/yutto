@@ -1,7 +1,7 @@
 set positional-arguments
 
-VERSION := `uv run script/get-version.py src/yutto/__version__.py`
-BILIASS_VERSION := `uv run script/get-version.py packages/biliass/src/biliass/__version__.py`
+VERSION := `uv run scripts/get-version.py src/yutto/__version__.py`
+BILIASS_VERSION := `uv run scripts/get-version.py packages/biliass/src/biliass/__version__.py`
 DOCKER_NAME := "siguremo/yutto"
 
 run *ARGS:
