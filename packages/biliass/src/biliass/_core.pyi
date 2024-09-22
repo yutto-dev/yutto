@@ -102,3 +102,6 @@ def write_comment_with_animation(
     styleid: str,
     zoom_factor: tuple[float, float, float],
 ) -> str: ...
+def parse_special_comment(
+    content: str, zoom_factor: tuple[float, float, float]
+) -> tuple[tuple[int, int, float, float, float, float], int, int, str, int, float, int, str, bool]: ...

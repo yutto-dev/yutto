@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import random
 import re
@@ -17,6 +16,7 @@ from biliass._core import (
     convert_flash_rotation,
     convert_timestamp,
     get_zoom_factor,
+    parse_special_comment,
     read_comments_from_protobuf,
     read_comments_from_xml,
     write_comment_with_animation,
@@ -42,68 +42,7 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> l
     return read_comments_from_protobuf(protobuf, fontsize)
 
 
-# BILI_PLACYER_SIZE = (512, 384)  # Bilibili player version 2010
-# BILI_PLACYER_SIZE = (540, 384)  # Bilibili player version 2012
-# BILI_PLACYER_SIZE = (672, 438)  # Bilibili player version 2014
-BILI_PLACYER_SIZE = (891, 589)  # Bilibili player version 2021 (flex)
-
-
-def get_position(input_pos: str | float, is_height: bool, zoom_factor: tuple[float, float, float]):
-    is_height = int(is_height)  # True -> 1
-    if isinstance(input_pos, int):
-        return zoom_factor[0] * input_pos + zoom_factor[is_height + 1]
-    elif isinstance(input_pos, float):
-        if input_pos > 1:
-            return zoom_factor[0] * input_pos + zoom_factor[is_height + 1]
-        else:
-            return BILI_PLACYER_SIZE[is_height] * zoom_factor[0] * input_pos + zoom_factor[is_height + 1]
-    else:
-        try:
-            input_pos = int(input_pos)
-        except ValueError:
-            input_pos = float(input_pos)
-        return get_position(input_pos, is_height, zoom_factor)
-
-
-def parse_special_comment(content: str, zoom_factor: tuple[float, float, float]):
-    comment_args = safe_list(content)
-    text = ass_escape(str(comment_args[4]).replace("/n", "\n"))
-    from_x = comment_args.get(0, 0)
-    from_y = comment_args.get(1, 0)
-    to_x = comment_args.get(7, from_x)
-    to_y = comment_args.get(8, from_y)
-    from_x = get_position(from_x, False, zoom_factor)
-    from_y = get_position(from_y, True, zoom_factor)
-    to_x = get_position(to_x, False, zoom_factor)
-    to_y = get_position(to_y, True, zoom_factor)
-    alpha = safe_list(str(comment_args.get(2, "1")).split("-"))
-    from_alpha = float(alpha.get(0, 1))  # pyright: ignore
-    to_alpha = float(alpha.get(1, from_alpha))  # pyright: ignore
-    from_alpha = 255 - round(from_alpha * 255)
-    to_alpha = 255 - round(to_alpha * 255)
-    rotate_z = int(comment_args.get(5, 0))  # pyright: ignore
-    rotate_y = int(comment_args.get(6, 0))  # pyright: ignore
-    lifetime = float(wrap_default(comment_args.get(3, 4500), 4500))
-    duration = int(comment_args.get(9, lifetime * 1000))  # pyright: ignore
-    delay = int(comment_args.get(10, 0))  # pyright: ignore
-    fontface: str = comment_args.get(12)  # pyright: ignore
-    is_border = comment_args.get(11, "true") != "false"
-    return (
-        rotate_y,
-        rotate_z,
-        from_x,
-        from_y,
-        to_x,
-        to_y,
-        from_alpha,
-        to_alpha,
-        text,
-        delay,
-        lifetime,
-        duration,
-        fontface,
-        is_border,
-    )
+BILI_PLACYER_SIZE = (891, 589)
 
 
 class AssText:
@@ -113,17 +52,8 @@ class AssText:
     def write_comment_special(self, comment: Comment, width, height, styleid):
         zoom_factor = get_zoom_factor(BILI_PLACYER_SIZE, (width, height))
         try:
-            special_comment_data = json.loads(comment.comment)
-            if not isinstance(special_comment_data, list):
-                raise ValueError("Invalid comment")
-
             (
-                rotate_y,
-                rotate_z,
-                from_x,
-                from_y,
-                to_x,
-                to_y,
+                (rotate_y, rotate_z, from_x, from_y, to_x, to_y),
                 from_alpha,
                 to_alpha,
                 text,
@@ -132,7 +62,8 @@ class AssText:
                 duration,
                 fontface,
                 is_border,
-            ) = parse_special_comment(special_comment_data, zoom_factor)
+            ) = parse_special_comment(comment.comment, zoom_factor)
+
             self.write_comment_with_animation(
                 comment,
                 width,
