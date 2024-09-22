@@ -157,3 +157,124 @@ pub fn write_normal_comment(
     }
     "".to_owned()
 }
+
+#[allow(clippy::too_many_arguments)]
+pub fn write_comment_with_animation(
+    comment: &Comment,
+    width: u32,
+    height: u32,
+    rotate_y: f64,
+    rotate_z: f64,
+    from_x: f64,
+    from_y: f64,
+    to_x: f64,
+    to_y: f64,
+    from_alpha: u8,
+    to_alpha: u8,
+    text: &str,
+    delay: f64,
+    lifetime: f64,
+    duration: f64,
+    fontface: &str,
+    is_border: bool,
+    styleid: &str,
+    zoom_factor: (f32, f32, f32),
+) -> String {
+    let from_rotarg = utils::convert_flash_rotation(
+        rotate_y,
+        rotate_z,
+        from_x,
+        from_y,
+        width as f64,
+        height as f64,
+    );
+    let to_rotarg =
+        utils::convert_flash_rotation(rotate_y, rotate_z, to_x, to_y, width as f64, height as f64);
+    if vec![
+        from_rotarg.0,
+        from_rotarg.1,
+        from_rotarg.2,
+        from_rotarg.3,
+        from_rotarg.4,
+        from_rotarg.5,
+        to_rotarg.0,
+        to_rotarg.1,
+        to_rotarg.2,
+        to_rotarg.3,
+        to_rotarg.4,
+        to_rotarg.5,
+    ]
+    .into_iter()
+    .any(|x| x.is_nan())
+    {
+        // eprintln!(
+        //     "Invalid rotation arguments: {:?}",
+        //     (rotate_y, rotate_z, from_x, from_y)
+        // );
+        return "".to_owned();
+    }
+    let mut styles = vec![format!("\\org({}, {})", width / 2, height / 2)];
+    if (from_rotarg.0, from_rotarg.1) == (to_rotarg.0, to_rotarg.1) {
+        styles.push(format!("\\pos({:.0}, {:.0})", from_rotarg.0, from_rotarg.1));
+    } else {
+        styles.push(format!(
+            "\\move({:.0}, {:.0}, {:.0}, {:.0}, {:.0}, {:.0})",
+            from_rotarg.0,
+            from_rotarg.1,
+            to_rotarg.0,
+            to_rotarg.1,
+            delay,
+            delay + duration
+        ));
+    }
+    styles.push(format!(
+        "\\frx{:.0}\\fry{:.0}\\frz{:.0}\\fscx{:.0}\\fscy{:.0}",
+        from_rotarg.2, from_rotarg.3, from_rotarg.4, from_rotarg.5, from_rotarg.6
+    ));
+    if (from_x, from_y) != (to_x, to_y) {
+        styles.push(format!(
+            "\\t({}, {}, ",
+            delay as i32,
+            (delay + duration) as i32
+        ));
+        styles.push(format!(
+            "\\frx{:.0}\\fry{:.0}\\frz{:.0}\\fscx{:.0}\\fscy{:.0}",
+            to_rotarg.2, to_rotarg.3, to_rotarg.4, to_rotarg.5, to_rotarg.6
+        ));
+        styles.push(")".to_owned());
+    }
+    if !fontface.is_empty() {
+        styles.push(format!("\\fn{}", utils::ass_escape(fontface)));
+    }
+    styles.push(format!("\\fs{:.0}", comment.size * zoom_factor.0));
+    if comment.color != 0xFFFFFF {
+        styles.push(format!(
+            "\\c&H{}&",
+            utils::convert_color(comment.color, None, None)
+        ));
+        if comment.color == 0x000000 {
+            styles.push("\\3c&HFFFFFF&".to_owned());
+        }
+    }
+    if from_alpha == to_alpha {
+        styles.push(format!("\\alpha&H{from_alpha:02X}"));
+    } else if (from_alpha, to_alpha) == (255, 0) {
+        styles.push(format!("\\fad({:.0},0)", lifetime * 1000.))
+    } else if (from_alpha, to_alpha) == (0, 255) {
+        styles.push(format!("\\fad(0, {:.0})", lifetime * 1000.));
+    } else {
+        let lifetime = lifetime * 1000.;
+        styles.push(
+            format!(
+                "\\fade({from_alpha}, {to_alpha}, {to_alpha}, 0, {lifetime:.0}, {lifetime:.0}, {lifetime:.0})"
+            )
+        )
+    }
+    if !is_border {
+        styles.push("\\bord0".to_owned())
+    }
+    let start = utils::convert_timestamp(comment.timeline);
+    let end = utils::convert_timestamp(comment.timeline + lifetime);
+    let styles = styles.join("");
+    format!("Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n")
+}
