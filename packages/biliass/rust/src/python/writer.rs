@@ -1,5 +1,8 @@
+use crate::comment::CommentPosition;
+use crate::error::BiliassError;
 use crate::python;
 use crate::writer::{self, rows};
+use regex::Regex;
 
 use pyo3::prelude::*;
 
@@ -12,15 +15,9 @@ pub struct PyRows {
 impl PyRows {
     #[new]
     fn new(num_types: usize, capacity: usize) -> Self {
-        let mut rows: rows::Rows = Vec::new();
-        for _ in 0..num_types {
-            let mut type_rows = Vec::with_capacity(capacity);
-            for _ in 0..capacity {
-                type_rows.push(None);
-            }
-            rows.push(type_rows);
+        PyRows {
+            inner: rows::init_rows(num_types, capacity),
         }
-        PyRows { inner: rows }
     }
 }
 
@@ -125,4 +122,62 @@ pub fn py_write_special_comment(
         height,
         styleid,
     ))
+}
+
+#[allow(clippy::too_many_arguments)]
+#[pyfunction(name = "process_comments")]
+pub fn py_process_comments(
+    comments: Vec<PyRef<crate::python::PyComment>>,
+    width: u32,
+    height: u32,
+    styleid: &str,
+    bottom_reserved: u32,
+    fontface: &str,
+    fontsize: f32,
+    alpha: f32,
+    duration_marquee: f64,
+    duration_still: f64,
+    filters_regex: Vec<String>,
+    reduced: bool,
+) -> PyResult<String> {
+    let mut ass_result = "".to_owned();
+    ass_result += &writer::ass::write_head(width, height, fontface, fontsize, alpha, styleid);
+    let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
+    let compiled_regexes_res: Result<Vec<Regex>, regex::Error> = filters_regex
+        .into_iter()
+        .map(|pattern| Regex::new(&pattern))
+        .collect();
+    let compiled_regexes = compiled_regexes_res.map_err(BiliassError::from)?;
+    for comment in comments.into_iter() {
+        match comment.inner.pos {
+            CommentPosition::Scroll
+            | CommentPosition::Bottom
+            | CommentPosition::Top
+            | CommentPosition::Reversed => {
+                if compiled_regexes
+                    .iter()
+                    .any(|regex| regex.is_match(&comment.inner.comment))
+                {
+                    continue;
+                };
+                ass_result += &writer::ass::write_normal_comment(
+                    rows.as_mut(),
+                    &comment.inner,
+                    width,
+                    height,
+                    bottom_reserved,
+                    fontsize,
+                    duration_marquee,
+                    duration_still,
+                    styleid,
+                    reduced,
+                );
+            }
+            CommentPosition::Special => {
+                ass_result +=
+                    &writer::ass::write_special_comment(&comment.inner, width, height, styleid);
+            }
+        }
+    }
+    Ok(ass_result)
 }

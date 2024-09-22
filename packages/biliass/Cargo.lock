@@ -58,6 +58,7 @@ dependencies = [
  "protox",
  "pyo3",
  "quick-xml",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",

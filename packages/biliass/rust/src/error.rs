@@ -20,10 +20,13 @@ pub enum ParseError {
     SpecialComment(String),
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Error, Debug)]
 pub enum BiliassError {
     #[error("ParseError: {0}")]
     ParseError(#[from] ParseError),
     #[error("DecodeError: {0}")]
     DecodeError(#[from] DecodeError),
+    #[error("InvalidRegexError: {0}")]
+    InvalidRegexError(#[from] regex::Error),
 }

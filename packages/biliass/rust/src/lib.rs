@@ -34,5 +34,6 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(python::py_write_special_comment, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_process_comments, m)?)?;
     Ok(())
 }

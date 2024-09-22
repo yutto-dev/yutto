@@ -4,6 +4,18 @@ pub type Rows = Vec<Vec<Option<Comment>>>;
 
 // TODO(SigureMo): Remove clone in the future
 
+pub fn init_rows(num_types: usize, capacity: usize) -> Rows {
+    let mut rows: Rows = Vec::new();
+    for _ in 0..num_types {
+        let mut type_rows = Vec::with_capacity(capacity);
+        for _ in 0..capacity {
+            type_rows.push(None);
+        }
+        rows.push(type_rows);
+    }
+    rows
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn test_free_rows(
     rows: &Rows,

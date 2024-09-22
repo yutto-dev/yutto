@@ -5,23 +5,14 @@ from __future__ import annotations
 import logging
 import random
 import re
-from typing import TYPE_CHECKING, TypeVar
+from typing import TypeVar
 
 from biliass._core import (
     Comment,
-    CommentPosition,
-    Rows,
+    process_comments as process_comments_rs,
     read_comments_from_protobuf,
     read_comments_from_xml,
-    write_comment_with_animation,
-    write_head,
-    write_normal_comment,
-    write_special_comment,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
 
 T = TypeVar("T")
 
@@ -37,90 +28,6 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> l
     return read_comments_from_protobuf(protobuf, fontsize)
 
 
-class AssText:
-    def __init__(self):
-        self._text = ""
-
-    def write_special_comment(self, comment: Comment, width, height, styleid) -> None:
-        self._text += write_special_comment(comment, width, height, styleid)
-
-    def write_head(self, width: int, height: int, fontface: str, fontsize: float, alpha: float, styleid: str) -> None:
-        self._text += write_head(width, height, fontface, fontsize, alpha, styleid)
-
-    def write_normal_comment(
-        self,
-        rows: Rows,
-        comment: Comment,
-        width: int,
-        height: int,
-        bottom_reserved: int,
-        fontsize: float,
-        duration_marquee: float,
-        duration_still: float,
-        styleid: str,
-        reduced: bool,
-    ) -> None:
-        self._text += write_normal_comment(
-            rows,
-            comment,
-            width,
-            height,
-            bottom_reserved,
-            fontsize,
-            duration_marquee,
-            duration_still,
-            styleid,
-            reduced,
-        )
-
-    def write_comment_with_animation(
-        self,
-        comment: Comment,
-        width: int,
-        height: int,
-        rotate_y: float,
-        rotate_z: float,
-        from_x: float,
-        from_y: float,
-        to_x: float,
-        to_y: float,
-        from_alpha: int,
-        to_alpha: int,
-        text: str,
-        delay: float,
-        lifetime: float,
-        duration: float,
-        fontface: str,
-        is_border: bool,
-        styleid: str,
-        zoom_factor: tuple[float, float, float],
-    ) -> None:
-        self._text += write_comment_with_animation(
-            comment,
-            width,
-            height,
-            rotate_y,
-            rotate_z,
-            from_x,
-            from_y,
-            to_x,
-            to_y,
-            from_alpha,
-            to_alpha,
-            text,
-            delay,
-            lifetime,
-            duration,
-            fontface,
-            is_border,
-            styleid,
-            zoom_factor,
-        )
-
-    def to_string(self):
-        return self._text
-
-
 def process_comments(
     comments: list[Comment],
     width: int,
@@ -131,49 +38,24 @@ def process_comments(
     alpha: float,
     duration_marquee: float,
     duration_still: float,
-    filters_regex,
+    filters_regex: list[re.Pattern[str]],
     reduced: bool,
-    progress_callback,
 ):
     styleid = f"biliass_{random.randint(0, 0xFFFF):04x}"
-    ass = AssText()
-    ass.write_head(width, height, fontface, fontsize, alpha, styleid)
-    rows = Rows(4, height - bottom_reserved + 1)
-    for idx, comment in enumerate(comments):
-        if progress_callback and idx % 1000 == 0:
-            progress_callback(idx, len(comments))
-        if comment.pos in (
-            CommentPosition.Scroll,
-            CommentPosition.Bottom,
-            CommentPosition.Top,
-            CommentPosition.Reversed,
-        ):
-            skip = False
-            for filter_regex in filters_regex:
-                if filter_regex and filter_regex.search(comment.comment):
-                    skip = True
-                    break
-            if skip:
-                continue
-            ass.write_normal_comment(
-                rows,
-                comment,
-                width,
-                height,
-                bottom_reserved,
-                fontsize,
-                duration_marquee,
-                duration_still,
-                styleid,
-                reduced,
-            )
-        elif comment.pos == CommentPosition.Special:
-            ass.write_special_comment(comment, width, height, styleid)
-        else:
-            logging.warning(f"Invalid comment: {comment.comment!r}")
-    if progress_callback:
-        progress_callback(len(comments), len(comments))
-    return ass.to_string()
+    return process_comments_rs(
+        comments,
+        width,
+        height,
+        styleid,
+        bottom_reserved,
+        fontface,
+        fontsize,
+        alpha,
+        duration_marquee,
+        duration_still,
+        [filter_regex.pattern for filter_regex in filters_regex],
+        reduced,
+    )
 
 
 def Danmaku2ASS(
@@ -189,7 +71,6 @@ def Danmaku2ASS(
     duration_still: float = 5.0,
     comment_filter: str | None = None,
     is_reduce_comments: bool = False,
-    progress_callback: Callable[..., None] | None = None,
 ) -> str:
     comment_filters: list[str] = [comment_filter] if comment_filter is not None else []
     filters_regex = []
@@ -235,5 +116,4 @@ def Danmaku2ASS(
         duration_still,
         filters_regex,
         is_reduce_comments,
-        progress_callback,
     )
