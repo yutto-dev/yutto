@@ -1,10 +1,10 @@
 use crate::error::{BiliassError, DecodeError, ParseError};
 use crate::reader::utils;
 
-// const BILI_PLAYER_SIZE: (u32, u32) = (512, 384); // Bilibili player version 2010
-// const BILI_PLAYER_SIZE: (u32, u32) = (540, 384); // Bilibili player version 2012
-// const BILI_PLAYER_SIZE: (u32, u32) = (672, 438); // Bilibili player version 2014
-const BILI_PLAYER_SIZE: (u32, u32) = (891, 589); // Bilibili player version 2021 (flex)
+// pub const BILI_PLAYER_SIZE: (u32, u32) = (512, 384); // Bilibili player version 2010
+// pub const BILI_PLAYER_SIZE: (u32, u32) = (540, 384); // Bilibili player version 2012
+// pub const BILI_PLAYER_SIZE: (u32, u32) = (672, 438); // Bilibili player version 2014
+pub const BILI_PLAYER_SIZE: (u32, u32) = (891, 589); // Bilibili player version 2021 (flex)
 
 fn get_position(input_pos: f64, is_height: bool, zoom_factor: (f32, f32, f32)) -> f64 {
     let (zoom, size) = if is_height {

@@ -3,14 +3,6 @@ use crate::writer::{self, rows};
 
 use pyo3::prelude::*;
 
-#[pyfunction(name = "get_zoom_factor")]
-pub fn py_get_zoom_factor(
-    source_size: (u32, u32),
-    target_size: (u32, u32),
-) -> PyResult<(f32, f32, f32)> {
-    Ok(writer::utils::get_zoom_factor(source_size, target_size))
-}
-
 #[pyclass(name = "Rows")]
 pub struct PyRows {
     pub inner: rows::Rows,
@@ -80,8 +72,8 @@ pub fn py_write_comment_with_animation(
     comment: &crate::python::PyComment,
     width: u32,
     height: u32,
-    rotate_y: f64,
-    rotate_z: f64,
+    rotate_y: i64,
+    rotate_z: i64,
     from_x: f64,
     from_y: f64,
     to_x: f64,
@@ -89,9 +81,9 @@ pub fn py_write_comment_with_animation(
     from_alpha: u8,
     to_alpha: u8,
     text: &str,
-    delay: f64,
+    delay: i64,
     lifetime: f64,
-    duration: f64,
+    duration: i64,
     fontface: &str,
     is_border: bool,
     styleid: &str,
@@ -117,5 +109,20 @@ pub fn py_write_comment_with_animation(
         is_border,
         styleid,
         zoom_factor,
+    ))
+}
+
+#[pyfunction(name = "write_special_comment")]
+pub fn py_write_special_comment(
+    comment: &crate::python::PyComment,
+    width: u32,
+    height: u32,
+    styleid: &str,
+) -> PyResult<String> {
+    Ok(writer::ass::write_special_comment(
+        &comment.inner,
+        width,
+        height,
+        styleid,
     ))
 }
