@@ -170,7 +170,8 @@ jobs:
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
         with:
-          name: release-dists
+          pattern: wheels-*
+          merge-multiple: true
           path: dist/
 
       - name: Publish release distributions to PyPI
@@ -191,7 +192,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: release-dists
+          pattern: wheels-*
+          merge-multiple: true
           path: dist/
       - name: Get tag name
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
