@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import ClassVar
 
 class DanmakuElem:
@@ -99,3 +100,17 @@ def parse_special_comment(
     content: str, zoom_factor: tuple[float, float, float]
 ) -> tuple[tuple[int, int, float, float, float, float], int, int, str, int, float, int, str, bool]: ...
 def write_special_comment(comment: Comment, width: int, height: int, styleid: str) -> str: ...
+def process_comments(
+    comments: list[Comment],
+    width: int,
+    height: int,
+    styleid: str,
+    bottom_reserved: int,
+    fontface: str,
+    fontsize: float,
+    alpha: float,
+    duration_marquee: float,
+    duration_still: float,
+    filters_regex: list[str],
+    reduced: bool,
+): ...

@@ -47,7 +47,6 @@ Danmaku2ASS(
     duration_still=10.0,
     comment_filter=None,
     is_reduce_comments=False,
-    progress_callback=None,
 )
 
 # protobuf
@@ -64,10 +63,9 @@ Danmaku2ASS(
     duration_still=10.0,
     comment_filter=None,
     is_reduce_comments=False,
-    progress_callback=None,
 )
 ```
 
 ## TODO
 
-- 导出 bilibili 网页上的弹幕设置，并导入到 biliass
+-  导出 bilibili 网页上的弹幕设置，并导入到 biliass
