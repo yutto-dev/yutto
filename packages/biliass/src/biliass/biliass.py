@@ -46,27 +46,27 @@ class AssText:
         self._text = ""
 
     def write_comment_special(self, comment: Comment, width, height, styleid):
-        # BiliPlayerSize = (512, 384)  # Bilibili player version 2010
-        # BiliPlayerSize = (540, 384)  # Bilibili player version 2012
-        # BiliPlayerSize = (672, 438)  # Bilibili player version 2014
-        BiliPlayerSize = (891, 589)  # Bilibili player version 2021 (flex)
-        ZoomFactor = get_zoom_factor(BiliPlayerSize, (width, height))
+        # BILI_PLACYER_SIZE = (512, 384)  # Bilibili player version 2010
+        # BILI_PLACYER_SIZE = (540, 384)  # Bilibili player version 2012
+        # BILI_PLACYER_SIZE = (672, 438)  # Bilibili player version 2014
+        BILI_PLACYER_SIZE = (891, 589)  # Bilibili player version 2021 (flex)
+        zoom_factor = get_zoom_factor(BILI_PLACYER_SIZE, (width, height))
 
-        def get_position(InputPos, isHeight):
-            isHeight = int(isHeight)  # True -> 1
-            if isinstance(InputPos, int):
-                return ZoomFactor[0] * InputPos + ZoomFactor[isHeight + 1]
-            elif isinstance(InputPos, float):
-                if InputPos > 1:
-                    return ZoomFactor[0] * InputPos + ZoomFactor[isHeight + 1]
+        def get_position(input_pos, is_height):
+            is_height = int(is_height)  # True -> 1
+            if isinstance(input_pos, int):
+                return zoom_factor[0] * input_pos + zoom_factor[is_height + 1]
+            elif isinstance(input_pos, float):
+                if input_pos > 1:
+                    return zoom_factor[0] * input_pos + zoom_factor[is_height + 1]
                 else:
-                    return BiliPlayerSize[isHeight] * ZoomFactor[0] * InputPos + ZoomFactor[isHeight + 1]
+                    return BILI_PLACYER_SIZE[is_height] * zoom_factor[0] * input_pos + zoom_factor[is_height + 1]
             else:
                 try:
-                    InputPos = int(InputPos)
+                    input_pos = int(input_pos)
                 except ValueError:
-                    InputPos = float(InputPos)
-                return get_position(InputPos, isHeight)
+                    input_pos = float(input_pos)
+                return get_position(input_pos, is_height)
 
         try:
             special_comment_data = json.loads(comment.comment)
@@ -92,50 +92,30 @@ class AssText:
             lifetime = float(wrap_default(comment_args.get(3, 4500), 4500))
             duration = int(comment_args.get(9, lifetime * 1000))  # pyright: ignore
             delay = int(comment_args.get(10, 0))  # pyright: ignore
-            fontface = comment_args.get(12)
-            isborder = comment_args.get(11, "true")
-            from_rotarg = convert_flash_rotation(rotate_y, rotate_z, from_x, from_y, width, height)
-            to_rotarg = convert_flash_rotation(rotate_y, rotate_z, to_x, to_y, width, height)
-            styles = ["\\org(%d, %d)" % (width / 2, height / 2)]
-            if from_rotarg[0:2] == to_rotarg[0:2]:
-                styles.append("\\pos({:.0f}, {:.0f})".format(*from_rotarg[0:2]))
-            else:
-                styles.append(
-                    "\\move({:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f})".format(
-                        *(from_rotarg[0:2] + to_rotarg[0:2] + (delay, delay + duration))
-                    )
-                )
-            styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*from_rotarg[2:7]))
-            if (from_x, from_y) != (to_x, to_y):
-                styles.append(f"\\t({delay:d}, {delay + duration:d}, ")
-                styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*to_rotarg[2:7]))
-                styles.append(")")
-            if fontface:
-                styles.append(f"\\fn{ass_escape(fontface)}")
-            styles.append("\\fs%.0f" % (comment.size * ZoomFactor[0]))
-            if comment.color != 0xFFFFFF:
-                styles.append(f"\\c&H{convert_color(comment.color)}&")
-                if comment.color == 0x000000:
-                    styles.append("\\3c&HFFFFFF&")
-            if from_alpha == to_alpha:
-                styles.append(f"\\alpha&H{from_alpha:02X}")
-            elif (from_alpha, to_alpha) == (255, 0):
-                styles.append(f"\\fad({lifetime * 1000:.0f},0)")
-            elif (from_alpha, to_alpha) == (0, 255):
-                styles.append(f"\\fad(0, {lifetime * 1000:.0f})")
-            else:
-                styles.append(
-                    f"\\fade({from_alpha:d}, {to_alpha:d}, {to_alpha:d}, 0, {lifetime * 1000:.0f}, {lifetime * 1000:.0f}, {lifetime * 1000:.0f})"
-                )
-            if isborder == "false":
-                styles.append("\\bord0")
-            self._text += "Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n".format(
-                start=convert_timestamp(comment.timeline),
-                end=convert_timestamp(comment.timeline + lifetime),
-                styles="".join(styles),
-                text=text,
-                styleid=styleid,
+            fontface: str = comment_args.get(12)  # pyright: ignore
+            is_border = comment_args.get(11, "true") != "false"
+            self.write_comment_with_animation(
+                comment,
+                width,
+                height,
+                rotate_y,
+                rotate_z,
+                from_x,
+                from_y,
+                to_x,
+                to_y,
+                from_alpha,
+                to_alpha,
+                text,
+                delay,
+                lifetime,
+                duration,
+                fontface,
+                is_border,
+                styleid,
+                zoom_factor,
             )
+
         except (IndexError, ValueError):
             try:
                 logging.warning(f"Invalid comment: {comment.comment!r}")
@@ -169,6 +149,71 @@ class AssText:
             duration_still,
             styleid,
             reduced,
+        )
+
+    def write_comment_with_animation(
+        self,
+        comment: Comment,
+        width: int,
+        height: int,
+        rotate_y: float,
+        rotate_z: float,
+        from_x: float,
+        from_y: float,
+        to_x: float,
+        to_y: float,
+        from_alpha: int,
+        to_alpha: int,
+        text: str,
+        delay: float,
+        lifetime: float,
+        duration: float,
+        fontface: str,
+        is_border: bool,
+        styleid: str,
+        zoom_factor: tuple[float, float, float],
+    ) -> None:
+        from_rotarg = convert_flash_rotation(rotate_y, rotate_z, from_x, from_y, width, height)
+        to_rotarg = convert_flash_rotation(rotate_y, rotate_z, to_x, to_y, width, height)
+        styles = ["\\org(%d, %d)" % (width / 2, height / 2)]
+        if from_rotarg[0:2] == to_rotarg[0:2]:
+            styles.append("\\pos({:.0f}, {:.0f})".format(*from_rotarg[0:2]))
+        else:
+            styles.append(
+                "\\move({:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f})".format(
+                    *(from_rotarg[0:2] + to_rotarg[0:2] + (delay, delay + duration))
+                )
+            )
+        styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*from_rotarg[2:7]))
+        if (from_x, from_y) != (to_x, to_y):
+            styles.append(f"\\t({delay:d}, {delay + duration:d}, ")
+            styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*to_rotarg[2:7]))
+            styles.append(")")
+        if fontface:
+            styles.append(f"\\fn{ass_escape(fontface)}")
+        styles.append("\\fs%.0f" % (comment.size * zoom_factor[0]))
+        if comment.color != 0xFFFFFF:
+            styles.append(f"\\c&H{convert_color(comment.color)}&")
+            if comment.color == 0x000000:
+                styles.append("\\3c&HFFFFFF&")
+        if from_alpha == to_alpha:
+            styles.append(f"\\alpha&H{from_alpha:02X}")
+        elif (from_alpha, to_alpha) == (255, 0):
+            styles.append(f"\\fad({lifetime * 1000:.0f},0)")
+        elif (from_alpha, to_alpha) == (0, 255):
+            styles.append(f"\\fad(0, {lifetime * 1000:.0f})")
+        else:
+            styles.append(
+                f"\\fade({from_alpha:d}, {to_alpha:d}, {to_alpha:d}, 0, {lifetime * 1000:.0f}, {lifetime * 1000:.0f}, {lifetime * 1000:.0f})"
+            )
+        if not is_border:
+            styles.append("\\bord0")
+        self._text += "Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n".format(
+            start=convert_timestamp(comment.timeline),
+            end=convert_timestamp(comment.timeline + lifetime),
+            styles="".join(styles),
+            text=text,
+            styleid=styleid,
         )
 
     def to_string(self):
