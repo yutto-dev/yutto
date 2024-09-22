@@ -37,9 +37,6 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> l
     return read_comments_from_protobuf(protobuf, fontsize)
 
 
-BILI_PLACYER_SIZE = (891, 589)
-
-
 class AssText:
     def __init__(self):
         self._text = ""
