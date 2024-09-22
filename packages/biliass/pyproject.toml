@@ -4,7 +4,7 @@ description = "将 B 站弹幕转换为 ASS 弹幕"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
-  { name = "m13253" },
+  { name = "Star Brilliant", email = "m13253@hotmail.com" },
   { name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" },
 ]
 keywords = ["bilibili", "yutto", "Danmaku2ASS"]
