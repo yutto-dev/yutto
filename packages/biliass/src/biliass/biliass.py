@@ -11,13 +11,12 @@ from biliass._core import (
     Comment,
     CommentPosition,
     Rows,
-    get_zoom_factor,
-    parse_special_comment,
     read_comments_from_protobuf,
     read_comments_from_xml,
     write_comment_with_animation,
     write_head,
     write_normal_comment,
+    write_special_comment,
 )
 
 if TYPE_CHECKING:
@@ -38,52 +37,12 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> l
     return read_comments_from_protobuf(protobuf, fontsize)
 
 
-BILI_PLACYER_SIZE = (891, 589)
-
-
 class AssText:
     def __init__(self):
         self._text = ""
 
-    def write_comment_special(self, comment: Comment, width, height, styleid):
-        zoom_factor = get_zoom_factor(BILI_PLACYER_SIZE, (width, height))
-        try:
-            (
-                (rotate_y, rotate_z, from_x, from_y, to_x, to_y),
-                from_alpha,
-                to_alpha,
-                text,
-                delay,
-                lifetime,
-                duration,
-                fontface,
-                is_border,
-            ) = parse_special_comment(comment.comment, zoom_factor)
-
-            self.write_comment_with_animation(
-                comment,
-                width,
-                height,
-                rotate_y,
-                rotate_z,
-                from_x,
-                from_y,
-                to_x,
-                to_y,
-                from_alpha,
-                to_alpha,
-                text,
-                delay,
-                lifetime,
-                duration,
-                fontface,
-                is_border,
-                styleid,
-                zoom_factor,
-            )
-
-        except ValueError:
-            logging.warning(f"Invalid comment: {comment.comment!r}")
+    def write_special_comment(self, comment: Comment, width, height, styleid) -> None:
+        self._text += write_special_comment(comment, width, height, styleid)
 
     def write_head(self, width: int, height: int, fontface: str, fontsize: float, alpha: float, styleid: str) -> None:
         self._text += write_head(width, height, fontface, fontsize, alpha, styleid)
@@ -209,7 +168,7 @@ def process_comments(
                 reduced,
             )
         elif comment.pos == CommentPosition.Special:
-            ass.write_comment_special(comment, width, height, styleid)
+            ass.write_special_comment(comment, width, height, styleid)
         else:
             logging.warning(f"Invalid comment: {comment.comment!r}")
     if progress_callback:

@@ -1,4 +1,5 @@
 use crate::comment::{Comment, CommentPosition};
+use crate::reader::special::parse_special_comment;
 use crate::writer::rows;
 use crate::writer::utils;
 
@@ -163,8 +164,8 @@ pub fn write_comment_with_animation(
     comment: &Comment,
     width: u32,
     height: u32,
-    rotate_y: f64,
-    rotate_z: f64,
+    rotate_y: i64,
+    rotate_z: i64,
     from_x: f64,
     from_y: f64,
     to_x: f64,
@@ -172,24 +173,30 @@ pub fn write_comment_with_animation(
     from_alpha: u8,
     to_alpha: u8,
     text: &str,
-    delay: f64,
+    delay: i64,
     lifetime: f64,
-    duration: f64,
+    duration: i64,
     fontface: &str,
     is_border: bool,
     styleid: &str,
     zoom_factor: (f32, f32, f32),
 ) -> String {
     let from_rotarg = utils::convert_flash_rotation(
-        rotate_y,
-        rotate_z,
+        rotate_y as f64,
+        rotate_z as f64,
         from_x,
         from_y,
         width as f64,
         height as f64,
     );
-    let to_rotarg =
-        utils::convert_flash_rotation(rotate_y, rotate_z, to_x, to_y, width as f64, height as f64);
+    let to_rotarg = utils::convert_flash_rotation(
+        rotate_y as f64,
+        rotate_z as f64,
+        to_x,
+        to_y,
+        width as f64,
+        height as f64,
+    );
     if vec![
         from_rotarg.0,
         from_rotarg.1,
@@ -278,4 +285,46 @@ pub fn write_comment_with_animation(
     let styles = styles.join("");
     let text = utils::ass_escape(text);
     format!("Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n")
+}
+
+pub fn write_special_comment(comment: &Comment, width: u32, height: u32, styleid: &str) -> String {
+    let zoom_factor =
+        utils::get_zoom_factor(crate::reader::special::BILI_PLAYER_SIZE, (width, height));
+    let parsed_res = parse_special_comment(&comment.comment, zoom_factor);
+    if parsed_res.is_err() {
+        // eprintln!("Invalid comment: {}", comment.comment);
+        return "".to_owned();
+    }
+    let (
+        (rotate_y, rotate_z, from_x, from_y, to_x, to_y),
+        from_alpha,
+        to_alpha,
+        text,
+        delay,
+        lifetime,
+        duration,
+        fontface,
+        is_border,
+    ) = parsed_res.unwrap();
+    write_comment_with_animation(
+        comment,
+        width,
+        height,
+        rotate_y,
+        rotate_z,
+        from_x,
+        from_y,
+        to_x,
+        to_y,
+        from_alpha,
+        to_alpha,
+        &text,
+        delay,
+        lifetime,
+        duration,
+        &fontface,
+        is_border,
+        styleid,
+        zoom_factor,
+    )
 }

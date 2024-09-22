@@ -27,12 +27,12 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_read_comments_from_xml, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_read_comments_from_protobuf, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_parse_special_comment, m)?)?;
-    m.add_function(wrap_pyfunction!(python::py_get_zoom_factor, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_write_head, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_write_normal_comment, m)?)?;
     m.add_function(wrap_pyfunction!(
         python::py_write_comment_with_animation,
         m
     )?)?;
+    m.add_function(wrap_pyfunction!(python::py_write_special_comment, m)?)?;
     Ok(())
 }
