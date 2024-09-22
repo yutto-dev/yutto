@@ -103,15 +103,49 @@ pub fn py_write_normal_comment(
         reduced,
     ))
 }
-// pub fn write_normal_comment(
-//     rows: &mut rows::Rows,
-//     comment: &Comment,
-//     width: u32,
-//     height: u32,
-//     bottom_reserved: u32,
-//     fontsize: f32,
-//     duration_marquee: f64,
-//     duration_still: f64,
-//     styleid: &str,
-//     reduced: bool,
-// ) -> String {
+
+#[allow(clippy::too_many_arguments)]
+#[pyfunction(name = "write_comment_with_animation")]
+pub fn py_write_comment_with_animation(
+    comment: &crate::python::PyComment,
+    width: u32,
+    height: u32,
+    rotate_y: f64,
+    rotate_z: f64,
+    from_x: f64,
+    from_y: f64,
+    to_x: f64,
+    to_y: f64,
+    from_alpha: u8,
+    to_alpha: u8,
+    text: &str,
+    delay: f64,
+    lifetime: f64,
+    duration: f64,
+    fontface: &str,
+    is_border: bool,
+    styleid: &str,
+    zoom_factor: (f32, f32, f32),
+) -> PyResult<String> {
+    Ok(writer::ass::write_comment_with_animation(
+        &comment.inner,
+        width,
+        height,
+        rotate_y,
+        rotate_z,
+        from_x,
+        from_y,
+        to_x,
+        to_y,
+        from_alpha,
+        to_alpha,
+        text,
+        delay,
+        lifetime,
+        duration,
+        fontface,
+        is_border,
+        styleid,
+        zoom_factor,
+    ))
+}

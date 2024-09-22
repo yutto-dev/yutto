@@ -19,6 +19,7 @@ from biliass._core import (
     get_zoom_factor,
     read_comments_from_protobuf,
     read_comments_from_xml,
+    write_comment_with_animation,
     write_head,
     write_normal_comment,
 )
@@ -173,47 +174,26 @@ class AssText:
         styleid: str,
         zoom_factor: tuple[float, float, float],
     ) -> None:
-        from_rotarg = convert_flash_rotation(rotate_y, rotate_z, from_x, from_y, width, height)
-        to_rotarg = convert_flash_rotation(rotate_y, rotate_z, to_x, to_y, width, height)
-        styles = ["\\org(%d, %d)" % (width / 2, height / 2)]
-        if from_rotarg[0:2] == to_rotarg[0:2]:
-            styles.append("\\pos({:.0f}, {:.0f})".format(*from_rotarg[0:2]))
-        else:
-            styles.append(
-                "\\move({:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f}, {:.0f})".format(
-                    *(from_rotarg[0:2] + to_rotarg[0:2] + (delay, delay + duration))
-                )
-            )
-        styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*from_rotarg[2:7]))
-        if (from_x, from_y) != (to_x, to_y):
-            styles.append(f"\\t({delay:d}, {delay + duration:d}, ")
-            styles.append("\\frx{:.0f}\\fry{:.0f}\\frz{:.0f}\\fscx{:.0f}\\fscy{:.0f}".format(*to_rotarg[2:7]))
-            styles.append(")")
-        if fontface:
-            styles.append(f"\\fn{ass_escape(fontface)}")
-        styles.append("\\fs%.0f" % (comment.size * zoom_factor[0]))
-        if comment.color != 0xFFFFFF:
-            styles.append(f"\\c&H{convert_color(comment.color)}&")
-            if comment.color == 0x000000:
-                styles.append("\\3c&HFFFFFF&")
-        if from_alpha == to_alpha:
-            styles.append(f"\\alpha&H{from_alpha:02X}")
-        elif (from_alpha, to_alpha) == (255, 0):
-            styles.append(f"\\fad({lifetime * 1000:.0f},0)")
-        elif (from_alpha, to_alpha) == (0, 255):
-            styles.append(f"\\fad(0, {lifetime * 1000:.0f})")
-        else:
-            styles.append(
-                f"\\fade({from_alpha:d}, {to_alpha:d}, {to_alpha:d}, 0, {lifetime * 1000:.0f}, {lifetime * 1000:.0f}, {lifetime * 1000:.0f})"
-            )
-        if not is_border:
-            styles.append("\\bord0")
-        self._text += "Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n".format(
-            start=convert_timestamp(comment.timeline),
-            end=convert_timestamp(comment.timeline + lifetime),
-            styles="".join(styles),
-            text=text,
-            styleid=styleid,
+        self._text += write_comment_with_animation(
+            comment,
+            width,
+            height,
+            rotate_y,
+            rotate_z,
+            from_x,
+            from_y,
+            to_x,
+            to_y,
+            from_alpha,
+            to_alpha,
+            text,
+            delay,
+            lifetime,
+            duration,
+            fontface,
+            is_border,
+            styleid,
+            zoom_factor,
         )
 
     def to_string(self):
