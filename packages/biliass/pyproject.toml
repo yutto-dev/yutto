@@ -1,6 +1,5 @@
 [project]
 name = "biliass"
-version = "1.3.13"
 description = "将 B 站弹幕转换为 ASS 弹幕"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -23,6 +22,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = []
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/yutto-dev/yutto/tree/main/packages/biliass"
