@@ -12,9 +12,6 @@ fn get_position(input_pos: f64, is_height: bool, zoom_factor: (f32, f32, f32)) -
     } else {
         (zoom_factor.1, BILI_PLAYER_SIZE.0 as f64)
     };
-    if input_pos == 0. {
-        return zoom as f64;
-    }
 
     if input_pos < 1. {
         return zoom_factor.0 as f64 * input_pos * size + zoom as f64;
