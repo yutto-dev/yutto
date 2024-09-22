@@ -13,23 +13,18 @@ enum XmlVersion {
 fn parse_raw_p(reader: &mut Reader<&[u8]>, element: &BytesStart) -> Result<String, ParseError> {
     let mut attr_p = None;
     for attr_result in element.attributes() {
-        let attr = attr_result.map_err(|e| ParseError::XMLParseError(e.to_string()))?;
+        let attr = attr_result.map_err(|e| ParseError::Xml(e.to_string()))?;
         if attr.key.as_ref() == b"p" {
             attr_p = Some(
                 attr.decode_and_unescape_value(reader.decoder())
                     .map(|s| s.to_string())
                     .map_err(|e| {
-                        ParseError::XMLParseError(format!(
-                            "Error decoding version attribute: {}",
-                            e
-                        ))
+                        ParseError::Xml(format!("Error decoding version attribute: {}", e))
                     })?,
             );
         }
     }
-    attr_p.ok_or(ParseError::XMLParseError(
-        "No p attribute found".to_string(),
-    ))
+    attr_p.ok_or(ParseError::Xml("No p attribute found".to_string()))
 }
 
 fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
@@ -41,9 +36,7 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
     }
     buf.clear();
 
-    content.ok_or(ParseError::XMLParseError(
-        "No content found in comment".to_string(),
-    ))
+    content.ok_or(ParseError::Xml("No content found in comment".to_string()))
 }
 
 fn parse_comment_item(
@@ -55,7 +48,7 @@ fn parse_comment_item(
 ) -> Result<Option<Comment>, ParseError> {
     let split_p = raw_p.split(',').collect::<Vec<&str>>();
     if split_p.len() < 5 {
-        return Err(ParseError::XMLParseError(format!(
+        return Err(ParseError::Xml(format!(
             "Invalid p attribute: {raw_p}, expected at least 5 parts",
         )));
     }
@@ -65,13 +58,13 @@ fn parse_comment_item(
         "1" | "4" | "5" | "6" | "7" => {
             let mut timeline = split_p[p_offset]
                 .parse::<f64>()
-                .map_err(|e| ParseError::XMLParseError(format!("Error parsing timeline: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing timeline: {}", e)))?;
             if version == XmlVersion::V2 {
                 timeline /= 1000.0;
             }
-            let timestamp = split_p[4 + p_offset].parse::<u64>().map_err(|e| {
-                ParseError::XMLParseError(format!("Error parsing timestamp: {}", e))
-            })?;
+            let timestamp = split_p[4 + p_offset]
+                .parse::<u64>()
+                .map_err(|e| ParseError::Xml(format!("Error parsing timestamp: {}", e)))?;
             let comment_pos = match danmaku_type_id {
                 "1" => CommentPosition::Scroll,
                 "4" => CommentPosition::Top,
@@ -82,10 +75,10 @@ fn parse_comment_item(
             };
             let color = split_p[3 + p_offset]
                 .parse::<u32>()
-                .map_err(|e| ParseError::XMLParseError(format!("Error parsing color: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing color: {}", e)))?;
             let size = split_p[2 + p_offset]
                 .parse::<i32>()
-                .map_err(|e| ParseError::XMLParseError(format!("Error parsing size: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing size: {}", e)))?;
             let (comment_content, size, height, width) = if comment_pos != CommentPosition::Special
             {
                 let comment_content = utils::unescape_newline(content);
@@ -113,7 +106,7 @@ fn parse_comment_item(
         // ignore scripted comment
         "8" => Ok(None),
 
-        _ => Err(ParseError::XMLParseError(format!(
+        _ => Err(ParseError::Xml(format!(
             "Unknown danmaku type: {danmaku_type_id}",
         ))),
     }
@@ -127,7 +120,7 @@ fn parse_comment(
     id: u64,
 ) -> Result<Option<Comment>, ParseError> {
     if version == XmlVersion::V2 {
-        return Err(ParseError::XMLParseError("Not implemented".to_string()));
+        return Err(ParseError::Xml("Not implemented".to_string()));
     }
     let raw_p = parse_raw_p(reader, &element)?;
     let content = parse_comment_content(reader)?;
@@ -152,14 +145,12 @@ pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>,
                 break;
             }
             Ok(Event::Decl(decl)) => {
-                let version_literal = decl
-                    .version()
-                    .map_err(|e| ParseError::XMLParseError(e.to_string()))?;
+                let version_literal = decl.version().map_err(|e| ParseError::Xml(e.to_string()))?;
                 match version_literal.as_ref() {
                     b"1.0" => version = Some(XmlVersion::V1),
                     b"2.0" => version = Some(XmlVersion::V2),
                     _ => {
-                        return Err(BiliassError::ParseError(ParseError::XMLParseError(
+                        return Err(BiliassError::ParseError(ParseError::Xml(
                             "Unknown XML version".to_string(),
                         )))
                     }
@@ -168,7 +159,7 @@ pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>,
             Ok(Event::Start(e)) => {
                 if e.name().as_ref() == b"d" {
                     if version.is_none() {
-                        return Err(BiliassError::ParseError(ParseError::XMLParseError(
+                        return Err(BiliassError::ParseError(ParseError::Xml(
                             "No version specified".to_string(),
                         )));
                     }

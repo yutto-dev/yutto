@@ -2,18 +2,22 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DecodeError {
-    #[error("ProtobufDecodeError: {0}")]
-    ProtobufDecodeError(#[from] prost::DecodeError),
-    #[error("XMLDecodeError: {0}")]
-    XMLDecodeError(#[from] quick_xml::Error),
+    #[error("Protobuf: {0}")]
+    Protobuf(#[from] prost::DecodeError),
+    #[error("Xml: {0}")]
+    Xml(#[from] quick_xml::Error),
+    #[error("SpecialComment: {0}")]
+    SpecialComment(#[from] serde_json::Error),
 }
 
 #[derive(Error, Debug)]
 pub enum ParseError {
-    #[error("XMLParseError: {0}")]
-    XMLParseError(String),
-    #[error("ProtobufParseError")]
-    ProtobufParseError(),
+    #[error("Xml: {0}")]
+    Xml(String),
+    #[error("Protobuf")]
+    Protobuf(),
+    #[error("SpecialComment: {0}")]
+    SpecialComment(String),
 }
 
 #[derive(Error, Debug)]

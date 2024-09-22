@@ -276,5 +276,6 @@ pub fn write_comment_with_animation(
     let start = utils::convert_timestamp(comment.timeline);
     let end = utils::convert_timestamp(comment.timeline + lifetime);
     let styles = styles.join("");
+    let text = utils::ass_escape(text);
     format!("Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n")
 }
