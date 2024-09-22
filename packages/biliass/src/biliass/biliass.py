@@ -221,21 +221,6 @@ def process_comments(
     return ass.to_string()
 
 
-class safe_list(list):
-    def get(self, index, default=None):
-        def is_empty(value):
-            return value is None or value == ""
-
-        try:
-            return self[index] if not is_empty(self[index]) else default
-        except IndexError:
-            return default
-
-
-def wrap_default(value: T | None, default: T) -> T:
-    return default if value is None else value
-
-
 def Danmaku2ASS(
     inputs: list[str | bytes] | str | bytes,
     stage_width: int,
