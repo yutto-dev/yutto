@@ -130,7 +130,6 @@ pub fn py_process_comments(
     comments: Vec<PyRef<crate::python::PyComment>>,
     width: u32,
     height: u32,
-    styleid: &str,
     bottom_reserved: u32,
     fontface: &str,
     fontsize: f32,
@@ -140,6 +139,7 @@ pub fn py_process_comments(
     filters_regex: Vec<String>,
     reduced: bool,
 ) -> PyResult<String> {
+    let styleid = "biliass";
     let mut ass_result = "".to_owned();
     ass_result += &writer::ass::write_head(width, height, fontface, fontsize, alpha, styleid);
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);

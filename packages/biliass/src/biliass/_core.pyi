@@ -104,7 +104,6 @@ def process_comments(
     comments: list[Comment],
     width: int,
     height: int,
-    styleid: str,
     bottom_reserved: int,
     fontface: str,
     fontsize: float,
@@ -113,4 +112,4 @@ def process_comments(
     duration_still: float,
     filters_regex: list[str],
     reduced: bool,
-): ...
+) -> str: ...

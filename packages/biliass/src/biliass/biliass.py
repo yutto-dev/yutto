@@ -1,15 +1,12 @@
-# pyright: basic
-
 from __future__ import annotations
 
 import logging
 import random
-import re
 from typing import TypeVar
 
 from biliass._core import (
     Comment,
-    process_comments as process_comments_rs,
+    process_comments,
     read_comments_from_protobuf,
     read_comments_from_xml,
 )
@@ -28,34 +25,34 @@ def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> l
     return read_comments_from_protobuf(protobuf, fontsize)
 
 
-def process_comments(
-    comments: list[Comment],
-    width: int,
-    height: int,
-    bottom_reserved: int,
-    fontface: str,
-    fontsize: float,
-    alpha: float,
-    duration_marquee: float,
-    duration_still: float,
-    filters_regex: list[str],
-    reduced: bool,
-):
-    styleid = f"biliass_{random.randint(0, 0xFFFF):04x}"
-    return process_comments_rs(
-        comments,
-        width,
-        height,
-        styleid,
-        bottom_reserved,
-        fontface,
-        fontsize,
-        alpha,
-        duration_marquee,
-        duration_still,
-        [filter_regex.pattern for filter_regex in filters_regex],
-        reduced,
-    )
+# def process_comments(
+#     comments: list[Comment],
+#     width: int,
+#     height: int,
+#     bottom_reserved: int,
+#     fontface: str,
+#     fontsize: float,
+#     alpha: float,
+#     duration_marquee: float,
+#     duration_still: float,
+#     filters_regex: list[str],
+#     reduced: bool,
+# ) -> str:
+#     styleid = "biliass"
+#     return process_comments_rs(
+#         comments,
+#         width,
+#         height,
+#         styleid,
+#         bottom_reserved,
+#         fontface,
+#         fontsize,
+#         alpha,
+#         duration_marquee,
+#         duration_still,
+#         [filter_regex.pattern for filter_regex in filters_regex],
+#         reduced,
+#     )
 
 
 def Danmaku2ASS(
