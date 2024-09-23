@@ -99,9 +99,9 @@ pub fn write_comment(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_normal_comment(
-    rows: &mut rows::Rows,
-    comment: &Comment,
+pub fn write_normal_comment<'a>(
+    rows: &mut rows::Rows<'a>,
+    comment: &'a Comment,
     width: u32,
     height: u32,
     bottom_reserved: u32,
