@@ -5,10 +5,10 @@ use crate::reader::utils;
 use prost::Message;
 use std::io::Cursor;
 
-pub fn read_comments_from_protobuf(
-    data: &[u8],
-    fontsize: f32,
-) -> Result<Vec<Comment>, BiliassError> {
+pub fn read_comments_from_protobuf<T>(data: T, fontsize: f32) -> Result<Vec<Comment>, BiliassError>
+where
+    T: AsRef<[u8]>,
+{
     let replies = DmSegMobileReply::decode(&mut Cursor::new(data))
         .map_err(DecodeError::from)
         .map_err(BiliassError::from)?;
