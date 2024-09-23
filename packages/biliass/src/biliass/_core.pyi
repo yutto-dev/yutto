@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from typing import ClassVar
 
 class DanmakuElem:
@@ -58,48 +57,9 @@ class Comment:
 
 def read_comments_from_xml(text: str, fontsize: float) -> list[Comment]: ...
 def read_comments_from_protobuf(data: bytes, fontsize: float) -> list[Comment]: ...
-
-class Rows:
-    def __init__(self, num_types: int, capacity: int) -> None: ...
-
-def write_head(width: int, height: int, fontface: str, fontsize: float, alpha: float, styleid: str) -> str: ...
-def write_normal_comment(
-    rows: Rows,
-    comment: Comment,
-    width: int,
-    height: int,
-    bottom_reserved: int,
-    fontsize: float,
-    duration_marquee: float,
-    duration_still: float,
-    styleid: str,
-    reduced: bool,
-) -> str: ...
-def write_comment_with_animation(
-    comment: Comment,
-    width: int,
-    height: int,
-    rotate_y: float,
-    rotate_z: float,
-    from_x: float,
-    from_y: float,
-    to_x: float,
-    to_y: float,
-    from_alpha: int,
-    to_alpha: int,
-    text: str,
-    delay: float,
-    lifetime: float,
-    duration: float,
-    fontface: str,
-    is_border: bool,
-    styleid: str,
-    zoom_factor: tuple[float, float, float],
-) -> str: ...
 def parse_special_comment(
     content: str, zoom_factor: tuple[float, float, float]
 ) -> tuple[tuple[int, int, float, float, float, float], int, int, str, int, float, int, str, bool]: ...
-def write_special_comment(comment: Comment, width: int, height: int, styleid: str) -> str: ...
 def xml_to_ass(
     inputs: list[str],
     stage_width: int,
