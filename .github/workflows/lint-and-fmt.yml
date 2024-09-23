@@ -67,10 +67,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Format with rustfmt
-        working-directory: packages/biliass
+        working-directory: packages/biliass/rust
         run: |
           cargo fmt --all -- --check
       - name: Lint with clippy
-        working-directory: packages/biliass
+        working-directory: packages/biliass/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
