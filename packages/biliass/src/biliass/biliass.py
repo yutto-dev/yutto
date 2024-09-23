@@ -38,7 +38,7 @@ def process_comments(
     alpha: float,
     duration_marquee: float,
     duration_still: float,
-    filters_regex: list[re.Pattern[str]],
+    filters_regex: list[str],
     reduced: bool,
 ):
     styleid = f"biliass_{random.randint(0, 0xFFFF):04x}"
@@ -73,13 +73,6 @@ def Danmaku2ASS(
     is_reduce_comments: bool = False,
 ) -> str:
     comment_filters: list[str] = [comment_filter] if comment_filter is not None else []
-    filters_regex = []
-    for comment_filter in comment_filters:
-        try:
-            if comment_filter:
-                filters_regex.append(re.compile(comment_filter))
-        except:  # noqa: E722
-            raise ValueError(f"Invalid regular expression: {comment_filter}") from None
 
     comments: list[Comment] = []
     if not isinstance(inputs, list):
@@ -114,6 +107,6 @@ def Danmaku2ASS(
         text_opacity,
         duration_marquee,
         duration_still,
-        filters_regex,
+        comment_filters,
         is_reduce_comments,
     )
