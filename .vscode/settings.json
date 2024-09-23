@@ -7,6 +7,6 @@
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
   "rust-analyzer.linkedProjects": [
-    "${workspaceFolder}/packages/biliass/Cargo.toml"
+    "${workspaceFolder}/packages/biliass/rust/Cargo.toml"
   ]
 }
