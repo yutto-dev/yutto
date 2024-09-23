@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import logging
-import random
-from typing import TypeVar
+from typing import TypeVar, cast
 
 from biliass._core import (
     Comment,
-    process_comments,
+    protobuf_to_ass,
     read_comments_from_protobuf,
     read_comments_from_xml,
+    xml_to_ass,
 )
 
 T = TypeVar("T")
@@ -23,36 +22,6 @@ def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> list[Comme
 def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> list[Comment]:
     assert isinstance(protobuf, bytes), "protobuf supports bytes only"
     return read_comments_from_protobuf(protobuf, fontsize)
-
-
-# def process_comments(
-#     comments: list[Comment],
-#     width: int,
-#     height: int,
-#     bottom_reserved: int,
-#     fontface: str,
-#     fontsize: float,
-#     alpha: float,
-#     duration_marquee: float,
-#     duration_still: float,
-#     filters_regex: list[str],
-#     reduced: bool,
-# ) -> str:
-#     styleid = "biliass"
-#     return process_comments_rs(
-#         comments,
-#         width,
-#         height,
-#         styleid,
-#         bottom_reserved,
-#         fontface,
-#         fontsize,
-#         alpha,
-#         duration_marquee,
-#         duration_still,
-#         [filter_regex.pattern for filter_regex in filters_regex],
-#         reduced,
-#     )
 
 
 def Danmaku2ASS(
@@ -70,40 +39,40 @@ def Danmaku2ASS(
     is_reduce_comments: bool = False,
 ) -> str:
     comment_filters: list[str] = [comment_filter] if comment_filter is not None else []
-
-    comments: list[Comment] = []
     if not isinstance(inputs, list):
         inputs = [inputs]
-    for input in inputs:
-        if input_format == "xml":
-            comments.extend(read_comments_bilibili_xml(input, font_size))
-        else:
-            if isinstance(input, str):
-                logging.warning("Protobuf can only be read from bytes")
-            comments.extend(read_comments_bilibili_protobuf(input, font_size))
-    comments.sort(
-        key=lambda comment: (
-            comment.timeline,
-            comment.timestamp,
-            comment.no,
-            comment.comment,
-            comment.pos,
-            comment.color,
-            comment.size,
-            comment.height,
-            comment.width,
+
+    if input_format == "xml":
+        inputs = [text if isinstance(text, str) else text.decode() for text in inputs]
+        return xml_to_ass(
+            cast(list[str], inputs),
+            stage_width,
+            stage_height,
+            reserve_blank,
+            font_face,
+            font_size,
+            text_opacity,
+            duration_marquee,
+            duration_still,
+            comment_filters,
+            is_reduce_comments,
         )
-    )
-    return process_comments(
-        comments,
-        stage_width,
-        stage_height,
-        reserve_blank,
-        font_face,
-        font_size,
-        text_opacity,
-        duration_marquee,
-        duration_still,
-        comment_filters,
-        is_reduce_comments,
-    )
+    elif input_format == "protobuf":
+        for input in inputs:
+            if isinstance(input, str):
+                raise ValueError("Protobuf can only be read from bytes")
+        return protobuf_to_ass(
+            cast(list[bytes], inputs),
+            stage_width,
+            stage_height,
+            reserve_blank,
+            font_face,
+            font_size,
+            text_opacity,
+            duration_marquee,
+            duration_still,
+            comment_filters,
+            is_reduce_comments,
+        )
+    else:
+        raise TypeError(f"Invalid input format {input_format}")

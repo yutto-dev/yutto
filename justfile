@@ -95,8 +95,8 @@ docker-publish:
 build-biliass:
   cd packages/biliass; maturin build
 
-develop-biliass:
-  cd packages/biliass; maturin develop --uv
+develop-biliass *ARGS:
+  cd packages/biliass; maturin develop --uv {{ARGS}}
 
 release-biliass:
   @echo 'Tagging biliass@{{BILIASS_VERSION}}...'

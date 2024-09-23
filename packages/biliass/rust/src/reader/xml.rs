@@ -128,8 +128,11 @@ fn parse_comment(
     Ok(parsed_p)
 }
 
-pub fn read_comments_from_xml(text: &str, fontsize: f32) -> Result<Vec<Comment>, BiliassError> {
-    let filtered_text = utils::filter_bad_chars(text);
+pub fn read_comments_from_xml<T>(text: T, fontsize: f32) -> Result<Vec<Comment>, BiliassError>
+where
+    T: AsRef<str>,
+{
+    let filtered_text = utils::filter_bad_chars(text.as_ref());
     let mut reader = Reader::from_str(&filtered_text);
 
     let mut buf = Vec::new();

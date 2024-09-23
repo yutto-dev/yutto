@@ -1,4 +1,5 @@
 mod comment;
+mod convert;
 mod error;
 mod proto;
 mod python;
@@ -34,6 +35,7 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m
     )?)?;
     m.add_function(wrap_pyfunction!(python::py_write_special_comment, m)?)?;
-    m.add_function(wrap_pyfunction!(python::py_process_comments, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_xml_to_ass, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_protobuf_to_ass, m)?)?;
     Ok(())
 }

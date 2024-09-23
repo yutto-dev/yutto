@@ -100,16 +100,29 @@ def parse_special_comment(
     content: str, zoom_factor: tuple[float, float, float]
 ) -> tuple[tuple[int, int, float, float, float, float], int, int, str, int, float, int, str, bool]: ...
 def write_special_comment(comment: Comment, width: int, height: int, styleid: str) -> str: ...
-def process_comments(
-    comments: list[Comment],
-    width: int,
-    height: int,
-    bottom_reserved: int,
-    fontface: str,
-    fontsize: float,
-    alpha: float,
+def xml_to_ass(
+    inputs: list[str],
+    stage_width: int,
+    stage_height: int,
+    reserve_blank: int,
+    font_face: str,
+    font_size: float,
+    text_opacity: float,
     duration_marquee: float,
     duration_still: float,
-    filters_regex: list[str],
-    reduced: bool,
+    comment_filter: list[str],
+    is_reduce_comments: bool,
+) -> str: ...
+def protobuf_to_ass(
+    inputs: list[bytes],
+    stage_width: int,
+    stage_height: int,
+    reserve_blank: int,
+    font_face: str,
+    font_size: float,
+    text_opacity: float,
+    duration_marquee: float,
+    duration_still: float,
+    comment_filter: list[str],
+    is_reduce_comments: bool,
 ) -> str: ...
