@@ -56,7 +56,7 @@ class AvId(BilibiliId):
     ```
     """
 
-    # id convertion based on
+    # id conversion based on
     # https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/misc/bvid_desc.md
 
     XOR_CODE = 23442827791579
