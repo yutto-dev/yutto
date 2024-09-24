@@ -6,11 +6,11 @@ use std::io::Cursor;
 
 #[pyclass(name = "DanmakuElem")]
 pub struct PyDanmakuElem {
-    inner: proto::DanmakuElem,
+    inner: proto::danmaku::DanmakuElem,
 }
 
 impl PyDanmakuElem {
-    fn new(inner: proto::DanmakuElem) -> Self {
+    fn new(inner: proto::danmaku::DanmakuElem) -> Self {
         PyDanmakuElem { inner }
     }
 }
@@ -94,11 +94,11 @@ impl PyDanmakuElem {
 
 #[pyclass(name = "DmSegMobileReply")]
 pub struct PyDmSegMobileReply {
-    inner: proto::DmSegMobileReply,
+    inner: proto::danmaku::DmSegMobileReply,
 }
 
 impl PyDmSegMobileReply {
-    fn new(inner: proto::DmSegMobileReply) -> Self {
+    fn new(inner: proto::danmaku::DmSegMobileReply) -> Self {
         PyDmSegMobileReply { inner }
     }
 }
@@ -124,7 +124,7 @@ impl PyDmSegMobileReply {
     #[staticmethod]
     fn decode(buffer: &[u8]) -> PyResult<Self> {
         Ok(PyDmSegMobileReply::new(
-            proto::DmSegMobileReply::decode(&mut Cursor::new(buffer))
+            proto::danmaku::DmSegMobileReply::decode(&mut Cursor::new(buffer))
                 .map_err(error::DecodeError::from)
                 .map_err(error::BiliassError::from)?,
         ))
@@ -133,7 +133,7 @@ impl PyDmSegMobileReply {
 
 #[pyfunction(name = "get_danmaku_meta_size")]
 pub fn py_get_danmaku_meta_size(buffer: &[u8]) -> PyResult<usize> {
-    let dm_sge_opt = proto::DmWebViewReply::decode(&mut Cursor::new(buffer))
+    let dm_sge_opt = proto::danmaku_view::DmWebViewReply::decode(&mut Cursor::new(buffer))
         .map(|reply| reply.dm_sge)
         .map_err(error::DecodeError::from)
         .map_err(error::BiliassError::from)?;

@@ -31,6 +31,8 @@ class UgcVideoExtractor(SingleExtractor):
     REGEX_AV_ID = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
     REGEX_BV_ID = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
 
+    REGEX_BV_SPECIAL_PAGE = re.compile(r"https?://www\.bilibili\.com/festival/.+(?P<bvid>(bv|BV)\w+)")
+
     page: int
     avid: AvId
 
@@ -52,13 +54,17 @@ class UgcVideoExtractor(SingleExtractor):
         return matched, url
 
     def match(self, url: str) -> bool:
-        if (match_obj := self.REGEX_AV.match(url)) or (match_obj := self.REGEX_BV.match(url)):
+        if (
+            (match_obj := self.REGEX_AV.match(url))
+            or (match_obj := self.REGEX_BV.match(url))
+            or (match_obj := self.REGEX_BV_SPECIAL_PAGE.match(url))
+        ):
             self.page: int = 1
             if "aid" in match_obj.groupdict().keys():
                 self.avid = AId(match_obj.group("aid"))
             else:
                 self.avid = BvId(match_obj.group("bvid"))
-            if match_obj.group("page") is not None:
+            if "page" in match_obj.groupdict() and match_obj.group("page") is not None:
                 self.page = int(match_obj.group("page"))
             return True
         else:
