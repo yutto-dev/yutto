@@ -10,6 +10,7 @@ import urllib.parse
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto._typing import UserInfo
+from yutto.utils.asynclib import async_cache
 from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
@@ -26,6 +27,7 @@ dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable
 dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
 
 
+@async_cache(lambda _: "user_info")
 async def get_user_info(client: AsyncClient) -> UserInfo:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
     res_json = await Fetcher.fetch_json(client, info_api)

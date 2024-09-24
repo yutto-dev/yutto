@@ -57,7 +57,9 @@ async def extract_bangumi_data(
             await get_bangumi_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
         subtitles = await get_bangumi_subtitles(client, avid, cid) if args.require_subtitle else []
-        danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        danmaku = (
+            await get_danmaku(client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        )
         metadata = bangumi_info["metadata"] if args.require_metadata else None
         cover_data = await Fetcher.fetch_bin(client, bangumi_info["metadata"]["thumb"]) if args.require_cover else None
         subpath_variables_base: PathTemplateVariableDict = {
@@ -110,7 +112,9 @@ async def extract_cheese_data(
             else ([], [])
         )
         subtitles = await get_cheese_subtitles(client, avid, cid) if args.require_subtitle else []
-        danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        danmaku = (
+            await get_danmaku(client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        )
         metadata = cheese_info["metadata"] if args.require_metadata else None
         cover_data = await Fetcher.fetch_bin(client, cheese_info["metadata"]["thumb"]) if args.require_cover else None
         subpath_variables_base: PathTemplateVariableDict = {
@@ -161,7 +165,9 @@ async def extract_ugc_video_data(
         )
         subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
         chapter_info_data = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter_info else []
-        danmaku = await get_danmaku(client, cid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        danmaku = (
+            await get_danmaku(client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+        )
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
         if metadata and chapter_info_data:
             attach_chapter_info(metadata, chapter_info_data)

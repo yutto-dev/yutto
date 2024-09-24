@@ -56,11 +56,56 @@ class AvId(BilibiliId):
     ```
     """
 
+    # id convertion based on
+    # https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/misc/bvid_desc.md
+
+    XOR_CODE = 23442827791579
+    MASK_CODE = 2251799813685247
+    MAX_AID = 1 << 51
+    ALPHABET = "FcwAPNKTMug3GV5Lj7EJnHpWsx4tb8haYeviqBz6rkCy12mUSDQX9RdoZf"
+    ENCODE_MAP = 8, 7, 0, 5, 1, 3, 2, 4, 6
+    DECODE_MAP = tuple(reversed(ENCODE_MAP))
+
+    BASE = len(ALPHABET)
+    PREFIX = "BV1"
+    PREFIX_LEN = len(PREFIX)
+    CODE_LEN = len(ENCODE_MAP)
+
+    @staticmethod
+    def av2bv(aid: int) -> str:
+        bvid = [""] * 9
+        tmp = (AvId.MAX_AID | aid) ^ AvId.XOR_CODE
+        for i in range(AvId.CODE_LEN):
+            bvid[AvId.ENCODE_MAP[i]] = AvId.ALPHABET[tmp % AvId.BASE]
+            tmp //= AvId.BASE
+        return AvId.PREFIX + "".join(bvid)
+
+    @staticmethod
+    def bv2av(bvid: str) -> int:
+        assert bvid[:3] == AvId.PREFIX
+
+        bvid = bvid[3:]
+        tmp = 0
+        for i in range(AvId.CODE_LEN):
+            idx = AvId.ALPHABET.index(bvid[AvId.DECODE_MAP[i]])
+            tmp = tmp * AvId.BASE + idx
+        return (tmp & AvId.MASK_CODE) ^ AvId.XOR_CODE
+
     def to_dict(self) -> dict[str, str]:
         raise NotImplementedError("请不要直接使用 AvId")
 
     def to_url(self) -> str:
         raise NotImplementedError("请不要直接使用 AvId")
+
+    def as_aid(self) -> AId:
+        if isinstance(self, AId):
+            return self
+        return AId(str(self.bv2av(self.value)))
+
+    def as_bvid(self) -> BvId:
+        if isinstance(self, BvId):
+            return self
+        return BvId(self.av2bv(int(self.value)))
 
 
 class AId(AvId):
