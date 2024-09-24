@@ -38,7 +38,6 @@ pub fn py_xml_to_ass(
 #[allow(clippy::too_many_arguments)]
 #[pyfunction(name = "protobuf_to_ass")]
 pub fn py_protobuf_to_ass(
-    // inputs: Vec<Py<PyAny>>,
     inputs: Vec<PyBackedBytes>,
     stage_width: u32,
     stage_height: u32,

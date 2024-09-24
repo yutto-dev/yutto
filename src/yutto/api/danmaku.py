@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
+from biliass import get_danmaku_meta_size
+
+from yutto.api.user_info import get_user_info
 from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import CId
+    from yutto._typing import AvId, CId
     from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
 
 
@@ -18,21 +22,34 @@ async def get_xml_danmaku(client: httpx.AsyncClient, cid: CId) -> str:
     return results
 
 
-async def get_protobuf_danmaku(client: httpx.AsyncClient, cid: CId, segment_id: int = 1) -> bytes:
+async def get_protobuf_danmaku_segment(client: httpx.AsyncClient, cid: CId, segment_id: int = 1) -> bytes:
     danmaku_api = "http://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid={cid}&segment_index={segment_id}"
     results = await Fetcher.fetch_bin(client, danmaku_api.format(cid=cid, segment_id=segment_id))
     assert results is not None
     return results
 
 
+async def get_protobuf_danmaku(client: httpx.AsyncClient, avid: AvId, cid: CId) -> list[bytes]:
+    danmaku_meta_api = "https://api.bilibili.com/x/v2/dm/web/view?type=1&oid={cid}&pid={aid}"
+    aid = avid.as_aid()
+    meta_results = await Fetcher.fetch_bin(client, danmaku_meta_api.format(cid=cid, aid=aid.value))
+    assert meta_results is not None
+    size = get_danmaku_meta_size(meta_results)
+
+    results = await asyncio.gather(
+        *[get_protobuf_danmaku_segment(client, cid, segment_id) for segment_id in range(1, size + 1)]
+    )
+    return results
+
+
 async def get_danmaku(
     client: httpx.AsyncClient,
     cid: CId,
+    avid: AvId,
     save_type: DanmakuSaveType,
-    last_n_segments: int = 2,
 ) -> DanmakuData:
-    # 暂时默认使用 XML 源
-    source_type = "xml" if save_type == "xml" or save_type == "ass" else "protobuf"
+    # 在已经登录的情况下，使用 protobuf，因为未登录时 protobuf 弹幕会少非常多
+    source_type = "xml" if save_type == "xml" or not (await get_user_info(client))["is_login"] else "protobuf"
     danmaku_data: DanmakuData = {
         "source_type": source_type,
         "save_type": save_type,
@@ -42,6 +59,5 @@ async def get_danmaku(
     if source_type == "xml":
         danmaku_data["data"].append(await get_xml_danmaku(client, cid))
     else:
-        for i in range(1, last_n_segments + 1):
-            danmaku_data["data"].append(await get_protobuf_danmaku(client, cid, i))
+        danmaku_data["data"].extend(await get_protobuf_danmaku(client, avid, cid))
     return danmaku_data
