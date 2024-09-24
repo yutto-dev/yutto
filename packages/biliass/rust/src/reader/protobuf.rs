@@ -1,6 +1,6 @@
 use crate::comment::{Comment, CommentPosition};
 use crate::error::{BiliassError, DecodeError};
-use crate::proto::DmSegMobileReply;
+use crate::proto::danmaku::DmSegMobileReply;
 use crate::reader::utils;
 use prost::Message;
 use std::io::Cursor;
