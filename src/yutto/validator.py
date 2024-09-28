@@ -6,6 +6,8 @@ import re
 import sys
 from typing import TYPE_CHECKING
 
+import biliass
+
 from yutto.api.user_info import get_user_info
 from yutto.bilibili_typing.codec import VideoCodec, audio_codec_priority_default, video_codec_priority_default
 from yutto.exceptions import ErrorCode
@@ -37,6 +39,7 @@ def initial_validation(args: argparse.Namespace):
     # debug 设置
     if args.debug:
         set_logger_debug()
+        biliass.enable_tracing()
 
     # 初始化异步策略，消除平台差异
     initial_async_policy()

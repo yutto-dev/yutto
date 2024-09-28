@@ -1,6 +1,7 @@
 mod comment;
 mod convert;
 mod error;
+mod logging;
 mod proto;
 mod python;
 mod reader;
@@ -23,5 +24,6 @@ fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_get_danmaku_meta_size, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_xml_to_ass, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_protobuf_to_ass, m)?)?;
+    m.add_function(wrap_pyfunction!(python::py_enable_tracing, m)?)?;
     Ok(())
 }

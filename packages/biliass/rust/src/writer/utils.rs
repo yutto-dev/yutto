@@ -1,3 +1,5 @@
+use tracing::warn;
+
 use cached::proc_macro::cached;
 
 fn divmod(a: f64, b: f64) -> (f64, f64) {
@@ -150,19 +152,19 @@ pub fn convert_flash_rotation(
     let scale_xy = if fov + trans_z != 0.0 {
         fov / (fov + trans_z)
     } else {
-        // eprintln!(
-        //     "Rotation makes object behind the camera: trZ == {:.0}",
-        //     trans_z
-        // );
+        warn!(
+            "Rotation makes object behind the camera: trZ == {:.0}",
+            trans_z
+        );
         1.
     };
     let trans_x = (trans_x - width / 2.0) * scale_xy + width / 2.0;
     let trans_y = (trans_y - height / 2.0) * scale_xy + height / 2.0;
     let (scale_xy, out_x, out_y) = if scale_xy < 0. {
-        // eprintln!(
-        //     "Rotation makes object behind the camera: trZ == {:.0} < {:.0}",
-        //     trans_z, fov
-        // );
+        warn!(
+            "Rotation makes object behind the camera: trZ == {:.0} < {:.0}",
+            trans_z, fov
+        );
         (-scale_xy, out_x + 180., out_y + 180.)
     } else {
         (scale_xy, out_x, out_y)
