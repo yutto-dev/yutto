@@ -2,6 +2,7 @@ use crate::comment::{Comment, CommentPosition};
 use crate::reader::special::parse_special_comment;
 use crate::writer::rows;
 use crate::writer::utils;
+use tracing::warn;
 
 pub fn write_head(
     width: u32,
@@ -214,10 +215,10 @@ pub fn write_comment_with_animation(
     .into_iter()
     .any(|x| x.is_nan())
     {
-        // eprintln!(
-        //     "Invalid rotation arguments: {:?}",
-        //     (rotate_y, rotate_z, from_x, from_y)
-        // );
+        warn!(
+            "Invalid rotation arguments: {:?}",
+            (rotate_y, rotate_z, from_x, from_y)
+        );
         return "".to_owned();
     }
     let mut styles = vec![format!("\\org({}, {})", width / 2, height / 2)];
@@ -292,7 +293,7 @@ pub fn write_special_comment(comment: &Comment, width: u32, height: u32, styleid
         utils::get_zoom_factor(crate::reader::special::BILI_PLAYER_SIZE, (width, height));
     let parsed_res = parse_special_comment(&comment.comment, zoom_factor);
     if parsed_res.is_err() {
-        // eprintln!("Invalid comment: {}", comment.comment);
+        warn!("Invalid comment: {}", comment.comment);
         return "".to_owned();
     }
     let (

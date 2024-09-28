@@ -18,6 +18,8 @@ cached = "0.53.1"
 serde = "1.0.210"
 serde_json = "1.0.128"
 regex = "1.10.6"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
 
 [build-dependencies]
 prost-build = "0.13.3"
