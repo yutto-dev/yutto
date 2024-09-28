@@ -33,7 +33,7 @@ wheels = [
 
 [[package]]
 name = "biliass"
-version = "2.0.0a1"
+version = "2.0.0a2"
 source = { editable = "packages/biliass" }
 
 [[package]]
@@ -328,7 +328,7 @@ wheels = [
 
 [[package]]
 name = "yutto"
-version = "2.0.0b42"
+version = "2.0.0b43"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
