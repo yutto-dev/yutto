@@ -31,10 +31,10 @@ biliass danmaku.pb -s 1920x1080 -f protobuf -o danmaku.ass
 ```
 
 ```python
-from biliass import Danmaku2ASS
+from biliass import convert_to_ass
 
 # xml
-Danmaku2ASS(
+convert_to_ass(
     xml_text_or_bytes,
     width,
     height,
@@ -50,7 +50,7 @@ Danmaku2ASS(
 )
 
 # protobuf
-Danmaku2ASS(
+convert_to_ass(
     protobuf_bytes, # only bytes
     width,
     height,

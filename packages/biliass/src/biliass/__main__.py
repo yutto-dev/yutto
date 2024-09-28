@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-from biliass import Danmaku2ASS
+from biliass import convert_to_ass
 from biliass.__version__ import VERSION as biliass_version
 
 
@@ -103,7 +103,7 @@ def main():
         fout = open(args.output, "w", encoding="utf-8-sig", errors="replace", newline="\r\n")  # noqa: PTH123
     else:
         fout = sys.stdout
-    output = Danmaku2ASS(
+    output = convert_to_ass(
         inputs,
         width,
         height,
