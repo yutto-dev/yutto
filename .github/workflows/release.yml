@@ -29,9 +29,7 @@ jobs:
 
       - name: build release distributions
         run: |
-          just ci-install
           just build
-          just build-biliass
 
       - name: upload dists
         uses: actions/upload-artifact@v4
