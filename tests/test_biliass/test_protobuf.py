@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 import pytest
-from biliass import read_comments_bilibili_protobuf
+from biliass import convert_to_ass
 
 from ..conftest import DEFAULT_HEADERS, TEST_DIR
 
@@ -28,4 +28,4 @@ def gen_protobuf(base_dir: Path):
 def test_protobuf():
     gen_protobuf(TEST_DIR)
     with TEST_DIR.joinpath("test.pb").open("rb") as f:
-        list(read_comments_bilibili_protobuf(f.read(), 10))
+        convert_to_ass(f.read(), 1920, 1080, input_format="protobuf")
