@@ -1,28 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import TypeVar, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
 from biliass._core import (
-    Comment,
     protobuf_to_ass,
-    read_comments_from_protobuf,
-    read_comments_from_xml,
     xml_to_ass,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 T = TypeVar("T")
-
-
-def read_comments_bilibili_xml(text: str | bytes, fontsize: float) -> list[Comment]:
-    if isinstance(text, bytes):
-        text = text.decode()
-    return read_comments_from_xml(text, fontsize)
-
-
-def read_comments_bilibili_protobuf(protobuf: bytes | str, fontsize: float) -> list[Comment]:
-    assert isinstance(protobuf, bytes), "protobuf supports bytes only"
-    return read_comments_from_protobuf(protobuf, fontsize)
 
 
 def Danmaku2ASS(

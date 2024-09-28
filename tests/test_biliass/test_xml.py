@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 import pytest
-from biliass import read_comments_bilibili_xml
+from biliass import convert_to_ass
 
 from ..conftest import DEFAULT_HEADERS, TEST_DIR
 
@@ -30,11 +30,11 @@ def gen_xml_v1(base_dir: Path):
 def test_xml_v1_text():
     gen_xml_v1(TEST_DIR)
     with TEST_DIR.joinpath("test_v1.xml").open("r") as f:
-        list(read_comments_bilibili_xml(f.read(), 10))
+        convert_to_ass(f.read(), 1920, 1080)
 
 
 @pytest.mark.biliass
 def test_xml_v1_bytes():
     gen_xml_v1(TEST_DIR)
     with TEST_DIR.joinpath("test_v1.xml").open("rb") as f:
-        list(read_comments_bilibili_xml(f.read(), 10))
+        convert_to_ass(f.read(), 1920, 1080)
