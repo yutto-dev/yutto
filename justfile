@@ -107,8 +107,8 @@ release-biliass:
 snapshot-update:
   uv run pytest tests/test_biliass/test_corpus --snapshot-update
 
-fetch-corpus:
-  cd tests/test_biliass/test_corpus; uv run scripts/fetch-corpus.py
+fetch-corpus *ARGS:
+  cd tests/test_biliass/test_corpus; uv run scripts/fetch-corpus.py {{ARGS}}
 
 test-corpus:
   uv run pytest tests/test_biliass/test_corpus --capture=no -vv
