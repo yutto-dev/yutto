@@ -7,12 +7,14 @@ import re
 import string
 import time
 import urllib.parse
-from typing import Any, TypedDict
-
-from httpx import AsyncClient
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto._typing import UserInfo
+from yutto.utils.asynclib import async_cache
 from yutto.utils.fetcher import Fetcher
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 
 class WbiImg(TypedDict):
@@ -25,6 +27,7 @@ dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable
 dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
 
 
+@async_cache(lambda _: "user_info")
 async def get_user_info(client: AsyncClient) -> UserInfo:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
     res_json = await Fetcher.fetch_json(client, info_api)
@@ -62,7 +65,7 @@ def _get_mixin_key(string: str) -> str:
         40, 61, 26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57,
         62, 11, 36, 20, 34, 44, 52,
     ]  # fmt: skip
-    return "".join(list(map(lambda idx: string[idx], char_indices[:32])))
+    return "".join([string[idx] for idx in char_indices[:32]])
 
 
 def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):

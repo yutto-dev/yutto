@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 import sys
+from typing import TYPE_CHECKING
 
-from yutto._typing import AudioUrlMeta, VideoUrlMeta
 from yutto.bilibili_typing.codec import (
     AudioCodec,
     VideoCodec,
@@ -18,6 +18,9 @@ from yutto.bilibili_typing.quality import (
 )
 from yutto.exceptions import ErrorCode
 from yutto.utils.console.logger import Logger
+
+if TYPE_CHECKING:
+    from yutto._typing import AudioUrlMeta, VideoUrlMeta
 
 
 def select_video(
@@ -113,7 +116,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
     else:
         episode_list = []
 
-    episode_list = sorted(list(set(episode_list)))
+    episode_list = sorted(set(episode_list))
 
     # 筛选满足条件的剧集
     out_of_range: list[int] = []

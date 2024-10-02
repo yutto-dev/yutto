@@ -1,6 +1,6 @@
 [project]
 name = "yutto"
-version = "2.0.0-beta.40"
+version = "2.0.0-beta.43"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
   "aiofiles>=24.1.0",
-  "biliass==1.3.11",
+  "biliass==2.0.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
   "typing-extensions>=4.12.2",
   "dict2xml>=1.7.6",
@@ -42,14 +42,21 @@ yutto = "yutto.__main__:main"
 [tool.uv]
 dev-dependencies = [
   "pytest>=8.3.2",
-  "pyright>=1.1.377",
+  "pyright>=1.1.381",
   "pytest-rerunfailures>=14.0",
-  "ruff>=0.6.2",
-  "typos>=1.23.7",
+  "ruff>=0.6.7",
+  "typos>=1.24.6",
+  "syrupy>=4.7.1",
 ]
 
+[tool.uv.sources]
+biliass = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
 [tool.pytest.ini_options]
-markers = ["api", "e2e", "processor", "ignore", "ci_skip", "ci_only"]
+markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
 
 [tool.pyright]
 include = ["yutto", "tests"]
@@ -59,6 +66,7 @@ typeCheckingMode = "strict"
 [tool.ruff]
 line-length = 120
 target-version = "py39"
+exclude = ["*_pb2.py", "*_pb2.pyi"]
 
 [tool.ruff.lint]
 select = [
@@ -69,12 +77,32 @@ select = [
   "W",
   # Isort
   "I",
+  # Comprehensions
+  "C4",
+  # Debugger
+  "T100",
   # Pyupgrade
   "UP",
   # Flake8-pyi
   "PYI",
+  # Bugbear
+  "B",
+  # Pylint
+  "PLE",
+  # Flake8-simplify
+  "SIM101",
   # Flake8-use-pathlib
   "PTH",
+  # Pygrep-hooks
+  "PGH004",
+  # Flake8-type-checking
+  "TCH",
+  # Flake8-raise
+  "RSE",
+  # Refurb
+  "FURB",
+  # Flake8-future-annotations
+  "FA",
   # Yesqa
   "RUF100",
 ]
@@ -87,6 +115,7 @@ ignore = [
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
 known-first-party = ["yutto"]
+combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]

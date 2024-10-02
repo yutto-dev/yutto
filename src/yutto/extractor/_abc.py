@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import argparse
 from abc import ABCMeta, abstractmethod
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
-import httpx
+if TYPE_CHECKING:
+    import argparse
 
-from yutto._typing import EpisodeData
-from yutto.utils.asynclib import CoroutineWrapper
+    import httpx
+
+    from yutto._typing import EpisodeData
+    from yutto.utils.asynclib import CoroutineWrapper
 
 T = TypeVar("T")
 

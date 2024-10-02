@@ -5,8 +5,10 @@
    <a href="https://pypi.org/project/yutto/" target="_blank"><img src="https://img.shields.io/pypi/v/yutto?style=flat-square" alt="pypi"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/yutto?style=flat-square"></a>
    <a href="LICENSE"><img alt="LICENSE" src="https://img.shields.io/github/license/yutto-dev/yutto?style=flat-square"></a>
+   <br/>
+   <a href="https://github.com/astral-sh/uv"><img alt="uv" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=flat-square"></a>
    <a href="https://github.com/astral-sh/ruff"><img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square"></a>
-   <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67?style=flat-square" alt="Gitmoji"></a>
+   <a href="https://gitmoji.dev"><img alt="Gitmoji" src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67?style=flat-square"></a>
    <a href="https://discord.gg/5cQGyFwsqC"><img src="https://img.shields.io/badge/chat-discord-5d24a3?logo=discord&style=flat-square" alt="discord chat"></a>
 </p>
 
@@ -60,8 +62,8 @@ pip install --pre yutto
 当然，你也可以通过 [pipx](https://github.com/pypa/pipx)/[uv](https://github.com/astral-sh/uv) 来安装 yutto（当然，前提是你要自己先安装它）
 
 ```bash
-pipx install yutto      # 使用 pipx
-uv tool install yutto   # 或者使用 uv
+pipx install --pre yutto      # 使用 pipx
+uv tool install --pre yutto   # 或者使用 uv
 ```
 
 pipx/uv 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx/uv 是更推荐的安装方式（uv 会比 pipx 更快些～）。
@@ -153,7 +155,7 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 #### 指定视频清晰度等级
 
 -  参数 `-q` 或 `--video-quality`
--  可选值 `127 | 126 | 125 | 120 | 116 | 112 | 80 | 74 | 64 | 32 | 16`
+-  可选值 `127 | 126 | 125 | 120 | 116 | 112 | 100 | 80 | 74 | 64 | 32 | 16`
 -  默认值 `127`
 
 清晰度对应关系如下
@@ -167,13 +169,14 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 | 120 | 4K 超清 |
 | 116 | 1080P 60帧 |
 | 112 | 1080P 高码率 |
+| 100 | 智能修复 |
 | 80 | 1080P 高清 |
 | 74 | 720P 60帧 |
 | 64 | 720P 高清 |
 | 32 | 480P 清晰 |
 | 16 | 360P 流畅 |
 
-并不是说指定某个清晰度就一定会下载该清晰度的视频，yutto 只会尽可能满足你的要求，如果不存在指定的清晰度，yutto 就会按照默认的清晰度搜索机制进行调节，比如指定清晰度为 `80`，**首先会依次降清晰度搜索** `74`、`64`、`32`、`16`，如果依然找不到合适的则**继续升清晰度搜索** `112`、`116`、`120`、`125`、`126`、`127`。
+并不是说指定某个清晰度就一定会下载该清晰度的视频，yutto 只会尽可能满足你的要求，如果不存在指定的清晰度，yutto 就会按照默认的清晰度搜索机制进行调节，比如指定清晰度为 `80`，**首先会依次降清晰度搜索** `74`、`64`、`32`、`16`，如果依然找不到合适的则**继续升清晰度搜索** `100`、`112`、`116`、`120`、`125`、`126`、`127`。
 
 值得注意的是，目前杜比视界视频只能简单下载音视频流并合并，合并后并不能达到在线观看的效果。
 
@@ -271,7 +274,11 @@ https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 -  可选值 `"ass" | "xml" | "protobuf"`
 -  默认值 `"ass"`
 
-B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，yutto 会自动下载 `xml` 格式弹幕并转换为 `ass` 格式，如果你不喜欢 yutto 自动转换的效果，可以选择输出格式为 `xml` 或 `protobuf`，手动通过一些工具进行转换，比如 yutto 和 bilili 所使用的 [biliass](https://github.com/yutto-dev/biliass)，或者使用 [us-danmaku](https://tiansh.github.io/us-danmaku/bilibili/) 进行在线转换。
+B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，`xml` 接口为旧接口，弹幕数上限较低，`protobuf` 接口相对较高，但不登录情况下只能获取很少的弹幕
+
+为了确保无论是否登录都能获取最多的弹幕，yutto 在登录时会下载 `protobuf` 源数据，在未登录时会下载 `xml` 源数据，并将其转换为主流播放器支持的 `ass` 格式
+
+如果你不喜欢 yutto 自动转换的效果，可以选择输出格式为 `xml` 或 `protobuf`，手动通过一些工具进行转换，比如 yutto 和 bilili 所使用的 [biliass](https://github.com/yutto-dev/yutto/tree/main/packages/biliass)，或者使用 [us-danmaku](https://tiansh.github.io/us-danmaku/bilibili/) 进行在线转换。
 
 如果你不想下载弹幕，只需要使用参数 `--no-danmaku` 即可。
 
@@ -720,28 +727,21 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 ## Roadmap
 
-### 2.0.0-beta
-
--  [x] feat: 支持 bare name (bare id, bare path)
--  [x] refactor: url 列表能够预线性展开
--  [x] feat: 添加各种 return code
--  [x] test: 编写单元测试
-
 ### 2.0.0-rc
 
 -  [x] feat: 投稿视频描述文件支持
 -  [x] refactor: 整理路径变量名
 -  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
+-  [ ] refactor: 重写 biliass
+
+### 2.0.0
+
 -  [ ] refactor: 针对视频合集优化路径变量
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 
--  [ ] feat: 增加参数 `--reverse` 以允许逆序下载（不清楚是否有必要诶……可能只是我个人的需求）
--  [ ] feat: 字幕、弹幕嵌入视频支持（也许？）
--  [ ] feat: 封面下载支持（也许？）
--  [ ] refactor: 以插件形式支持更多音视频处理方面的功能，比如类似 autosub 的工具（也许？）
 -  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
 -  [ ] feat: 更多批下载支持
 -  [ ] feat: 以及更加可爱～
@@ -750,7 +750,7 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 -  基本结构：<https://github.com/yutto-dev/bilili>
 -  协程下载：<https://github.com/changmenseng/AsyncBilibiliDownloader>
--  弹幕转换：<https://github.com/yutto-dev/biliass>
+-  弹幕转换：<https://github.com/yutto-dev/yutto/tree/main/packages/biliass>
 -  样式设计：<https://github.com/willmcgugan/rich>
 
 ## 参与贡献

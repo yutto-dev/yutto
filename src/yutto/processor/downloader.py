@@ -5,11 +5,8 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
-import httpx
-
-from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
 from yutto.processor.progressbar import show_progress
 from yutto.processor.selector import select_audio, select_video
@@ -23,6 +20,11 @@ from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.funcutils import filter_none_value, xmerge
 from yutto.utils.metadata import ChapterInfoData, write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
+
+if TYPE_CHECKING:
+    import httpx
+
+    from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:

@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import argparse
 import re
-from typing import Any
-
-import httpx
+from typing import TYPE_CHECKING, Any
 
 from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
@@ -17,6 +14,11 @@ from yutto.extractor.common import extract_bangumi_data
 from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
+
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
 
 
 class BangumiBatchExtractor(BatchExtractor):

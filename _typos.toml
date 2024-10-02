@@ -1,2 +1,5 @@
+[files]
+extend-exclude = ["tests/test_biliass/test_corpus"]
+
 [default.extend-identifiers]
 pn = "pn" # Abbr. for "page number"

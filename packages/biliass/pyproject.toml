@@ -1,0 +1,47 @@
+[project]
+name = "biliass"
+description = "将 B 站弹幕转换为 ASS 弹幕"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Star Brilliant", email = "m13253@hotmail.com" },
+  { name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" },
+]
+keywords = ["bilibili", "yutto", "danmaku", "ASS"]
+license = { text = "GPLv3" }
+classifiers = [
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = []
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/yutto-dev/yutto/tree/main/packages/biliass"
+Documentation = "https://github.com/yutto-dev/yutto/tree/main/packages/biliass"
+Repository = "https://github.com/yutto-dev/yutto"
+Issues = "https://github.com/yutto-dev/yutto/issues"
+
+[project.scripts]
+biliass = "biliass.__main__:main"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "biliass._core"
+
+[tool.pyright]
+include = ["src/biliass"]
+pythonVersion = "3.9"
+typeCheckingMode = "basic"
+
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"

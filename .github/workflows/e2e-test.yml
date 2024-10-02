@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        uses: astral-sh/setup-uv@v3
 
       - name: Install python
         uses: actions/setup-python@v5
@@ -46,8 +46,8 @@ jobs:
         run: |
           uv run yutto -v
           uv run yutto -h
-          uv run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
-          just clean
+          uv run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w -d __test_files__
+          rm -rf __test_files__
 
       - name: e2e test
         run: |

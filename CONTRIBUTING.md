@@ -43,85 +43,114 @@ uv run yutto -v
 
 这部分内容带你了解下 yutto 的主要模块结构与工作流程。
 
-> 本部分内容可能略有滞后，这里列出的是 2024-06-16 时 [2b35887a3dc40f405297a38c53694e18c04cb8e6](https://github.com/yutto-dev/yutto/tree/2b35887a3dc40f405297a38c53694e18c04cb8e6) 的模块结构，
+> 本部分内容可能略有滞后，这里列出的是 2024-09-09 时 [bb207c1a0cff4ff338a0464dd2d6f967441ca0e2](https://github.com/yutto-dev/yutto/tree/bb207c1a0cff4ff338a0464dd2d6f967441ca0e2) 的模块结构，
 
 ### 模块结构
 
 ```text
 .
-├── Dockerfile                         # 一个轻量的 yutto docker
-├── _typos.toml                        # typos 配置
-├── justfile                           # just 命令启动文件
-├── pyproject.toml                     # Python 统一配置，含各种工具链配置、依赖项声明等
-├── tests                              # 测试文件
+├── CONTRIBUTING.md                       # 贡献指南
+├── Dockerfile                            # 一个轻量的 yutto docker
+├── LICENSE                               # GPL-3.0 License
+├── README.md                             # 项目说明
+├── _typos.toml                           # typos 配置
+├── justfile                              # just 命令启动文件
+├── pyproject.toml                        # Python 统一配置，含各种工具链配置、依赖项声明等
+├── src
+│   └── yutto
+│       ├── __init__.py
+│       ├── __main__.py                   # 命令行入口，含所有命令选项
+│       ├── __version__.py
+│       ├── _typing.py                    # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
+│       ├── api                           # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
+│       │   ├── __init__.py
+│       │   ├── bangumi.py                # 番剧相关
+│       │   ├── cheese.py                 # 课程相关
+│       │   ├── collection.py             # 合集相关
+│       │   ├── danmaku.py                # 弹幕相关（xml、protobuf）
+│       │   ├── space.py                  # 个人空间相关（收藏夹、合集、列表）
+│       │   ├── ugc_video.py              # 投稿视频相关
+│       │   └── user_info.py              # 用户信息相关
+│       ├── bilibili_typing               # bilibili 自己的一些数据类型绑定
+│       │   ├── __init__.py
+│       │   ├── codec.py                  # bilibili 的 codec
+│       │   └── quality.py                # bilibili 的 qn
+│       ├── exceptions.py                 # yutto 异常声明模块
+│       ├── extractor                     # 页面提取器（每种入口 url 对应一个 extractor）
+│       │   ├── __init__.py
+│       │   ├── _abc.py                   # 基本抽象类
+│       │   ├── bangumi.py                # 番剧单话
+│       │   ├── bangumi_batch.py          # 番剧全集
+│       │   ├── cheese.py                 # 课程单话
+│       │   ├── cheese_batch.py           # 课程全集
+│       │   ├── collection.py             # 合集
+│       │   ├── common.py                 # 低阶提取器（投稿视频、番剧、课程），每种视频类型对应一个低阶提取器
+│       │   ├── favourites.py             # 收藏夹
+│       │   ├── series.py                 # 视频列表
+│       │   ├── ugc_video.py              # 投稿视频单集
+│       │   ├── ugc_video_batch.py        # 投稿视频批量
+│       │   ├── user_all_favourites.py    # 全部收藏夹
+│       │   ├── user_all_ugc_videos.py    # 个人空间全部
+│       │   └── user_watch_later.py       # 稍后再看
+│       ├── processor                     # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
+│       │   ├── __init__.py
+│       │   ├── downloader.py             # 下载器
+│       │   ├── parser.py                 # 文件解析器（解析任务列表、alias 文件）
+│       │   ├── path_resolver.py          # 路径处理器（需处理路径变量）
+│       │   ├── progressbar.py            # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
+│       │   └── selector.py               # 选集、内容过滤器（本部分可修改成支持交互的）
+│       ├── py.typed
+│       ├── utils                         # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
+│       │   ├── __init__.py
+│       │   ├── asynclib.py               # 封装部分异步相关方法
+│       │   ├── console                   # 命令行打印相关
+│       │   │   ├── __init__.py
+│       │   │   ├── attributes.py
+│       │   │   ├── colorful.py
+│       │   │   ├── formatter.py
+│       │   │   ├── logger.py             # 其中的 Logger 是 yutto 主要的打印方式，yutto 中只应使用这一种打印方式
+│       │   │   └── status_bar.py         # 底部状态栏（主要用于显示进度条）
+│       │   ├── danmaku.py                # 「资源文件」弹幕基本封装
+│       │   ├── fetcher.py                # 基本抓取器
+│       │   ├── ffmpeg.py                 # FFmpeg 驱动单例模块
+│       │   ├── file_buffer.py            # 文件缓冲器（yutto 下载原理的核心）
+│       │   ├── filter.py                 # 数据过滤器（根据时间过滤选择的剧集）
+│       │   ├── funcutils                 # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
+│       │   │   ├── __init__.py           # 一些实用函数
+│       │   │   ├── aobject.py            # 一个简单的抽象类
+│       │   │   ├── as_sync.py            # 异步转同步
+│       │   │   ├── data_access.py        # 数据访问
+│       │   │   ├── filter_none_value.py  # 过滤 None 值
+│       │   │   ├── singleton.py          # 单例模式
+│       │   │   └── xmerge.py             # 合并多个迭代器
+│       │   ├── metadata.py               # 「资源文件」描述文件基本封装
+│       │   ├── priority.py               # 资源优先级判定（用于 codec、quality 判定）
+│       │   ├── subtitle.py               # 「资源文件」字幕基本封装
+│       │   └── time.py                   # 时间基本模块
+│       └── validator.py                  # 命令参数验证器（内含初期全局状态的设置）
+├── tests                                 # 测试目录
 │   ├── __init__.py
-│   ├── test_api                       # API 测试模块，对应 yutto/api
-│   ├── test_e2e.py                    # 端到端测试
-│   ├── test_processor.py              # processor 测试模块，对应 yutto/processor
-│   └── test_utils.py                  # utils 测试模块，对应 yutto/utils
-└── yutto
-    ├── __init__.py
-    ├── __main__.py                    # 命令行入口，含所有命令选项
-    ├── __version__.py
-    ├── _typing.py                     # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
-    ├── api                            # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
-    │   ├── __init__.py
-    │   ├── bangumi.py                 # 番剧相关
-    │   ├── cheese.py                  # 课程相关
-    │   ├── collection.py              # 合集相关
-    │   ├── danmaku.py                 # 弹幕相关（xml、protobuf）
-    │   ├── space.py                   # 个人空间相关（收藏夹、合集、列表）
-    │   ├── ugc_video.py               # 投稿视频相关
-    │   └── user_info.py               # 用户信息相关
-    ├── bilibili_typing                # bilibili 自己的一些数据类型绑定
-    │   ├── __init__.py
-    │   ├── codec.py                   # bilibili 的 codec
-    │   └── quality.py                 # bilibili 的 qn
-    ├── exceptions.py                  # yutto 异常声明模块
-    ├── extractor                      # 页面提取器（每种入口 url 对应一个 extractor）
-    │   ├── __init__.py
-    │   ├── _abc.py                    # 基本抽象类
-    │   ├── bangumi.py                 # 番剧单话
-    │   ├── bangumi_batch.py           # 番剧全集
-    │   ├── cheese.py                  # 课程单话
-    │   ├── cheese_batch.py            # 课程全集
-    │   ├── collection.py              # 合集
-    │   ├── common.py                  # 低阶提取器（投稿视频、番剧、课程），每种视频类型对应一个低阶提取器
-    │   ├── favourites.py              # 收藏夹
-    │   ├── series.py                  # 视频列表
-    │   ├── ugc_video.py               # 投稿视频单集
-    │   ├── ugc_video_batch.py         # 投稿视频批量
-    │   ├── user_all_favourites.py     # 全部收藏夹
-    │   ├── user_all_ugc_videos.py     # 个人空间全部
-    │   └── user_watch_later.py        # 稍后再看
-    ├── processor                      # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
-    │   ├── __init__.py
-    │   ├── downloader.py              # 下载器
-    │   ├── parser.py                  # 文件解析器（解析任务列表、alias 文件）
-    │   ├── path_resolver.py           # 路径处理器（需处理路径变量）
-    │   ├── progressbar.py             # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
-    │   └── selector.py                # 选集、内容过滤器（本部分可修改成支持交互的）
-    ├── utils                          # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
-    │   ├── __init__.py
-    │   ├── asynclib.py                # 封装部分异步相关方法
-    │   ├── console                    # 命令行打印相关
-    │   │   ├── __init__.py
-    │   │   ├── attributes.py
-    │   │   ├── colorful.py
-    │   │   ├── formatter.py
-    │   │   ├── logger.py              # 其中的 Logger 是 yutto 主要的打印方式，yutto 中只应使用这一种打印方式
-    │   │   └── status_bar.py          # 底部状态栏（主要用于显示进度条）
-    │   ├── danmaku.py                 # 「资源文件」弹幕基本封装
-    │   ├── fetcher.py                 # 基本抓取器
-    │   ├── ffmpeg.py                  # FFmpeg 驱动单例模块
-    │   ├── file_buffer.py             # 文件缓冲器（yutto 下载原理的核心）
-    │   ├── filter.py                  # 数据过滤器（根据时间过滤选择的剧集）
-    │   ├── funcutils                  # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
-    │   ├── metadata.py                # 「资源文件」描述文件基本封装
-    │   ├── priority.py                # 资源优先级判定（用于 codec、quality 判定）
-    │   ├── subtitle.py                # 「资源文件」字幕基本封装
-    │   └── time.py                    # 时间基本模块
-    └── validator.py                   # 命令参数验证器（内含初期全局状态的设置）
+│   ├── conftest.py                       # pytest 配置
+│   ├── test_api                          # API 测试模块，对应 yutto/api
+│   │   ├── __init__.py
+│   │   ├── test_bangumi.py
+│   │   ├── test_cheese.py
+│   │   ├── test_collection.py
+│   │   ├── test_danmaku.py
+│   │   ├── test_space.py
+│   │   ├── test_ugc_video.py
+│   │   └── test_user_info.py
+│   ├── test_e2e.py                       # 端到端测试
+│   ├── test_processor                    # processor 测试模块，对应 yutto/processor
+│   │   ├── __init__.py
+│   │   ├── test_downloader.py
+│   │   ├── test_path_resolver.py
+│   │   └── test_selector.py
+│   └── test_utils                        # utils 测试模块，对应 yutto/utils
+│       ├── __init__.py
+│       ├── test_data_access.py
+│       └── test_ffmpeg.py
+└── uv.lock                               # uv 依赖 lockfile
 ```
 
 ### 工作流程

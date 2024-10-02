@@ -1,0 +1,26 @@
+[package]
+name = "biliass-core"
+version = "2.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "biliass_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22.3", features = ["abi3-py39"] }
+bytes = "1.7.2"
+prost = "0.13.3"
+thiserror = "1.0.63"
+quick-xml = "0.36.2"
+cached = "0.53.1"
+serde = "1.0.210"
+serde_json = "1.0.128"
+regex = "1.10.6"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+
+[build-dependencies]
+prost-build = "0.13.3"
+protox = "0.7.1"

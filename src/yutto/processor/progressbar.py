@@ -3,12 +3,15 @@ from __future__ import annotations
 import asyncio
 import math
 import time
+from typing import TYPE_CHECKING
 
 from yutto.utils.console.attributes import get_terminal_size
 from yutto.utils.console.colorful import Color, RGBColor, Style, colored_string
 from yutto.utils.console.formatter import size_format
 from yutto.utils.console.logger import Logger
-from yutto.utils.file_buffer import AsyncFileBuffer
+
+if TYPE_CHECKING:
+    from yutto.utils.file_buffer import AsyncFileBuffer
 
 
 class ProgressBar:

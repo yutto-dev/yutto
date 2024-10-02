@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import argparse
 import re
-from typing import Any
-
-import httpx
+from typing import TYPE_CHECKING, Any
 
 from yutto._typing import EpisodeData, EpisodeId, SeasonId
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
@@ -13,6 +10,11 @@ from yutto.extractor.common import extract_cheese_data
 from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
+
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
 
 
 class CheeseBatchExtractor(BatchExtractor):

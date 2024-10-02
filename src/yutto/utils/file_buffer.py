@@ -3,13 +3,16 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass, field
 from pathlib import Path
-from types import TracebackType
+from typing import TYPE_CHECKING
 
 import aiofiles
 from typing_extensions import Self
 
 from yutto.utils.console.logger import Logger
 from yutto.utils.funcutils import aobject
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 
 @dataclass(order=True)

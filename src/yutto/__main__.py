@@ -6,14 +6,12 @@ import copy
 import os
 import re
 import sys
-from collections.abc import Sequence
-from typing import Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import httpx
 from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
-from yutto._typing import EpisodeData
 from yutto.bilibili_typing.quality import (
     audio_quality_priority_default,
     video_quality_priority_default,
@@ -47,6 +45,11 @@ from yutto.validator import (
     validate_batch_arguments,
     validate_user_info,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from yutto._typing import EpisodeData
 
 DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
 DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
@@ -86,7 +89,7 @@ def cli() -> argparse.ArgumentParser:
         default=127,
         choices=video_quality_priority_default,
         type=int,
-        help="视频清晰度等级（127:8K, 126:Dolby Vision, 125:HDR, 120:4K, 116:1080P60, 112:1080P+, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
+        help="视频清晰度等级（127:8K, 126:Dolby Vision, 125:HDR, 120:4K, 116:1080P60, 112:1080P+, 100:智能修复, 80:1080P, 74:720P60, 64:720P, 32:480P, 16:360P）",
     )
     group_common.add_argument(
         "-aq",
@@ -404,7 +407,12 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
         return [args]
 
 
-def create_select_required_action(select: list[DownloadResourceType] = [], deselect: list[DownloadResourceType] = []):
+def create_select_required_action(
+    select: list[DownloadResourceType] | None = None, deselect: list[DownloadResourceType] | None = None
+):
+    selected_items = select or []
+    deselected_items = deselect or []
+
     class SelectRequiredAction(argparse.Action):
         def __init__(self, option_strings: str, dest: str, nargs: int | str | None = None, **kwargs: Any):
             if nargs is not None:
@@ -418,9 +426,9 @@ def create_select_required_action(select: list[DownloadResourceType] = [], desel
             values: str | Sequence[str] | None,
             option_string: str | None = None,
         ):
-            for select_item in select:
+            for select_item in selected_items:
                 setattr(namespace, f"require_{select_item}", True)
-            for deselect_item in deselect:
+            for deselect_item in deselected_items:
                 setattr(namespace, f"require_{deselect_item}", False)
 
     return SelectRequiredAction

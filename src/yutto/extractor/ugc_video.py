@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import argparse
 import re
-
-import httpx
+from typing import TYPE_CHECKING
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
@@ -18,6 +16,11 @@ from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
+if TYPE_CHECKING:
+    import argparse
+
+    import httpx
+
 
 class UgcVideoExtractor(SingleExtractor):
     """投稿视频单视频"""
@@ -27,6 +30,8 @@ class UgcVideoExtractor(SingleExtractor):
 
     REGEX_AV_ID = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
     REGEX_BV_ID = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
+
+    REGEX_BV_SPECIAL_PAGE = re.compile(r"https?://www\.bilibili\.com/festival/.+(?P<bvid>(bv|BV)\w+)")
 
     page: int
     avid: AvId
@@ -49,13 +54,17 @@ class UgcVideoExtractor(SingleExtractor):
         return matched, url
 
     def match(self, url: str) -> bool:
-        if (match_obj := self.REGEX_AV.match(url)) or (match_obj := self.REGEX_BV.match(url)):
+        if (
+            (match_obj := self.REGEX_AV.match(url))
+            or (match_obj := self.REGEX_BV.match(url))
+            or (match_obj := self.REGEX_BV_SPECIAL_PAGE.match(url))
+        ):
             self.page: int = 1
             if "aid" in match_obj.groupdict().keys():
                 self.avid = AId(match_obj.group("aid"))
             else:
                 self.avid = BvId(match_obj.group("bvid"))
-            if match_obj.group("page") is not None:
+            if "page" in match_obj.groupdict() and match_obj.group("page") is not None:
                 self.page = int(match_obj.group("page"))
             return True
         else:

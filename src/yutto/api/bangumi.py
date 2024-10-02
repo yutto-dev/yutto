@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, TypedDict
-
-from httpx import AsyncClient
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto._typing import (
     AudioUrlMeta,
@@ -24,6 +22,9 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.funcutils import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 
 class BangumiListItem(TypedDict):
@@ -91,7 +92,7 @@ async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiL
 async def get_bangumi_playurl(
     client: AsyncClient, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1"
+    play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1&support_multi_audio=true&from_client=BROWSER"
 
     resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:

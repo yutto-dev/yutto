@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import pytest
+from yutto.utils.fetcher import DEFAULT_HEADERS as DEFAULT_HEADERS
+
+if TYPE_CHECKING:
+    import pytest
 
 TEST_DIR = Path("./__test_files__")
 
