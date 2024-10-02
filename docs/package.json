@@ -12,7 +12,7 @@
     "url": "https://github.com/yutto-dev/yutto/issues"
   },
   "homepage": "https://github.com/yutto-dev/yutto#readme",
-  "packageManager": "pnpm@8.9.2",
+  "packageManager": "pnpm@9.12.0",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build"
@@ -21,8 +21,8 @@
     "@moefy-canvas/core": "^0.5.2",
     "@moefy-canvas/theme-sparkler": "^0.5.2",
     "vite": "^5.2.7",
-    "vitepress": "1.0.1",
-    "vue": "^3.4.21"
+    "vitepress": "1.3.4",
+    "vue": "^3.5.10"
   },
   "pnpm": {
     "peerDependencyRules": {
