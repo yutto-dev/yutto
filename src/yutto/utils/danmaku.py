@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal, TypedDict, Union
 
-from biliass import Danmaku2ASS
+from biliass import convert_to_ass
 
 DanmakuSourceType = Literal["xml", "protobuf"]
 DanmakuSaveType = Literal["xml", "ass", "protobuf"]
@@ -45,7 +45,7 @@ def write_ass_danmaku(
         errors="replace",
     ) as f:
         f.write(
-            Danmaku2ASS(
+            convert_to_ass(
                 danmaku,
                 width,
                 height,
