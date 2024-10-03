@@ -39,6 +39,11 @@ jobs:
         run: |
           just ci-install
 
-      - name: unit test
+      - name: Run unit tests
         run: |
           just ci-test
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: uv run pytest --codspeed
