@@ -2,6 +2,7 @@ use crate::comment::{Comment, CommentPosition};
 use crate::error::BiliassError;
 use crate::writer;
 use crate::writer::rows;
+use rayon::prelude::*;
 use regex::Regex;
 
 #[allow(clippy::too_many_arguments)]
@@ -76,10 +77,11 @@ pub fn convert_to_ass<Reader, Input>(
     is_reduce_comments: bool,
 ) -> Result<String, BiliassError>
 where
-    Reader: Fn(Input, f32) -> Result<Vec<Comment>, BiliassError>,
+    Reader: Fn(Input, f32) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
+    Input: Send,
 {
     let comments_result: Result<Vec<Vec<Comment>>, BiliassError> = inputs
-        .into_iter()
+        .into_par_iter()
         .map(|input| reader(input, font_size))
         .collect();
     let comments = comments_result?;
