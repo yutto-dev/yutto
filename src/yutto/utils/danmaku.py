@@ -56,7 +56,7 @@ def write_ass_danmaku(
                 text_opacity=0.8,
                 duration_marquee=15.0,
                 duration_still=10.0,
-                comment_filter=None,
+                block_options=None,
                 is_reduce_comments=False,
             )
         )

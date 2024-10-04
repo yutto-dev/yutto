@@ -5,6 +5,7 @@ import sys
 
 from biliass import convert_to_ass
 from biliass.__version__ import VERSION as biliass_version
+from biliass._core import BlockOptions
 
 
 def main():
@@ -53,10 +54,15 @@ def main():
         default=5.0,
     )
     parser.add_argument("-fl", "--filter", help="Regular expression to filter comments")
+    parser.add_argument("--block-top", action="store_true", help="Block top comments")
+    parser.add_argument("--block-bottom", action="store_true", help="Block bottom comments")
+    parser.add_argument("--block-scroll", action="store_true", help="Block scrolling comments")
+    parser.add_argument("--block-reverse", action="store_true", help="Block reverse comments")
+    parser.add_argument("--block-fixed", action="store_true", help="Block fixed comments (top, bottom)")
+    parser.add_argument("--block-special", action="store_true", help="Block special comments")
+    parser.add_argument("--block-colorful", action="store_true", help="Block colorful comments")
     parser.add_argument(
-        "-flf",
-        "--filter-file",
-        help="Regular expressions from file (one line one regex) to filter comments",
+        "--block-keyword-patterns", help="Block comments that match the keyword pattern, separated by commas"
     )
     parser.add_argument(
         "-p",
@@ -112,11 +118,23 @@ def main():
         args.alpha,
         args.duration_marquee,
         args.duration_still,
-        args.filter,
+        parse_block_options(args),
         args.reduce,
     )
     fout.write(output)
     fout.close()
+
+
+def parse_block_options(args: argparse.Namespace) -> BlockOptions:
+    return BlockOptions(
+        args.block_top or args.block_fixed,
+        args.block_bottom or args.block_fixed,
+        args.block_scroll,
+        args.block_reverse,
+        args.block_special,
+        args.block_colorful,
+        [pattern.strip() for pattern in args.block_keyword_patterns.split(",")],
+    )
 
 
 if __name__ == "__main__":
