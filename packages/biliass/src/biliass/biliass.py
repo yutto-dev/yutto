@@ -64,7 +64,7 @@ def convert_to_ass(
     block_options: BlockOptions | None = None,
     is_reduce_comments: bool = False,
 ) -> str:
-    block_options = block_options or BlockOptions.default()
+    # block_options = block_options or BlockOptions.default()
     if isinstance(inputs, (str, bytes)):
         inputs = [inputs]
 
@@ -80,7 +80,7 @@ def convert_to_ass(
             text_opacity,
             duration_marquee,
             duration_still,
-            block_options,
+            # block_options,
             is_reduce_comments,
         )
     elif input_format == "protobuf":
@@ -97,7 +97,7 @@ def convert_to_ass(
             text_opacity,
             duration_marquee,
             duration_still,
-            block_options,
+            # block_options,
             is_reduce_comments,
         )
     else:
