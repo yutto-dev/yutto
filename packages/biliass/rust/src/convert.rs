@@ -10,6 +10,7 @@ pub fn process_comments(
     comments: &Vec<Comment>,
     width: u32,
     height: u32,
+    zoom_factor: (f32, f32, f32),
     bottom_reserved: u32,
     fontface: &str,
     fontsize: f32,
@@ -54,7 +55,13 @@ pub fn process_comments(
                 );
             }
             CommentPosition::Special => {
-                ass_result += &writer::ass::write_special_comment(comment, width, height, styleid);
+                ass_result += &writer::ass::write_special_comment(
+                    comment,
+                    width,
+                    height,
+                    zoom_factor,
+                    styleid,
+                );
             }
         }
     }
@@ -77,12 +84,16 @@ pub fn convert_to_ass<Reader, Input>(
     is_reduce_comments: bool,
 ) -> Result<String, BiliassError>
 where
-    Reader: Fn(Input, f32) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
+    Reader: Fn(Input, f32, (f32, f32, f32)) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
     Input: Send,
 {
+    let zoom_factor = crate::writer::utils::get_zoom_factor(
+        crate::reader::special::BILI_PLAYER_SIZE,
+        (stage_width, stage_height),
+    );
     let comments_result: Result<Vec<Vec<Comment>>, BiliassError> = inputs
         .into_par_iter()
-        .map(|input| reader(input, font_size))
+        .map(|input| reader(input, font_size, zoom_factor))
         .collect();
     let comments = comments_result?;
     let mut comments = comments.concat();
@@ -95,8 +106,6 @@ where
             &a.pos,
             a.color,
             a.size,
-            a.height,
-            a.width,
         )
             .partial_cmp(&(
                 b.timeline,
@@ -106,8 +115,6 @@ where
                 &b.pos,
                 b.color,
                 a.size,
-                a.height,
-                a.width,
             ))
             .unwrap_or(std::cmp::Ordering::Less)
     });
@@ -115,6 +122,7 @@ where
         &comments,
         stage_width,
         stage_height,
+        zoom_factor,
         reserve_blank,
         font_face,
         font_size,

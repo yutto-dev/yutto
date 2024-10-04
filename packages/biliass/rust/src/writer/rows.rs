@@ -29,9 +29,13 @@ pub fn test_free_rows(
     let rowmax = (height - bottom_reserved) as usize;
     let mut target_row = None;
     let comment_pos_id = comment.pos.clone() as usize;
+    let comment_data = comment
+        .data
+        .as_normal()
+        .expect("comment_data is not normal");
     if comment.pos == CommentPosition::Bottom || comment.pos == CommentPosition::Top {
         let mut current_row = row;
-        while current_row < rowmax && (res as f32) < comment.height {
+        while current_row < rowmax && (res as f32) < comment_data.height {
             if target_row != rows[comment_pos_id][current_row] {
                 target_row = rows[comment_pos_id][current_row];
                 if let Some(target_row) = target_row {
@@ -45,16 +49,20 @@ pub fn test_free_rows(
         }
     } else {
         let threshold_time: f64 = comment.timeline
-            - duration_marquee * (1.0 - width as f64 / (comment.width as f64 + width as f64));
+            - duration_marquee * (1.0 - width as f64 / (comment_data.width as f64 + width as f64));
         let mut current_row = row;
-        while current_row < rowmax && (res as f32) < comment.height {
+        while current_row < rowmax && (res as f32) < comment_data.height {
             if target_row != rows[comment_pos_id][current_row] {
                 target_row = rows[comment_pos_id][current_row];
                 if let Some(target_row) = target_row {
+                    let target_row_data = target_row
+                        .data
+                        .as_normal()
+                        .expect("target_row_data is not normal");
                     if target_row.timeline > threshold_time
                         || target_row.timeline
-                            + target_row.width as f64 * duration_marquee
-                                / (target_row.width as f64 + width as f64)
+                            + target_row_data.width as f64 * duration_marquee
+                                / (target_row_data.width as f64 + width as f64)
                             > comment.timeline
                     {
                         break;
@@ -76,7 +84,12 @@ pub fn find_alternative_row(
 ) -> usize {
     let mut res = 0;
     let comment_pos_id = comment.pos.clone() as usize;
-    for row in 0..(height as usize - bottom_reserved as usize - comment.height.ceil() as usize) {
+    let comment_data = comment
+        .data
+        .as_normal()
+        .expect("comment_data is not normal");
+    for row in 0..(height as usize - bottom_reserved as usize - comment_data.height.ceil() as usize)
+    {
         match &rows[comment_pos_id][row] {
             None => return row,
             Some(comment) => {
@@ -92,7 +105,11 @@ pub fn find_alternative_row(
 
 pub fn mark_comment_row<'a>(rows: &mut Rows<'a>, comment: &'a Comment, row: usize) {
     let comment_pos_id = comment.pos.clone() as usize;
-    for i in row..(row + comment.height.ceil() as usize) {
+    let comment_data = comment
+        .data
+        .as_normal()
+        .expect("comment_data is not normal");
+    for i in row..(row + comment_data.height.ceil() as usize) {
         if i >= rows[comment_pos_id].len() {
             break;
         }
