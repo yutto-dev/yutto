@@ -48,7 +48,7 @@ fn parse_comment_item(
     fontsize: f32,
     zoom_factor: (f32, f32, f32),
     id: u64,
-    block_options: &BlockOptions,
+    // block_options: &BlockOptions,
 ) -> Result<Option<Comment>, ParseError> {
     let split_p = raw_p.split(',').collect::<Vec<&str>>();
     if split_p.len() < 5 {
@@ -139,7 +139,7 @@ fn parse_comment(
     fontsize: f32,
     zoom_factor: (f32, f32, f32),
     id: u64,
-    block_options: &BlockOptions,
+    // block_options: &BlockOptions,
 ) -> Result<Option<Comment>, ParseError> {
     if version == XmlVersion::V2 {
         return Err(ParseError::Xml("Not implemented".to_string()));
@@ -153,7 +153,7 @@ fn parse_comment(
         fontsize,
         zoom_factor,
         id,
-        block_options,
+        // block_options,
     )?;
     Ok(parsed_p)
 }
@@ -162,7 +162,7 @@ pub fn read_comments_from_xml<T>(
     text: T,
     fontsize: f32,
     zoom_factor: (f32, f32, f32),
-    block_options: &BlockOptions,
+    // block_options: &BlockOptions,
 ) -> Result<Vec<Comment>, BiliassError>
 where
     T: AsRef<str>,
@@ -208,7 +208,7 @@ where
                         fontsize,
                         zoom_factor,
                         count,
-                        block_options,
+                        // block_options,
                     ) {
                         if let Some(comment) = comment_option {
                             comments.push(comment);

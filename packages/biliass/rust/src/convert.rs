@@ -73,9 +73,10 @@ pub fn convert_to_ass<Reader, Input>(
     is_reduce_comments: bool,
 ) -> Result<String, BiliassError>
 where
-    Reader: Fn(Input, f32, (f32, f32, f32), &BlockOptions) -> Result<Vec<Comment>, BiliassError>
-        + Send
-        + Sync,
+    // Reader: Fn(Input, f32, (f32, f32, f32), &BlockOptions) -> Result<Vec<Comment>, BiliassError>
+    //     + Send
+    //     + Sync,
+    Reader: Fn(Input, f32, (f32, f32, f32)) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
     Input: Send,
 {
     let zoom_factor = crate::writer::utils::get_zoom_factor(
@@ -85,8 +86,8 @@ where
     let block_options = BlockOptions::default();
     let comments_result: Result<Vec<Vec<Comment>>, BiliassError> = inputs
         .into_par_iter()
-        .map(|input| reader(input, font_size, zoom_factor, &block_options))
-        // .map(|input| reader(input, font_size, zoom_factor))
+        // .map(|input| reader(input, font_size, zoom_factor, &block_options))
+        .map(|input| reader(input, font_size, zoom_factor))
         .collect();
 
     let comments = comments_result?;

@@ -11,7 +11,7 @@ pub fn read_comments_from_protobuf<T>(
     data: T,
     fontsize: f32,
     zoom_factor: (f32, f32, f32),
-    block_options: &BlockOptions,
+    // block_options: &BlockOptions,
 ) -> Result<Vec<Comment>, BiliassError>
 where
     T: AsRef<[u8]>,
