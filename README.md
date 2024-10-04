@@ -1,4 +1,4 @@
-# yutto<sup>2.0.0-beta</sup>
+# yutto<sup>2.0.0-rc</sup>
 
 <p align="center">
    <a href="https://python.org/" target="_blank"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/yutto?logo=python&style=flat-square"></a>
@@ -14,7 +14,7 @@
 
 yutto，一个可爱且任性的 B 站下载器（CLI）
 
-当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/yutto-dev/yutto/discussions) 提出～～～
+当前 yutto 目前处于 RC 阶段，请通过 [Issues](https://github.com/yutto-dev/yutto/issues) 反馈功能正确性问题和功能请求，其他问题请通过 [Discussions](https://github.com/yutto-dev/yutto/discussions) 反馈～
 
 ## 版本号为什么是 2.0
 
