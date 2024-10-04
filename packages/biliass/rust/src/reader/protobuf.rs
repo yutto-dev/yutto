@@ -45,7 +45,7 @@ where
                     timeline,
                     timestamp,
                     no: i as u64,
-                    comment: comment_content,
+                    content: comment_content,
                     pos: comment_pos,
                     color,
                     size,

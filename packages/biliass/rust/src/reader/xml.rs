@@ -94,7 +94,7 @@ fn parse_comment_item(
                 timeline,
                 timestamp,
                 no: id,
-                comment: comment_content,
+                content: comment_content,
                 pos: comment_pos,
                 color,
                 size,

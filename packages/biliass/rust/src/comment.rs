@@ -21,7 +21,7 @@ pub struct Comment {
     /// A sequence of 1, 2, 3, ..., used for sorting
     pub no: u64,
     /// The content of the comment
-    pub comment: String,
+    pub content: String,
     /// The comment position
     pub pos: CommentPosition,
     /// Font color represented in 0xRRGGBB,

@@ -36,7 +36,7 @@ pub fn process_comments(
             | CommentPosition::Reversed => {
                 if compiled_regexes
                     .iter()
-                    .any(|regex| regex.is_match(&comment.comment))
+                    .any(|regex| regex.is_match(&comment.content))
                 {
                     continue;
                 };
@@ -91,7 +91,7 @@ where
             a.timeline,
             a.timestamp,
             a.no,
-            &a.comment,
+            &a.content,
             &a.pos,
             a.color,
             a.size,
@@ -102,7 +102,7 @@ where
                 b.timeline,
                 b.timestamp,
                 b.no,
-                &b.comment,
+                &b.content,
                 &b.pos,
                 b.color,
                 a.size,

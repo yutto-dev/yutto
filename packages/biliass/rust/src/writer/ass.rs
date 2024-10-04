@@ -54,7 +54,7 @@ pub fn write_comment(
     duration_still: f64,
     styleid: &str,
 ) -> String {
-    let text = utils::ass_escape(&comment.comment);
+    let text = utils::ass_escape(&comment.content);
     let (style, duration) = match comment.pos {
         CommentPosition::Bottom => {
             let halfwidth = width / 2;
@@ -291,9 +291,9 @@ pub fn write_comment_with_animation(
 pub fn write_special_comment(comment: &Comment, width: u32, height: u32, styleid: &str) -> String {
     let zoom_factor =
         utils::get_zoom_factor(crate::reader::special::BILI_PLAYER_SIZE, (width, height));
-    let parsed_res = parse_special_comment(&comment.comment, zoom_factor);
+    let parsed_res = parse_special_comment(&comment.content, zoom_factor);
     if parsed_res.is_err() {
-        warn!("Invalid comment: {}", comment.comment);
+        warn!("Invalid comment: {}", comment.content);
         return "".to_owned();
     }
     let (
