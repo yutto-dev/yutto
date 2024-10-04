@@ -11,7 +11,7 @@ pub fn read_comments_from_protobuf<T>(
     data: T,
     fontsize: f32,
     zoom_factor: (f32, f32, f32),
-    // block_options: &BlockOptions,
+    block_options: &BlockOptions,
 ) -> Result<Vec<Comment>, BiliassError>
 where
     T: AsRef<[u8]>,
@@ -33,9 +33,9 @@ where
                     7 => CommentPosition::Special,
                     _ => unreachable!("Impossible danmaku type"),
                 };
-                // if should_skip_parse(&comment_pos, block_options) {
-                //     continue;
-                // }
+                if should_skip_parse(&comment_pos, block_options) {
+                    continue;
+                }
                 let color = elem.color;
                 let size = elem.fontsize;
                 let (comment_content, size, comment_data) =
