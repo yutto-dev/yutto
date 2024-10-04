@@ -94,15 +94,17 @@ fn parse_comment_item(
                     CommentData::Normal(NormalCommentData { height, width }),
                 )
             } else {
-                let parsed_data = special::parse_special_comment(content, zoom_factor);
+                let parsed_data =
+                    special::parse_special_comment(&utils::filter_bad_chars(content), zoom_factor);
                 if parsed_data.is_err() {
                     warn!("Failed to parse special comment: {:?}", parsed_data);
                     return Ok(None);
                 }
+                let (content, special_comment_data) = parsed_data.unwrap();
                 (
-                    content.to_string(),
+                    content,
                     size as f32,
-                    CommentData::Special(parsed_data.unwrap()),
+                    CommentData::Special(special_comment_data),
                 )
             };
             Ok(Some(Comment {

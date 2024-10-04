@@ -49,16 +49,19 @@ where
                             CommentData::Normal(NormalCommentData { height, width }),
                         )
                     } else {
-                        let content = utils::filter_bad_chars(&elem.content);
-                        let parsed_data = special::parse_special_comment(&content, zoom_factor);
+                        let parsed_data = special::parse_special_comment(
+                            &utils::filter_bad_chars(&elem.content),
+                            zoom_factor,
+                        );
                         if parsed_data.is_err() {
                             warn!("Failed to parse special comment: {:?}", parsed_data);
                             continue;
                         }
+                        let (content, special_comment_data) = parsed_data.unwrap();
                         (
-                            content.clone(),
+                            content,
                             size as f32,
-                            CommentData::Special(parsed_data.unwrap()),
+                            CommentData::Special(special_comment_data),
                         )
                     };
                 comments.push(Comment {

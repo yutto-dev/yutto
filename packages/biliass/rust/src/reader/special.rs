@@ -24,7 +24,7 @@ fn get_position(input_pos: f64, is_height: bool, zoom_factor: (f32, f32, f32)) -
 pub fn parse_special_comment(
     content: &str,
     zoom_factor: (f32, f32, f32),
-) -> Result<SpecialCommentData, ParseError> {
+) -> Result<(String, SpecialCommentData), ParseError> {
     let special_comment_parsed_data =
         serde_json::from_str::<serde_json::Value>(content).map_err(|e| {
             ParseError::SpecialComment(format!(
@@ -84,22 +84,24 @@ pub fn parse_special_comment(
     // TODO(SigureMo): Check this logic, this just aligns with the original code.
     // let is_border = parse_array_item_at_index(special_comment_array, 11, true, parse_bool_value)?;
     let is_border = true;
-    Ok(SpecialCommentData {
-        rotate_y,
-        rotate_z,
-        from_x,
-        from_y,
-        to_x,
-        to_y,
-        from_alpha,
-        to_alpha,
-        text: text.to_owned(),
-        delay,
-        lifetime,
-        duration,
-        fontface,
-        is_border,
-    })
+    Ok((
+        text.to_owned(),
+        SpecialCommentData {
+            rotate_y,
+            rotate_z,
+            from_x,
+            from_y,
+            to_x,
+            to_y,
+            from_alpha,
+            to_alpha,
+            delay,
+            lifetime,
+            duration,
+            fontface,
+            is_border,
+        },
+    ))
 }
 
 /// A safe way to get item without IndexOutOfBounds error.

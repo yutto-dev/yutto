@@ -32,7 +32,6 @@ pub struct SpecialCommentData {
     pub to_y: f64,
     pub from_alpha: u8,
     pub to_alpha: u8,
-    pub text: String,
     pub delay: i64,
     pub lifetime: f64,
     pub duration: i64,

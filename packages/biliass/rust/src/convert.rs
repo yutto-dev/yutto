@@ -17,30 +17,19 @@ pub fn process_comments(
     alpha: f32,
     duration_marquee: f64,
     duration_still: f64,
-    filters_regex: Vec<String>,
     reduced: bool,
 ) -> Result<String, BiliassError> {
     let styleid = "biliass";
     let mut ass_result = "".to_owned();
     ass_result += &writer::ass::write_head(width, height, fontface, fontsize, alpha, styleid);
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
-    let compiled_regexes_res: Result<Vec<Regex>, regex::Error> = filters_regex
-        .into_iter()
-        .map(|pattern| Regex::new(&pattern))
-        .collect();
-    let compiled_regexes = compiled_regexes_res.map_err(BiliassError::from)?;
+
     for comment in comments {
         match comment.pos {
             CommentPosition::Scroll
             | CommentPosition::Bottom
             | CommentPosition::Top
             | CommentPosition::Reversed => {
-                if compiled_regexes
-                    .iter()
-                    .any(|regex| regex.is_match(&comment.content))
-                {
-                    continue;
-                };
                 ass_result += &writer::ass::write_normal_comment(
                     rows.as_mut(),
                     comment,
@@ -80,7 +69,7 @@ pub fn convert_to_ass<Reader, Input>(
     text_opacity: f32,
     duration_marquee: f64,
     duration_still: f64,
-    comment_filters: Vec<String>,
+    filters_regex: Vec<String>,
     is_reduce_comments: bool,
 ) -> Result<String, BiliassError>
 where
@@ -95,8 +84,23 @@ where
         .into_par_iter()
         .map(|input| reader(input, font_size, zoom_factor))
         .collect();
+
+    let compiled_regexes_res: Result<Vec<Regex>, regex::Error> = filters_regex
+        .into_iter()
+        .map(|pattern| Regex::new(&pattern))
+        .collect();
+
+    let compiled_regexes = compiled_regexes_res.map_err(BiliassError::from)?;
     let comments = comments_result?;
-    let mut comments = comments.concat();
+    let comments = comments.concat();
+    let mut comments: Vec<Comment> = comments
+        .into_iter()
+        .filter(|comment| {
+            !compiled_regexes
+                .iter()
+                .any(|regex| regex.is_match(&comment.content))
+        })
+        .collect();
     comments.sort_by(|a, b| {
         (
             a.timeline,
@@ -129,7 +133,6 @@ where
         text_opacity,
         duration_marquee,
         duration_still,
-        comment_filters,
         is_reduce_comments,
     )
 }
