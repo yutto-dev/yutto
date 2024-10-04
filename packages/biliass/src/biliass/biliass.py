@@ -8,13 +8,13 @@ from biliass._core import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
 T = TypeVar("T")
 
 
 def Danmaku2ASS(
-    inputs: list[str | bytes] | str | bytes,
+    inputs: Sequence[str | bytes] | str | bytes,
     stage_width: int,
     stage_height: int,
     input_format: str = "xml",
@@ -48,7 +48,7 @@ def Danmaku2ASS(
 
 
 def convert_to_ass(
-    inputs: list[str | bytes] | str | bytes,
+    inputs: Sequence[str | bytes] | str | bytes,
     stage_width: int,
     stage_height: int,
     input_format: str = "xml",
