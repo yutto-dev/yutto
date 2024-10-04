@@ -10,36 +10,26 @@ pub fn process_comments(
     comments: &Vec<Comment>,
     width: u32,
     height: u32,
+    zoom_factor: (f32, f32, f32),
     bottom_reserved: u32,
     fontface: &str,
     fontsize: f32,
     alpha: f32,
     duration_marquee: f64,
     duration_still: f64,
-    filters_regex: Vec<String>,
     reduced: bool,
 ) -> Result<String, BiliassError> {
     let styleid = "biliass";
     let mut ass_result = "".to_owned();
     ass_result += &writer::ass::write_head(width, height, fontface, fontsize, alpha, styleid);
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
-    let compiled_regexes_res: Result<Vec<Regex>, regex::Error> = filters_regex
-        .into_iter()
-        .map(|pattern| Regex::new(&pattern))
-        .collect();
-    let compiled_regexes = compiled_regexes_res.map_err(BiliassError::from)?;
+
     for comment in comments {
         match comment.pos {
             CommentPosition::Scroll
             | CommentPosition::Bottom
             | CommentPosition::Top
             | CommentPosition::Reversed => {
-                if compiled_regexes
-                    .iter()
-                    .any(|regex| regex.is_match(&comment.content))
-                {
-                    continue;
-                };
                 ass_result += &writer::ass::write_normal_comment(
                     rows.as_mut(),
                     comment,
@@ -54,7 +44,13 @@ pub fn process_comments(
                 );
             }
             CommentPosition::Special => {
-                ass_result += &writer::ass::write_special_comment(comment, width, height, styleid);
+                ass_result += &writer::ass::write_special_comment(
+                    comment,
+                    width,
+                    height,
+                    zoom_factor,
+                    styleid,
+                );
             }
         }
     }
@@ -73,19 +69,38 @@ pub fn convert_to_ass<Reader, Input>(
     text_opacity: f32,
     duration_marquee: f64,
     duration_still: f64,
-    comment_filters: Vec<String>,
+    filters_regex: Vec<String>,
     is_reduce_comments: bool,
 ) -> Result<String, BiliassError>
 where
-    Reader: Fn(Input, f32) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
+    Reader: Fn(Input, f32, (f32, f32, f32)) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
     Input: Send,
 {
+    let zoom_factor = crate::writer::utils::get_zoom_factor(
+        crate::reader::special::BILI_PLAYER_SIZE,
+        (stage_width, stage_height),
+    );
     let comments_result: Result<Vec<Vec<Comment>>, BiliassError> = inputs
         .into_par_iter()
-        .map(|input| reader(input, font_size))
+        .map(|input| reader(input, font_size, zoom_factor))
         .collect();
+
+    let compiled_regexes_res: Result<Vec<Regex>, regex::Error> = filters_regex
+        .into_iter()
+        .map(|pattern| Regex::new(&pattern))
+        .collect();
+
+    let compiled_regexes = compiled_regexes_res.map_err(BiliassError::from)?;
     let comments = comments_result?;
-    let mut comments = comments.concat();
+    let comments = comments.concat();
+    let mut comments: Vec<Comment> = comments
+        .into_iter()
+        .filter(|comment| {
+            !compiled_regexes
+                .iter()
+                .any(|regex| regex.is_match(&comment.content))
+        })
+        .collect();
     comments.sort_by(|a, b| {
         (
             a.timeline,
@@ -95,8 +110,6 @@ where
             &a.pos,
             a.color,
             a.size,
-            a.height,
-            a.width,
         )
             .partial_cmp(&(
                 b.timeline,
@@ -106,8 +119,6 @@ where
                 &b.pos,
                 b.color,
                 a.size,
-                a.height,
-                a.width,
             ))
             .unwrap_or(std::cmp::Ordering::Less)
     });
@@ -115,13 +126,13 @@ where
         &comments,
         stage_width,
         stage_height,
+        zoom_factor,
         reserve_blank,
         font_face,
         font_size,
         text_opacity,
         duration_marquee,
         duration_still,
-        comment_filters,
         is_reduce_comments,
     )
 }

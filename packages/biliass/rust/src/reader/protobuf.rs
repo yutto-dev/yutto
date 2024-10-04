@@ -1,11 +1,17 @@
-use crate::comment::{Comment, CommentPosition};
+use crate::comment::{Comment, CommentData, CommentPosition, NormalCommentData};
 use crate::error::{BiliassError, DecodeError};
 use crate::proto::danmaku::DmSegMobileReply;
+use crate::reader::special;
 use crate::reader::utils;
 use prost::Message;
 use std::io::Cursor;
+use tracing::warn;
 
-pub fn read_comments_from_protobuf<T>(data: T, fontsize: f32) -> Result<Vec<Comment>, BiliassError>
+pub fn read_comments_from_protobuf<T>(
+    data: T,
+    fontsize: f32,
+    zoom_factor: (f32, f32, f32),
+) -> Result<Vec<Comment>, BiliassError>
 where
     T: AsRef<[u8]>,
 {
@@ -28,7 +34,7 @@ where
                 };
                 let color = elem.color;
                 let size = elem.fontsize;
-                let (comment_content, size, height, width) =
+                let (comment_content, size, comment_data) =
                     if comment_pos != CommentPosition::Special {
                         let comment_content =
                             utils::unescape_newline(&utils::filter_bad_chars(&elem.content));
@@ -37,9 +43,26 @@ where
                             (comment_content.chars().filter(|&c| c == '\n').count() as f32 + 1.0)
                                 * size;
                         let width = utils::calculate_length(&comment_content) * size;
-                        (comment_content, size, height, width)
+                        (
+                            comment_content,
+                            size,
+                            CommentData::Normal(NormalCommentData { height, width }),
+                        )
                     } else {
-                        (utils::filter_bad_chars(&elem.content), size as f32, 0., 0.)
+                        let parsed_data = special::parse_special_comment(
+                            &utils::filter_bad_chars(&elem.content),
+                            zoom_factor,
+                        );
+                        if parsed_data.is_err() {
+                            warn!("Failed to parse special comment: {:?}", parsed_data);
+                            continue;
+                        }
+                        let (content, special_comment_data) = parsed_data.unwrap();
+                        (
+                            content,
+                            size as f32,
+                            CommentData::Special(special_comment_data),
+                        )
                     };
                 comments.push(Comment {
                     timeline,
@@ -49,8 +72,7 @@ where
                     pos: comment_pos,
                     color,
                     size,
-                    height,
-                    width,
+                    data: comment_data,
                 })
             }
             8 => {

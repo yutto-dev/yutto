@@ -1,8 +1,10 @@
-use crate::comment::{Comment, CommentPosition};
+use crate::comment::{Comment, CommentData, CommentPosition, NormalCommentData};
 use crate::error::{BiliassError, DecodeError, ParseError};
+use crate::reader::special;
 use crate::reader::utils;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
+use tracing::warn;
 
 #[derive(PartialEq, Clone)]
 enum XmlVersion {
@@ -44,6 +46,7 @@ fn parse_comment_item(
     content: &str,
     version: XmlVersion,
     fontsize: f32,
+    zoom_factor: (f32, f32, f32),
     id: u64,
 ) -> Result<Option<Comment>, ParseError> {
     let split_p = raw_p.split(',').collect::<Vec<&str>>();
@@ -79,16 +82,30 @@ fn parse_comment_item(
             let size = split_p[2 + p_offset]
                 .parse::<i32>()
                 .map_err(|e| ParseError::Xml(format!("Error parsing size: {}", e)))?;
-            let (comment_content, size, height, width) = if comment_pos != CommentPosition::Special
-            {
+            let (comment_content, size, comment_data) = if comment_pos != CommentPosition::Special {
                 let comment_content = utils::unescape_newline(content);
                 let size = (size as f32) * fontsize / 25.0;
                 let height =
                     (comment_content.chars().filter(|&c| c == '\n').count() as f32 + 1.0) * size;
                 let width = utils::calculate_length(&comment_content) * size;
-                (comment_content, size, height, width)
+                (
+                    comment_content,
+                    size,
+                    CommentData::Normal(NormalCommentData { height, width }),
+                )
             } else {
-                (content.to_string(), size as f32, 0., 0.)
+                let parsed_data =
+                    special::parse_special_comment(&utils::filter_bad_chars(content), zoom_factor);
+                if parsed_data.is_err() {
+                    warn!("Failed to parse special comment: {:?}", parsed_data);
+                    return Ok(None);
+                }
+                let (content, special_comment_data) = parsed_data.unwrap();
+                (
+                    content,
+                    size as f32,
+                    CommentData::Special(special_comment_data),
+                )
             };
             Ok(Some(Comment {
                 timeline,
@@ -98,8 +115,7 @@ fn parse_comment_item(
                 pos: comment_pos,
                 color,
                 size,
-                height,
-                width,
+                data: comment_data,
             }))
         }
 
@@ -117,6 +133,7 @@ fn parse_comment(
     element: BytesStart,
     version: XmlVersion,
     fontsize: f32,
+    zoom_factor: (f32, f32, f32),
     id: u64,
 ) -> Result<Option<Comment>, ParseError> {
     if version == XmlVersion::V2 {
@@ -124,11 +141,16 @@ fn parse_comment(
     }
     let raw_p = parse_raw_p(reader, &element)?;
     let content = parse_comment_content(reader)?;
-    let parsed_p = parse_comment_item(&raw_p, &content, version.clone(), fontsize, id)?;
+    let parsed_p =
+        parse_comment_item(&raw_p, &content, version.clone(), fontsize, zoom_factor, id)?;
     Ok(parsed_p)
 }
 
-pub fn read_comments_from_xml<T>(text: T, fontsize: f32) -> Result<Vec<Comment>, BiliassError>
+pub fn read_comments_from_xml<T>(
+    text: T,
+    fontsize: f32,
+    zoom_factor: (f32, f32, f32),
+) -> Result<Vec<Comment>, BiliassError>
 where
     T: AsRef<str>,
 {
@@ -166,9 +188,14 @@ where
                             "No version specified".to_string(),
                         )));
                     }
-                    if let Ok(comment_option) =
-                        parse_comment(&mut reader, e, version.clone().unwrap(), fontsize, count)
-                    {
+                    if let Ok(comment_option) = parse_comment(
+                        &mut reader,
+                        e,
+                        version.clone().unwrap(),
+                        fontsize,
+                        zoom_factor,
+                        count,
+                    ) {
                         if let Some(comment) = comment_option {
                             comments.push(comment);
                         }

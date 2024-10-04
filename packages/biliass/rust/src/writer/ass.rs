@@ -1,5 +1,4 @@
-use crate::comment::{Comment, CommentPosition};
-use crate::reader::special::parse_special_comment;
+use crate::comment::{Comment, CommentPosition, SpecialCommentData};
 use crate::writer::rows;
 use crate::writer::utils;
 use tracing::warn;
@@ -55,6 +54,10 @@ pub fn write_comment(
     styleid: &str,
 ) -> String {
     let text = utils::ass_escape(&comment.content);
+    let comment_data = comment
+        .data
+        .as_normal()
+        .expect("comment_data is not normal");
     let (style, duration) = match comment.pos {
         CommentPosition::Bottom => {
             let halfwidth = width / 2;
@@ -66,14 +69,14 @@ pub fn write_comment(
             (format!("\\an2\\pos({halfwidth}, {row})"), duration_still)
         }
         CommentPosition::Reversed => {
-            let neglen = -(comment.width.ceil()) as i32;
+            let neglen = -(comment_data.width.ceil()) as i32;
             (
                 format!("\\move({neglen}, {row}, {width}, {row})"),
                 duration_marquee,
             )
         }
         _ => {
-            let neglen = -(comment.width.ceil()) as i32;
+            let neglen = -(comment_data.width.ceil()) as i32;
             (
                 format!("\\move({width}, {row}, {neglen}, {row})"),
                 duration_marquee,
@@ -113,7 +116,11 @@ pub fn write_normal_comment<'a>(
     reduced: bool,
 ) -> String {
     let mut row: usize = 0;
-    let rowmax = height - bottom_reserved - comment.height as u32;
+    let comment_data = comment
+        .data
+        .as_normal()
+        .expect("comment_data is not normal");
+    let rowmax = height - bottom_reserved - comment_data.height as u32;
     while row <= rowmax as usize {
         let freerows = rows::test_free_rows(
             rows,
@@ -125,7 +132,7 @@ pub fn write_normal_comment<'a>(
             duration_marquee,
             duration_still,
         );
-        if freerows >= comment.height as usize {
+        if freerows >= comment_data.height as usize {
             rows::mark_comment_row(rows, comment, row);
             return write_comment(
                 comment,
@@ -288,29 +295,14 @@ pub fn write_comment_with_animation(
     format!("Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n")
 }
 
-pub fn write_special_comment(comment: &Comment, width: u32, height: u32, styleid: &str) -> String {
-    let zoom_factor =
-        utils::get_zoom_factor(crate::reader::special::BILI_PLAYER_SIZE, (width, height));
-    let parsed_res = parse_special_comment(&comment.content, zoom_factor);
-    if parsed_res.is_err() {
-        warn!("Invalid comment: {}", comment.content);
-        return "".to_owned();
-    }
-    let (
-        (rotate_y, rotate_z, from_x, from_y, to_x, to_y),
-        from_alpha,
-        to_alpha,
-        text,
-        delay,
-        lifetime,
-        duration,
-        fontface,
-        is_border,
-    ) = parsed_res.unwrap();
-    write_comment_with_animation(
-        comment,
-        width,
-        height,
+pub fn write_special_comment(
+    comment: &Comment,
+    width: u32,
+    height: u32,
+    zoom_factor: (f32, f32, f32),
+    styleid: &str,
+) -> String {
+    let SpecialCommentData {
         rotate_y,
         rotate_z,
         from_x,
@@ -319,12 +311,30 @@ pub fn write_special_comment(comment: &Comment, width: u32, height: u32, styleid
         to_y,
         from_alpha,
         to_alpha,
-        &text,
         delay,
         lifetime,
         duration,
-        &fontface,
+        fontface,
         is_border,
+    } = comment.data.as_special().expect("comment is not special");
+    write_comment_with_animation(
+        comment,
+        width,
+        height,
+        *rotate_y,
+        *rotate_z,
+        *from_x,
+        *from_y,
+        *to_x,
+        *to_y,
+        *from_alpha,
+        *to_alpha,
+        &comment.content,
+        *delay,
+        *lifetime,
+        *duration,
+        fontface,
+        *is_border,
         styleid,
         zoom_factor,
     )

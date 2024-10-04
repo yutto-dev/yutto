@@ -1,4 +1,5 @@
-use crate::error::{BiliassError, DecodeError, ParseError};
+use crate::comment::SpecialCommentData;
+use crate::error::ParseError;
 use crate::reader::utils;
 
 // pub const BILI_PLAYER_SIZE: (u32, u32) = (512, 384); // Bilibili player version 2010
@@ -23,26 +24,17 @@ fn get_position(input_pos: f64, is_height: bool, zoom_factor: (f32, f32, f32)) -
 pub fn parse_special_comment(
     content: &str,
     zoom_factor: (f32, f32, f32),
-) -> Result<
-    (
-        (i64, i64, f64, f64, f64, f64),
-        u8,
-        u8,
-        String,
-        i64,
-        f64,
-        i64,
-        String,
-        bool,
-    ),
-    BiliassError,
-> {
+) -> Result<(String, SpecialCommentData), ParseError> {
     let special_comment_parsed_data =
-        serde_json::from_str::<serde_json::Value>(content).map_err(DecodeError::from)?;
+        serde_json::from_str::<serde_json::Value>(content).map_err(|e| {
+            ParseError::SpecialComment(format!(
+                "Error occurred while parsing special comment: {e}, content: {content}",
+            ))
+        })?;
     if !special_comment_parsed_data.is_array() {
-        return Err(
-            ParseError::SpecialComment("Special comment is not an array".to_owned()).into(),
-        );
+        return Err(ParseError::SpecialComment(
+            "Special comment is not an array".to_owned(),
+        ));
     }
     let special_comment_array = special_comment_parsed_data.as_array().unwrap();
     let text = utils::unescape_newline(special_comment_array[4].as_str().ok_or(
@@ -93,15 +85,22 @@ pub fn parse_special_comment(
     // let is_border = parse_array_item_at_index(special_comment_array, 11, true, parse_bool_value)?;
     let is_border = true;
     Ok((
-        (rotate_y, rotate_z, from_x, from_y, to_x, to_y),
-        from_alpha,
-        to_alpha,
         text.to_owned(),
-        delay,
-        lifetime,
-        duration,
-        fontface,
-        is_border,
+        SpecialCommentData {
+            rotate_y,
+            rotate_z,
+            from_x,
+            from_y,
+            to_x,
+            to_y,
+            from_alpha,
+            to_alpha,
+            delay,
+            lifetime,
+            duration,
+            fontface,
+            is_border,
+        },
     ))
 }
 
@@ -110,44 +109,52 @@ fn parse_array_item_at_index<T>(
     array: &[serde_json::Value],
     index: usize,
     default: T,
-    item_parser: fn(&serde_json::Value, T) -> Result<T, BiliassError>,
-) -> Result<T, BiliassError> {
+    item_parser: fn(&serde_json::Value, T) -> Result<T, ParseError>,
+) -> Result<T, ParseError> {
     match array.get(index) {
         Some(value) => item_parser(value, default),
         None => Ok(default),
     }
 }
 
-fn parse_float_value(value: &serde_json::Value, default: f64) -> Result<f64, BiliassError> {
+fn parse_float_value(value: &serde_json::Value, default: f64) -> Result<f64, ParseError> {
     match value {
         serde_json::Value::Number(num) => Ok(num.as_f64().unwrap_or(default)),
         serde_json::Value::String(str) => Ok(str.parse::<f64>().unwrap_or(default)),
         serde_json::Value::Null => Ok(default),
-        _ => Err(ParseError::SpecialComment("Value is not a number".to_owned()).into()),
+        _ => Err(ParseError::SpecialComment(
+            "Value is not a number".to_owned(),
+        )),
     }
 }
 
-fn parse_int_value(value: &serde_json::Value, default: i64) -> Result<i64, BiliassError> {
+fn parse_int_value(value: &serde_json::Value, default: i64) -> Result<i64, ParseError> {
     match value {
         serde_json::Value::Number(num) => Ok(num.as_f64().unwrap_or(default as f64) as i64),
         serde_json::Value::String(str) => Ok(str.parse::<f64>().unwrap_or(default as f64) as i64),
         serde_json::Value::Null => Ok(default),
-        _ => Err(ParseError::SpecialComment("Value is not a number".to_owned()).into()),
+        _ => Err(ParseError::SpecialComment(
+            "Value is not a number".to_owned(),
+        )),
     }
 }
 
-fn parse_string_value(value: &serde_json::Value, _: String) -> Result<String, BiliassError> {
+fn parse_string_value(value: &serde_json::Value, _: String) -> Result<String, ParseError> {
     match value {
         serde_json::Value::String(str) => Ok(str.to_owned()),
-        _ => Err(ParseError::SpecialComment("Value is not a string".to_owned()).into()),
+        _ => Err(ParseError::SpecialComment(
+            "Value is not a string".to_owned(),
+        )),
     }
 }
 
 #[allow(unused)]
-fn parse_bool_value(value: &serde_json::Value, default: bool) -> Result<bool, BiliassError> {
+fn parse_bool_value(value: &serde_json::Value, default: bool) -> Result<bool, ParseError> {
     match value {
         serde_json::Value::Bool(b) => Ok(*b),
         serde_json::Value::Number(num) => Ok(num.as_i64().unwrap_or(default as i64) != 0),
-        _ => Err(ParseError::SpecialComment("Value is not a boolean".to_owned()).into()),
+        _ => Err(ParseError::SpecialComment(
+            "Value is not a boolean".to_owned(),
+        )),
     }
 }
