@@ -17,7 +17,7 @@ pub fn py_xml_to_ass(
     text_opacity: f32,
     duration_marquee: f64,
     duration_still: f64,
-    // block_options: &crate::python::filter::PyBlockOptions,
+    block_options: &crate::python::filter::PyBlockOptions,
     is_reduce_comments: bool,
 ) -> PyResult<String> {
     Ok(convert::convert_to_ass(
@@ -31,7 +31,7 @@ pub fn py_xml_to_ass(
         text_opacity,
         duration_marquee,
         duration_still,
-        // &block_options.inner,
+        &block_options.inner,
         is_reduce_comments,
     )?)
 }
@@ -48,7 +48,7 @@ pub fn py_protobuf_to_ass(
     text_opacity: f32,
     duration_marquee: f64,
     duration_still: f64,
-    // block_options: &crate::python::filter::PyBlockOptions,
+    block_options: &crate::python::filter::PyBlockOptions,
     is_reduce_comments: bool,
 ) -> PyResult<String> {
     Ok(convert::convert_to_ass(
@@ -62,7 +62,7 @@ pub fn py_protobuf_to_ass(
         text_opacity,
         duration_marquee,
         duration_still,
-        // &block_options.inner,
+        &block_options.inner,
         is_reduce_comments,
     )?)
 }
