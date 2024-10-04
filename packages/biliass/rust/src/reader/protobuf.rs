@@ -33,9 +33,9 @@ where
                     7 => CommentPosition::Special,
                     _ => unreachable!("Impossible danmaku type"),
                 };
-                if should_skip_parse(&comment_pos, block_options) {
-                    continue;
-                }
+                // if should_skip_parse(&comment_pos, block_options) {
+                //     continue;
+                // }
                 let color = elem.color;
                 let size = elem.fontsize;
                 let (comment_content, size, comment_data) =

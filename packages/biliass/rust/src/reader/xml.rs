@@ -77,9 +77,9 @@ fn parse_comment_item(
                 "7" => CommentPosition::Special,
                 _ => unreachable!("Impossible danmaku type"),
             };
-            if should_skip_parse(&comment_pos, block_options) {
-                return Ok(None);
-            }
+            // if should_skip_parse(&comment_pos, block_options) {
+            //     return Ok(None);
+            // }
             let color = split_p[3 + p_offset]
                 .parse::<u32>()
                 .map_err(|e| ParseError::Xml(format!("Error parsing color: {}", e)))?;
