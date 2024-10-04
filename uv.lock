@@ -468,17 +468,17 @@ requires-dist = [
     { name = "biliass", editable = "packages/biliass" },
     { name = "colorama", marker = "sys_platform == 'win32'", specifier = ">=0.4.6" },
     { name = "dict2xml", specifier = ">=1.7.6" },
-    { name = "httpx", extras = ["http2", "socks"], specifier = ">=0.27.0" },
+    { name = "httpx", extras = ["http2", "socks"], specifier = ">=0.27.2" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pyright", specifier = ">=1.1.381" },
-    { name = "pytest", specifier = ">=8.3.2" },
+    { name = "pyright", specifier = ">=1.1.383" },
+    { name = "pytest", specifier = ">=8.3.3" },
     { name = "pytest-codspeed", specifier = ">=2.2.1" },
     { name = "pytest-rerunfailures", specifier = ">=14.0" },
-    { name = "ruff", specifier = ">=0.6.7" },
+    { name = "ruff", specifier = ">=0.6.8" },
     { name = "syrupy", specifier = ">=4.7.1" },
-    { name = "typos", specifier = ">=1.24.6" },
+    { name = "typos", specifier = ">=1.25.0" },
 ]
