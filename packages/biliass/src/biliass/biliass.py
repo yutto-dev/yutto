@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar, cast
+from typing import TYPE_CHECKING, TypedDict, TypeVar, cast
 
 from biliass._core import (
-    BlockOptions,
     protobuf_to_ass,
     xml_to_ass,
 )
@@ -12,6 +11,28 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
 T = TypeVar("T")
+
+
+class BlockOptions(TypedDict):
+    block_top: bool
+    block_bottom: bool
+    block_scroll: bool
+    block_reverse: bool
+    block_special: bool
+    block_colorful: bool
+    block_keyword_patterns: list[str]
+
+
+def create_default_block_options() -> BlockOptions:
+    return BlockOptions(
+        block_top=False,
+        block_bottom=False,
+        block_scroll=False,
+        block_reverse=False,
+        block_special=False,
+        block_colorful=False,
+        block_keyword_patterns=[],
+    )
 
 
 def Danmaku2ASS(
@@ -33,7 +54,16 @@ def Danmaku2ASS(
     if progress_callback is not None:
         print("`progress_callback` is deprecated in 2.0.0 and will be removed in 2.1.0")
     comment_filters: list[str] = [comment_filter] if comment_filter is not None else []
-    block_options = BlockOptions(False, False, False, False, False, False, comment_filters)
+    # block_options = BlockOptions(False, False, False, False, False, False, comment_filters)
+    block_options = BlockOptions(
+        block_top=False,
+        block_bottom=False,
+        block_scroll=False,
+        block_reverse=False,
+        block_special=False,
+        block_colorful=False,
+        block_keyword_patterns=comment_filters,
+    )
     return convert_to_ass(
         inputs,
         stage_width,
@@ -64,7 +94,7 @@ def convert_to_ass(
     block_options: BlockOptions | None = None,
     is_reduce_comments: bool = False,
 ) -> str:
-    # block_options = block_options or BlockOptions.default()
+    block_options = block_options or create_default_block_options()
     if isinstance(inputs, (str, bytes)):
         inputs = [inputs]
 
@@ -80,7 +110,7 @@ def convert_to_ass(
             text_opacity,
             duration_marquee,
             duration_still,
-            # block_options,
+            block_options,
             is_reduce_comments,
         )
     elif input_format == "protobuf":
@@ -97,7 +127,7 @@ def convert_to_ass(
             text_opacity,
             duration_marquee,
             duration_still,
-            # block_options,
+            block_options,
             is_reduce_comments,
         )
     else:

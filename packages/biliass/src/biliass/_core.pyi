@@ -1,3 +1,5 @@
+from typing import Any
+
 class BlockOptions:
     def __init__(
         self,
@@ -21,7 +23,7 @@ def xml_to_ass(
     text_opacity: float,
     duration_marquee: float,
     duration_still: float,
-    block_options: BlockOptions,
+    block_options: dict[str, Any],
     is_reduce_comments: bool,
 ) -> str: ...
 def protobuf_to_ass(
@@ -34,7 +36,7 @@ def protobuf_to_ass(
     text_opacity: float,
     duration_marquee: float,
     duration_still: float,
-    block_options: BlockOptions,
+    block_options: dict[str, Any],
     is_reduce_comments: bool,
 ) -> str: ...
 def get_danmaku_meta_size(buffer: bytes) -> int: ...
