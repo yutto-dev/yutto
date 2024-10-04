@@ -91,16 +91,15 @@ where
         .collect();
 
     let comments = comments_result?;
-    let comments = comments.concat();
-    let mut comments: Vec<Comment> = comments
-        .into_iter()
-        .filter(|comment| {
+    let mut comments = comments.concat();
+    if !block_options.block_keyword_patterns.is_empty() {
+        comments.retain(|comment| {
             !block_options
                 .block_keyword_patterns
                 .iter()
                 .any(|regex| regex.is_match(&comment.content))
-        })
-        .collect();
+        });
+    }
     comments.sort_by(|a, b| {
         (
             a.timeline,
