@@ -20,6 +20,7 @@ serde_json = "1.0.128"
 regex = "1.10.6"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
+rayon = "1.10.0"
 
 [build-dependencies]
 prost-build = "0.13.3"
