@@ -63,7 +63,7 @@ def convert_to_ass(
     duration_marquee: float = 5.0,
     duration_still: float = 5.0,
     block_options: BlockOptions | None = None,
-    is_reduce_comments: bool = False,
+    reduce_comments: bool = True,
 ) -> str:
     if isinstance(inputs, (str, bytes)):
         inputs = [inputs]
@@ -76,7 +76,7 @@ def convert_to_ass(
         text_opacity,
         duration_marquee,
         duration_still,
-        is_reduce_comments,
+        reduce_comments,
     )
     block_options = block_options or BlockOptions.default()
 
