@@ -40,7 +40,7 @@ impl PyBlockOptions {
     }
 
     #[staticmethod]
-    fn default() -> Self {
+    pub fn default() -> Self {
         PyBlockOptions {
             inner: BlockOptions::default(),
         }
