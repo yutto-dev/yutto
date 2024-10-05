@@ -1,5 +1,3 @@
-from typing import Any
-
 class ConversionOptions:
     def __init__(
         self,
@@ -12,7 +10,7 @@ class ConversionOptions:
         duration_marquee: float,
         duration_still: float,
         is_reduce_comments: bool,
-    ): ...
+    ) -> None: ...
 
 class BlockOptions:
     def __init__(
@@ -24,7 +22,8 @@ class BlockOptions:
         block_special: bool,
         block_colorful: bool,
         block_keyword_patterns: list[str],
-    ): ...
+    ) -> None: ...
+    @staticmethod
     def default() -> BlockOptions: ...
 
 def xml_to_ass(

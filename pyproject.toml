@@ -60,7 +60,7 @@ members = ["packages/*"]
 markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
 
 [tool.pyright]
-include = ["yutto", "tests"]
+include = ["src/yutto", "packages/biliass/src/biliass", "tests"]
 pythonVersion = "3.9"
 typeCheckingMode = "strict"
 
