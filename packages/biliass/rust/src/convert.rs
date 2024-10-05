@@ -97,6 +97,9 @@ where
                 .any(|regex| regex.is_match(&comment.content))
         });
     }
+    if block_options.block_colorful {
+        comments.retain(|comment| comment.color == 0xffffff);
+    }
     comments.sort_by(|a, b| {
         (
             a.timeline,
