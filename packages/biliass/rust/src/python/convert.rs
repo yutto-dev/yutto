@@ -1,3 +1,4 @@
+use crate::error::BiliassError;
 use crate::python::PyBlockOptions;
 use crate::{convert, reader};
 use pyo3::{
@@ -126,6 +127,14 @@ pub fn py_xml_to_ass(
     //         .map(|p| Regex::new(&p).unwrap())
     //         .collect(),
     // };
+    let block_keyword_patterns_res: Result<Vec<Regex>, regex::Error> = conversion_options
+        .block_options
+        .block_keyword_patterns
+        .iter()
+        .map(|pattern| regex::Regex::new(&pattern))
+        .collect();
+    let block_keyword_patterns = block_keyword_patterns_res.map_err(BiliassError::from)?;
+
     let block_options = crate::filter::BlockOptions::default();
     Ok(convert::convert_to_ass(
         inputs,
@@ -189,6 +198,13 @@ pub fn py_protobuf_to_ass(
     //         .collect(),
     // };
     let block_options = crate::filter::BlockOptions::default();
+    let block_keyword_patterns_res: Result<Vec<Regex>, regex::Error> = conversion_options
+        .block_options
+        .block_keyword_patterns
+        .iter()
+        .map(|pattern| regex::Regex::new(&pattern))
+        .collect();
+    let block_keyword_patterns = block_keyword_patterns_res.map_err(BiliassError::from)?;
     Ok(convert::convert_to_ass(
         inputs,
         reader::protobuf::read_comments_from_protobuf,
