@@ -1,9 +1,9 @@
 use crate::comment::{Comment, CommentPosition};
 use crate::error::BiliassError;
+use crate::filter::BlockOptions;
 use crate::writer;
 use crate::writer::rows;
 use rayon::prelude::*;
-use regex::Regex;
 
 #[allow(clippy::too_many_arguments)]
 pub fn process_comments(
@@ -69,11 +69,13 @@ pub fn convert_to_ass<Reader, Input>(
     text_opacity: f32,
     duration_marquee: f64,
     duration_still: f64,
-    filters_regex: Vec<String>,
     is_reduce_comments: bool,
+    block_options: &BlockOptions,
 ) -> Result<String, BiliassError>
 where
-    Reader: Fn(Input, f32, (f32, f32, f32)) -> Result<Vec<Comment>, BiliassError> + Send + Sync,
+    Reader: Fn(Input, f32, (f32, f32, f32), &BlockOptions) -> Result<Vec<Comment>, BiliassError>
+        + Send
+        + Sync,
     Input: Send,
 {
     let zoom_factor = crate::writer::utils::get_zoom_factor(
@@ -82,25 +84,22 @@ where
     );
     let comments_result: Result<Vec<Vec<Comment>>, BiliassError> = inputs
         .into_par_iter()
-        .map(|input| reader(input, font_size, zoom_factor))
+        .map(|input| reader(input, font_size, zoom_factor, block_options))
         .collect();
 
-    let compiled_regexes_res: Result<Vec<Regex>, regex::Error> = filters_regex
-        .into_iter()
-        .map(|pattern| Regex::new(&pattern))
-        .collect();
-
-    let compiled_regexes = compiled_regexes_res.map_err(BiliassError::from)?;
     let comments = comments_result?;
-    let comments = comments.concat();
-    let mut comments: Vec<Comment> = comments
-        .into_iter()
-        .filter(|comment| {
-            !compiled_regexes
+    let mut comments = comments.concat();
+    if !block_options.block_keyword_patterns.is_empty() {
+        comments.retain(|comment| {
+            !block_options
+                .block_keyword_patterns
                 .iter()
                 .any(|regex| regex.is_match(&comment.content))
-        })
-        .collect();
+        });
+    }
+    if block_options.block_colorful {
+        comments.retain(|comment| comment.color == 0xffffff);
+    }
     comments.sort_by(|a, b| {
         (
             a.timeline,
