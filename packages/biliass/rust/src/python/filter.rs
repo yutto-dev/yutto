@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use regex::Regex;
 
 #[pyclass(name = "BlockOptions")]
+#[derive(Clone)]
 pub struct PyBlockOptions {
     pub block_top: bool,
     pub block_bottom: bool,
