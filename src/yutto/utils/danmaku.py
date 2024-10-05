@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal, TypedDict, Union
 
-from biliass import convert_to_ass
+from biliass import BlockOptions, convert_to_ass
 
 DanmakuSourceType = Literal["xml", "protobuf"]
 DanmakuSaveType = Literal["xml", "ass", "protobuf"]
@@ -11,6 +11,15 @@ DanmakuSaveType = Literal["xml", "ass", "protobuf"]
 DanmakuSourceDataXml = str
 DanmakuSourceDataProtobuf = bytes
 DanmakuSourceDataType = Union[DanmakuSourceDataXml, DanmakuSourceDataProtobuf]
+
+
+class DanmakuOptions(TypedDict):
+    font_size: int | None
+    font: str
+    opacity: float
+    display_region_ratio: float
+    speed: float
+    block_options: BlockOptions
 
 
 class DanmakuData(TypedDict):
@@ -38,6 +47,7 @@ def write_ass_danmaku(
     filepath: Path,
     height: int,
     width: int,
+    options: DanmakuOptions,
 ):
     with filepath.open(
         "w",
@@ -50,19 +60,25 @@ def write_ass_danmaku(
                 width,
                 height,
                 input_format=input_format,
-                display_region_ratio=1.0,
-                font_face="SimHei",
-                font_size=width / 40,
-                text_opacity=0.8,
-                duration_marquee=15.0,
-                duration_still=10.0,
-                block_options=None,
+                display_region_ratio=options["display_region_ratio"],
+                font_face=options["font"],
+                font_size=options["font_size"] if options["font_size"] is not None else width / 40,
+                text_opacity=options["opacity"],
+                duration_marquee=15.0 / options["speed"],
+                duration_still=10.0 / options["speed"],
+                block_options=options["block_options"],
                 reduce_comments=True,
             )
         )
 
 
-def write_danmaku(danmaku: DanmakuData, video_path: str | Path, height: int, width: int) -> str | None:
+def write_danmaku(
+    danmaku: DanmakuData,
+    video_path: str | Path,
+    height: int,
+    width: int,
+    options: DanmakuOptions,
+) -> str | None:
     video_path = Path(video_path)
     video_name = video_path.stem
     if danmaku["source_type"] == "xml":
@@ -73,7 +89,7 @@ def write_danmaku(danmaku: DanmakuData, video_path: str | Path, height: int, wid
             write_xml_danmaku(xml_danmaku[0], file_path)
         elif danmaku["save_type"] == "ass":
             file_path = video_path.with_suffix(".ass")
-            write_ass_danmaku(xml_danmaku, "xml", file_path, height, width)
+            write_ass_danmaku(xml_danmaku, "xml", file_path, height, width, options)
         else:
             return None
     elif danmaku["source_type"] == "protobuf":
@@ -81,7 +97,7 @@ def write_danmaku(danmaku: DanmakuData, video_path: str | Path, height: int, wid
         assert isinstance(protobuf_danmaku[0], bytes)
         if danmaku["save_type"] == "ass":
             file_path = video_path.with_suffix(".ass")
-            write_ass_danmaku(protobuf_danmaku, "protobuf", file_path, height, width)
+            write_ass_danmaku(protobuf_danmaku, "protobuf", file_path, height, width, options)
         elif danmaku["save_type"] == "protobuf":
             if len(protobuf_danmaku) == 1:
                 file_path = video_path.with_suffix(".pb")

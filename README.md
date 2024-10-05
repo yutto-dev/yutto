@@ -392,72 +392,6 @@ yutto tensura1 --batch --alias-file='~/.yutto_alias'
 cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 ```
 
-#### 仅下载视频流
-
--  参数 `--video-only`
--  默认值 `False`
-
-> **Note**
->
-> 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
->
-> 「仅下载音频流」也是同样的。
-
-#### 仅下载音频流
-
--  参数 `--audio-only`
--  默认值 `False`
-
-仅下载其中的音频流，保存为 `.aac` 文件。
-
-#### 不生成弹幕文件
-
--  参数 `--no-danmaku`
--  默认值 `False`
-
-#### 不生成章节信息
-
--  参数 `--no-chapter-info`
--  默认值 `False`
-
-不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
-
-#### 仅生成弹幕文件
-
--  参数 `--danmaku-only`
--  默认值 `False`
-
-#### 不生成字幕文件
-
--  参数 `--no-subtitle`
--  默认值 `False`
-
-#### 仅生成字幕文件
-
--  参数 `--subtitle-only`
--  默认值 `False`
-
-#### 生成媒体元数据文件
-
--  参数 `--with-metadata`
--  默认值 `False`
-
-目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
-
-#### 仅生成媒体元数据文件
-
--  参数 `--metadata-only`
--  默认值 `False`
-
-#### 不生成视频封面
-
--  参数 `--no-cover`
--  默认值 `False`
-
-> [!NOTE]
->
-> 当前仅支持为包含视频流的视频生成封面。
-
 #### 指定媒体元数据值的格式
 
 当前仅支持 `premiered`
@@ -504,6 +438,157 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 -  参数 `--debug`
 -  默认值 `False`
+
+</details>
+
+### 资源选择参数
+
+此外有一些参数专用于资源选择，比如选择是否下载弹幕、音频、视频等等。
+
+<details>
+<summary>点击展开详细参数</summary>
+
+#### 仅下载视频流
+
+-  参数 `--video-only`
+-  默认值 `False`
+
+> **Note**
+>
+> 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
+>
+> 「仅下载音频流」也是同样的。
+
+#### 仅下载音频流
+
+-  参数 `--audio-only`
+-  默认值 `False`
+
+仅下载其中的音频流，保存为 `.aac` 文件。
+
+#### 不生成弹幕文件
+
+-  参数 `--no-danmaku`
+-  默认值 `False`
+
+#### 仅生成弹幕文件
+
+-  参数 `--danmaku-only`
+-  默认值 `False`
+
+#### 不生成字幕文件
+
+-  参数 `--no-subtitle`
+-  默认值 `False`
+
+#### 仅生成字幕文件
+
+-  参数 `--subtitle-only`
+-  默认值 `False`
+
+#### 生成媒体元数据文件
+
+-  参数 `--with-metadata`
+-  默认值 `False`
+
+目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
+
+#### 仅生成媒体元数据文件
+
+-  参数 `--metadata-only`
+-  默认值 `False`
+
+#### 不生成视频封面
+
+-  参数 `--no-cover`
+-  默认值 `False`
+
+> [!NOTE]
+>
+> 当前仅支持为包含视频流的视频生成封面。
+
+#### 不生成章节信息
+
+-  参数 `--no-chapter-info`
+-  默认值 `False`
+
+不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
+
+</details>
+
+### 弹幕设置参数
+
+yutto 通过与 biliass 的集成，提供了一些 ASS 弹幕选项，包括字号、字体、速度等～
+
+<details>
+<summary>点击展开详细参数</summary>
+
+#### 弹幕字体大小
+
+-  参数 `--danmaku-font-size`
+-  默认值 `video_width / 40`
+
+#### 弹幕字体
+
+-  参数 `--danmaku-font`
+-  默认值 `"SimHei"`
+
+#### 弹幕不透明度
+
+-  参数 `--danmaku-opacity`
+-  默认值 `0.8`
+
+#### 弹幕显示区域与视频高度的比例
+
+-  参数 `--danmaku-display-region-ratio`
+-  默认值 `1.0`
+
+#### 弹幕速度
+
+-  参数 `--danmaku-speed`
+-  默认值 `1.0`
+
+#### 屏蔽顶部弹幕
+
+-  参数 `--danmaku-block-top`
+-  默认值 `False`
+
+#### 屏蔽底部弹幕
+
+-  参数 `--danmaku-block-bottom`
+-  默认值 `False`
+
+#### 屏蔽滚动弹幕
+
+-  参数 `--danmaku-block-scroll`
+-  默认值 `False`
+
+#### 屏蔽逆向弹幕
+
+-  参数 `--danmaku-block-reverse`
+-  默认值 `False`
+
+#### 屏蔽固定弹幕（顶部、底部）
+
+-  参数 `--danmaku-block-fixed`
+-  默认值 `False`
+
+#### 屏蔽高级弹幕
+
+-  参数 `--danmaku-block-special`
+-  默认值 `False`
+
+#### 屏蔽彩色弹幕
+
+-  参数 `--danmaku-block-colorful`
+-  默认值 `False`
+
+#### 屏蔽关键词
+
+-  参数 `"--danmaku-block-keyword-patterns`
+-  默认值 `None`
+
+按关键词屏蔽，支持正则，使用 `,` 分隔
 
 </details>
 

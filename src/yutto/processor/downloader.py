@@ -274,6 +274,7 @@ async def start_downloader(
     require_video = options["require_video"]
     require_audio = options["require_audio"]
     metadata_format = options["metadata_format"]
+    danmaku_options = options["danmaku_options"]
 
     Logger.info(f"开始处理视频 {filename}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -332,6 +333,7 @@ async def start_downloader(
             str(output_path),
             video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
             video["width"] if video is not None else 1920,
+            danmaku_options,
         )
         Logger.custom(
             "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")

@@ -9,6 +9,7 @@ import sys
 from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import httpx
+from biliass import BlockOptions
 from typing_extensions import TypeAlias
 
 from yutto.__version__ import VERSION as yutto_version
@@ -36,6 +37,7 @@ from yutto.processor.parser import alias_parser, file_scheme_parser
 from yutto.processor.path_resolver import create_unique_path_resolver
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
+from yutto.utils.danmaku import DanmakuOptions
 from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.funcutils import as_sync
 from yutto.utils.time import TIME_DATE_FMT, TIME_FULL_FMT
@@ -147,71 +149,75 @@ def cli() -> argparse.ArgumentParser:
     )
     group_common.add_argument("--download-interval", default=0, type=int, help="设置下载间隔，单位为秒")
     group_common.add_argument("--banned-mirrors-pattern", default=None, help="禁用下载链接的镜像源，使用正则匹配")
+    group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
+    group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
+    group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
+    group_common.add_argument("--vip-strict", action="store_true", help="启用严格检查大会员生效")
+    group_common.add_argument("--login-strict", action="store_true", help="启用严格检查登录状态")
 
     # 资源选择
-    group_common.add_argument(
+    group_resource = parser.add_argument_group("resource", "资源选择参数")
+    group_resource.add_argument(
         "--video-only",
         dest="require_audio",
         action=create_select_required_action(deselect=["audio"]),
         help="仅下载视频流",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--audio-only",
         dest="require_video",
         action=create_select_required_action(deselect=["video"]),
         help="仅下载音频流",
     )  # 视频和音频是反选对方，而不是其余反选所有的
-    group_common.add_argument(
+    group_resource.add_argument(
         "--no-danmaku",
         dest="require_danmaku",
         action=create_select_required_action(deselect=["danmaku"]),
         help="不生成弹幕文件",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--danmaku-only",
         dest="require_danmaku",
         action=create_select_required_action(select=["danmaku"], deselect=invert_selection(["danmaku"])),
         help="仅生成弹幕文件",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--no-subtitle",
         dest="require_subtitle",
         action=create_select_required_action(deselect=["subtitle"]),
         help="不生成字幕文件",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--subtitle-only",
         dest="require_subtitle",
         action=create_select_required_action(select=["subtitle"], deselect=invert_selection(["subtitle"])),
         help="仅生成字幕文件",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--with-metadata",
         dest="require_metadata",
         action=create_select_required_action(select=["metadata"]),
         help="生成元数据文件",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--metadata-only",
         dest="require_metadata",
         action=create_select_required_action(select=["metadata"], deselect=invert_selection(["metadata"])),
         help="仅生成元数据文件",
     )
-    group_common.add_argument(
+    group_resource.add_argument(
         "--no-cover",
         dest="require_cover",
         action=create_select_required_action(deselect=["cover"]),
         help="不生成封面",
     )
-
-    group_common.add_argument(
+    group_resource.add_argument(
         "--no-chapter-info",
         dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter_info"]),
         help="不封装章节信息",
     )
-
-    group_common.set_defaults(
+    group_resource.set_defaults(
         require_video=True,
         require_audio=True,
         require_subtitle=True,
@@ -220,11 +226,26 @@ def cli() -> argparse.ArgumentParser:
         require_cover=True,
         require_chapter_info=True,
     )
-    group_common.add_argument("--no-color", action="store_true", help="不使用颜色")
-    group_common.add_argument("--no-progress", action="store_true", help="不显示进度条")
-    group_common.add_argument("--debug", action="store_true", help="启用 debug 模式")
-    group_common.add_argument("--vip-strict", action="store_true", help="启用严格检查大会员生效")
-    group_common.add_argument("--login-strict", action="store_true", help="启用严格检查登录状态")
+
+    # 弹幕设置
+    group_danmaku = parser.add_argument_group("danmaku", "弹幕设置参数")
+    group_danmaku.add_argument("--danmaku-font-size", type=int, default=None, help="弹幕字体大小")
+    group_danmaku.add_argument("--danmaku-font", default="SimHei", help="弹幕字体")
+    group_danmaku.add_argument("--danmaku-opacity", type=float, default=0.8, help="弹幕不透明度")
+    group_danmaku.add_argument(
+        "--danmaku-display-region-ratio", help="弹幕显示区域与视频高度的比例", type=float, default=1.0
+    )
+    group_danmaku.add_argument("--danmaku-speed", help="弹幕速度", type=float, default=1.0)
+    group_danmaku.add_argument("--danmaku-block-top", action="store_true", help="屏蔽顶部弹幕")
+    group_danmaku.add_argument("--danmaku-block-bottom", action="store_true", help="屏蔽底部弹幕")
+    group_danmaku.add_argument("--danmaku-block-scroll", action="store_true", help="屏蔽滚动弹幕")
+    group_danmaku.add_argument("--danmaku-block-reverse", action="store_true", help="屏蔽逆向弹幕")
+    group_danmaku.add_argument("--danmaku-block-fixed", action="store_true", help="屏蔽固定弹幕（顶部、底部）")
+    group_danmaku.add_argument("--danmaku-block-special", action="store_true", help="屏蔽高级弹幕")
+    group_danmaku.add_argument("--danmaku-block-colorful", action="store_true", help="屏蔽彩色弹幕")
+    group_danmaku.add_argument(
+        "--danmaku-block-keyword-patterns", default=None, help="屏蔽匹配关键词的弹幕，使用逗号分隔"
+    )
 
     # 仅批量下载使用
     group_batch = parser.add_argument_group("batch", "批量下载参数")
@@ -377,6 +398,7 @@ async def run(args_list: list[argparse.Namespace]):
                             "dateadded": TIME_FULL_FMT,
                         },
                         "banned_mirrors_pattern": args.banned_mirrors_pattern,
+                        "danmaku_options": parse_danmaku_options(args),
                     },
                 )
                 Logger.new_line()
@@ -445,6 +467,30 @@ def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable
     if original_filename != new_name:
         Logger.warning(f"文件名重复，已重命名为 {new_name}")
     return episode_data
+
+
+def parse_danmaku_options(args: argparse.Namespace) -> DanmakuOptions:
+    block_options = BlockOptions(
+        block_top=args.danmaku_block_top or args.danmaku_block_fixed,
+        block_bottom=args.danmaku_block_bottom or args.danmaku_block_fixed,
+        block_scroll=args.danmaku_block_scroll,
+        block_reverse=args.danmaku_block_reverse,
+        block_special=args.danmaku_block_special,
+        block_colorful=args.danmaku_block_colorful,
+        block_keyword_patterns=(
+            [pattern.strip() for pattern in args.danmaku_block_keyword_patterns.split(",")]
+            if args.danmaku_block_keyword_patterns
+            else []
+        ),
+    )
+    return DanmakuOptions(
+        font_size=args.danmaku_font_size,
+        font=args.danmaku_font,
+        opacity=args.danmaku_opacity,
+        display_region_ratio=args.danmaku_display_region_ratio,
+        speed=args.danmaku_speed,
+        block_options=block_options,
+    )
 
 
 if __name__ == "__main__":
