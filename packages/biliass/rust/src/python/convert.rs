@@ -1,10 +1,49 @@
 use crate::{convert, reader};
 use pyo3::{
+    conversion,
     prelude::*,
     pybacked::{PyBackedBytes, PyBackedStr},
     types::PyDict,
 };
 use regex::Regex;
+
+#[pyclass(name = "ConversionOptions")]
+pub struct PyConversionOptions {
+    pub stage_width: u32,
+    pub stage_height: u32,
+    pub reserve_blank: u32,
+    pub font_face: String,
+    pub font_size: f32,
+    pub text_opacity: f32,
+    pub duration_marquee: f64,
+    pub duration_still: f64,
+}
+
+#[pymethods]
+impl PyConversionOptions {
+    #[new]
+    fn new(
+        stage_width: u32,
+        stage_height: u32,
+        reserve_blank: u32,
+        font_face: String,
+        font_size: f32,
+        text_opacity: f32,
+        duration_marquee: f64,
+        duration_still: f64,
+    ) -> Self {
+        PyConversionOptions {
+            stage_width,
+            stage_height,
+            reserve_blank,
+            font_face,
+            font_size,
+            text_opacity,
+            duration_marquee,
+            duration_still,
+        }
+    }
+}
 
 fn extract_block_options_from_dict(
     block_options: Bound<'_, PyDict>,
@@ -46,14 +85,15 @@ fn extract_block_options_from_dict(
 #[pyfunction(name = "xml_to_ass")]
 pub fn py_xml_to_ass(
     inputs: Vec<PyBackedStr>,
-    stage_width: u32,
-    stage_height: u32,
-    reserve_blank: u32,
-    font_face: &str,
-    font_size: f32,
-    text_opacity: f32,
-    duration_marquee: f64,
-    duration_still: f64,
+    // stage_width: u32,
+    // stage_height: u32,
+    // reserve_blank: u32,
+    // font_face: &str,
+    // font_size: f32,
+    // text_opacity: f32,
+    // duration_marquee: f64,
+    // duration_still: f64,
+    conversion_options: &PyConversionOptions,
     // block_options: Bound<'_, PyDict>,
     // block_options: &crate::python::filter::PyBlockOptions,
     block_top: bool,
@@ -82,14 +122,22 @@ pub fn py_xml_to_ass(
     Ok(convert::convert_to_ass(
         inputs,
         crate::reader::xml::read_comments_from_xml,
-        stage_width,
-        stage_height,
-        reserve_blank,
-        font_face,
-        font_size,
-        text_opacity,
-        duration_marquee,
-        duration_still,
+        // stage_width,
+        // stage_height,
+        // reserve_blank,
+        // font_face,
+        // font_size,
+        // text_opacity,
+        // duration_marquee,
+        // duration_still,
+        conversion_options.stage_width,
+        conversion_options.stage_height,
+        conversion_options.reserve_blank,
+        &conversion_options.font_face,
+        conversion_options.font_size,
+        conversion_options.text_opacity,
+        conversion_options.duration_marquee,
+        conversion_options.duration_still,
         &block_options,
         is_reduce_comments,
     )?)
@@ -99,14 +147,15 @@ pub fn py_xml_to_ass(
 #[pyfunction(name = "protobuf_to_ass")]
 pub fn py_protobuf_to_ass(
     inputs: Vec<PyBackedBytes>,
-    stage_width: u32,
-    stage_height: u32,
-    reserve_blank: u32,
-    font_face: &str,
-    font_size: f32,
-    text_opacity: f32,
-    duration_marquee: f64,
-    duration_still: f64,
+    // stage_width: u32,
+    // stage_height: u32,
+    // reserve_blank: u32,
+    // font_face: &str,
+    // font_size: f32,
+    // text_opacity: f32,
+    // duration_marquee: f64,
+    // duration_still: f64,
+    conversion_options: &PyConversionOptions,
     // block_options: &crate::python::filter::PyBlockOptions,
     // block_options: Bound<'_, PyDict>,
     block_top: bool,
@@ -135,14 +184,22 @@ pub fn py_protobuf_to_ass(
     Ok(convert::convert_to_ass(
         inputs,
         reader::protobuf::read_comments_from_protobuf,
-        stage_width,
-        stage_height,
-        reserve_blank,
-        font_face,
-        font_size,
-        text_opacity,
-        duration_marquee,
-        duration_still,
+        // stage_width,
+        // stage_height,
+        // reserve_blank,
+        // font_face,
+        // font_size,
+        // text_opacity,
+        // duration_marquee,
+        // duration_still,
+        conversion_options.stage_width,
+        conversion_options.stage_height,
+        conversion_options.reserve_blank,
+        &conversion_options.font_face,
+        conversion_options.font_size,
+        conversion_options.text_opacity,
+        conversion_options.duration_marquee,
+        conversion_options.duration_still,
         &block_options,
         // &block_options.inner,
         is_reduce_comments,
