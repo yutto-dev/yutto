@@ -87,7 +87,6 @@ pub struct PyConversionOptions {
     pub duration_marquee: f64,
     pub duration_still: f64,
     pub is_reduce_comments: bool,
-    pub block_options: PyBlockOptions,
 }
 
 #[pymethods]
@@ -104,7 +103,6 @@ impl PyConversionOptions {
         duration_marquee: f64,
         duration_still: f64,
         is_reduce_comments: bool,
-        block_options: &PyBlockOptions,
     ) -> Self {
         PyConversionOptions {
             stage_width,
@@ -116,7 +114,6 @@ impl PyConversionOptions {
             duration_marquee,
             duration_still,
             is_reduce_comments,
-            block_options: block_options.clone(),
         }
     }
 }
@@ -125,6 +122,7 @@ impl PyConversionOptions {
 pub fn py_xml_to_ass(
     inputs: Vec<PyBackedStr>,
     conversion_options: &PyConversionOptions,
+    block_options: &PyBlockOptions,
 ) -> PyResult<String> {
     Ok(convert::convert_to_ass(
         inputs,
@@ -138,7 +136,7 @@ pub fn py_xml_to_ass(
         conversion_options.duration_marquee,
         conversion_options.duration_still,
         conversion_options.is_reduce_comments,
-        &conversion_options.block_options.to_block_options()?,
+        &block_options.to_block_options()?,
     )?)
 }
 
@@ -146,6 +144,7 @@ pub fn py_xml_to_ass(
 pub fn py_protobuf_to_ass(
     inputs: Vec<PyBackedBytes>,
     conversion_options: &PyConversionOptions,
+    block_options: &PyBlockOptions,
 ) -> PyResult<String> {
     Ok(convert::convert_to_ass(
         inputs,
@@ -159,6 +158,6 @@ pub fn py_protobuf_to_ass(
         conversion_options.duration_marquee,
         conversion_options.duration_still,
         conversion_options.is_reduce_comments,
-        &conversion_options.block_options.to_block_options()?,
+        &block_options.to_block_options()?,
     )?)
 }

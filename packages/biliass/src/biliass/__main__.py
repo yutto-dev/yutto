@@ -3,10 +3,9 @@ from __future__ import annotations
 import argparse
 import sys
 
-from biliass import BlockOptions, convert_to_ass
+from biliass import convert_to_ass
 from biliass.__version__ import VERSION as biliass_version
-
-# from biliass._core import BlockOptions
+from biliass._core import BlockOptions
 
 
 def main():
@@ -134,9 +133,11 @@ def parse_block_options(args: argparse.Namespace) -> BlockOptions:
         block_reverse=args.block_reverse,
         block_special=args.block_special,
         block_colorful=args.block_colorful,
-        block_keyword_patterns=[pattern.strip() for pattern in args.block_keyword_patterns.split(",")]
-        if args.block_keyword_patterns
-        else [],
+        block_keyword_patterns=(
+            [pattern.strip() for pattern in args.block_keyword_patterns.split(",")]
+            if args.block_keyword_patterns
+            else []
+        ),
     )
 
 

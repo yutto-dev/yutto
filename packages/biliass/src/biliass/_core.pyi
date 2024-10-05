@@ -30,14 +30,12 @@ class BlockOptions:
 def xml_to_ass(
     inputs: list[str],
     conversion_options: ConversionOptions,
-    block_options: dict[str, Any],
-    is_reduce_comments: bool,
+    block_options: BlockOptions,
 ) -> str: ...
 def protobuf_to_ass(
     inputs: list[bytes],
     conversion_options: ConversionOptions,
-    block_options: dict[str, Any],
-    is_reduce_comments: bool,
+    block_options: BlockOptions,
 ) -> str: ...
 def get_danmaku_meta_size(buffer: bytes) -> int: ...
 def enable_tracing() -> None: ...
