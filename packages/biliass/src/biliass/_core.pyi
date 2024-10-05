@@ -3,7 +3,7 @@ class ConversionOptions:
         self,
         stage_width: int,
         stage_height: int,
-        reserve_blank: int,
+        display_region_ratio: float,
         font_face: str,
         font_size: float,
         text_opacity: float,

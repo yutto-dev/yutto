@@ -50,7 +50,7 @@ def write_ass_danmaku(
                 width,
                 height,
                 input_format=input_format,
-                reserve_blank=0,
+                display_region_ratio=1.0,
                 font_face="SimHei",
                 font_size=width / 40,
                 text_opacity=0.8,
