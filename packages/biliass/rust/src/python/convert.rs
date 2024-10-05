@@ -53,7 +53,7 @@ pub fn py_xml_to_ass(
     font_size: f32,
     text_opacity: f32,
     duration_marquee: f64,
-    // duration_still: f64,
+    duration_still: f64,
     // block_options: Bound<'_, PyDict>,
     // block_options: &crate::python::filter::PyBlockOptions,
     block_top: bool,
@@ -78,7 +78,6 @@ pub fn py_xml_to_ass(
     //         .map(|p| Regex::new(&p).unwrap())
     //         .collect(),
     // };
-    let duration_still: f64 = 5.0;
     let block_options = crate::filter::BlockOptions::default();
     Ok(convert::convert_to_ass(
         inputs,
@@ -107,7 +106,7 @@ pub fn py_protobuf_to_ass(
     font_size: f32,
     text_opacity: f32,
     duration_marquee: f64,
-    // duration_still: f64,
+    duration_still: f64,
     // block_options: &crate::python::filter::PyBlockOptions,
     // block_options: Bound<'_, PyDict>,
     block_top: bool,
@@ -132,7 +131,6 @@ pub fn py_protobuf_to_ass(
     //         .map(|p| Regex::new(&p).unwrap())
     //         .collect(),
     // };
-    let duration_still: f64 = 5.0;
     let block_options = crate::filter::BlockOptions::default();
     Ok(convert::convert_to_ass(
         inputs,
