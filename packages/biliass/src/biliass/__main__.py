@@ -53,7 +53,6 @@ def main():
         type=float,
         default=5.0,
     )
-    parser.add_argument("-fl", "--filter", help="Regular expression to filter comments")
     parser.add_argument("--block-top", action="store_true", help="Block top comments")
     parser.add_argument("--block-bottom", action="store_true", help="Block bottom comments")
     parser.add_argument("--block-scroll", action="store_true", help="Block scrolling comments")
@@ -62,7 +61,9 @@ def main():
     parser.add_argument("--block-special", action="store_true", help="Block special comments")
     parser.add_argument("--block-colorful", action="store_true", help="Block colorful comments")
     parser.add_argument(
-        "--block-keyword-patterns", help="Block comments that match the keyword pattern, separated by commas"
+        "--block-keyword-patterns",
+        default=None,
+        help="Block comments that match the keyword pattern, separated by commas",
     )
     parser.add_argument(
         "--display-region-ratio",

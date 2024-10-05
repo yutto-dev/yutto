@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, NamedTuple, TypedDict
 if TYPE_CHECKING:
     from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
     from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
-    from yutto.utils.danmaku import DanmakuData
+    from yutto.utils.danmaku import DanmakuData, DanmakuOptions
     from yutto.utils.metadata import ChapterInfoData, MetaData
     from yutto.utils.subtitle import SubtitleData
 
@@ -242,6 +242,7 @@ class DownloaderOptions(TypedDict):
     num_workers: int
     metadata_format: dict[str, str]
     banned_mirrors_pattern: str | None
+    danmaku_options: DanmakuOptions
 
 
 class FavouriteMetaData(TypedDict):
