@@ -82,7 +82,7 @@ where
         crate::reader::special::BILI_PLAYER_SIZE,
         (stage_width, stage_height),
     );
-    // let block_options = BlockOptions::default();
+    let block_options = BlockOptions::default();
     let comments_result: Result<Vec<Vec<Comment>>, BiliassError> = inputs
         .into_par_iter()
         .map(|input| reader(input, font_size, zoom_factor, &block_options))
