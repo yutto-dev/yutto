@@ -35,7 +35,7 @@ impl PyConversionOptions {
         duration_marquee: f64,
         duration_still: f64,
         is_reduce_comments: bool,
-        // block_options: &PyBlockOptions,
+        block_options: &PyBlockOptions,
     ) -> Self {
         PyConversionOptions {
             stage_width,
