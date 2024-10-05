@@ -30,9 +30,11 @@ def Danmaku2ASS(
     is_reduce_comments: bool = False,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> str:
-    print("Function `Danmaku2ASS` is deprecated in biliass 2.0.0, Please use `convert_to_ass` instead.")
+    print(
+        "Function `Danmaku2ASS` is deprecated in biliass 2.0.0 and will be removed in 2.2.0, Please use `convert_to_ass` instead."
+    )
     if progress_callback is not None:
-        print("`progress_callback` is deprecated in 2.0.0 and will be removed in 2.1.0")
+        print("`progress_callback` will take no effect in 2.0.0")
     comment_filters: list[str] = [comment_filter] if comment_filter is not None else []
     block_options = BlockOptions(False, False, False, False, False, False, comment_filters)
     return convert_to_ass(
