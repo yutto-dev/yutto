@@ -110,7 +110,14 @@ def convert_to_ass(
             text_opacity,
             duration_marquee,
             duration_still,
-            block_options,
+            # block_options,
+            block_options["block_top"],
+            block_options["block_bottom"],
+            block_options["block_scroll"],
+            block_options["block_reverse"],
+            block_options["block_special"],
+            block_options["block_colorful"],
+            block_options["block_keyword_patterns"],
             is_reduce_comments,
         )
     elif input_format == "protobuf":
@@ -127,7 +134,14 @@ def convert_to_ass(
             text_opacity,
             duration_marquee,
             duration_still,
-            block_options,
+            # block_options,
+            block_options["block_top"],
+            block_options["block_bottom"],
+            block_options["block_scroll"],
+            block_options["block_reverse"],
+            block_options["block_special"],
+            block_options["block_colorful"],
+            block_options["block_keyword_patterns"],
             is_reduce_comments,
         )
     else:

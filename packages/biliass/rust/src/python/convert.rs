@@ -1,10 +1,10 @@
 use crate::{convert, reader};
-
 use pyo3::{
     prelude::*,
     pybacked::{PyBackedBytes, PyBackedStr},
     types::PyDict,
 };
+use regex::Regex;
 
 fn extract_block_options_from_dict(
     block_options: Bound<'_, PyDict>,
@@ -54,11 +54,30 @@ pub fn py_xml_to_ass(
     text_opacity: f32,
     duration_marquee: f64,
     duration_still: f64,
-    block_options: Bound<'_, PyDict>,
+    // block_options: Bound<'_, PyDict>,
     // block_options: &crate::python::filter::PyBlockOptions,
+    block_top: bool,
+    block_bottom: bool,
+    block_scroll: bool,
+    block_reverse: bool,
+    block_special: bool,
+    block_colorful: bool,
+    block_keyword_patterns: Vec<String>,
     is_reduce_comments: bool,
 ) -> PyResult<String> {
-    let block_options = extract_block_options_from_dict(block_options)?;
+    // let block_options = extract_block_options_from_dict(block_options)?;
+    let block_options = crate::filter::BlockOptions {
+        block_top,
+        block_bottom,
+        block_scroll,
+        block_reverse,
+        block_special,
+        block_colorful,
+        block_keyword_patterns: block_keyword_patterns
+            .into_iter()
+            .map(|p| Regex::new(&p).unwrap())
+            .collect(),
+    };
     Ok(convert::convert_to_ass(
         inputs,
         crate::reader::xml::read_comments_from_xml,
@@ -88,10 +107,29 @@ pub fn py_protobuf_to_ass(
     duration_marquee: f64,
     duration_still: f64,
     // block_options: &crate::python::filter::PyBlockOptions,
-    block_options: Bound<'_, PyDict>,
+    // block_options: Bound<'_, PyDict>,
+    block_top: bool,
+    block_bottom: bool,
+    block_scroll: bool,
+    block_reverse: bool,
+    block_special: bool,
+    block_colorful: bool,
+    block_keyword_patterns: Vec<String>,
     is_reduce_comments: bool,
 ) -> PyResult<String> {
-    let block_options = extract_block_options_from_dict(block_options)?;
+    // let block_options = extract_block_options_from_dict(block_options)?;
+    let block_options = crate::filter::BlockOptions {
+        block_top,
+        block_bottom,
+        block_scroll,
+        block_reverse,
+        block_special,
+        block_colorful,
+        block_keyword_patterns: block_keyword_patterns
+            .into_iter()
+            .map(|p| Regex::new(&p).unwrap())
+            .collect(),
+    };
     Ok(convert::convert_to_ass(
         inputs,
         reader::protobuf::read_comments_from_protobuf,
