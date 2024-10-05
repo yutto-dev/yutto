@@ -47,8 +47,8 @@ impl PyConversionOptions {
             duration_marquee,
             duration_still,
             is_reduce_comments,
-            // block_options: block_options.clone(),
-            block_options: PyBlockOptions::default(),
+            block_options: block_options.clone(),
+            // block_options: PyBlockOptions::default(),
         }
     }
 }
