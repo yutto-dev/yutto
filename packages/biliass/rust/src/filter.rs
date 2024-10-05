@@ -1,7 +1,7 @@
 use crate::comment::CommentPosition;
 use regex::Regex;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BlockOptions {
     pub block_top: bool,
     pub block_bottom: bool,

@@ -1,3 +1,4 @@
+use crate::python::PyBlockOptions;
 use crate::{convert, reader};
 use pyo3::{
     conversion,
@@ -18,6 +19,7 @@ pub struct PyConversionOptions {
     pub duration_marquee: f64,
     pub duration_still: f64,
     pub is_reduce_comments: bool,
+    pub block_options: PyBlockOptions,
 }
 
 #[pymethods]
@@ -33,6 +35,7 @@ impl PyConversionOptions {
         duration_marquee: f64,
         duration_still: f64,
         is_reduce_comments: bool,
+        block_options: &PyBlockOptions,
     ) -> Self {
         PyConversionOptions {
             stage_width,
@@ -44,6 +47,7 @@ impl PyConversionOptions {
             duration_marquee,
             duration_still,
             is_reduce_comments,
+            block_options: block_options.clone(),
         }
     }
 }
