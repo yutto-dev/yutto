@@ -40,14 +40,14 @@ convert_to_ass(
     width,
     height,
     input_format="xml",
-    reserve_blank=0,
+    display_region_ratio=1.0,
     font_face="sans-serif",
     font_size=width / 40,
     text_opacity=0.8,
     duration_marquee=15.0,
     duration_still=10.0,
     comment_filter=None,
-    is_reduce_comments=False,
+    reduce_comments=False,
 )
 
 # protobuf
@@ -56,14 +56,14 @@ convert_to_ass(
     width,
     height,
     input_format="protobuf",
-    reserve_blank=0,
+    display_region_ratio=1.0,
     font_face="sans-serif",
     font_size=width / 40,
     text_opacity=0.8,
     duration_marquee=15.0,
     duration_still=10.0,
     comment_filter=None,
-    is_reduce_comments=False,
+    reduce_comments=False,
 )
 ```
 

@@ -65,18 +65,15 @@ def main():
         "--block-keyword-patterns", help="Block comments that match the keyword pattern, separated by commas"
     )
     parser.add_argument(
-        "-p",
-        "--protect",
-        metavar="HEIGHT",
-        help="Reserve blank on the bottom of the stage",
-        type=int,
-        default=0,
+        "--display-region-ratio",
+        help="Ratio of the display region to the stage height [default: 1.0]",
+        type=float,
+        default=1.0,
     )
     parser.add_argument(
-        "-r",
-        "--reduce",
+        "--skip-reduce",
         action="store_true",
-        help="Reduce the amount of comments if stage is full",
+        help="Do not reduce the amount of comments if stage is full",
     )
     parser.add_argument(
         "-f",
@@ -112,14 +109,14 @@ def main():
         width,
         height,
         args.format,
-        args.protect,
+        args.display_region_ratio,
         args.font,
         args.fontsize,
         args.alpha,
         args.duration_marquee,
         args.duration_still,
         parse_block_options(args),
-        args.reduce,
+        not args.skip_reduce,
     )
     fout.write(output)
     fout.close()

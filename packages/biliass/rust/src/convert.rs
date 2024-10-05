@@ -11,7 +11,7 @@ pub fn process_comments(
     width: u32,
     height: u32,
     zoom_factor: (f32, f32, f32),
-    bottom_reserved: u32,
+    display_region_ratio: f32,
     fontface: &str,
     fontsize: f32,
     alpha: f32,
@@ -22,6 +22,7 @@ pub fn process_comments(
     let styleid = "biliass";
     let mut ass_result = "".to_owned();
     ass_result += &writer::ass::write_head(width, height, fontface, fontsize, alpha, styleid);
+    let bottom_reserved = ((height as f32) * (1. - display_region_ratio)) as u32;
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
 
     for comment in comments {
@@ -63,7 +64,7 @@ pub fn convert_to_ass<Reader, Input>(
     reader: Reader,
     stage_width: u32,
     stage_height: u32,
-    reserve_blank: u32,
+    display_region_ratio: f32,
     font_face: &str,
     font_size: f32,
     text_opacity: f32,
@@ -126,7 +127,7 @@ where
         stage_width,
         stage_height,
         zoom_factor,
-        reserve_blank,
+        display_region_ratio,
         font_face,
         font_size,
         text_opacity,
