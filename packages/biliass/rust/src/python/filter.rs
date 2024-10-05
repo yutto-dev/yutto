@@ -13,6 +13,26 @@ pub struct PyBlockOptions {
     pub block_keyword_patterns: Vec<String>,
 }
 
+impl PyBlockOptions {
+    pub fn to_block_options(&self) -> Result<BlockOptions, BiliassError> {
+        let block_keyword_patterns_res: Result<Vec<Regex>, regex::Error> = self
+            .block_keyword_patterns
+            .iter()
+            .map(|pattern| regex::Regex::new(pattern))
+            .collect();
+        let block_keyword_patterns = block_keyword_patterns_res.map_err(BiliassError::from)?;
+        Ok(BlockOptions {
+            block_top: self.block_top,
+            block_bottom: self.block_bottom,
+            block_scroll: self.block_scroll,
+            block_reverse: self.block_reverse,
+            block_special: self.block_special,
+            block_colorful: self.block_colorful,
+            block_keyword_patterns,
+        })
+    }
+}
+
 #[pymethods]
 impl PyBlockOptions {
     #[new]
