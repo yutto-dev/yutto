@@ -516,7 +516,7 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 </details>
 
-### 弹幕设置参数
+### 弹幕设置参数<sup>beta</sup>
 
 yutto 通过与 biliass 的集成，提供了一些 ASS 弹幕选项，包括字号、字体、速度等～
 
@@ -821,6 +821,7 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 ### 2.0.0
 
+-  [x] feat: 支持弹幕字体、字号、速度等设置
 -  [ ] refactor: 针对视频合集优化路径变量
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
