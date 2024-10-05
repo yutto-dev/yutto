@@ -17,6 +17,7 @@ pub struct PyConversionOptions {
     pub text_opacity: f32,
     pub duration_marquee: f64,
     pub duration_still: f64,
+    pub is_reduce_comments: bool,
 }
 
 #[pymethods]
@@ -31,6 +32,7 @@ impl PyConversionOptions {
         text_opacity: f32,
         duration_marquee: f64,
         duration_still: f64,
+        is_reduce_comments: bool,
     ) -> Self {
         PyConversionOptions {
             stage_width,
@@ -41,6 +43,7 @@ impl PyConversionOptions {
             text_opacity,
             duration_marquee,
             duration_still,
+            is_reduce_comments,
         }
     }
 }
@@ -103,7 +106,7 @@ pub fn py_xml_to_ass(
     // block_special: bool,
     // block_colorful: bool,
     // block_keyword_patterns: Vec<String>,
-    is_reduce_comments: bool,
+    // is_reduce_comments: bool,
 ) -> PyResult<String> {
     // let block_options = extract_block_options_from_dict(block_options)?;
     // let block_options = crate::filter::BlockOptions {
@@ -139,7 +142,7 @@ pub fn py_xml_to_ass(
         conversion_options.duration_marquee,
         conversion_options.duration_still,
         &block_options,
-        is_reduce_comments,
+        conversion_options.is_reduce_comments,
     )?)
 }
 
@@ -165,7 +168,7 @@ pub fn py_protobuf_to_ass(
     // block_special: bool,
     // block_colorful: bool,
     // block_keyword_patterns: Vec<String>,
-    is_reduce_comments: bool,
+    // is_reduce_comments: bool,
 ) -> PyResult<String> {
     // let block_options = extract_block_options_from_dict(block_options)?;
     // let block_options = crate::filter::BlockOptions {
@@ -202,6 +205,6 @@ pub fn py_protobuf_to_ass(
         conversion_options.duration_still,
         &block_options,
         // &block_options.inner,
-        is_reduce_comments,
+        conversion_options.is_reduce_comments,
     )?)
 }

@@ -120,6 +120,7 @@ def convert_to_ass(
                 text_opacity,
                 duration_marquee,
                 duration_still,
+                is_reduce_comments,
             ),
             # block_options,
             block_options["block_top"],
@@ -129,7 +130,6 @@ def convert_to_ass(
             # block_options["block_special"],
             # block_options["block_colorful"],
             # block_options["block_keyword_patterns"],
-            is_reduce_comments,
         )
     elif input_format == "protobuf":
         for input in inputs:
@@ -154,6 +154,7 @@ def convert_to_ass(
                 text_opacity,
                 duration_marquee,
                 duration_still,
+                is_reduce_comments,
             ),
             # block_options,
             block_options["block_top"],
@@ -163,7 +164,6 @@ def convert_to_ass(
             # block_options["block_special"],
             # block_options["block_colorful"],
             # block_options["block_keyword_patterns"],
-            is_reduce_comments,
         )
     else:
         raise TypeError(f"Invalid input format {input_format}")
