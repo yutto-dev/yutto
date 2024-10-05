@@ -1,4 +1,5 @@
 use crate::error::BiliassError;
+use crate::filter::BlockOptions;
 use crate::python::PyBlockOptions;
 use crate::{convert, reader};
 use pyo3::{
@@ -134,8 +135,16 @@ pub fn py_xml_to_ass(
         .map(|pattern| regex::Regex::new(&pattern))
         .collect();
     let block_keyword_patterns = block_keyword_patterns_res.map_err(BiliassError::from)?;
-
-    let block_options = crate::filter::BlockOptions::default();
+    let block_options = crate::filter::BlockOptions {
+        block_top: conversion_options.block_options.block_top,
+        block_bottom: conversion_options.block_options.block_bottom,
+        block_scroll: conversion_options.block_options.block_scroll,
+        block_reverse: conversion_options.block_options.block_reverse,
+        block_special: conversion_options.block_options.block_special,
+        block_colorful: conversion_options.block_options.block_colorful,
+        block_keyword_patterns,
+    };
+    // let block_options = crate::filter::BlockOptions::default();
     Ok(convert::convert_to_ass(
         inputs,
         crate::reader::xml::read_comments_from_xml,
@@ -197,7 +206,7 @@ pub fn py_protobuf_to_ass(
     //         .map(|p| Regex::new(&p).unwrap())
     //         .collect(),
     // };
-    let block_options = crate::filter::BlockOptions::default();
+    // let block_options = crate::filter::BlockOptions::default();
     let block_keyword_patterns_res: Result<Vec<Regex>, regex::Error> = conversion_options
         .block_options
         .block_keyword_patterns
@@ -205,6 +214,15 @@ pub fn py_protobuf_to_ass(
         .map(|pattern| regex::Regex::new(&pattern))
         .collect();
     let block_keyword_patterns = block_keyword_patterns_res.map_err(BiliassError::from)?;
+    let block_options = crate::filter::BlockOptions {
+        block_top: conversion_options.block_options.block_top,
+        block_bottom: conversion_options.block_options.block_bottom,
+        block_scroll: conversion_options.block_options.block_scroll,
+        block_reverse: conversion_options.block_options.block_reverse,
+        block_special: conversion_options.block_options.block_special,
+        block_colorful: conversion_options.block_options.block_colorful,
+        block_keyword_patterns,
+    };
     Ok(convert::convert_to_ass(
         inputs,
         reader::protobuf::read_comments_from_protobuf,
