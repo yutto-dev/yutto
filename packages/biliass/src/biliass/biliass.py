@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict, TypeVar, cast
 
 from biliass._core import (
+    BlockOptions,
     ConversionOptions,
     protobuf_to_ass,
     xml_to_ass,
@@ -14,26 +15,26 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class BlockOptions(TypedDict):
-    block_top: bool
-    block_bottom: bool
-    block_scroll: bool
-    block_reverse: bool
-    block_special: bool
-    block_colorful: bool
-    block_keyword_patterns: list[str]
+# class BlockOptions(TypedDict):
+#     block_top: bool
+#     block_bottom: bool
+#     block_scroll: bool
+#     block_reverse: bool
+#     block_special: bool
+#     block_colorful: bool
+#     block_keyword_patterns: list[str]
 
 
-def create_default_block_options() -> BlockOptions:
-    return BlockOptions(
-        block_top=False,
-        block_bottom=False,
-        block_scroll=False,
-        block_reverse=False,
-        block_special=False,
-        block_colorful=False,
-        block_keyword_patterns=[],
-    )
+# def create_default_block_options() -> BlockOptions:
+#     return BlockOptions(
+#         block_top=False,
+#         block_bottom=False,
+#         block_scroll=False,
+#         block_reverse=False,
+#         block_special=False,
+#         block_colorful=False,
+#         block_keyword_patterns=[],
+#     )
 
 
 def Danmaku2ASS(
@@ -95,7 +96,8 @@ def convert_to_ass(
     block_options: BlockOptions | None = None,
     is_reduce_comments: bool = False,
 ) -> str:
-    block_options = block_options or create_default_block_options()
+    # block_options = block_options or create_default_block_options()
+    block_options = block_options or BlockOptions.default()
     if isinstance(inputs, (str, bytes)):
         inputs = [inputs]
 
@@ -122,8 +124,8 @@ def convert_to_ass(
                 duration_still,
                 is_reduce_comments,
             ),
-            # block_options,
-            block_options["block_top"],
+            block_options,
+            # block_options["block_top"],
             # block_options["block_bottom"],
             # block_options["block_scroll"],
             # block_options["block_reverse"],
@@ -156,8 +158,8 @@ def convert_to_ass(
                 duration_still,
                 is_reduce_comments,
             ),
-            # block_options,
-            block_options["block_top"],
+            block_options,
+            # block_options["block_top"],
             # block_options["block_bottom"],
             # block_options["block_scroll"],
             # block_options["block_reverse"],

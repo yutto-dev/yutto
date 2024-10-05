@@ -98,8 +98,8 @@ pub fn py_xml_to_ass(
     // duration_still: f64,
     conversion_options: &PyConversionOptions,
     // block_options: Bound<'_, PyDict>,
-    // block_options: &crate::python::filter::PyBlockOptions,
-    block_top: bool,
+    block_options: &crate::python::filter::PyBlockOptions,
+    // block_top: bool,
     // block_bottom: bool,
     // block_scroll: bool,
     // block_reverse: bool,
@@ -121,7 +121,7 @@ pub fn py_xml_to_ass(
     //         .map(|p| Regex::new(&p).unwrap())
     //         .collect(),
     // };
-    let block_options = crate::filter::BlockOptions::default();
+    // let block_options = crate::filter::BlockOptions::default();
     Ok(convert::convert_to_ass(
         inputs,
         crate::reader::xml::read_comments_from_xml,
@@ -141,7 +141,7 @@ pub fn py_xml_to_ass(
         conversion_options.text_opacity,
         conversion_options.duration_marquee,
         conversion_options.duration_still,
-        &block_options,
+        &block_options.inner,
         conversion_options.is_reduce_comments,
     )?)
 }
@@ -159,9 +159,9 @@ pub fn py_protobuf_to_ass(
     // duration_marquee: f64,
     // duration_still: f64,
     conversion_options: &PyConversionOptions,
-    // block_options: &crate::python::filter::PyBlockOptions,
+    block_options: &crate::python::filter::PyBlockOptions,
     // block_options: Bound<'_, PyDict>,
-    block_top: bool,
+    // block_top: bool,
     // block_bottom: bool,
     // block_scroll: bool,
     // block_reverse: bool,
@@ -183,7 +183,7 @@ pub fn py_protobuf_to_ass(
     //         .map(|p| Regex::new(&p).unwrap())
     //         .collect(),
     // };
-    let block_options = crate::filter::BlockOptions::default();
+    // let block_options = crate::filter::BlockOptions::default();
     Ok(convert::convert_to_ass(
         inputs,
         reader::protobuf::read_comments_from_protobuf,
@@ -203,7 +203,7 @@ pub fn py_protobuf_to_ass(
         conversion_options.text_opacity,
         conversion_options.duration_marquee,
         conversion_options.duration_still,
-        &block_options,
+        &block_options.inner,
         // &block_options.inner,
         conversion_options.is_reduce_comments,
     )?)
