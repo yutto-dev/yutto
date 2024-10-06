@@ -678,7 +678,13 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 ### 配置文件<sup>Experimental</sup>
 
-yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，目前仅支持配置自动发现，会优先搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置，**当前不支持自定义配置文件路径**。
+yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，你可以通过 `--config` 选项来指定配置文件路径，比如
+
+```bash
+yutto --config /path/to/config.toml <url>
+```
+
+如果不指定配置文件路径，yutto 也支持配置自动发现，优先会搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置。
 
 你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
 
@@ -862,13 +868,14 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 -  [x] feat: 支持弹幕字体、字号、速度等设置
 -  [x] feat: 配置文件支持
--  [ ] feat: 配置文件功能优化，支持自定义配置路径
--  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
+-  [x] feat: 配置文件功能优化，支持自定义配置路径
+-  [ ] refactor: 配置参数复用 pydantic 验证
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 
+-  [ ] refactor: 针对视频合集优化路径变量
+-  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
 -  [ ] feat: 更多批下载支持
 -  [ ] feat: 以及更加可爱～
