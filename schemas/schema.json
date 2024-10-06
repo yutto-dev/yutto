@@ -359,7 +359,6 @@
       "type": "object"
     }
   },
-  "additionalProperties": false,
   "properties": {
     "basic": {
       "$ref": "#/$defs/YuttoBasicSettings",

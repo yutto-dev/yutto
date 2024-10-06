@@ -30,7 +30,6 @@ dependencies = [
   "httpx[http2,socks]>=0.27.2",
   "tomli>=2.0.2; python_version < '3.11'",
   "pydantic>=2.9.2",
-  "pydantic-settings>=2.5.2",
   # TODO(SigureMo): Replace with `xdg-base-dirs` when we drop Python 3.9 support
   "xdg==6.0.0",
 ]

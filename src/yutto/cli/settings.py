@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings
 from xdg import xdg_config_home
 
 from yutto.bilibili_typing.quality import (
@@ -81,7 +80,7 @@ class YuttoBatchSettings(BaseModel):
     batch_filter_end_time: Annotated[Optional[str], Field(None)]  # noqa: UP007
 
 
-class YuttoSettings(BaseSettings):
+class YuttoSettings(BaseModel):
     basic: Annotated[YuttoBasicSettings, Field(YuttoBasicSettings())]  # pyright: ignore[reportCallIssue]
     resource: Annotated[YuttoResourceSettings, Field(YuttoResourceSettings())]  # pyright: ignore[reportCallIssue]
     danmaku: Annotated[YuttoDanmakuSettings, Field(YuttoDanmakuSettings())]  # pyright: ignore[reportCallIssue]

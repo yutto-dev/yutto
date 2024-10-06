@@ -66,6 +66,9 @@ clean-builds:
   rm -rf dist/
   rm -rf yutto.egg-info/
 
+generate-schema:
+  uv run scripts/generate-schema.py
+
 ci-install:
   uv sync --all-extras --dev
 
