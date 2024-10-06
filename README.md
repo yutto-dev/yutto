@@ -705,7 +705,7 @@ login_strict = true
 
 [resource]
 # 不下载字幕
-require_danmaku = false
+require_subtitle = false
 
 [danmaku]
 # 设置弹幕速度
