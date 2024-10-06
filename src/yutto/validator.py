@@ -73,8 +73,8 @@ def validate_basic_arguments(args: argparse.Namespace):
     ffmpeg = FFmpeg()
 
     download_vcodec_priority: list[VideoCodec] = video_codec_priority_default
-    if args.download_vcodec_priority != "auto":
-        user_download_vcodec_priority = args.download_vcodec_priority.split(",")
+    if args.download_vcodec_priority is not None:
+        user_download_vcodec_priority = args.download_vcodec_priority
         if not user_download_vcodec_priority:
             Logger.error("download_vcodec_priority 参数值为空哦")
             sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
@@ -90,7 +90,7 @@ def validate_basic_arguments(args: argparse.Namespace):
         if len(download_vcodec_priority) < len(video_codec_priority_default):
             Logger.warning(
                 "download_vcodec_priority（{}）不包含所有下载视频编码（{}），不包含部分将永远不会选择哦".format(
-                    args.download_vcodec_priority, ", ".join(video_codec_priority_default)
+                    ", ".join(args.download_vcodec_priority), ", ".join(video_codec_priority_default)
                 )
             )
 
@@ -107,7 +107,7 @@ def validate_basic_arguments(args: argparse.Namespace):
             )
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-    if args.download_vcodec_priority != "auto" and download_vcodec_priority[0] != video_download_codec:
+    if args.download_vcodec_priority is not None and download_vcodec_priority[0] != video_download_codec:
         Logger.warning(
             f"download_vcodec 参数值（{video_download_codec}）不是优先级最高的编码（{download_vcodec_priority[0]}），可能会导致下载失败哦"
         )

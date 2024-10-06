@@ -516,7 +516,7 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 </details>
 
-### 弹幕设置参数<sup>beta</sup>
+### 弹幕设置参数<sup>Experimental</sup>
 
 yutto 通过与 biliass 的集成，提供了一些 ASS 弹幕选项，包括字号、字体、速度等～
 
@@ -676,6 +676,43 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 </details>
 
+## 配置文件<sup>Experimental</sup>
+
+yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，目前仅支持配置自动发现，会优先搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置，**当前不支持自定义配置文件路径**。
+
+你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
+
+```toml
+# yutto.toml
+#:schema ./schema.json
+[basic]
+# 设置下载目录
+dir = "/path/to/download"
+# 设置临时文件目录
+tmp_dir = "/path/to/tmp"
+# 设置 SESSDATA
+sessdata = "***************"
+# 设置大会员严格校验
+vip_strict = true
+# 设置登录严格校验
+login_strict = true
+
+[resource]
+# 不下载字幕
+require_danmaku = false
+
+[danmaku]
+speed = 2.0
+block_keyword_patterns = [
+   ".*keyword1.*",
+   ".*keyword2.*",
+]
+
+[batch]
+# 下载额外剧集
+with_section = true
+```
+
 ## 从 bilili1.x 迁移
 
 ### 取消的功能
@@ -822,6 +859,8 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 ### 2.0.0
 
 -  [x] feat: 支持弹幕字体、字号、速度等设置
+-  [x] feat: 配置文件支持
+-  [ ] feat: 配置文件功能优化，支持自定义配置路径
 -  [ ] refactor: 针对视频合集优化路径变量
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
