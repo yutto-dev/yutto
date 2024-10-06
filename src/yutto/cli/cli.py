@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from yutto.__version__ import VERSION as yutto_version
@@ -30,8 +31,15 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
 ]
 
 
+def parse_config_path() -> Path | None:
+    pre_parser = argparse.ArgumentParser(description="yutto pre parser", add_help=False)
+    pre_parser.add_argument("--config", type=Path, default=search_for_settings_file(), help="配置文件路径")
+    args, _ = pre_parser.parse_known_args()
+    return args.config
+
+
 def cli() -> argparse.ArgumentParser:
-    settings_file = search_for_settings_file()
+    settings_file = parse_config_path()
     if settings_file is None:
         settings = YuttoSettings()  # pyright: ignore[reportCallIssue]
     else:
@@ -297,6 +305,10 @@ def cli() -> argparse.ArgumentParser:
     # 仅任务列表中使用
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
     group_batch_file.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
+
+    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
+    group_config = parser.add_argument_group("config", "配置文件参数")
+    group_config.add_argument("--config", help="配置文件路径")
 
     return parser
 

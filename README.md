@@ -678,7 +678,13 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 ### 配置文件<sup>Experimental</sup>
 
-yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，目前仅支持配置自动发现，会优先搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置，**当前不支持自定义配置文件路径**。
+yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，你可以通过 `--config` 选项来指定配置文件路径，比如
+
+```bash
+yutto --config /path/to/config.toml <url>
+```
+
+如果不指定配置文件路径，yutto 也支持配置自动发现，优先会搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置。
 
 你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
 

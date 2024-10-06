@@ -91,10 +91,10 @@ def search_for_settings_file() -> Path | None:
     settings_file = Path("yutto.toml")
     # 此时还没有设置 debug，所以 Logger.debug 永远不会输出
     if not settings_file.exists():
-        Logger.info("Settings file not found in current directory.")
+        Logger.debug("Settings file not found in current directory.")
         settings_file = xdg_config_home() / "yutto" / "yutto.toml"
     if not settings_file.exists():
-        Logger.info(f"Settings file not found in XDG_CONFIG_HOME ({settings_file}).")
+        Logger.debug(f"Settings file not found in XDG_CONFIG_HOME ({settings_file}).")
         return None
     Logger.debug(f"Settings file found at {settings_file}.")
     return settings_file
