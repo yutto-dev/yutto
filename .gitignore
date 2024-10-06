@@ -141,3 +141,6 @@ log
 
 # test files
 __test_files__
+
+# config file
+yutto.toml

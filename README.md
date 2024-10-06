@@ -684,7 +684,7 @@ yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，目前仅支
 
 ```toml
 # yutto.toml
-#:schema ./schema.json
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
 [basic]
 # 设置下载目录
 dir = "/path/to/download"
