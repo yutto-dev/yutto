@@ -4,7 +4,6 @@ import re
 import urllib
 import urllib.request
 from pathlib import Path
-from typing import TextIO
 
 from yutto.utils.console.logger import Logger
 
@@ -16,18 +15,16 @@ def is_comment(line: str) -> bool:
     return False
 
 
-def alias_parser(f_alias: TextIO | None) -> dict[str, str]:
-    if f_alias is None:
-        return {}
-    f_alias.seek(0)
+def alias_parser(file_path: str) -> dict[str, str]:
     result: dict[str, str] = {}
     re_alias_splitter = re.compile(r"[\s=]")
-    for line in f_alias:
-        line = line.strip()
-        if not line or is_comment(line):
-            continue
-        alias, url = re_alias_splitter.split(line, maxsplit=1)
-        result[alias] = url
+    with Path(file_path).open("r") as f_alias:
+        for line in f_alias:
+            line = line.strip()
+            if not line or is_comment(line):
+                continue
+            alias, url = re_alias_splitter.split(line, maxsplit=1)
+            result[alias] = url
     return result
 
 

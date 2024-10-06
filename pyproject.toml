@@ -28,6 +28,10 @@ dependencies = [
   "typing-extensions>=4.12.2",
   "dict2xml>=1.7.6",
   "httpx[http2,socks]>=0.27.2",
+  "tomli>=2.0.2; python_version < '3.11'",
+  "pydantic>=2.9.2",
+  # TODO(SigureMo): Replace with `xdg-base-dirs` when we drop Python 3.9 support
+  "xdg==6.0.0",
 ]
 
 [project.urls]
@@ -117,6 +121,12 @@ ignore = [
 required-imports = ["from __future__ import annotations"]
 known-first-party = ["yutto"]
 combine-as-imports = true
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = [
+  "pydantic.BaseModel",
+  "pydantic_settings.BaseSettings",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]

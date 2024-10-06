@@ -6,13 +6,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import aiofiles
-from typing_extensions import Self
 
 from yutto.utils.console.logger import Logger
 from yutto.utils.funcutils import aobject
 
 if TYPE_CHECKING:
     from types import TracebackType
+
+    from typing_extensions import Self
 
 
 @dataclass(order=True)
