@@ -676,7 +676,7 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 </details>
 
-## 配置文件<sup>Experimental</sup>
+### 配置文件<sup>Experimental</sup>
 
 yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，目前仅支持配置自动发现，会优先搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置，**当前不支持自定义配置文件路径**。
 
@@ -702,7 +702,9 @@ login_strict = true
 require_danmaku = false
 
 [danmaku]
+# 设置弹幕速度
 speed = 2.0
+# 设置弹幕屏蔽关键词
 block_keyword_patterns = [
    ".*keyword1.*",
    ".*keyword2.*",
