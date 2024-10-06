@@ -868,13 +868,14 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 -  [x] feat: 支持弹幕字体、字号、速度等设置
 -  [x] feat: 配置文件支持
--  [ ] feat: 配置文件功能优化，支持自定义配置路径
--  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
+-  [x] feat: 配置文件功能优化，支持自定义配置路径
+-  [ ] refactor: 配置参数复用 pydantic 验证
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 
+-  [ ] refactor: 针对视频合集优化路径变量
+-  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
 -  [ ] feat: 更多批下载支持
 -  [ ] feat: 以及更加可爱～
