@@ -818,7 +818,7 @@ yutto --batch tensura-nikki --alias-file=/path/to/alias-file
 # ~/.config/yutto/yutto.toml
 #:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
 [basic.aliases]
-"tensura-nikki" = "https://www.bilibili.com/bangumi/play/ss38221/"
+tensura-nikki = "https://www.bilibili.com/bangumi/play/ss38221/"
 ```
 
 ### 使用任务列表
