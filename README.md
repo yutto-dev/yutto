@@ -721,6 +721,8 @@ block_keyword_patterns = [
 with_section = true
 ```
 
+如果你使用 VS Code 对配置文件编辑，强烈建议使用 [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) 扩展，配合 yutto 提供的 schema，可以获得最佳的提示体验。
+
 ## 从 bilili1.x 迁移
 
 ### 取消的功能
@@ -899,6 +901,9 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 -  [x] feat: 支持弹幕字体、字号、速度等设置
 -  [x] feat: 配置文件支持
 -  [x] feat: 配置文件功能优化，支持自定义配置路径
+-  [ ] docs: issue template 添加配置引导
+-  [ ] docs: 优化 biliass rust 重构后的贡献指南
+-  [ ] feat: 新的基于 toml 的任务列表
 -  [ ] refactor: 配置参数复用 pydantic 验证
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
