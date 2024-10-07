@@ -785,6 +785,7 @@ vcodec = "av1:copy"
 >
 > <details>
 > <summary>原「自定义命令别名」方案</summary>
+>
 > 在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
 >
 > ```bash
