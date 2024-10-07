@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
     from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions
@@ -219,8 +221,8 @@ class EpisodeData(TypedDict):
     danmaku: DanmakuData
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
-    output_dir: str
-    tmp_dir: str
+    output_dir: Path
+    tmp_dir: Path
     filename: str
 
 

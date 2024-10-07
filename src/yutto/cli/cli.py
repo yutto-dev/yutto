@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from yutto.__version__ import VERSION as yutto_version
@@ -10,11 +9,13 @@ from yutto.bilibili_typing.quality import (
     video_quality_priority_default,
 )
 from yutto.cli.settings import YuttoSettings, load_settings_file, search_for_settings_file
-from yutto.processor.parser import alias_parser
+from yutto.processor.parser import alias_parser, path_from_cli
 from yutto.utils.console.logger import Logger
+from yutto.utils.funcutils.option import map_some
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from pathlib import Path
 
     from typing_extensions import TypeAlias
 
@@ -33,7 +34,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
 
 def parse_config_path() -> Path | None:
     pre_parser = argparse.ArgumentParser(description="yutto pre parser", add_help=False)
-    pre_parser.add_argument("--config", type=Path, default=search_for_settings_file(), help="配置文件路径")
+    pre_parser.add_argument("--config", type=path_from_cli, default=search_for_settings_file(), help="配置文件路径")
     args, _ = pre_parser.parse_known_args()
     return args.config
 
@@ -124,9 +125,18 @@ def cli() -> argparse.ArgumentParser:
         default=settings.basic.proxy,
         help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）",
     )
-    group_basic.add_argument("-d", "--dir", default=settings.basic.dir, help="下载目录，默认为运行目录")
     group_basic.add_argument(
-        "--tmp-dir", default=settings.basic.tmp_dir, help="用来存放下载过程中临时文件的目录，默认为下载目录"
+        "-d",
+        "--dir",
+        default=path_from_cli(settings.basic.dir),
+        type=path_from_cli,
+        help="下载目录，默认为运行目录",
+    )
+    group_basic.add_argument(
+        "--tmp-dir",
+        default=map_some(path_from_cli, settings.basic.tmp_dir),
+        type=path_from_cli,
+        help="用来存放下载过程中临时文件的目录，默认为下载目录",
     )
     group_basic.add_argument("-c", "--sessdata", default=settings.basic.sessdata, help="Cookies 中的 SESSDATA 字段")
     group_basic.add_argument(
