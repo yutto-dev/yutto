@@ -10,6 +10,7 @@ from httpx import AsyncClient
 from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
+from yutto.utils.asynclib import async_cache
 from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
@@ -71,7 +72,6 @@ class Fetcher:
     cookies: httpx.Cookies = DEFAULT_COOKIES
     # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
     semaphore: asyncio.Semaphore = asyncio.Semaphore(8)
-    _touch_set: set[str] = set()
 
     @classmethod
     def set_proxy(cls, proxy: str):
@@ -183,11 +183,9 @@ class Fetcher:
 
     @classmethod
     @MaxRetry(2)
+    # 对于相同 session，同样的页面没必要重复 touch
+    @async_cache(lambda args: f"client_id={id(args.arguments['client'])}, url={args.arguments['url']}")
     async def touch_url(cls, client: AsyncClient, url: str):
-        # 因为保持同一个 session，同样的页面没必要重复 touch
-        if url in cls._touch_set:
-            return
-        cls._touch_set.add(url)
         async with cls.semaphore:
             Logger.debug(f"Touch url: {url}")
             await client.get(url)
