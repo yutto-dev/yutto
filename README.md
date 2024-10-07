@@ -772,7 +772,7 @@ yutto --no-color --no-progress <url> > log
 #:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
 [basic]
 dir = "~/Movies/yutto"
-sessdata = "xxxxxxxx"
+sessdata = "***************"
 num_workers = 16
 vcodec = "av1:copy"
 ```
