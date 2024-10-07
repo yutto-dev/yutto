@@ -4,7 +4,6 @@ import asyncio
 import os
 import re
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
@@ -22,6 +21,8 @@ from yutto.utils.metadata import ChapterInfoData, write_chapter_info, write_meta
 from yutto.utils.subtitle import write_subtitle
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import httpx
 
     from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
@@ -268,8 +269,8 @@ async def start_downloader(
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
     chapter_info_data = episode_data["chapter_info_data"]
-    output_dir = Path(episode_data["output_dir"])
-    tmp_dir = Path(episode_data["tmp_dir"])
+    output_dir = episode_data["output_dir"]
+    tmp_dir = episode_data["tmp_dir"]
     filename = episode_data["filename"]
     require_video = options["require_video"]
     require_audio = options["require_audio"]

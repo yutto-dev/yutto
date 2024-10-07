@@ -684,7 +684,7 @@ yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，你可以通
 yutto --config /path/to/config.toml <url>
 ```
 
-如果不指定配置文件路径，yutto 也支持配置自动发现，优先会搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 `XDG_CONFIG_HOME` 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置。
+如果不指定配置文件路径，yutto 也支持配置自动发现，优先会搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 [`XDG_CONFIG_HOME`](https://specifications.freedesktop.org/basedir-spec/latest/) 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置。
 
 你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
 
@@ -763,6 +763,39 @@ with_section = true
 yutto --no-color --no-progress <url> > log
 ```
 
+### 使用配置自定义默认参数
+
+如果你希望修改 yutto 的部分参数，那么可能每次运行都需要在后面加上长长一串选项，为了避免这个问题，你可以尝试使用配置文件
+
+```toml
+# ~/.config/yutto/yutto.toml
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
+[basic]
+dir = "~/Movies/yutto"
+sessdata = "xxxxxxxx"
+num_workers = 16
+vcodec = "av1:copy"
+```
+
+当然，请手动修改 `sessdata` 内容为自己的 `SESSDATA` 哦～
+
+> [!TIP]
+>
+> 本方案可替代原有的「自定义命令别名」方式～
+>
+> <details>
+> <summary>原「自定义命令别名」方案</summary>
+> 在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
+> ```bash
+> alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:copy"'
+> ```
+>
+> 这样我每次只需要 `ytt <url>` 就可以直接使用这些参数进行下载啦～
+>
+> 由于我提前在 `~/.sessdata` 存储了我的 `SESSDATA`，所以避免每次都要手动输入 cookie 的问题。
+>
+> </details>
+
 ### 使用 url alias
 
 yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
@@ -775,6 +808,15 @@ tensura-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 
 ```
 yutto --batch tensura-nikki --alias-file=/path/to/alias-file
+```
+
+你同样可以通过配置文件来实现这一点（推荐）
+
+```toml
+# ~/.config/yutto/yutto.toml
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
+[basic.aliases]
+"tensura-nikki" = "https://www.bilibili.com/bangumi/play/ss38221/"
 ```
 
 ### 使用任务列表
@@ -820,20 +862,6 @@ yutto file:///path/to/list --vcodec="avc:copy"
 另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
 
 最后，列表也是支持嵌套的哦（虽然没什么用 2333）
-
-### 自定义命令别名
-
-如果你不习惯于 yutto 的默认参数，那么可能每次运行都需要在后面加上长长一串参数，为了避免这一点，我是这样做的：
-
-在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
-
-```bash
-alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:copy"'
-```
-
-这样我每次只需要 `ytt <url>` 就可以直接使用这些参数进行下载啦～
-
-由于我提前在 `~/.sessdata` 存储了我的 `SESSDATA`，所以避免每次都要手动输入 cookie 的问题。
 
 ## FAQ
 
