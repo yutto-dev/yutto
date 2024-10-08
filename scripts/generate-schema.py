@@ -8,7 +8,7 @@ from yutto.cli.settings import YuttoSettings
 
 def main():
     schema = YuttoSettings.model_json_schema()
-    with Path("schemas/schema.json").open("w") as f:
+    with Path("schemas/config.json").open("w") as f:
         json.dump(schema, f, indent=2)
 
 

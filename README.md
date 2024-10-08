@@ -690,7 +690,7 @@ yutto --config /path/to/config.toml <url>
 
 ```toml
 # yutto.toml
-#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
 [basic]
 # 设置下载目录
 dir = "/path/to/download"
@@ -771,7 +771,7 @@ yutto --no-color --no-progress <url> > log
 
 ```toml
 # ~/.config/yutto/yutto.toml
-#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
 [basic]
 dir = "~/Movies/yutto"
 sessdata = "***************"
@@ -818,7 +818,7 @@ yutto --batch tensura-nikki --alias-file=/path/to/alias-file
 
 ```toml
 # ~/.config/yutto/yutto.toml
-#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/schema.json
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
 [basic.aliases]
 tensura-nikki = "https://www.bilibili.com/bangumi/play/ss38221/"
 ```
