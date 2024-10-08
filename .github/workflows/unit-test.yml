@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13-dev"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} unit test
     steps:
@@ -45,6 +45,6 @@ jobs:
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
-        if: "matrix.python-version == '3.12'"
+        if: "matrix.python-version == '3.13'"
         with:
           run: uv run pytest --codspeed
