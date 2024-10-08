@@ -75,6 +75,8 @@ async def first_successed(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[Re
     while not results:
         done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         results = [task.result() for task in done if task.exception() is None]
+    for task in tasks:
+        task.cancel()
     return results
 
 
