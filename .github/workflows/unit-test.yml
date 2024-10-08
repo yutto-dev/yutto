@@ -45,6 +45,6 @@ jobs:
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
-        if: "matrix.python-version == '3.12'"
+        if: "matrix.python-version == '3.13'"
         with:
           run: uv run pytest --codspeed
