@@ -68,7 +68,7 @@ def async_cache(
     return decorator
 
 
-async def first_successed(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[RetT]:
+async def first_successful(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[RetT]:
     tasks = [asyncio.create_task(coro) for coro in coros]
 
     results: list[RetT] = []
@@ -80,8 +80,8 @@ async def first_successed(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[Re
     return results
 
 
-async def first_successed_with_check(coros: Iterable[Coroutine[Any, Any, RetT]]) -> RetT:
-    results = await first_successed(coros)
+async def first_successful_with_check(coros: Iterable[Coroutine[Any, Any, RetT]]) -> RetT:
+    results = await first_successful(coros)
     if not results:
         raise Exception("All coroutines failed")
     if len(set(results)) != 1:
