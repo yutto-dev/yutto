@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Callable
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
 from yutto.processor.progressbar import show_progress
 from yutto.processor.selector import select_audio, select_video
-from yutto.utils.asynclib import CoroutineWrapper
+from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
@@ -122,7 +122,9 @@ async def download_video_and_audio(
     Fetcher.set_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
-        vsize = await Fetcher.get_size(client, video["url"])
+        vsize = await first_successful_with_check(
+            [Fetcher.get_size(client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
+        )
         video_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
@@ -141,7 +143,9 @@ async def download_video_and_audio(
 
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
-        asize = await Fetcher.get_size(client, audio["url"])
+        asize = await first_successful_with_check(
+            [Fetcher.get_size(client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+        )
         audio_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
