@@ -44,11 +44,11 @@ yutto = "yutto.__main__:main"
 [tool.uv]
 dev-dependencies = [
   "pytest>=8.3.3",
-  "pyright>=1.1.383",
+  "pyright>=1.1.384",
   "pytest-rerunfailures>=14.0",
   "ruff>=0.6.8",
-  "typos>=1.25.0",
-  "syrupy>=4.7.1",
+  "typos>=1.26.0",
+  "syrupy>=4.7.2",
   "pytest-codspeed>=2.2.1",
 ]
 
