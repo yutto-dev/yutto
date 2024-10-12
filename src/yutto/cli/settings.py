@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
+import platform
 import sys
 from pathlib import Path
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from pydantic import BaseModel, Field
-from xdg import xdg_config_home
 
 from yutto.bilibili_typing.quality import (
     AudioQuality,
@@ -18,6 +19,15 @@ if sys.version_info >= (3, 11):
     import tomllib
 else:
     import tomli as tomllib  # type: ignore
+
+
+def xdg_config_home() -> Path:
+    if (env := os.environ.get("XDG_CONFIG_HOME")) and (path := Path(env)).is_absolute():
+        return path
+    home = Path.home()
+    if platform.system() == "Windows":
+        return home / "AppData" / "Roaming"
+    return home / ".config"
 
 
 class YuttoBasicSettings(BaseModel):
@@ -102,7 +112,7 @@ def search_for_settings_file() -> Path | None:
 
 def load_settings_file(settings_file: Path) -> YuttoSettings:
     with settings_file.open("r") as f:
-        settings_raw = tomllib.loads(f.read())
+        settings_raw: Any = tomllib.loads(f.read())  # pyright: ignore[reportUnknownMemberType]
     return YuttoSettings.model_validate(settings_raw)
 
 

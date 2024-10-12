@@ -684,7 +684,11 @@ yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，你可以通
 yutto --config /path/to/config.toml <url>
 ```
 
-如果不指定配置文件路径，yutto 也支持配置自动发现，优先会搜索当前目录下的 `yutto.toml` 文件，如果不存在则会搜索 [`XDG_CONFIG_HOME`](https://specifications.freedesktop.org/basedir-spec/latest/) 下的 `yutto/yutto.toml` 文件，如果还是找不到则会使用默认配置。
+如果不指定配置文件路径，yutto 也支持配置自动发现，根据优先级，搜索路径如下：
+
+-  当前目录下的 `yutto.toml`
+-  搜索 [`XDG_CONFIG_HOME`](https://specifications.freedesktop.org/basedir-spec/latest/) 下的 `yutto/yutto.toml` 文件
+-  非 Windows 系统下的 `~/.config/yutto/yutto.toml`，Windows 系统下的 `~/AppData/Roaming/yutto/yutto.toml`
 
 你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
 
