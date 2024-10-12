@@ -46,6 +46,6 @@ jobs:
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
-        if: "matrix.python-version == '3.13'"
+        if: "matrix.python-version == '3.13' && github.event_name != 'merge_group'"
         with:
           run: uv run pytest --codspeed
