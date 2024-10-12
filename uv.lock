@@ -553,15 +553,6 @@ wheels = [
 ]
 
 [[package]]
-name = "xdg"
-version = "6.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2a/b9/0e6e6f19fb75cf5e1758f4f33c1256738f718966700cffc0fde2f966218b/xdg-6.0.0.tar.gz", hash = "sha256:24278094f2d45e846d1eb28a2ebb92d7b67fc0cab5249ee3ce88c95f649a1c92", size = 3453 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/54/3516c1cf349060fc3578686d271eba242f10ec00b4530c2985af9faac49b/xdg-6.0.0-py3-none-any.whl", hash = "sha256:df3510755b4395157fc04fc3b02467c777f3b3ca383257397f09ab0d4c16f936", size = 3855 },
-]
-
-[[package]]
 name = "yutto"
 version = "2.0.0rc3"
 source = { editable = "." }
@@ -574,7 +565,6 @@ dependencies = [
     { name = "pydantic" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "typing-extensions" },
-    { name = "xdg" },
 ]
 
 [package.dev-dependencies]
@@ -598,7 +588,6 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.2" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
-    { name = "xdg", specifier = "==6.0.0" },
 ]
 
 [package.metadata.requires-dev]
