@@ -30,16 +30,16 @@ jobs:
       - name: Test yutto from source
         run: |
           uv cache clean
-          uvx --no-binary yutto@latest -v
-          uvx --no-binary yutto@latest -h
-          uvx --no-binary yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+          uvx --no-binary --pre yutto@latest -v
+          uvx --no-binary --pre yutto@latest -h
+          uvx --no-binary --pre yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
 
       - name: Test yutto from wheel
         run: |
           uv cache clean
-          uvx yutto@latest -v
-          uvx yutto@latest -h
-          uvx yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+          uvx --pre yutto@latest -v
+          uvx --pre yutto@latest -h
+          uvx --pre yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
 
       - name: Prepare data for biliass
         run: |
@@ -48,15 +48,15 @@ jobs:
       - name: Test biliass from source
         run: |
           uv cache clean
-          uvx --no-binary biliass@latest -v
-          uvx --no-binary biliass@latest -h
-          uvx --no-binary biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
-          uvx --no-binary biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
+          uvx --no-binary --pre biliass@latest -v
+          uvx --no-binary --pre biliass@latest -h
+          uvx --no-binary --pre biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
+          uvx --no-binary --pre biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
 
       - name: Test biliass from wheel
         run: |
           uv cache clean
-          uvx biliass@latest -v
-          uvx biliass@latest -h
-          uvx biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
-          uvx biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
+          uvx --pre biliass@latest -v
+          uvx --pre biliass@latest -h
+          uvx --pre biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
+          uvx --pre biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
