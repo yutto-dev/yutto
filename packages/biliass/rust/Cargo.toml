@@ -25,3 +25,7 @@ rayon = "1.10.0"
 [build-dependencies]
 prost-build = "0.13.3"
 protox = "0.7.1"
+
+[profile.release]
+lto = true      # Enables link to optimizations
+opt-level = "s" # Optimize for binary size
