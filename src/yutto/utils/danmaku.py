@@ -64,8 +64,8 @@ def write_ass_danmaku(
                 font_face=options["font"],
                 font_size=options["font_size"] if options["font_size"] is not None else width / 40,
                 text_opacity=options["opacity"],
-                duration_marquee=15.0 / options["speed"],
-                duration_still=10.0 / options["speed"],
+                duration_marquee=8.0 / options["speed"],
+                duration_still=5.0 / options["speed"],
                 block_options=options["block_options"],
                 reduce_comments=True,
             )
