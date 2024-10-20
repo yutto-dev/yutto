@@ -9,8 +9,7 @@ on:
 
 jobs:
   unit-test:
-    # TODO: Change to ubuntu-latest when CodSpeedHQ/runner#42 fixed
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
