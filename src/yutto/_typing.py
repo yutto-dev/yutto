@@ -17,6 +17,8 @@ class BilibiliId(NamedTuple):
 
     value: str
 
+    aid: str = ""
+
     def __str__(self) -> str:
         return self.value
 
@@ -125,7 +127,7 @@ class BvId(AvId):
 
     def to_dict(self):
         return {
-            "aid": "",
+            "aid": self.aid,
             "bvid": self.value,
         }
 

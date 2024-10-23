@@ -103,9 +103,9 @@ async def get_ugc_video_info(client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     genres = _parse_genre_info(res_json_data)
     tags: list[str] = await get_ugc_video_tag(client, avid)
     return {
-        "avid": BvId(res_json_data["bvid"]),
+        "avid": BvId(value=res_json_data["bvid"], aid=str(res_json_data["aid"])),
         "aid": AId(str(res_json_data["aid"])),
-        "bvid": BvId(res_json_data["bvid"]),
+        "bvid": BvId(value=res_json_data["bvid"], aid=str(res_json_data["aid"])),
         "episode_id": episode_id,
         "is_bangumi": bool(episode_id),
         "cid": CId(str(res_json_data["cid"])),
@@ -128,8 +128,9 @@ async def get_ugc_video_info(client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
 
 async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
     video_info = await get_ugc_video_info(client, avid)
-    if avid not in [video_info["aid"], video_info["bvid"]]:
-        avid = video_info["avid"]
+    #if avid not in [video_info["aid"], video_info["bvid"]]:
+    #    avid = video_info["avid"]
+    avid = video_info["avid"]
     video_title = video_info["title"]
     result: UgcVideoList = {
         "title": video_title,
@@ -241,25 +242,21 @@ async def get_ugc_video_playurl(
 async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
     subtitile_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&cid={cid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    print(avid, subtitile_url)
-    res_text = await Fetcher.fetch_text(client, subtitile_url)
-    if res_text is None:
+    resp_json = await Fetcher.fetch_json(client, subtitile_url)
+    if resp_json is None or 'data' not in resp_json or 'subtitle' not in resp_json['data'] or len(resp_json['data']['subtitle']['subtitles']) == 0:
         return []
-    if subtitle_json_text_match := re.search(r"<subtitle>(.+)</subtitle>", res_text):
-        subtitle_json = json.loads(subtitle_json_text_match.group(1))
-        results: list[MultiLangSubtitle] = []
-        for sub_info in subtitle_json["subtitles"]:
-            subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
-            if subtitle_text is None:
-                continue
-            results.append(
-                {
-                    "lang": sub_info["lan_doc"],
-                    "lines": subtitle_text["body"],
-                }
-            )
-        return results
-    return []
+    results: list[MultiLangSubtitle] = []
+    for sub_info in resp_json['data']['subtitle']["subtitles"]:
+        subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
+        if subtitle_text is None:
+            continue
+        results.append(
+            {
+                "lang": sub_info["lan_doc"],
+                "lines": subtitle_text["body"],
+            }
+        )
+    return results
 
 
 async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterInfoData]:
