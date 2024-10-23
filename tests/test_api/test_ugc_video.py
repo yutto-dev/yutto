@@ -74,6 +74,9 @@ async def test_get_ugc_video_playurl():
         assert len(playlist[1]) > 0
 
 
+# The latest subtitle API needs login, so this test is skipped.
+# We need to find a way to test theses APIs.
+@pytest.mark.skip
 @pytest.mark.api
 @as_sync
 async def test_get_ugc_video_subtitles():

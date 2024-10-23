@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
@@ -239,26 +238,24 @@ async def get_ugc_video_playurl(
 
 
 async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
-    subtitile_api = "https://api.bilibili.com/x/player.so?aid={aid}&bvid={bvid}&id=cid:{cid}"
+    subtitile_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    res_text = await Fetcher.fetch_text(client, subtitile_url)
-    if res_text is None:
+    res_json = await Fetcher.fetch_json(client, subtitile_url)
+    assert res_json is not None, "无法获取该视频的字幕信息"
+    if not data_has_chained_keys(res_json, ["data", "subtitle", "subtitles"]):
         return []
-    if subtitle_json_text_match := re.search(r"<subtitle>(.+)</subtitle>", res_text):
-        subtitle_json = json.loads(subtitle_json_text_match.group(1))
-        results: list[MultiLangSubtitle] = []
-        for sub_info in subtitle_json["subtitles"]:
-            subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
-            if subtitle_text is None:
-                continue
-            results.append(
-                {
-                    "lang": sub_info["lan_doc"],
-                    "lines": subtitle_text["body"],
-                }
-            )
-        return results
-    return []
+    results: list[MultiLangSubtitle] = []
+    for sub_info in res_json["data"]["subtitle"]["subtitles"]:
+        subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
+        if subtitle_text is None:
+            continue
+        results.append(
+            {
+                "lang": sub_info["lan_doc"],
+                "lines": subtitle_text["body"],
+            }
+        )
+    return results
 
 
 async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterInfoData]:
