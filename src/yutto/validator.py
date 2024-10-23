@@ -52,7 +52,7 @@ def initial_validation(args: argparse.Namespace):
 
     # 大会员身份校验
     if not args.sessdata:
-        Logger.info("未提供 SESSDATA，无法下载会员专享剧集哟～")
+        Logger.info("未提供 SESSDATA，无法下载高清视频、字幕等资源哦～")
     else:
         Fetcher.set_sessdata(args.sessdata)
         if asyncio.run(validate_user_info({"vip_status": True, "is_login": True})):
