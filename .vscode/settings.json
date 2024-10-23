@@ -8,5 +8,10 @@
   },
   "rust-analyzer.linkedProjects": [
     "${workspaceFolder}/packages/biliass/rust/Cargo.toml"
-  ]
+  ],
+  "search.exclude": {
+    "**/*.ambr": true,
+    "**/*.xml": true,
+    "**/*.pb": true
+  }
 }
