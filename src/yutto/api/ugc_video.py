@@ -239,8 +239,9 @@ async def get_ugc_video_playurl(
 
 
 async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
-    subtitile_api = "https://api.bilibili.com/x/player.so?aid={aid}&bvid={bvid}&id=cid:{cid}"
+    subtitile_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&cid={cid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
+    print(avid, subtitile_url)
     res_text = await Fetcher.fetch_text(client, subtitile_url)
     if res_text is None:
         return []
