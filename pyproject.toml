@@ -41,13 +41,13 @@ Issues = "https://github.com/yutto-dev/yutto/issues"
 [project.scripts]
 yutto = "yutto.__main__:main"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
+  "pyright>=1.1.386",
+  "ruff>=0.7.0",
+  "typos>=1.26.8",
   "pytest>=8.3.3",
-  "pyright>=1.1.384",
   "pytest-rerunfailures>=14.0",
-  "ruff>=0.6.8",
-  "typos>=1.26.0",
   "syrupy>=4.7.2",
   "pytest-codspeed>=2.2.1",
 ]
