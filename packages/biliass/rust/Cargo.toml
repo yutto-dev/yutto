@@ -13,7 +13,7 @@ pyo3 = { version = "0.22.3", features = ["abi3-py39"] }
 bytes = "1.8.0"
 prost = "0.13.3"
 thiserror = "1.0.65"
-quick-xml = "0.36.2"
+quick-xml = "0.37.0"
 cached = "0.53.1"
 serde = "1.0.213"
 serde_json = "1.0.128"
