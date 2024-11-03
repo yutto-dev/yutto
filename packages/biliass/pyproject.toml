@@ -1,6 +1,6 @@
 [project]
 name = "biliass"
-description = "将 B 站弹幕转换为 ASS 弹幕"
+description = "💬 将 B 站 XML/protobuf 弹幕转换为 ASS 弹幕"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [

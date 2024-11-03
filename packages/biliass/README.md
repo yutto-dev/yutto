@@ -10,11 +10,7 @@
    <a href="https://codspeed.io/yutto-dev/yutto"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json&style=flat-square" alt="CodSpeed Badge"/></a>
 </p>
 
-biliass，只是 Danmaku2ASS 的 bilili 与 yutto 适配版
-
-原版：<https://github.com/m13253/danmaku2ass>
-
-仅支持 bilibili 弹幕，支持 XML 弹幕和 Protobuf 弹幕
+biliass，高性能且易于使用的 bilibili 弹幕转换工具（XML/Protobuf 格式转 ASS），基于 [Danmaku2ASS](https://github.com/m13253/danmaku2ass)，使用 rust 重写
 
 ## Install
 
@@ -37,32 +33,32 @@ from biliass import convert_to_ass
 # xml
 convert_to_ass(
     xml_text_or_bytes,
-    width,
-    height,
+    1920,
+    1080,
     input_format="xml",
     display_region_ratio=1.0,
     font_face="sans-serif",
-    font_size=width / 40,
+    font_size=25,
     text_opacity=0.8,
     duration_marquee=15.0,
     duration_still=10.0,
-    comment_filter=None,
+    block_options=None,
     reduce_comments=False,
 )
 
 # protobuf
 convert_to_ass(
     protobuf_bytes, # only bytes
-    width,
-    height,
+    1920,
+    1080,
     input_format="protobuf",
     display_region_ratio=1.0,
     font_face="sans-serif",
-    font_size=width / 40,
+    font_size=25,
     text_opacity=0.8,
     duration_marquee=15.0,
     duration_still=10.0,
-    comment_filter=None,
+    block_options=None,
     reduce_comments=False,
 )
 ```
