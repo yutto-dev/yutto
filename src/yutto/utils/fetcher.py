@@ -236,6 +236,11 @@ class Fetcher:
                     error_type = e.__class__.__name__
                     Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...")
                     Logger.debug(f"超时链接：{url}")
+                except ValueError as e:
+                    # 由于 httpx 经常出现此问题，暂时捕获该问题
+                    if "semaphore released too many times" not in str(e):
+                        raise e
+                    Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{e}），尝试重新连接...")
 
 
 def create_client(
