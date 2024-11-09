@@ -910,7 +910,7 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 -  [x] feat: 配置文件支持
 -  [x] feat: 配置文件功能优化，支持自定义配置路径
 -  [ ] docs: issue template 添加配置引导
--  [ ] docs: 优化 biliass rust 重构后的贡献指南
+-  [x] docs: 优化 biliass rust 重构后的贡献指南
 -  [ ] feat: 新的基于 toml 的任务列表
 -  [ ] refactor: 配置参数复用 pydantic 验证
 -  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
