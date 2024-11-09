@@ -7,6 +7,5 @@ from biliass._core import (
 
 from .biliass import (
     BlockOptions as BlockOptions,
-    Danmaku2ASS as Danmaku2ASS,
     convert_to_ass as convert_to_ass,
 )
