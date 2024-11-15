@@ -9,13 +9,13 @@ name = "biliass_core"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.22.6", features = ["abi3-py39"] }
+pyo3 = { version = "0.23.0", features = ["abi3-py39"] }
 bytes = "1.8.0"
 prost = "0.13.3"
-thiserror = "2.0.1"
+thiserror = "2.0.3"
 quick-xml = "0.37.0"
 cached = "0.54.0"
-serde = "1.0.214"
+serde = "1.0.215"
 serde_json = "1.0.132"
 regex = "1.11.1"
 tracing = "0.1.40"
