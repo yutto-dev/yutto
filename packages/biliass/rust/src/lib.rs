@@ -19,7 +19,7 @@ impl std::convert::From<BiliassError> for PyErr {
 }
 
 /// Bindings for biliass core.
-#[pymodule]
+#[pymodule(gil_used = false)]
 #[pyo3(name = "_core")]
 fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_get_danmaku_meta_size, m)?)?;
