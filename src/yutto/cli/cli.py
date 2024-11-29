@@ -28,7 +28,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "metadata",
     "danmaku",
     "cover",
-    "keep_cover", # keep_cover 是 cover 的复制，但是 keep_cover 不参与合并
+    "keep_cover",
     "chapter_info",
 ]
 
