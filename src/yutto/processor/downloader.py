@@ -272,7 +272,6 @@ async def start_downloader(
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
-    keep_cover = episode_data["keep_cover"]
     chapter_info_data = episode_data["chapter_info_data"]
     output_dir = episode_data["output_dir"]
     tmp_dir = episode_data["tmp_dir"]
@@ -372,6 +371,7 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
+        keep_cover = options["keep_cover"]
         if keep_cover:
             keep_cover_path = cover_path.replace('_cover.jpg', '-thumb.jpg')
             keep_cover_path.write_bytes(cover_data)
