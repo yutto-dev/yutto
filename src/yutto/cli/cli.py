@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypeAlias
 
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover","keep_cover","chapter_info"]
 DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "video",
     "audio",
@@ -28,6 +28,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "metadata",
     "danmaku",
     "cover",
+    "keep_cover", # keep_cover 是 cover 的复制，但是 keep_cover 不参与合并
     "chapter_info",
 ]
 
