@@ -349,6 +349,12 @@
           "title": "Require Cover",
           "type": "boolean"
         },
+        "keep_cover":
+        {
+          "default": false,
+          "title": "Keep the Cover",
+          "type": "boolean"
+        },
         "require_chapter_info": {
           "default": true,
           "title": "Require Chapter Info",
