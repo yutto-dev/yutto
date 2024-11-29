@@ -65,6 +65,7 @@ class YuttoResourceSettings(BaseModel):
     require_metadata: Annotated[bool, Field(False)]
     require_danmaku: Annotated[bool, Field(True)]
     require_cover: Annotated[bool, Field(True)]
+    keep_cover: Annotated[bool, Field(False)]
     require_chapter_info: Annotated[bool, Field(True)]
 
 

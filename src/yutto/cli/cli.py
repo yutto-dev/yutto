@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypeAlias
 
 
-DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover","keep_cover", "chapter_info"]
 DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "video",
     "audio",
@@ -28,6 +28,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "metadata",
     "danmaku",
     "cover",
+    "keep_cover",
     "chapter_info",
 ]
 
@@ -232,6 +233,12 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
     group_resource.add_argument(
+        "--keep-cover",
+        dest="keep_cover",
+        action=create_select_required_action(deselect=["keep_cover"]),
+        help="保留封面",
+    )
+    group_resource.add_argument(
         "--no-chapter-info",
         dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter_info"]),
@@ -244,6 +251,7 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=settings.resource.require_metadata,
         require_danmaku=settings.resource.require_danmaku,
         require_cover=settings.resource.require_cover,
+        keep_cover=settings.resource.keep_cover,
         require_chapter_info=settings.resource.require_chapter_info,
     )
 

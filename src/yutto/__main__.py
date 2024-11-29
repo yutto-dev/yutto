@@ -178,6 +178,7 @@ async def run(args_list: list[argparse.Namespace]):
                         "video_download_codec_priority": args.download_vcodec_priority,
                         "require_audio": args.require_audio,
                         "audio_quality": args.audio_quality,
+                        "keep_cover": args.keep_cover,
                         "audio_download_codec": args.acodec.split(":")[0],
                         "audio_save_codec": args.acodec.split(":")[1],
                         "output_format": args.output_format,
