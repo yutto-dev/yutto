@@ -371,9 +371,10 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
-        keep_cover = options["keep_cover"]
+        keep_cover = options["require_keep_cover"]
         if keep_cover:
-            keep_cover_path = cover_path.replace('_cover.jpg', '-thumb.jpg')
+            Logger.info(f"保留封面")
+            keep_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
             keep_cover_path.write_bytes(cover_data)
 
     # 下载视频 / 音频

@@ -349,7 +349,7 @@
           "title": "Require Cover",
           "type": "boolean"
         },
-        "keep_cover":
+        "require_keep_cover":
         {
           "default": false,
           "title": "Keep the Cover",
@@ -405,6 +405,7 @@
         "require_metadata": false,
         "require_danmaku": true,
         "require_cover": true,
+        "require_keep_cover":false,
         "require_chapter_info": true
       }
     },
