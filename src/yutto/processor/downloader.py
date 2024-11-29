@@ -373,7 +373,7 @@ async def start_downloader(
         cover_path.write_bytes(cover_data)
         keep_cover = options["require_keep_cover"]
         if keep_cover:
-            Logger.info(f"保留封面")
+            Logger.info("保留封面")
             keep_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
             keep_cover_path.write_bytes(cover_data)
 
