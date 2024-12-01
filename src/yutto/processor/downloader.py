@@ -375,7 +375,7 @@ async def start_downloader(
         if copy_cover:
             copy_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
             Logger.custom(
-                f"封面已单独保存: {copy_cover_path}",
+                f"封面已单独保存: {filename}-thumb.jpg",
                 badge=Badge("封面", fore="black", back="cyan"),
             )
             copy_cover_path.write_bytes(cover_data)
