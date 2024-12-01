@@ -373,8 +373,11 @@ async def start_downloader(
         cover_path.write_bytes(cover_data)
         copy_cover = options["copy_cover"]
         if copy_cover:
-            Logger.info("保留封面")
             copy_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
+            Logger.custom(
+                f"封面已单独保存: {copy_cover_path}",
+                badge=Badge("封面", fore="black", back="cyan"),
+            )
             copy_cover_path.write_bytes(cover_data)
 
     # 下载视频 / 音频
