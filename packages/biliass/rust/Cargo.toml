@@ -10,15 +10,15 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.23.2", features = ["abi3-py39"] }
-bytes = "1.8.0"
+bytes = "1.9.0"
 prost = "0.13.3"
 thiserror = "2.0.3"
-quick-xml = "0.37.0"
+quick-xml = "0.37.1"
 cached = "0.54.0"
 serde = "1.0.215"
-serde_json = "1.0.132"
+serde_json = "1.0.133"
 regex = "1.11.1"
-tracing = "0.1.40"
+tracing = "0.1.41"
 tracing-subscriber = "0.3.18"
 rayon = "1.10.0"
 
