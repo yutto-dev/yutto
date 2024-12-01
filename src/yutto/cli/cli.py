@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 DownloadResourceType: TypeAlias = Literal[
-    "video", "audio", "subtitle", "metadata", "danmaku", "cover", "keep_cover", "chapter_info"
+    "video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"
 ]
 DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "video",
@@ -30,7 +30,6 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "metadata",
     "danmaku",
     "cover",
-    "keep_cover",
     "chapter_info",
 ]
 
@@ -177,7 +176,12 @@ def cli() -> argparse.ArgumentParser:
     group_basic.add_argument(
         "--login-strict", default=settings.basic.login_strict, action="store_true", help="启用严格检查登录状态"
     )
-
+    group_basic.add_argument(
+        "--copy-cover",
+        default=settings.basic.copy_cover,
+        action="store_true",
+        help="复制一份封面单独保留",
+    )
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")
     group_resource.add_argument(
@@ -235,12 +239,6 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
     group_resource.add_argument(
-        "--keep-cover",
-        dest="require_keep_cover",
-        action=create_select_required_action(select=["keep_cover"]),
-        help="保留封面",
-    )
-    group_resource.add_argument(
         "--no-chapter-info",
         dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter_info"]),
@@ -253,7 +251,6 @@ def cli() -> argparse.ArgumentParser:
         require_metadata=settings.resource.require_metadata,
         require_danmaku=settings.resource.require_danmaku,
         require_cover=settings.resource.require_cover,
-        require_keep_cover=settings.resource.require_keep_cover,
         require_chapter_info=settings.resource.require_chapter_info,
     )
 

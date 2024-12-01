@@ -56,6 +56,7 @@ class YuttoBasicSettings(BaseModel):
     debug: Annotated[bool, Field(False)]
     vip_strict: Annotated[bool, Field(False)]
     login_strict: Annotated[bool, Field(False)]
+    copy_cover: Annotated[bool, Field(False)]
 
 
 class YuttoResourceSettings(BaseModel):
@@ -65,7 +66,6 @@ class YuttoResourceSettings(BaseModel):
     require_metadata: Annotated[bool, Field(False)]
     require_danmaku: Annotated[bool, Field(True)]
     require_cover: Annotated[bool, Field(True)]
-    require_keep_cover: Annotated[bool, Field(False)]
     require_chapter_info: Annotated[bool, Field(True)]
 
 

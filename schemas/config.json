@@ -196,6 +196,12 @@
           "default": false,
           "title": "Login Strict",
           "type": "boolean"
+        },
+        "copy_cover":
+        {
+          "default": false,
+          "title": "Copy Cover",
+          "type": "boolean"
         }
       },
       "title": "YuttoBasicSettings",
@@ -349,12 +355,6 @@
           "title": "Require Cover",
           "type": "boolean"
         },
-        "require_keep_cover":
-        {
-          "default": false,
-          "title": "Keep the Cover",
-          "type": "boolean"
-        },
         "require_chapter_info": {
           "default": true,
           "title": "Require Chapter Info",
@@ -405,7 +405,6 @@
         "require_metadata": false,
         "require_danmaku": true,
         "require_cover": true,
-        "require_keep_cover":false,
         "require_chapter_info": true
       }
     },

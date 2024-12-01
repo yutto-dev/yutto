@@ -172,7 +172,6 @@ async def run(args_list: list[argparse.Namespace]):
                     {
                         "require_video": args.require_video,
                         "require_chapter_info": args.require_chapter_info,
-                        "require_keep_cover": args.require_keep_cover,
                         "video_quality": args.video_quality,
                         "video_download_codec": args.vcodec.split(":")[0],
                         "video_save_codec": args.vcodec.split(":")[1],
@@ -186,6 +185,7 @@ async def run(args_list: list[argparse.Namespace]):
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
+                        "copy_cover": args.copy_cover,
                         "metadata_format": {
                             "premiered": args.metadata_format_premiered,
                             "dateadded": TIME_FULL_FMT,

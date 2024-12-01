@@ -371,11 +371,11 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
-        keep_cover = options["require_keep_cover"]
-        if keep_cover:
+        copy_cover = options["copy_cover"]
+        if copy_cover:
             Logger.info("保留封面")
-            keep_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
-            keep_cover_path.write_bytes(cover_data)
+            copy_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
+            copy_cover_path.write_bytes(cover_data)
 
     # 下载视频 / 音频
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)
