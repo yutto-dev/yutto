@@ -20,9 +20,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypeAlias
 
 
-DownloadResourceType: TypeAlias = Literal[
-    "video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"
-]
+DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]
 DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "video",
     "audio",
