@@ -175,8 +175,8 @@ def cli() -> argparse.ArgumentParser:
         "--login-strict", default=settings.basic.login_strict, action="store_true", help="启用严格检查登录状态"
     )
     group_basic.add_argument(
-        "--copy-cover",
-        default=settings.basic.copy_cover,
+        "--keep-cover",
+        default=settings.basic.keep_cover,
         action="store_true",
         help="复制一份封面单独保留",
     )

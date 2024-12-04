@@ -185,7 +185,7 @@ async def run(args_list: list[argparse.Namespace]):
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
-                        "copy_cover": args.copy_cover,
+                        "keep_cover": args.keep_cover,
                         "metadata_format": {
                             "premiered": args.metadata_format_premiered,
                             "dateadded": TIME_FULL_FMT,

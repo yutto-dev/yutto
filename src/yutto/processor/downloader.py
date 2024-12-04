@@ -248,10 +248,15 @@ def merge_video_and_audio(
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
-    if cover_data is not None:
-        cover_path.unlink()
     if chapter_info_data:
         chapter_info_path.unlink()
+    if cover_data is not None and not options["keep_cover"]:
+        cover_path.unlink()
+    else:
+        Logger.custom(
+            "保留封面",
+            badge=Badge("封面", fore="black", back="cyan"),
+        )
 
 
 class DownloadState(Enum):
@@ -371,14 +376,6 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
-        copy_cover = options["copy_cover"]
-        if copy_cover:
-            copy_cover_path = tmp_dir.joinpath(filename + "-thumb.jpg")
-            Logger.custom(
-                f"封面已单独保存: {filename}-thumb.jpg",
-                badge=Badge("封面", fore="black", back="cyan"),
-            )
-            copy_cover_path.write_bytes(cover_data)
 
     # 下载视频 / 音频
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)

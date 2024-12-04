@@ -56,7 +56,7 @@ class YuttoBasicSettings(BaseModel):
     debug: Annotated[bool, Field(False)]
     vip_strict: Annotated[bool, Field(False)]
     login_strict: Annotated[bool, Field(False)]
-    copy_cover: Annotated[bool, Field(False)]
+    keep_cover: Annotated[bool, Field(False)]
 
 
 class YuttoResourceSettings(BaseModel):

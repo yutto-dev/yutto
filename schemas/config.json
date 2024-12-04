@@ -197,10 +197,9 @@
           "title": "Login Strict",
           "type": "boolean"
         },
-        "copy_cover":
-        {
+        "keep_cover": {
           "default": false,
-          "title": "Copy Cover",
+          "title": "Keep Cover",
           "type": "boolean"
         }
       },
@@ -393,7 +392,8 @@
         "no_progress": false,
         "debug": false,
         "vip_strict": false,
-        "login_strict": false
+        "login_strict": false,
+        "keep_cover": false
       }
     },
     "resource": {
