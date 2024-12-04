@@ -237,6 +237,12 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
     group_resource.add_argument(
+        "--cover-only",
+        dest="require_cover",
+        action=create_select_required_action(select=["cover"], deselect=invert_selection(["cover"])),
+        help="不生成封面",
+    )
+    group_resource.add_argument(
         "--no-chapter-info",
         dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter_info"]),
