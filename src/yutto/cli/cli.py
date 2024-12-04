@@ -240,7 +240,7 @@ def cli() -> argparse.ArgumentParser:
         "--cover-only",
         dest="require_cover",
         action=create_select_required_action(select=["cover"], deselect=invert_selection(["cover"])),
-        help="不生成封面",
+        help="仅生成封面",
     )
     group_resource.add_argument(
         "--no-chapter-info",
