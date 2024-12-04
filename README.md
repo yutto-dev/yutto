@@ -503,9 +503,15 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--no-cover`
 -  默认值 `False`
 
-> [!NOTE]
->
-> 当前仅支持为包含视频流的视频生成封面。
+#### 仅生成视频封面
+
+- 参数`--cover-only`
+- 默认值`False`
+
+#### 生成视频封面时单独保存封面
+
+- 参数`--keep-cover`
+- 默认值`False`
 
 #### 不生成章节信息
 
