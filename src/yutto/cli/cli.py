@@ -178,7 +178,7 @@ def cli() -> argparse.ArgumentParser:
         "--keep-cover",
         default=settings.basic.keep_cover,
         action="store_true",
-        help="复制一份封面单独保留",
+        help="生成视频流封面后保留封面文件",
     )
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")
