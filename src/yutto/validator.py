@@ -140,11 +140,9 @@ def validate_basic_arguments(args: argparse.Namespace):
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    # cover检查
-    if not args.require_cover and args.keep_cover:
-        Logger.warning(
-            "你不能既要求不下载封面 --no-cover --audio-only --video-only ... ，又要求保留封面哦～ --keep-cover"
-        )
+    # cover 检查
+    if not args.require_cover and args.save_cover:
+        Logger.warning("没有下载封面的情况下是无法保留封面的哦～")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 

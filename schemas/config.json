@@ -196,11 +196,6 @@
           "default": false,
           "title": "Login Strict",
           "type": "boolean"
-        },
-        "keep_cover": {
-          "default": false,
-          "title": "Keep Cover",
-          "type": "boolean"
         }
       },
       "title": "YuttoBasicSettings",
@@ -358,6 +353,11 @@
           "default": true,
           "title": "Require Chapter Info",
           "type": "boolean"
+        },
+        "save_cover": {
+          "default": false,
+          "title": "Save Cover",
+          "type": "boolean"
         }
       },
       "title": "YuttoResourceSettings",
@@ -392,8 +392,7 @@
         "no_progress": false,
         "debug": false,
         "vip_strict": false,
-        "login_strict": false,
-        "keep_cover": false
+        "login_strict": false
       }
     },
     "resource": {
@@ -405,7 +404,8 @@
         "require_metadata": false,
         "require_danmaku": true,
         "require_cover": true,
-        "require_chapter_info": true
+        "require_chapter_info": true,
+        "save_cover": false
       }
     },
     "danmaku": {

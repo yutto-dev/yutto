@@ -229,7 +229,7 @@ class EpisodeData(TypedDict):
 class DownloaderOptions(TypedDict):
     require_video: bool
     require_chapter_info: bool
-    keep_cover: bool
+    save_cover: bool
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str

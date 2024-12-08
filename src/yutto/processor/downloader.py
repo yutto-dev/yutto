@@ -250,7 +250,7 @@ def merge_video_and_audio(
         audio_path.unlink()
     if chapter_info_data:
         chapter_info_path.unlink()
-    if cover_data is not None and not options["keep_cover"]:
+    if cover_data is not None and not options["save_cover"]:
         cover_path.unlink()
 
 
@@ -347,7 +347,7 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
-        if options["keep_cover"] or (not will_download_video and not will_download_audio):
+        if options["save_cover"] or (not will_download_video and not will_download_audio):
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
 
     # 保存媒体描述文件

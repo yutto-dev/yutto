@@ -174,12 +174,7 @@ def cli() -> argparse.ArgumentParser:
     group_basic.add_argument(
         "--login-strict", default=settings.basic.login_strict, action="store_true", help="启用严格检查登录状态"
     )
-    group_basic.add_argument(
-        "--keep-cover",
-        default=settings.basic.keep_cover,
-        action="store_true",
-        help="生成视频流封面后保留封面文件",
-    )
+
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")
     group_resource.add_argument(
@@ -247,6 +242,12 @@ def cli() -> argparse.ArgumentParser:
         dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter_info"]),
         help="不封装章节信息",
+    )
+    group_resource.add_argument(
+        "--save-cover",
+        default=settings.resource.save_cover,
+        action="store_true",
+        help="生成视频流封面后单独保存封面文件",
     )
     group_resource.set_defaults(
         require_video=settings.resource.require_video,
