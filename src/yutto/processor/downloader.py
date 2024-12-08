@@ -344,16 +344,16 @@ async def start_downloader(
             "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
         )
 
+    # 保存媒体描述文件
+    if metadata is not None:
+        write_metadata(metadata, output_path, metadata_format)
+        Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
         if options["save_cover"] or (not will_download_video and not will_download_audio):
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
-
-    # 保存媒体描述文件
-    if metadata is not None:
-        write_metadata(metadata, output_path, metadata_format)
-        Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     if output_path.exists():
         if not options["overwrite"]:
