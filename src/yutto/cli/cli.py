@@ -232,10 +232,22 @@ def cli() -> argparse.ArgumentParser:
         help="不生成封面",
     )
     group_resource.add_argument(
+        "--cover-only",
+        dest="require_cover",
+        action=create_select_required_action(select=["cover"], deselect=invert_selection(["cover"])),
+        help="仅生成封面",
+    )
+    group_resource.add_argument(
         "--no-chapter-info",
         dest="require_chapter_info",
         action=create_select_required_action(deselect=["chapter_info"]),
         help="不封装章节信息",
+    )
+    group_resource.add_argument(
+        "--save-cover",
+        default=settings.resource.save_cover,
+        action="store_true",
+        help="生成视频流封面后单独保存封面文件",
     )
     group_resource.set_defaults(
         require_video=settings.resource.require_video,

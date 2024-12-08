@@ -140,6 +140,11 @@ def validate_basic_arguments(args: argparse.Namespace):
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
+    # cover 检查
+    if not args.require_cover and args.save_cover:
+        Logger.warning("没有下载封面的情况下是无法保留封面的哦～")
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
 
 def validate_batch_arguments(args: argparse.Namespace):
     """检查批量下载相关选项"""

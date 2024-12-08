@@ -248,10 +248,10 @@ def merge_video_and_audio(
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
-    if cover_data is not None:
-        cover_path.unlink()
     if chapter_info_data:
         chapter_info_path.unlink()
+    if cover_data is not None and not options["save_cover"]:
+        cover_path.unlink()
 
 
 class DownloadState(Enum):
@@ -285,7 +285,7 @@ async def start_downloader(
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
-    cover_path = tmp_dir.joinpath(filename + "_cover.jpg")
+    cover_path = tmp_dir.joinpath(filename + "-poster.jpg")
     chapter_info_path = tmp_dir.joinpath(filename + "_chapter_info.ini")
 
     video = select_video(
@@ -349,6 +349,12 @@ async def start_downloader(
         write_metadata(metadata, output_path, metadata_format)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
+    # 保存封面
+    if cover_data is not None:
+        cover_path.write_bytes(cover_data)
+        if options["save_cover"] or (not will_download_video and not will_download_audio):
+            Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
+
     if output_path.exists():
         if not options["overwrite"]:
             Logger.info(f"文件 {filename} 已存在")
@@ -367,10 +373,6 @@ async def start_downloader(
     # 保存章节信息
     if chapter_info_data:
         write_chapter_info(filename, chapter_info_data, chapter_info_path)
-
-    # 保存封面
-    if cover_data is not None:
-        cover_path.write_bytes(cover_data)
 
     # 下载视频 / 音频
     await download_video_and_audio(client, video, video_path, audio, audio_path, options)
