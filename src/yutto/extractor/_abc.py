@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
     from yutto._typing import EpisodeData
     from yutto.utils.asynclib import CoroutineWrapper
+    from yutto.utils.fetcher import FetcherContext
 
 T = TypeVar("T")
 
@@ -26,32 +27,32 @@ class Extractor(metaclass=ABCMeta):
 
     @abstractmethod
     async def __call__(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         raise NotImplementedError
 
 
 class SingleExtractor(Extractor):
     async def __call__(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        return [await self.extract(client, args)]
+        return [await self.extract(ctx, client, args)]
 
     @abstractmethod
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         raise NotImplementedError
 
 
 class BatchExtractor(Extractor):
     async def __call__(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        return await self.extract(client, args)
+        return await self.extract(ctx, client, args)
 
     @abstractmethod
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         raise NotImplementedError

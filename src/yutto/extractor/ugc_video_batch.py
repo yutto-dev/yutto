@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
     import httpx
 
+    from yutto.utils.fetcher import FetcherContext
+
 
 class UgcVideoBatchExtractor(BatchExtractor):
     """投稿视频批下载"""
@@ -63,10 +65,10 @@ class UgcVideoBatchExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         try:
-            ugc_video_list = await get_ugc_video_list(client, self.avid)
+            ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except NotFoundError as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
@@ -80,6 +82,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
+                    ctx,
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,

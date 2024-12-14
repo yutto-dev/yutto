@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
     import httpx
 
+    from yutto.utils.fetcher import FetcherContext
+
 
 class CheeseExtractor(SingleExtractor):
     """单课时"""
@@ -49,10 +51,10 @@ class CheeseExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
-        season_id = await get_season_id_by_episode_id(client, self.episode_id)
-        cheese_list = await get_cheese_list(client, season_id)
+        season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
+        cheese_list = await get_cheese_list(ctx, client, season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         try:
             for cheese_item in cheese_list["pages"]:
@@ -65,6 +67,7 @@ class CheeseExtractor(SingleExtractor):
 
             return CoroutineWrapper(
                 extract_cheese_data(
+                    ctx,
                     client,
                     self.episode_id,
                     cheese_list_item,
