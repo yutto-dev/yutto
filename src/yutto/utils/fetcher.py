@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from urllib.parse import quote, unquote
 
@@ -65,48 +66,81 @@ DEFAULT_HEADERS: dict[str, str] = {
 DEFAULT_COOKIES = httpx.Cookies()
 
 
-class Fetcher:
-    proxy: str | None = DEFAULT_PROXY
-    trust_env: bool = DEFAULT_TRUST_ENV
-    headers: dict[str, str] = DEFAULT_HEADERS
-    cookies: httpx.Cookies = DEFAULT_COOKIES
-    # 初始使用较小的信号量用于抓取信息，下载时会重新设置一个较大的值
-    semaphore: asyncio.Semaphore = asyncio.Semaphore(8)
+class FetcherContext:
+    proxy: str | None
+    trust_env: bool
+    headers: dict[str, str]
+    cookies: httpx.Cookies
+    fetch_semaphore: asyncio.Semaphore | None
+    download_semaphore: asyncio.Semaphore | None
 
-    @classmethod
-    def set_proxy(cls, proxy: str):
-        if proxy == "auto":
-            Fetcher.proxy = None
-            Fetcher.trust_env = True
-        elif proxy == "no":
-            Fetcher.proxy = None
-            Fetcher.trust_env = False
-        else:
-            Fetcher.proxy = proxy
-            Fetcher.trust_env = False
+    def __init__(
+        self,
+        *,
+        proxy: str | None = DEFAULT_PROXY,
+        trust_env: bool = DEFAULT_TRUST_ENV,
+        headers: dict[str, str] = DEFAULT_HEADERS,
+        cookies: httpx.Cookies = DEFAULT_COOKIES,
+    ):
+        self.proxy = proxy
+        self.trust_env = trust_env
+        self.headers = headers
+        self.cookies = cookies
+        self.fetch_semaphore = None
+        self.download_semaphore = None
 
-    @classmethod
-    def set_sessdata(cls, sessdata: str):
-        Fetcher.cookies = httpx.Cookies()
+    def set_fetch_semaphore(self, fetch_workers: int):
+        self.fetch_semaphore = asyncio.Semaphore(fetch_workers)
+
+    def set_download_semaphore(self, download_workers: int):
+        self.download_semaphore = asyncio.Semaphore(download_workers)
+
+    def set_sessdata(self, sessdata: str):
+        self.cookies = httpx.Cookies()
         # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
         # 而番剧无法使用解码后的 SESSDATA
-        Fetcher.cookies.set("SESSDATA", quote(unquote(sessdata)))
+        self.cookies.set("SESSDATA", quote(unquote(sessdata)))
 
-    @classmethod
-    def set_semaphore(cls, num_workers: int):
-        Fetcher.semaphore = asyncio.Semaphore(num_workers)
+    def set_proxy(self, proxy: str):
+        if proxy == "auto":
+            self.proxy = None
+            self.trust_env = True
+        elif proxy == "no":
+            self.proxy = None
+            self.trust_env = False
+        else:
+            self.proxy = proxy
+            self.trust_env = False
 
-    @classmethod
+    @asynccontextmanager
+    async def fetch_guard(self):
+        if self.fetch_semaphore is None:
+            yield
+            return
+        async with self.fetch_semaphore:
+            yield
+
+    @asynccontextmanager
+    async def download_guard(self):
+        if self.download_semaphore is None:
+            yield
+            return
+        async with self.download_semaphore:
+            yield
+
+
+class Fetcher:
+    @staticmethod
     @MaxRetry(2)
     async def fetch_text(
-        cls,
+        ctx: FetcherContext,
         client: AsyncClient,
         url: str,
         *,
         params: Mapping[str, str] | None = None,
         encoding: str | None = None,  # TODO(SigureMo): Support this
     ) -> str | None:
-        async with cls.semaphore:
+        async with ctx.fetch_guard():
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
@@ -114,16 +148,16 @@ class Fetcher:
                 return None
             return resp.text
 
-    @classmethod
+    @staticmethod
     @MaxRetry(2)
     async def fetch_bin(
-        cls,
+        ctx: FetcherContext,
         client: AsyncClient,
         url: str,
         *,
         params: Mapping[str, str] | None = None,
     ) -> bytes | None:
-        async with cls.semaphore:
+        async with ctx.fetch_guard():
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
@@ -131,16 +165,16 @@ class Fetcher:
                 return None
             return resp.read()
 
-    @classmethod
+    @staticmethod
     @MaxRetry(2)
     async def fetch_json(
-        cls,
+        ctx: FetcherContext,
         client: AsyncClient,
         url: str,
         *,
         params: Mapping[str, str] | None = None,
     ) -> Any | None:
-        async with cls.semaphore:
+        async with ctx.fetch_guard():
             Logger.debug(f"Fetch json: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
@@ -148,13 +182,13 @@ class Fetcher:
                 return None
             return resp.json()
 
-    @classmethod
+    @staticmethod
     @MaxRetry(2)
-    async def get_redirected_url(cls, client: AsyncClient, url: str) -> str:
+    async def get_redirected_url(ctx: FetcherContext, client: AsyncClient, url: str) -> str:
         # 关于为什么要前往重定向 url，是因为 B 站的 url 类型实在是太多了，比如有 b23.tv 的短链接
         # 为 SEO 的搜索引擎链接、甚至有的 av、BV 链接实际上是番剧页面，一一列举实在太麻烦，而且最后一种
         # 情况需要在 av、BV 解析一部分信息后才能知道是否是番剧页面，处理起来非常麻烦（bilili 就是这么做的）
-        async with cls.semaphore:
+        async with ctx.fetch_guard():
             resp = await client.get(url)
             redirected_url = str(resp.url)
             if redirected_url == url:
@@ -164,10 +198,10 @@ class Fetcher:
             Logger.status.next_tick()
             return redirected_url
 
-    @classmethod
+    @staticmethod
     @MaxRetry(2)
-    async def get_size(cls, client: AsyncClient, url: str) -> int | None:
-        async with cls.semaphore:
+    async def get_size(ctx: FetcherContext, client: AsyncClient, url: str) -> int | None:
+        async with ctx.fetch_guard():
             headers = client.headers.copy()
             headers["Range"] = "bytes=0-1"
             resp = await client.get(
@@ -181,18 +215,18 @@ class Fetcher:
             else:
                 return None
 
-    @classmethod
+    @staticmethod
     @MaxRetry(2)
     # 对于相同 session，同样的页面没必要重复 touch
     @async_cache(lambda args: f"client_id={id(args.arguments['client'])}, url={args.arguments['url']}")
-    async def touch_url(cls, client: AsyncClient, url: str):
-        async with cls.semaphore:
+    async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str):
+        async with ctx.fetch_guard():
             Logger.debug(f"Touch url: {url}")
             await client.get(url)
 
-    @classmethod
+    @staticmethod
     async def download_file_with_offset(
-        cls,
+        ctx: FetcherContext,
         client: AsyncClient,
         url: str,
         mirrors: list[str],
@@ -200,7 +234,7 @@ class Fetcher:
         offset: int,
         size: int | None,
     ) -> None:
-        async with cls.semaphore:
+        async with ctx.download_guard():
             Logger.debug(f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}")
             done = False
             headers = client.headers.copy()

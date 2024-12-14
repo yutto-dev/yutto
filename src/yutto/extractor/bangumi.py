@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
     import httpx
 
+    from yutto.utils.fetcher import FetcherContext
+
 
 class BangumiExtractor(SingleExtractor):
     """番剧单话"""
@@ -49,10 +51,10 @@ class BangumiExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
-        season_id = await get_season_id_by_episode_id(client, self.episode_id)
-        bangumi_list = await get_bangumi_list(client, season_id)
+        season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
+        bangumi_list = await get_bangumi_list(ctx, client, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         try:
             for bangumi_item in bangumi_list["pages"]:
@@ -65,6 +67,7 @@ class BangumiExtractor(SingleExtractor):
 
             return CoroutineWrapper(
                 extract_bangumi_data(
+                    ctx,
                     client,
                     bangumi_list_item,
                     args,

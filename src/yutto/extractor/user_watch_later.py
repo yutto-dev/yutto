@@ -10,7 +10,7 @@ from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
@@ -33,25 +33,25 @@ class UserWatchLaterExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
 
         try:
-            avid_list = await get_watch_later_avids(client)
+            avid_list = await get_watch_later_avids(ctx, client)
         except NotLoginError as e:
             Logger.error(e.message)
             return []
 
         for avid in avid_list:
             try:
-                ugc_video_list = await get_ugc_video_list(client, avid)
+                ugc_video_list = await get_ugc_video_list(ctx, client, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
-                await Fetcher.touch_url(client, avid.to_url())
+                await Fetcher.touch_url(ctx, client, avid.to_url())
                 for ugc_video_item in ugc_video_list["pages"]:
                     ugc_video_info_list.append(
                         (
@@ -68,6 +68,7 @@ class UserWatchLaterExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
+                    ctx,
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,

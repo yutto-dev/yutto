@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 
     import httpx
 
+    from yutto.utils.fetcher import FetcherContext
+
 
 class UgcVideoExtractor(SingleExtractor):
     """投稿视频单视频"""
@@ -71,14 +73,15 @@ class UgcVideoExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         try:
-            ugc_video_list = await get_ugc_video_list(client, self.avid)
+            ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             self.avid = ugc_video_list["avid"]  # 当视频撞车时，使用新的 avid 替代原有 avid，见 #96
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
             return CoroutineWrapper(
                 extract_ugc_video_data(
+                    ctx,
                     client,
                     self.avid,
                     ugc_video_list["pages"][self.page - 1],

@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
     import httpx
 
+    from yutto.utils.fetcher import FetcherContext
+
 
 class CheeseBatchExtractor(BatchExtractor):
     """课程全集"""
@@ -48,19 +50,19 @@ class CheeseBatchExtractor(BatchExtractor):
         else:
             return False
 
-    async def _parse_ids(self, client: httpx.AsyncClient):
+    async def _parse_ids(self, ctx: FetcherContext, client: httpx.AsyncClient):
         if "episode_id" in self._match_result.groupdict().keys():
             episode_id = EpisodeId(self._match_result.group("episode_id"))
-            self.season_id = await get_season_id_by_episode_id(client, episode_id)
+            self.season_id = await get_season_id_by_episode_id(ctx, client, episode_id)
         else:
             self.season_id = SeasonId(self._match_result.group("season_id"))
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        await self._parse_ids(client)
+        await self._parse_ids(ctx, client)
 
-        cheese_list = await get_cheese_list(client, self.season_id)
+        cheese_list = await get_cheese_list(ctx, client, self.season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         # 选集过滤
         episodes = parse_episodes_selection(args.episodes, len(cheese_list["pages"]))
@@ -68,6 +70,7 @@ class CheeseBatchExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_cheese_data(
+                    ctx,
                     client,
                     cheese_item["episode_id"],
                     cheese_item,

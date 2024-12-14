@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto._typing import UserInfo
 from yutto.utils.asynclib import async_cache
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -28,9 +28,9 @@ dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.pri
 
 
 @async_cache(lambda _: "user_info")
-async def get_user_info(client: AsyncClient) -> UserInfo:
+async def get_user_info(ctx: FetcherContext, client: AsyncClient) -> UserInfo:
     info_api = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(client, info_api)
+    res_json = await Fetcher.fetch_json(ctx, client, info_api)
     assert res_json is not None
     res_json_data = res_json.get("data")
     return UserInfo(
@@ -39,12 +39,12 @@ async def get_user_info(client: AsyncClient) -> UserInfo:
     )
 
 
-async def get_wbi_img(client: AsyncClient) -> WbiImg:
+async def get_wbi_img(ctx: FetcherContext, client: AsyncClient) -> WbiImg:
     global wbi_img_cache
     if wbi_img_cache is not None:
         return wbi_img_cache
     url = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(client, url)
+    res_json = await Fetcher.fetch_json(ctx, client, url)
     assert res_json is not None
     wbi_img: WbiImg = {
         "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
