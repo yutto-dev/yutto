@@ -101,7 +101,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.13 3.13t'
+          args: --release --out dist
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
