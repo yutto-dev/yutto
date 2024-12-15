@@ -38,7 +38,9 @@ class YuttoBasicSettings(BaseModel):
     acodec: Annotated[str, Field("mp4a:copy")]
     download_vcodec_priority: Annotated[Optional[list[str]], Field(None)]  # noqa: UP007
     output_format: Annotated[Literal["infer", "mp4", "mkv", "mov"], Field("infer")]
-    output_format_audio_only: Annotated[Literal["infer", "aac", "mp3", "flac", "mp4", "mkv", "mov"], Field("infer")]
+    output_format_audio_only: Annotated[
+        Literal["infer", "m4a", "aac", "mp3", "flac", "mp4", "mkv", "mov"], Field("infer")
+    ]
     danmaku_format: Annotated[Literal["xml", "ass", "protobuf"], Field("ass")]
     block_size: Annotated[float, Field(0.5)]
     overwrite: Annotated[bool, Field(False)]

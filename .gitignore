@@ -118,6 +118,7 @@ dmypy.json
 .DS_Store
 
 # Media files
+*.m4a
 *.aac
 *.mp3
 *.flac

@@ -317,7 +317,7 @@ async def start_downloader(
         elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".flac"
         else:
-            output_format = ".aac"
+            output_format = ".m4a"
     else:
         if options["output_format"] != "infer":
             output_format = "." + options["output_format"]

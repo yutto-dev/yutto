@@ -45,6 +45,7 @@ clean:
     -e mp4 \
     -e mkv \
     -e mov \
+    -e m4a \
     -e aac \
     -e mp3 \
     -e flac \

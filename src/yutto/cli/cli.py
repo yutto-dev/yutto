@@ -99,7 +99,7 @@ def cli() -> argparse.ArgumentParser:
     group_basic.add_argument(
         "--output-format-audio-only",
         default=settings.basic.output_format_audio_only,
-        choices=["infer", "aac", "mp3", "flac", "mp4", "mkv", "mov"],
+        choices=["infer", "m4a", "aac", "mp3", "flac", "mp4", "mkv", "mov"],
         help="仅包含音频流时所使用的输出格式（infer 为自动推断）",
     )
     group_basic.add_argument(
