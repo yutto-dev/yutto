@@ -114,7 +114,7 @@ jobs:
   # available at the same time on Windows machines, so we
   # split it into two jobs.
   # https://github.com/Quansight-Labs/setup-python/issues/5
-  windows-free-threading:
+  windows-free-threaded:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -139,7 +139,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-free-threading-${{ matrix.platform.target }}
+          name: wheels-windows-free-threaded-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
   macos:
