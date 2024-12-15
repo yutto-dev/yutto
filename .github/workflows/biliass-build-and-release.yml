@@ -93,9 +93,9 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v4
-      - uses: Quansight-Labs/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.13t
+          python-version: 3.x
           architecture: ${{ matrix.platform.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -108,6 +108,38 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.platform.target }}
+          path: packages/biliass/dist
+
+  # Python 3.13 standard and free-threaded versions cannot be
+  # available at the same time on Windows machines, so we
+  # split it into two jobs.
+  # https://github.com/Quansight-Labs/setup-python/issues/5
+  windows-free-threading:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x64
+          - runner: windows-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Quansight-Labs/setup-python@v5
+        with:
+          python-version: 3.13t
+          architecture: ${{ matrix.platform.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist
+          sccache: "true"
+          working-directory: packages/biliass
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-free-threading-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
   macos:
