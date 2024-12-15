@@ -80,6 +80,7 @@
           "default": "infer",
           "enum": [
             "infer",
+            "m4a",
             "aac",
             "mp3",
             "flac",
