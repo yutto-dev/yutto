@@ -47,7 +47,7 @@ wheels = [
 
 [[package]]
 name = "biliass"
-version = "2.1.1"
+version = "2.2.0"
 source = { editable = "packages/biliass" }
 
 [[package]]
