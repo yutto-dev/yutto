@@ -193,6 +193,7 @@ jobs:
       - linux
       - musllinux
       - windows
+      - windows-free-threaded
       - macos
       - sdist
     permissions:
@@ -217,6 +218,7 @@ jobs:
       - linux
       - musllinux
       - windows
+      - windows-free-threaded
       - macos
       - sdist
     permissions:
