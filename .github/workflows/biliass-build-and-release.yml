@@ -40,7 +40,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: --release --out dist --interpreter '3.13 3.13t'
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
