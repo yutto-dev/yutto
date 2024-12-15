@@ -71,7 +71,7 @@ generate-schema:
   uv run scripts/generate-schema.py
 
 ci-install pyversion:
-  uv sync --all-extras --dev
+  uv sync --all-extras --dev -p {{pyversion}}
 
 ci-fmt-check:
   uv run ruff format --check --diff .
