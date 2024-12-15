@@ -93,9 +93,9 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: Quansight-Labs/setup-python@v5
         with:
-          python-version: 3.13
+          python-version: 3.13t
           architecture: ${{ matrix.platform.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
