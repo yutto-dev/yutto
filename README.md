@@ -256,13 +256,13 @@ https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 #### 指定在仅包含音频流时的输出格式
 
 -  参数 `--output-format-audio-only`
--  可选值 `"infer" | "aac" | "mp3" | "flac" | "mp4" | "mkv" | "mov"`
+-  可选值 `"infer" | "m4a" | "aac" | "mp3" | "flac" | "mp4" | "mkv" | "mov"`
 -  默认值 `"infer"`
 
 在仅包含音频流时所使用的输出格式，默认选值 `"infer"` 表示自动根据情况进行推导以保证输出的可用，推导规则如下：
 
 -  如果音频流编码为 `"fLaC"`，则输出格式为 `"flac"`
--  否则为 `"aac"`
+-  否则为 `"m4a"`
 
 > **Note**
 >
@@ -464,7 +464,7 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  参数 `--audio-only`
 -  默认值 `False`
 
-仅下载其中的音频流，保存为 `.aac` 文件。
+仅下载其中的音频流，保存为 `.m4a` 文件。
 
 #### 不生成弹幕文件
 
@@ -506,6 +506,16 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 > [!NOTE]
 >
 > 当前仅支持为包含视频流的视频生成封面。
+
+#### 生成视频流封面时单独保存封面
+
+-  参数 `--save-cover`
+-  默认值 `False`
+
+#### 仅生成视频封面
+
+-  参数 `--cover-only`
+-  默认值 `False`
 
 #### 不生成章节信息
 

@@ -80,6 +80,7 @@
           "default": "infer",
           "enum": [
             "infer",
+            "m4a",
             "aac",
             "mp3",
             "flac",
@@ -353,6 +354,11 @@
           "default": true,
           "title": "Require Chapter Info",
           "type": "boolean"
+        },
+        "save_cover": {
+          "default": false,
+          "title": "Save Cover",
+          "type": "boolean"
         }
       },
       "title": "YuttoResourceSettings",
@@ -399,7 +405,8 @@
         "require_metadata": false,
         "require_danmaku": true,
         "require_cover": true,
-        "require_chapter_info": true
+        "require_chapter_info": true,
+        "save_cover": false
       }
     },
     "danmaku": {

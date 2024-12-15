@@ -14,7 +14,7 @@ from yutto.extractor.common import extract_ugc_video_data
 from yutto.processor.selector import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
@@ -52,11 +52,11 @@ class CollectionExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, collection_details = await asyncio.gather(
-            get_user_name(client, self.mid),
-            get_collection_details(client, self.series_id, self.mid),
+            get_user_name(ctx, client, self.mid),
+            get_collection_details(ctx, client, self.series_id, self.mid),
         )
         collection_title = collection_details["title"]
         Logger.custom(collection_title, Badge("视频合集", fore="black", back="cyan"))
@@ -70,11 +70,11 @@ class CollectionExtractor(BatchExtractor):
         for item in collection_details["pages"]:
             try:
                 avid = item["avid"]
-                ugc_video_list = await get_ugc_video_list(client, avid)
+                ugc_video_list = await get_ugc_video_list(ctx, client, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
-                await Fetcher.touch_url(client, avid.to_url())
+                await Fetcher.touch_url(ctx, client, avid.to_url())
                 if len(ugc_video_list["pages"]) != 1:
                     Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")
                 for ugc_video_item in ugc_video_list["pages"]:
@@ -92,6 +92,7 @@ class CollectionExtractor(BatchExtractor):
         return [
             CoroutineWrapper(
                 extract_ugc_video_data(
+                    ctx,
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,

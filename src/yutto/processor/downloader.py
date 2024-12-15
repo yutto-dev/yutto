@@ -13,7 +13,7 @@ from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.funcutils import filter_none_value, xmerge
@@ -106,6 +106,7 @@ def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[
 
 
 async def download_video_and_audio(
+    ctx: FetcherContext,
     client: httpx.AsyncClient,
     video: VideoUrlMeta | None,
     video_path: Path,
@@ -119,15 +120,16 @@ async def download_video_and_audio(
     sizes: list[int | None] = [None, None]
     coroutines_list: list[list[CoroutineWrapper[None]]] = []
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
-    Fetcher.set_semaphore(options["num_workers"])
+    ctx.set_download_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await first_successful_with_check(
-            [Fetcher.get_size(client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
+            [Fetcher.get_size(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
         )
         video_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
+                    ctx,
                     client,
                     video["url"],
                     mirrors_filter(video["mirrors"]),
@@ -144,11 +146,12 @@ async def download_video_and_audio(
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
         asize = await first_successful_with_check(
-            [Fetcher.get_size(client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+            [Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
         )
         audio_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
+                    ctx,
                     client,
                     audio["url"],
                     mirrors_filter(audio["mirrors"]),
@@ -248,10 +251,10 @@ def merge_video_and_audio(
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
-    if cover_data is not None:
-        cover_path.unlink()
     if chapter_info_data:
         chapter_info_path.unlink()
+    if cover_data is not None and not options["save_cover"]:
+        cover_path.unlink()
 
 
 class DownloadState(Enum):
@@ -260,6 +263,7 @@ class DownloadState(Enum):
 
 
 async def start_downloader(
+    ctx: FetcherContext,
     client: httpx.AsyncClient,
     episode_data: EpisodeData,
     options: DownloaderOptions,
@@ -285,7 +289,7 @@ async def start_downloader(
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
-    cover_path = tmp_dir.joinpath(filename + "_cover.jpg")
+    cover_path = tmp_dir.joinpath(filename + "-poster.jpg")
     chapter_info_path = tmp_dir.joinpath(filename + "_chapter_info.ini")
 
     video = select_video(
@@ -313,7 +317,7 @@ async def start_downloader(
         elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
             output_format = ".flac"
         else:
-            output_format = ".aac"
+            output_format = ".m4a"
     else:
         if options["output_format"] != "infer":
             output_format = "." + options["output_format"]
@@ -349,6 +353,12 @@ async def start_downloader(
         write_metadata(metadata, output_path, metadata_format)
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
+    # 保存封面
+    if cover_data is not None:
+        cover_path.write_bytes(cover_data)
+        if options["save_cover"] or (not will_download_video and not will_download_audio):
+            Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
+
     if output_path.exists():
         if not options["overwrite"]:
             Logger.info(f"文件 {filename} 已存在")
@@ -368,12 +378,8 @@ async def start_downloader(
     if chapter_info_data:
         write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
-    # 保存封面
-    if cover_data is not None:
-        cover_path.write_bytes(cover_data)
-
     # 下载视频 / 音频
-    await download_video_and_audio(client, video, video_path, audio, audio_path, options)
+    await download_video_and_audio(ctx, client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
     merge_video_and_audio(

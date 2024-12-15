@@ -7,14 +7,14 @@ from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
 from yutto.api.user_info import encode_wbi, get_wbi_img
 from yutto.exceptions import NotLoginError
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
 
 # 个人空间·全部
-async def get_user_space_all_videos_avids(client: AsyncClient, mid: MId) -> list[AvId]:
+async def get_user_space_all_videos_avids(ctx: FetcherContext, client: AsyncClient, mid: MId) -> list[AvId]:
     space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search"
     # ps 随机设置有时会出现错误，因此暂时固定在 30
     # ps: int = random.randint(3, 6) * 10
@@ -22,7 +22,7 @@ async def get_user_space_all_videos_avids(client: AsyncClient, mid: MId) -> list
     pn = 1
     total = 1
     all_avid: list[AvId] = []
-    wbi_img = await get_wbi_img(client)
+    wbi_img = await get_wbi_img(ctx, client)
     while pn <= total:
         params = {
             "mid": mid,
@@ -32,7 +32,7 @@ async def get_user_space_all_videos_avids(client: AsyncClient, mid: MId) -> list
             "order": "pubdate",
         }
         params = encode_wbi(params, wbi_img)
-        json_data = await Fetcher.fetch_json(client, space_videos_api, params=params)
+        json_data = await Fetcher.fetch_json(ctx, client, space_videos_api, params=params)
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["count"] / ps)
         pn += 1
@@ -41,13 +41,13 @@ async def get_user_space_all_videos_avids(client: AsyncClient, mid: MId) -> list
 
 
 # 个人空间·用户名
-async def get_user_name(client: AsyncClient, mid: MId) -> str:
-    wbi_img = await get_wbi_img(client)
+async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> str:
+    wbi_img = await get_wbi_img(ctx, client)
     params = {"mid": mid}
     params = encode_wbi(params, wbi_img)
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
-    await Fetcher.touch_url(client, "https://www.bilibili.com")
-    user_info = await Fetcher.fetch_json(client, space_info_api, params=params)
+    await Fetcher.touch_url(ctx, client, "https://www.bilibili.com")
+    user_info = await Fetcher.fetch_json(ctx, client, space_info_api, params=params)
     assert user_info is not None
     if user_info["code"] == -404:
         Logger.warning(f"用户 {mid} 不存在，疑似注销或被封禁")
@@ -58,26 +58,26 @@ async def get_user_name(client: AsyncClient, mid: MId) -> str:
 
 
 # 个人空间·收藏夹·信息
-async def get_favourite_info(client: AsyncClient, fid: FId) -> FavouriteMetaData:
+async def get_favourite_info(ctx: FetcherContext, client: AsyncClient, fid: FId) -> FavouriteMetaData:
     api = "https://api.bilibili.com/x/v3/fav/folder/info?media_id={fid}"
-    json_data = await Fetcher.fetch_json(client, api.format(fid=fid))
+    json_data = await Fetcher.fetch_json(ctx, client, api.format(fid=fid))
     assert json_data is not None
     data = json_data["data"]
     return FavouriteMetaData(title=data["title"], fid=FId(str(data["id"])))
 
 
 # 个人空间·收藏夹·avid
-async def get_favourite_avids(client: AsyncClient, fid: FId) -> list[AvId]:
+async def get_favourite_avids(ctx: FetcherContext, client: AsyncClient, fid: FId) -> list[AvId]:
     api = "https://api.bilibili.com/x/v3/fav/resource/ids?media_id={fid}"
-    json_data = await Fetcher.fetch_json(client, api.format(fid=fid))
+    json_data = await Fetcher.fetch_json(ctx, client, api.format(fid=fid))
     assert json_data is not None
     return [BvId(video_info["bvid"]) for video_info in json_data["data"]]
 
 
 # 个人空间·收藏夹·全部
-async def get_all_favourites(client: AsyncClient, mid: MId) -> list[FavouriteMetaData]:
+async def get_all_favourites(ctx: FetcherContext, client: AsyncClient, mid: MId) -> list[FavouriteMetaData]:
     api = "https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={mid}"
-    json_data = await Fetcher.fetch_json(client, api.format(mid=mid))
+    json_data = await Fetcher.fetch_json(ctx, client, api.format(mid=mid))
     assert json_data is not None
     if not json_data["data"]:
         return []
@@ -85,7 +85,7 @@ async def get_all_favourites(client: AsyncClient, mid: MId) -> list[FavouriteMet
 
 
 # 个人空间·视频列表·avid
-async def get_medialist_avids(client: AsyncClient, series_id: SeriesId, mid: MId) -> list[AvId]:
+async def get_medialist_avids(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId, mid: MId) -> list[AvId]:
     api = "https://api.bilibili.com/x/series/archives?mid={mid}&series_id={series_id}&only_normal=true&pn={pn}&ps={ps}"
     ps = 30
     pn = 1
@@ -94,7 +94,7 @@ async def get_medialist_avids(client: AsyncClient, series_id: SeriesId, mid: MId
 
     while pn <= total:
         url = api.format(series_id=series_id, mid=mid, ps=ps, pn=pn)
-        json_data = await Fetcher.fetch_json(client, url)
+        json_data = await Fetcher.fetch_json(ctx, client, url)
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["total"] / ps)
         pn += 1
@@ -103,17 +103,17 @@ async def get_medialist_avids(client: AsyncClient, series_id: SeriesId, mid: MId
 
 
 # 个人空间·视频列表·标题
-async def get_medialist_title(client: AsyncClient, series_id: SeriesId) -> str:
+async def get_medialist_title(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId) -> str:
     api = "https://api.bilibili.com/x/v1/medialist/info?type=5&biz_id={series_id}"
-    json_data = await Fetcher.fetch_json(client, api.format(series_id=series_id))
+    json_data = await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id))
     assert json_data is not None
     return json_data["data"]["title"]
 
 
 # 个人空间·稍后再看
-async def get_watch_later_avids(client: AsyncClient) -> list[AvId]:
+async def get_watch_later_avids(ctx: FetcherContext, client: AsyncClient) -> list[AvId]:
     api = "https://api.bilibili.com/x/v2/history/toview/web"
-    json_data = await Fetcher.fetch_json(client, api)
+    json_data = await Fetcher.fetch_json(ctx, client, api)
     assert json_data is not None
     if json_data["code"] in [-101, -400]:
         raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")

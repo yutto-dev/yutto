@@ -32,7 +32,7 @@ from yutto.processor.path_resolver import create_unique_path_resolver
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
-from yutto.utils.fetcher import Fetcher, create_client
+from yutto.utils.fetcher import Fetcher, FetcherContext, create_client
 from yutto.utils.funcutils import as_sync
 from yutto.utils.time import TIME_FULL_FMT
 from yutto.validator import (
@@ -51,22 +51,24 @@ if TYPE_CHECKING:
 def main():
     parser = cli()
     args = parser.parse_args()
-    initial_validation(args)
+    ctx = FetcherContext()
+    initial_validation(ctx, args)
     args_list = flatten_args(args, parser)
     try:
-        run(args_list)
+        run(ctx, args_list)
     except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
         Logger.info("已终止下载，再次运行即可继续下载～")
         sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
 
 
 @as_sync
-async def run(args_list: list[argparse.Namespace]):
+async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
+    ctx.set_fetch_semaphore(fetch_workers=8)
     unique_path = create_unique_path_resolver()
     async with create_client(
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        proxy=Fetcher.proxy,
+        cookies=ctx.cookies,
+        trust_env=ctx.trust_env,
+        proxy=ctx.proxy,
     ) as client:
         if len(args_list) > 1:
             Logger.info(f"列表里共检测到 {len(args_list)} 项")
@@ -107,12 +109,12 @@ async def run(args_list: list[argparse.Namespace]):
                     break
 
             # 在开始前校验，减少对第一个视频的请求
-            if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
+            if not await validate_user_info(ctx, {"is_login": args.login_strict, "vip_status": args.vip_strict}):
                 Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
                 sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
             # 重定向到可识别的 url
             try:
-                url = await Fetcher.get_redirected_url(client, url)
+                url = await Fetcher.get_redirected_url(ctx, client, url)
             except httpx.InvalidURL:
                 Logger.error(f"无效的 url({url})～请检查一下链接是否正确～")
                 sys.exit(ErrorCode.WRONG_URL_ERROR.value)
@@ -128,7 +130,7 @@ async def run(args_list: list[argparse.Namespace]):
             # 提取信息，构造解析任务～
             for extractor in extractors:
                 if extractor.match(url):
-                    download_list = await extractor(client, args)
+                    download_list = await extractor(ctx, client, args)
                     break
             else:
                 if args.batch:
@@ -146,7 +148,7 @@ async def run(args_list: list[argparse.Namespace]):
                     continue
 
                 # 中途校验，因为批量下载时可能会失效
-                if not await validate_user_info({"is_login": args.login_strict, "vip_status": args.vip_strict}):
+                if not await validate_user_info(ctx, {"is_login": args.login_strict, "vip_status": args.vip_strict}):
                     Logger.error("启用了严格校验大会员或登录模式，请检查 SESSDATA 或大会员状态！")
                     sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
 
@@ -167,6 +169,7 @@ async def run(args_list: list[argparse.Namespace]):
                     )
 
                 current_download_state = await start_downloader(
+                    ctx,
                     client,
                     episode_data,
                     {
@@ -185,6 +188,7 @@ async def run(args_list: list[argparse.Namespace]):
                         "overwrite": args.overwrite,
                         "block_size": int(args.block_size * 1024 * 1024),
                         "num_workers": args.num_workers,
+                        "save_cover": args.save_cover,
                         "metadata_format": {
                             "premiered": args.metadata_format_premiered,
                             "dateadded": TIME_FULL_FMT,

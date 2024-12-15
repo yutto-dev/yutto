@@ -18,7 +18,7 @@ from yutto._typing import (
 from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.funcutils import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
@@ -43,23 +43,23 @@ class BangumiList(TypedDict):
     pages: list[BangumiListItem]
 
 
-async def get_season_id_by_media_id(client: AsyncClient, media_id: MediaId) -> SeasonId:
+async def get_season_id_by_media_id(ctx: FetcherContext, client: AsyncClient, media_id: MediaId) -> SeasonId:
     media_api = f"https://api.bilibili.com/pgc/review/user?media_id={media_id}"
-    res_json = await Fetcher.fetch_json(client, media_api)
+    res_json = await Fetcher.fetch_json(ctx, client, media_api)
     assert res_json is not None
     return SeasonId(str(res_json["result"]["media"]["season_id"]))
 
 
-async def get_season_id_by_episode_id(client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
+async def get_season_id_by_episode_id(ctx: FetcherContext, client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
     episode_api = f"https://api.bilibili.com/pgc/view/web/season?ep_id={episode_id}"
-    res_json = await Fetcher.fetch_json(client, episode_api)
+    res_json = await Fetcher.fetch_json(ctx, client, episode_api)
     assert res_json is not None
     return SeasonId(str(res_json["result"]["season_id"]))
 
 
-async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiList:
+async def get_bangumi_list(ctx: FetcherContext, client: AsyncClient, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
-    resp_json = await Fetcher.fetch_json(client, list_api.format(season_id=season_id))
+    resp_json = await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id))
     if resp_json is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）")
     if resp_json.get("result") is None:
@@ -90,11 +90,11 @@ async def get_bangumi_list(client: AsyncClient, season_id: SeasonId) -> BangumiL
 
 
 async def get_bangumi_playurl(
-    client: AsyncClient, avid: AvId, cid: CId
+    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1&support_multi_audio=true&from_client=BROWSER"
 
-    resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid))
+    resp_json = await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:
         raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
     if resp_json.get("result") is None or resp_json["result"].get("video_info") is None:
@@ -133,10 +133,12 @@ async def get_bangumi_playurl(
     )
 
 
-async def get_bangumi_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
+async def get_bangumi_subtitles(
+    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
+) -> list[MultiLangSubtitle]:
     subtitile_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    subtitles_json_info = await Fetcher.fetch_json(client, subtitile_url)
+    subtitles_json_info = await Fetcher.fetch_json(ctx, client, subtitile_url)
     if subtitles_json_info is None:
         return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
@@ -145,7 +147,7 @@ async def get_bangumi_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> li
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
-        subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
+        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + sub_info["subtitle_url"])
         if subtitle_text is None:
             continue
         results.append(
