@@ -70,8 +70,8 @@ clean-builds:
 generate-schema:
   uv run scripts/generate-schema.py
 
-ci-install:
-  uv sync --all-extras --dev
+ci-install pyversion:
+  uv sync --all-extras --dev -p {{pyversion}}
 
 ci-fmt-check:
   uv run ruff format --check --diff .
