@@ -29,7 +29,7 @@ dependencies = [
   "dict2xml>=1.7.6",
   "httpx[http2,socks]>=0.28.1",
   "tomli>=2.0.2; python_version < '3.11'",
-  "pydantic>=2.10.3",
+  "pydantic>=2.10.5",
 ]
 
 [project.urls]
@@ -43,13 +43,13 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.390",
-  "ruff>=0.8.3",
-  "typos>=1.28.3",
+  "pyright>=1.1.391",
+  "ruff>=0.9.1",
+  "typos>=1.29.4",
   "pytest>=8.3.4",
   "pytest-rerunfailures>=15.0",
-  "syrupy>=4.8.0",
-  "pytest-codspeed>=3.1.0",
+  "syrupy>=4.8.1",
+  "pytest-codspeed>=3.1.2",
 ]
 
 [tool.uv.sources]
