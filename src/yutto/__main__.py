@@ -75,7 +75,7 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
 
         for i, args in enumerate(args_list):
             if len(args_list) > 1:
-                Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
+                Logger.custom(f"列表项 {args.url}", Badge(f"[{i + 1}/{len(args_list)}]", fore="black", back="cyan"))
 
             # 验证批量参数
             if args.batch:
@@ -165,7 +165,7 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
                 if args.batch:
                     Logger.custom(
                         f"{episode_data['filename']}",
-                        Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
+                        Badge(f"[{i + 1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
 
                 current_download_state = await start_downloader(
