@@ -87,6 +87,10 @@ async def get_ugc_video_info(ctx: FetcherContext, client: AsyncClient, avid: AvI
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
+    if res_json["code"] == 62012:
+        raise NoAccessPermissionError(
+            f"无法获取该视频 {avid} 信息，原因：{res_json['message']}（当前稿件up主设置为仅自见）"
+        )
     if res_json["code"] == -404:
         raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
     assert res_json_data is not None, "响应数据无 data 域"
