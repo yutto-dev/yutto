@@ -99,7 +99,7 @@ select = [
   # Pygrep-hooks
   "PGH004",
   # Flake8-type-checking
-  "TCH",
+  "TC",
   # Flake8-raise
   "RSE",
   # Refurb
