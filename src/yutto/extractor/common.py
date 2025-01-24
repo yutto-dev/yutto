@@ -67,7 +67,8 @@ async def extract_bangumi_data(
         )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
-            "avid": str(avid),
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": UNKNOWN,
@@ -126,7 +127,8 @@ async def extract_cheese_data(
         )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
-            "avid": str(avid),
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": UNKNOWN,
@@ -195,7 +197,8 @@ async def extract_ugc_video_data(
         )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
-            "avid": str(avid),
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": username,
