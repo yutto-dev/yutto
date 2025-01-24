@@ -2,12 +2,21 @@ name: Build and Release (biliass)
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "biliass*" # Push events to matching biliass*, i.e. biliass@1.0.0
+    branches:
+      - main
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   pull_request:
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   merge_group:
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   workflow_dispatch:
 
 permissions:
