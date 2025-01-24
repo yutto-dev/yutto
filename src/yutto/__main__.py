@@ -7,6 +7,7 @@ import re
 import shlex
 import sys
 from typing import TYPE_CHECKING, Callable
+
 import httpx
 from biliass import BlockOptions
 
