@@ -218,7 +218,7 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
         for line in file_scheme_parser(args.url):
             local_args = parser.parse_args(shlex.split(line), args)
             if local_args.no_inherit:
-                local_args = parser.parse_args(line.split())
+                local_args = parser.parse_args(shlex.split(line))
             Logger.debug(f"列表参数: {local_args}")
             args_list += flatten_args(local_args, parser)
         return args_list
