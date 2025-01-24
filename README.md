@@ -356,8 +356,8 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 | - | - | - |
 | title | 系列视频总标题（番剧名/投稿视频标题） | 全部 |
 | id | 系列视频单 p 顺序标号 | 全部 |
-| aid | 视频 AV 号，早期使用的视频 ID，不建议使用，详见 [AV 号全面升级公告](https://www.bilibili.com/blackboard/activity-BV-PC.html) | 仅投稿视频 |
-| bvid | 视频 BV 号，即视频 ID | 仅投稿视频 |
+| aid | 视频 AV 号，早期使用的视频 ID，不建议使用，详见 [AV 号全面升级公告](https://www.bilibili.com/blackboard/activity-BV-PC.html) | 全部 |
+| bvid | 视频 BV 号，即视频 ID | 全部 |
 | name | 系列视频单 p 标题 | 仅投稿视频 |
 | username | UP 主用户名 | 个人空间、收藏夹、稍后再看、合集、视频列表下载 |
 | series_title | 合集标题 | 收藏夹、视频合集、视频列表下载 |
