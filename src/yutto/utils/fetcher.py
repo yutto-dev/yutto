@@ -6,6 +6,10 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from urllib.parse import quote, unquote
 
+# Temporary fix for h2 stubs not found error by using `type: ignore`,
+# it may be fixed in the next release. The key PR https://github.com/python-hyper/h2/pull/1289
+# has been merged in the master branch
+import h2.exceptions  # type: ignore
 import httpx
 from httpx import AsyncClient
 from typing_extensions import ParamSpec
@@ -265,7 +269,7 @@ class Fetcher:
                 except httpx.TimeoutException:
                     Logger.warning(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...")
                     Logger.debug(f"超时链接：{url}")
-                except httpx.HTTPError as e:
+                except (httpx.HTTPError, h2.exceptions.H2Error) as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
                     Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...")
