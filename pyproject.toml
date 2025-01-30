@@ -43,8 +43,8 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.391",
-  "ruff>=0.9.3",
+  "pyright>=1.1.393",
+  "ruff>=0.9.4",
   "typos>=1.29.4",
   "pytest>=8.3.4",
   "pytest-rerunfailures>=15.0",
@@ -69,7 +69,6 @@ typeCheckingMode = "strict"
 [tool.ruff]
 line-length = 120
 target-version = "py39"
-exclude = ["*_pb2.py", "*_pb2.pyi"]
 
 [tool.ruff.lint]
 select = [
@@ -121,10 +120,7 @@ known-first-party = ["yutto"]
 combine-as-imports = true
 
 [tool.ruff.lint.flake8-type-checking]
-runtime-evaluated-base-classes = [
-  "pydantic.BaseModel",
-  "pydantic_settings.BaseSettings",
-]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]
