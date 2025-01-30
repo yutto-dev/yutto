@@ -4,8 +4,6 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yutto.utils.fetcher import DEFAULT_HEADERS as DEFAULT_HEADERS
-
 if TYPE_CHECKING:
     import pytest
 
