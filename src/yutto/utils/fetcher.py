@@ -6,8 +6,10 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from urllib.parse import quote, unquote
 
-import h2
-import h2.exceptions
+# Temporary fix for h2 stubs not found error by using `type: ignore`,
+# it maybe fixed in the next release. The key PR https://github.com/python-hyper/h2/pull/1289
+# has been merged in the master branch
+import h2.exceptions  # type: ignore
 import httpx
 from httpx import AsyncClient
 from typing_extensions import ParamSpec
