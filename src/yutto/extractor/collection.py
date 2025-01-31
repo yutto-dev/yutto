@@ -26,27 +26,25 @@ if TYPE_CHECKING:
 class CollectionExtractor(BatchExtractor):
     """视频合集"""
 
-    REGEX_COLLECTIOM = re.compile(
-        r"https?://space\.bilibili\.com/(?P<mid>\d+)/channel/collectiondetail\?sid=(?P<series_id>\d+)"
+    REGEX_COLLECTION_LISTS = re.compile(
+        r"https?://space\.bilibili\.com/(?P<mid>\d+)/lists/(?P<series_id>\d+)\?type=season"
     )
-    REGEX_COLLECTION_MEDIA_LIST = re.compile(
-        r"https?://www\.bilibili\.com/medialist/play/(?P<mid>\d+)\?business=space_collection&business_id=(?P<series_id>\d+)"
-    )
-    REGEX_COLLECTION_FAV_PAGE = re.compile(
+    # 订阅合集后，在个人空间的收藏夹页面
+    REGEX_COLLECTION_FAV_PAGE: re.Pattern[str] = re.compile(
         r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<series_id>\d+)&ftype=collect"
     )
-
-    REGEX_COLLECTION_LIST = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/lists/(?P<series_id>\d+)")
+    REGEX_COLLECTIOM_LEGACY = re.compile(
+        r"https?://space\.bilibili\.com/(?P<mid>\d+)/channel/collectiondetail\?sid=(?P<series_id>\d+)"
+    )
 
     mid: MId
     series_id: SeriesId
 
     def match(self, url: str) -> bool:
         if (
-            (match_obj := self.REGEX_COLLECTION_MEDIA_LIST.match(url))
-            or (match_obj := self.REGEX_COLLECTIOM.match(url))
+            (match_obj := self.REGEX_COLLECTION_LISTS.match(url))
             or (match_obj := self.REGEX_COLLECTION_FAV_PAGE.match(url))
-            or (match_obj := self.REGEX_COLLECTION_LIST.match(url))
+            or (match_obj := self.REGEX_COLLECTIOM_LEGACY.match(url))
         ):
             self.mid = MId(match_obj.group("mid"))
             self.series_id = SeriesId(match_obj.group("series_id"))
