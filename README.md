@@ -599,7 +599,7 @@ yutto 通过与 biliass 的集成，提供了一些 ASS 弹幕选项，包括字
 
 #### 屏蔽关键词
 
--  参数 `"--danmaku-block-keyword-patterns`
+-  参数 `--danmaku-block-keyword-patterns`
 -  默认值 `None`
 
 按关键词屏蔽，支持正则，使用 `,` 分隔
