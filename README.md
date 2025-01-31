@@ -58,14 +58,14 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 > 在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
 
 ```bash
-pip install --pre yutto
+pip install yutto
 ```
 
 当然，你也可以通过 [pipx](https://github.com/pypa/pipx)/[uv](https://github.com/astral-sh/uv) 来安装 yutto（当然，前提是你要自己先安装它）
 
 ```bash
-pipx install --pre yutto      # 使用 pipx
-uv tool install --pre yutto   # 或者使用 uv
+pipx install yutto      # 使用 pipx
+uv tool install yutto   # 或者使用 uv
 ```
 
 pipx/uv 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx/uv 是更推荐的安装方式（uv 会比 pipx 更快些～）。
