@@ -1,4 +1,4 @@
-# yutto<sup>2.0.0-rc</sup>
+# yutto<sup>2.0.0</sup>
 
 <p align="center">
    <a href="https://python.org/" target="_blank"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/yutto?logo=python&style=flat-square"></a>
@@ -14,7 +14,9 @@
 
 yutto，一个可爱且任性的 B 站下载器（CLI）
 
-当前 yutto 目前处于 RC 阶段，请通过 [Issues](https://github.com/yutto-dev/yutto/issues) 反馈功能正确性问题和功能请求，其他问题请通过 [Discussions](https://github.com/yutto-dev/yutto/discussions) 反馈～
+> [!TIP]
+>
+> 如果在使用过程中遇到问题，请通过 [Issues](https://github.com/yutto-dev/yutto/issues) 反馈功能正确性问题和功能请求，其他问题请通过 [Discussions](https://github.com/yutto-dev/yutto/discussions) 反馈～
 
 ## 版本号为什么是 2.0
 
@@ -897,10 +899,6 @@ yutto 添加任何特性都需要以保证可维护性为前提，因此 yutto �
 
 yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bilili 了，由于 B 站接口的不断变化，bilili 也不再适用于现在的环境，因此请 bilili 用户尽快迁移到 yutto ～
 
-### 正式版什么时候发布
-
-快了……吧？
-
 ## 其他应用
 
 你也可以通过这些应用来使用 yutto
@@ -909,26 +907,19 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 ## Roadmap
 
-### 2.0.0-rc
-
--  [x] feat: 投稿视频描述文件支持
--  [x] refactor: 整理路径变量名
--  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
--  [x] refactor: 重写 biliass
-
 ### 2.0.0
 
 -  [x] feat: 支持弹幕字体、字号、速度等设置
 -  [x] feat: 配置文件支持
 -  [x] feat: 配置文件功能优化，支持自定义配置路径
--  [ ] docs: issue template 添加配置引导
+-  [x] docs: issue template 添加配置引导
 -  [x] docs: 优化 biliass rust 重构后的贡献指南
--  [ ] feat: 新的基于 toml 的任务列表
--  [ ] refactor: 配置参数复用 pydantic 验证
--  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 
 ### future
 
+-  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
+-  [ ] feat: 新的基于 toml 的任务列表
+-  [ ] refactor: 配置参数复用 pydantic 验证
 -  [ ] refactor: 针对视频合集优化路径变量
 -  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
