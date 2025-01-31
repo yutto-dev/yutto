@@ -36,6 +36,10 @@ class CollectionExtractor(BatchExtractor):
         r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<series_id>\d+)&ftype=collect"
     )
 
+    REGEX_COLLECTION_LIST = re.compile(
+        r"https?://space\.bilibili\.com/(?P<mid>\d+)/lists/(?P<series_id>\d+)"
+    )
+
     mid: MId
     series_id: SeriesId
 
@@ -44,6 +48,7 @@ class CollectionExtractor(BatchExtractor):
             (match_obj := self.REGEX_COLLECTION_MEDIA_LIST.match(url))
             or (match_obj := self.REGEX_COLLECTIOM.match(url))
             or (match_obj := self.REGEX_COLLECTION_FAV_PAGE.match(url))
+            or (match_obj := self.REGEX_COLLECTION_LIST.match(url))
         ):
             self.mid = MId(match_obj.group("mid"))
             self.series_id = SeriesId(match_obj.group("series_id"))
