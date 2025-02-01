@@ -12,8 +12,8 @@ hero:
         text: 从 bilili 迁移
         link: /migration/
    image:
-      src: /u1f9ca_u1f43e.png
-      alt: 🧊+🐾
+      src: /logo.png
+      alt: yutto-logo
 features:
    - icon: ⚡️
      title: 快速下载

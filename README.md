@@ -1,7 +1,7 @@
 # yutto<sup>2.0.0</sup>
 
 <p align="center">
-   <img src="./logo/logo.png" width="400px">
+   <img src="./docs/public/logo.png" width="400px">
 </p>
 
 <p align="center">
