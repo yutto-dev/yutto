@@ -1,6 +1,10 @@
 # yutto<sup>2.0.0</sup>
 
 <p align="center">
+   <img src="./logo/logo.png" width="400px">
+</p>
+
+<p align="center">
    <a href="https://python.org/" target="_blank"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/yutto?logo=python&style=flat-square"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img src="https://img.shields.io/pypi/v/yutto?style=flat-square" alt="pypi"></a>
    <a href="https://pypi.org/project/yutto/" target="_blank"><img alt="PyPI - Downloads" src="https://img.shields.io/pypi/dm/yutto?style=flat-square"></a>
@@ -12,7 +16,7 @@
    <a href="https://discord.gg/5cQGyFwsqC"><img src="https://img.shields.io/badge/chat-discord-5d24a3?logo=discord&style=flat-square" alt="discord chat"></a>
 </p>
 
-yutto，一个可爱且任性的 B 站下载器（CLI）
+<p align="center"><strong>🧊 yutto，一个可爱且任性的 B 站下载器（CLI）</strong></p>
 
 > [!TIP]
 >
