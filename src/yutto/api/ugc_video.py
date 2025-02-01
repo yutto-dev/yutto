@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
@@ -22,7 +21,7 @@ from yutto.exceptions import (
     UnSupportedTypeError,
 )
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.funcutils.data_access import data_has_chained_keys
 from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
@@ -68,10 +67,10 @@ class UgcVideoList(TypedDict):
     pages: list[UgcVideoListItem]
 
 
-async def get_ugc_video_tag(client: AsyncClient, avid: AvId) -> list[str]:
+async def get_ugc_video_tag(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> list[str]:
     tags: list[str] = []
     tag_api = "http://api.bilibili.com/x/tag/archive/tags?aid={aid}&bvid={bvid}"
-    res_json = await Fetcher.fetch_json(client, tag_api.format(**avid.to_dict()))
+    res_json = await Fetcher.fetch_json(ctx, client, tag_api.format(**avid.to_dict()))
     if res_json is None or res_json["code"] != 0:
         raise NotFoundError(f"无法获取视频 {avid} 标签")
     for tag in res_json["data"]:
@@ -79,29 +78,33 @@ async def get_ugc_video_tag(client: AsyncClient, avid: AvId) -> list[str]:
     return tags
 
 
-async def get_ugc_video_info(client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
+async def get_ugc_video_info(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
-    res_json = await Fetcher.fetch_json(client, info_api.format(**avid.to_dict()))
+    res_json = await Fetcher.fetch_json(ctx, client, info_api.format(**avid.to_dict()))
     if res_json is None:
         raise NotFoundError(f"无法获取该视频 {avid} 信息")
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
+    if res_json["code"] == 62012:
+        raise NoAccessPermissionError(
+            f"无法获取该视频 {avid} 信息，原因：{res_json['message']}（当前稿件up主设置为仅自见）"
+        )
     if res_json["code"] == -404:
         raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
     assert res_json_data is not None, "响应数据无 data 域"
     if res_json_data.get("forward"):
         forward_avid = AId(str(res_json_data["forward"]))
         Logger.info(f"视频 {avid} 撞车了哦！正在跳转到原视频 {forward_avid}～")
-        return await get_ugc_video_info(client, forward_avid)
+        return await get_ugc_video_info(ctx, client, forward_avid)
     episode_id = EpisodeId("")
     if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
         episode_id = EpisodeId(ep_match.group("episode_id"))
 
     actors = _parse_actor_info(res_json_data)
     genres = _parse_genre_info(res_json_data)
-    tags: list[str] = await get_ugc_video_tag(client, avid)
+    tags: list[str] = await get_ugc_video_tag(ctx, client, avid)
     return {
         "avid": BvId(res_json_data["bvid"]),
         "aid": AId(str(res_json_data["aid"])),
@@ -126,8 +129,8 @@ async def get_ugc_video_info(client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     }
 
 
-async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
-    video_info = await get_ugc_video_info(client, avid)
+async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> UgcVideoList:
+    video_info = await get_ugc_video_info(ctx, client, avid)
     if avid not in [video_info["aid"], video_info["bvid"]]:
         avid = video_info["avid"]
     video_title = video_info["title"]
@@ -138,7 +141,7 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
         "pages": [],
     }
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
-    res_json = await Fetcher.fetch_json(client, list_api.format(**avid.to_dict()))
+    res_json = await Fetcher.fetch_json(ctx, client, list_api.format(**avid.to_dict()))
     if res_json is None or res_json.get("data") is None:
         Logger.warning(f"啊叻？视频 {avid} 不见了诶")
         return result
@@ -147,9 +150,9 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
     for i, (item, page_info) in enumerate(zip(cast(list[Any], res_json["data"]), video_info["pages"])):
         # TODO: 这里 part 出现了两次，需要都修改，后续去除其中一个冗余数据
         if _is_meaningless_name(item["part"]):
-            item["part"] = f"{video_title}_P{i+1:02}"
+            item["part"] = f"{video_title}_P{i + 1:02}"
         if _is_meaningless_name(page_info["part"]):
-            page_info["part"] = f"{video_title}_P{i+1:02}"
+            page_info["part"] = f"{video_title}_P{i + 1:02}"
 
     result["pages"] = [
         {
@@ -165,12 +168,12 @@ async def get_ugc_video_list(client: AsyncClient, avid: AvId) -> UgcVideoList:
 
 
 async def get_ugc_video_playurl(
-    client: AsyncClient, avid: AvId, cid: CId
+    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     # 4048 = 16(useDash) | 64(useHDR) | 128(use4K) | 256(useDolby) | 512(useXXX) | 1024(use8K) | 2048(useAV1)
     play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&type=&otype=json&fnver=0&fnval=4048&fourk=1"
 
-    resp_json = await Fetcher.fetch_json(client, play_api.format(**avid.to_dict(), cid=cid))
+    resp_json = await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:
         raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
     if resp_json.get("data") is None:
@@ -238,33 +241,35 @@ async def get_ugc_video_playurl(
     return (videos, audios)
 
 
-async def get_ugc_video_subtitles(client: AsyncClient, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
-    subtitile_api = "https://api.bilibili.com/x/player.so?aid={aid}&bvid={bvid}&id=cid:{cid}"
+async def get_ugc_video_subtitles(
+    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
+) -> list[MultiLangSubtitle]:
+    subtitile_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
     subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    res_text = await Fetcher.fetch_text(client, subtitile_url)
-    if res_text is None:
+    res_json = await Fetcher.fetch_json(ctx, client, subtitile_url)
+    assert res_json is not None, "无法获取该视频的字幕信息"
+    if not data_has_chained_keys(res_json, ["data", "subtitle", "subtitles"]):
         return []
-    if subtitle_json_text_match := re.search(r"<subtitle>(.+)</subtitle>", res_text):
-        subtitle_json = json.loads(subtitle_json_text_match.group(1))
-        results: list[MultiLangSubtitle] = []
-        for sub_info in subtitle_json["subtitles"]:
-            subtitle_text = await Fetcher.fetch_json(client, "https:" + sub_info["subtitle_url"])
-            if subtitle_text is None:
-                continue
-            results.append(
-                {
-                    "lang": sub_info["lan_doc"],
-                    "lines": subtitle_text["body"],
-                }
-            )
-        return results
-    return []
+    results: list[MultiLangSubtitle] = []
+    for sub_info in res_json["data"]["subtitle"]["subtitles"]:
+        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + sub_info["subtitle_url"])
+        if subtitle_text is None:
+            continue
+        results.append(
+            {
+                "lang": sub_info["lan_doc"],
+                "lines": subtitle_text["body"],
+            }
+        )
+    return results
 
 
-async def get_ugc_video_chapters(client: AsyncClient, avid: AvId, cid: CId) -> list[ChapterInfoData]:
+async def get_ugc_video_chapters(
+    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
+) -> list[ChapterInfoData]:
     chapter_api = "https://api.bilibili.com/x/player/v2?avid={aid}&bvid={bvid}&cid={cid}"
     chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
-    chapter_json_info = await Fetcher.fetch_json(client, chapter_url)
+    chapter_json_info = await Fetcher.fetch_json(ctx, client, chapter_url)
     if chapter_json_info is None:
         return []
     if not data_has_chained_keys(chapter_json_info, ["data", "view_points"]):

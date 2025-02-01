@@ -15,7 +15,7 @@ from yutto.processor.selector import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
-from yutto.utils.fetcher import Fetcher, create_client
+from yutto.utils.fetcher import FetcherContext, create_client
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.filter import Filter
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from yutto._typing import UserInfo
 
 
-def initial_validation(args: argparse.Namespace):
+def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
     """初始化检查，仅执行一次"""
 
     if not args.no_progress:
@@ -48,14 +48,14 @@ def initial_validation(args: argparse.Namespace):
     if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
         Logger.error(f"proxy 参数值（{args.proxy}）错误啦！")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-    Fetcher.set_proxy(args.proxy)
+    ctx.set_proxy(args.proxy)
 
     # 大会员身份校验
     if not args.sessdata:
-        Logger.info("未提供 SESSDATA，无法下载会员专享剧集哟～")
+        Logger.info("未提供 SESSDATA，无法下载高清视频、字幕等资源哦～")
     else:
-        Fetcher.set_sessdata(args.sessdata)
-        if asyncio.run(validate_user_info({"vip_status": True, "is_login": True})):
+        ctx.set_sessdata(args.sessdata)
+        if asyncio.run(validate_user_info(ctx, {"vip_status": True, "is_login": True})):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
@@ -73,8 +73,8 @@ def validate_basic_arguments(args: argparse.Namespace):
     ffmpeg = FFmpeg()
 
     download_vcodec_priority: list[VideoCodec] = video_codec_priority_default
-    if args.download_vcodec_priority != "auto":
-        user_download_vcodec_priority = args.download_vcodec_priority.split(",")
+    if args.download_vcodec_priority is not None:
+        user_download_vcodec_priority = args.download_vcodec_priority
         if not user_download_vcodec_priority:
             Logger.error("download_vcodec_priority 参数值为空哦")
             sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
@@ -90,7 +90,7 @@ def validate_basic_arguments(args: argparse.Namespace):
         if len(download_vcodec_priority) < len(video_codec_priority_default):
             Logger.warning(
                 "download_vcodec_priority（{}）不包含所有下载视频编码（{}），不包含部分将永远不会选择哦".format(
-                    args.download_vcodec_priority, ", ".join(video_codec_priority_default)
+                    ", ".join(args.download_vcodec_priority), ", ".join(video_codec_priority_default)
                 )
             )
 
@@ -107,7 +107,7 @@ def validate_basic_arguments(args: argparse.Namespace):
             )
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-    if args.download_vcodec_priority != "auto" and download_vcodec_priority[0] != video_download_codec:
+    if args.download_vcodec_priority is not None and download_vcodec_priority[0] != video_download_codec:
         Logger.warning(
             f"download_vcodec 参数值（{video_download_codec}）不是优先级最高的编码（{download_vcodec_priority[0]}），可能会导致下载失败哦"
         )
@@ -140,6 +140,11 @@ def validate_basic_arguments(args: argparse.Namespace):
         )
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
+    # cover 检查
+    if not args.require_cover and args.save_cover:
+        Logger.warning("没有下载封面的情况下是无法保留封面的哦～")
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
 
 def validate_batch_arguments(args: argparse.Namespace):
     """检查批量下载相关选项"""
@@ -150,17 +155,17 @@ def validate_batch_arguments(args: argparse.Namespace):
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
-async def validate_user_info(check_option: UserInfo) -> bool:
+async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> bool:
     """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
     async with create_client(
-        cookies=Fetcher.cookies,
-        trust_env=Fetcher.trust_env,
-        proxy=Fetcher.proxy,
+        cookies=ctx.cookies,
+        trust_env=ctx.trust_env,
+        proxy=ctx.proxy,
     ) as client:
         if check_option["is_login"] or check_option["vip_status"]:
             # 需要校验
             # 这么写 if 是为了少一个 get_user_info 请求
-            user_info = await get_user_info(client)
+            user_info = await get_user_info(ctx, client)
             if check_option["is_login"] and not user_info["is_login"]:
                 return False
             if check_option["vip_status"] and not user_info["vip_status"]:

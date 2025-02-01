@@ -3,9 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
     from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
-    from yutto.utils.danmaku import DanmakuData
+    from yutto.utils.danmaku import DanmakuData, DanmakuOptions
     from yutto.utils.metadata import ChapterInfoData, MetaData
     from yutto.utils.subtitle import SubtitleData
 
@@ -219,14 +221,15 @@ class EpisodeData(TypedDict):
     danmaku: DanmakuData
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
-    output_dir: str
-    tmp_dir: str
+    output_dir: Path
+    tmp_dir: Path
     filename: str
 
 
 class DownloaderOptions(TypedDict):
     require_video: bool
     require_chapter_info: bool
+    save_cover: bool
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str
@@ -242,6 +245,7 @@ class DownloaderOptions(TypedDict):
     num_workers: int
     metadata_format: dict[str, str]
     banned_mirrors_pattern: str | None
+    danmaku_options: DanmakuOptions
 
 
 class FavouriteMetaData(TypedDict):

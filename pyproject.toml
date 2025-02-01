@@ -1,6 +1,6 @@
 [project]
 name = "yutto"
-version = "2.0.0-rc.1"
+version = "2.0.0"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -23,11 +23,13 @@ classifiers = [
 ]
 dependencies = [
   "aiofiles>=24.1.0",
-  "biliass==2.0.0",
+  "biliass==2.2.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
   "typing-extensions>=4.12.2",
   "dict2xml>=1.7.6",
-  "httpx[http2,socks]>=0.27.0",
+  "httpx[http2,socks]>=0.28.1",
+  "tomli>=2.0.2; python_version < '3.11'",
+  "pydantic>=2.10.6",
 ]
 
 [project.urls]
@@ -39,14 +41,15 @@ Issues = "https://github.com/yutto-dev/yutto/issues"
 [project.scripts]
 yutto = "yutto.__main__:main"
 
-[tool.uv]
-dev-dependencies = [
-  "pytest>=8.3.2",
-  "pyright>=1.1.381",
-  "pytest-rerunfailures>=14.0",
-  "ruff>=0.6.7",
-  "typos>=1.24.6",
-  "syrupy>=4.7.1",
+[dependency-groups]
+dev = [
+  "pyright>=1.1.393",
+  "ruff>=0.9.4",
+  "typos>=1.29.5",
+  "pytest>=8.3.4",
+  "pytest-rerunfailures>=15.0",
+  "syrupy>=4.8.1",
+  "pytest-codspeed>=3.1.2",
 ]
 
 [tool.uv.sources]
@@ -59,14 +62,13 @@ members = ["packages/*"]
 markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
 
 [tool.pyright]
-include = ["yutto", "tests"]
+include = ["src/yutto", "packages/biliass/src/biliass", "tests"]
 pythonVersion = "3.9"
 typeCheckingMode = "strict"
 
 [tool.ruff]
 line-length = 120
 target-version = "py39"
-exclude = ["*_pb2.py", "*_pb2.pyi"]
 
 [tool.ruff.lint]
 select = [
@@ -96,7 +98,7 @@ select = [
   # Pygrep-hooks
   "PGH004",
   # Flake8-type-checking
-  "TCH",
+  "TC",
   # Flake8-raise
   "RSE",
   # Refurb
@@ -116,6 +118,9 @@ ignore = [
 required-imports = ["from __future__ import annotations"]
 known-first-party = ["yutto"]
 combine-as-imports = true
+
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]

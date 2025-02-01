@@ -9,10 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13-dev"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} latest release test
     steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Install python
         uses: actions/setup-python@v5
         with:
@@ -24,12 +27,36 @@ jobs:
           sudo apt update
           sudo apt install ffmpeg
 
-      - name: Install yutto latest
+      - name: Test yutto from source
         run: |
-          pip install yutto
+          uv cache clean
+          uvx --no-binary yutto@latest -v
+          uvx --no-binary yutto@latest -h
+          uvx --no-binary yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
 
-      - name: Test yutto
+      - name: Test yutto from wheel
         run: |
-          yutto -v
-          yutto -h
-          yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w
+          uv cache clean
+          uvx yutto@latest -v
+          uvx yutto@latest -h
+          uvx yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+
+      - name: Prepare data for biliass
+        run: |
+          git clone https://github.com/yutto-dev/biliass-corpus.git --depth 1
+
+      - name: Test biliass from source
+        run: |
+          uv cache clean
+          uvx --no-binary biliass@latest -v
+          uvx --no-binary biliass@latest -h
+          uvx --no-binary biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
+          uvx --no-binary biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
+
+      - name: Test biliass from wheel
+        run: |
+          uv cache clean
+          uvx biliass@latest -v
+          uvx biliass@latest -h
+          uvx biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
+          uvx biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass

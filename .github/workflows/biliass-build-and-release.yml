@@ -2,12 +2,21 @@ name: Build and Release (biliass)
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "biliass*" # Push events to matching biliass*, i.e. biliass@1.0.0
+    branches:
+      - main
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   pull_request:
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   merge_group:
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   workflow_dispatch:
 
 permissions:
@@ -40,7 +49,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: --release --out dist --interpreter '3.13 3.13t'
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
@@ -72,7 +81,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: --release --out dist --interpreter '3.13 3.13t'
           sccache: "true"
           manylinux: musllinux_1_2
           working-directory: packages/biliass
@@ -95,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: "3.13"
           architecture: ${{ matrix.platform.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -110,12 +119,44 @@ jobs:
           name: wheels-windows-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
+  # Python 3.13 standard and free-threaded versions cannot be
+  # available at the same time on Windows machines, so we
+  # split it into two jobs.
+  # https://github.com/Quansight-Labs/setup-python/issues/5
+  windows-free-threaded:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x64
+          - runner: windows-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Quansight-Labs/setup-python@v5
+        with:
+          python-version: 3.13t
+          architecture: ${{ matrix.platform.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist
+          sccache: "true"
+          working-directory: packages/biliass
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-free-threaded-${{ matrix.platform.target }}
+          path: packages/biliass/dist
+
   macos:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
         platform:
-          - runner: macos-12
+          - runner: macos-13
             target: x86_64
           - runner: macos-14
             target: aarch64
@@ -128,7 +169,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: --release --out dist --interpreter '3.13 3.13t'
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
@@ -161,6 +202,7 @@ jobs:
       - linux
       - musllinux
       - windows
+      - windows-free-threaded
       - macos
       - sdist
     permissions:
@@ -174,8 +216,11 @@ jobs:
           merge-multiple: true
           path: dist/
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        run: uv publish -v
 
   publish-release:
     runs-on: ubuntu-latest
@@ -185,6 +230,7 @@ jobs:
       - linux
       - musllinux
       - windows
+      - windows-free-threaded
       - macos
       - sdist
     permissions:

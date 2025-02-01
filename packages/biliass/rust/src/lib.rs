@@ -1,6 +1,7 @@
 mod comment;
 mod convert;
 mod error;
+mod filter;
 mod logging;
 mod proto;
 mod python;
@@ -18,12 +19,14 @@ impl std::convert::From<BiliassError> for PyErr {
 }
 
 /// Bindings for biliass core.
-#[pymodule]
+#[pymodule(gil_used = false)]
 #[pyo3(name = "_core")]
 fn biliass_pyo3(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python::py_get_danmaku_meta_size, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_xml_to_ass, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_protobuf_to_ass, m)?)?;
     m.add_function(wrap_pyfunction!(python::py_enable_tracing, m)?)?;
+    m.add_class::<python::PyBlockOptions>()?;
+    m.add_class::<python::PyConversionOptions>()?;
     Ok(())
 }

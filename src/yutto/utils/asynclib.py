@@ -12,7 +12,7 @@ from typing_extensions import ParamSpec
 from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Generator
+    from collections.abc import Callable, Coroutine, Generator, Iterable
 
 RetT = TypeVar("RetT")
 P = ParamSpec("P")
@@ -66,3 +66,24 @@ def async_cache(
         return wrapper
 
     return decorator
+
+
+async def first_successful(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[RetT]:
+    tasks = [asyncio.create_task(coro) for coro in coros]
+
+    results: list[RetT] = []
+    while not results:
+        done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        results = [task.result() for task in done if task.exception() is None]
+    for task in tasks:
+        task.cancel()
+    return results
+
+
+async def first_successful_with_check(coros: Iterable[Coroutine[Any, Any, RetT]]) -> RetT:
+    results = await first_successful(coros)
+    if not results:
+        raise Exception("All coroutines failed")
+    if len(set(results)) != 1:
+        raise Exception("Multiple coroutines returned different results")
+    return results[0]

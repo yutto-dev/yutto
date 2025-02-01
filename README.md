@@ -1,4 +1,8 @@
-# yutto<sup>2.0.0-beta</sup>
+# yutto<sup>2.0.0</sup>
+
+<p align="center">
+   <img src="./logo/logo.png" width="400px">
+</p>
 
 <p align="center">
    <a href="https://python.org/" target="_blank"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/yutto?logo=python&style=flat-square"></a>
@@ -12,9 +16,11 @@
    <a href="https://discord.gg/5cQGyFwsqC"><img src="https://img.shields.io/badge/chat-discord-5d24a3?logo=discord&style=flat-square" alt="discord chat"></a>
 </p>
 
-yutto，一个可爱且任性的 B 站下载器（CLI）
+<p align="center"><strong>🧊 yutto，一个可爱且任性的 B 站下载器（CLI）</strong></p>
 
-当前 yutto 尚处于 beta 阶段，有任何建议尽管在 [Discussions](https://github.com/yutto-dev/yutto/discussions) 提出～～～
+> [!TIP]
+>
+> 如果在使用过程中遇到问题，请通过 [Issues](https://github.com/yutto-dev/yutto/issues) 反馈功能正确性问题和功能请求，其他问题请通过 [Discussions](https://github.com/yutto-dev/yutto/discussions) 反馈～
 
 ## 版本号为什么是 2.0
 
@@ -56,14 +62,14 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 > 在此之前请确保安装 Python3.9 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
 
 ```bash
-pip install --pre yutto
+pip install yutto
 ```
 
 当然，你也可以通过 [pipx](https://github.com/pypa/pipx)/[uv](https://github.com/astral-sh/uv) 来安装 yutto（当然，前提是你要自己先安装它）
 
 ```bash
-pipx install --pre yutto      # 使用 pipx
-uv tool install --pre yutto   # 或者使用 uv
+pipx install yutto      # 使用 pipx
+uv tool install yutto   # 或者使用 uv
 ```
 
 pipx/uv 会类似 Homebrew 无感地为 yutto 创建一个虚拟环境，与其余环境隔离开，避免污染 pip 的环境，因此相对于 pip，pipx/uv 是更推荐的安装方式（uv 会比 pipx 更快些～）。
@@ -99,8 +105,8 @@ uv tool install git+https://github.com/yutto-dev/yutto.git@main         # 通过
 | 当前用户稍后再看 <sup>批量</sup> | :x: | `https://www.bilibili.com/watchlater` | `稍后再看/{title}/{name}` |
 | 用户全部收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist` | `{username}的收藏夹/{series_title}/{title}/{name}` |
 | UP 主个人空间 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/video` | `{username}的全部投稿视频/{title}/{name}` |
-| 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://www.bilibili.com/medialist/play/361469957?business=space_collection&business_id=23195` | `{series_title}/{title}` |
-| 视频列表 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439` <br/> `https://space.bilibili.com/100969474/favlist?fid=270359&ftype=collect` | `{series_title}/{title}/{name}` |
+| 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season` <br/> `https://space.bilibili.com/3546619314178489/channel/collectiondetail?sid=3221717`<sup>旧版页面</sup> <br/> `https://space.bilibili.com/100969474/favlist?fid=3221717&ftype=collect&ctype=21` | `{series_title}/{title}` |
+| 视频列表 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/lists/1947439?type=series` <br/> `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439`<sup>旧版页面</sup> <br/> `https://www.bilibili.com/list/100969474?sid=1947439` | `{series_title}/{title}/{name}` |
 
 > [!NOTE]
 >
@@ -256,13 +262,13 @@ https://github.com/orgs/community/discussions/16925#discussioncomment-7571187
 #### 指定在仅包含音频流时的输出格式
 
 -  参数 `--output-format-audio-only`
--  可选值 `"infer" | "aac" | "mp3" | "flac" | "mp4" | "mkv" | "mov"`
+-  可选值 `"infer" | "m4a" | "aac" | "mp3" | "flac" | "mp4" | "mkv" | "mov"`
 -  默认值 `"infer"`
 
 在仅包含音频流时所使用的输出格式，默认选值 `"infer"` 表示自动根据情况进行推导以保证输出的可用，推导规则如下：
 
 -  如果音频流编码为 `"fLaC"`，则输出格式为 `"flac"`
--  否则为 `"aac"`
+-  否则为 `"m4a"`
 
 > **Note**
 >
@@ -356,12 +362,14 @@ yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
 | - | - | - |
 | title | 系列视频总标题（番剧名/投稿视频标题） | 全部 |
 | id | 系列视频单 p 顺序标号 | 全部 |
+| aid | 视频 AV 号，早期使用的视频 ID，不建议使用，详见 [AV 号全面升级公告](https://www.bilibili.com/blackboard/activity-BV-PC.html) | 全部 |
+| bvid | 视频 BV 号，即视频 ID | 全部 |
 | name | 系列视频单 p 标题 | 全部 |
 | username | UP 主用户名 | 个人空间、收藏夹、稍后再看、合集、视频列表下载 |
 | series_title | 合集标题 | 收藏夹、视频合集、视频列表下载 |
 | pubdate🕛 | 投稿日期 | 仅投稿视频 |
 | download_date🕛 | 下载日期 | 全部 |
-| owner_uid | UP 主UID | 个人空间、收藏夹、稍后再看、合集、视频列表下载 |
+| owner_uid | UP 主 UID | 个人空间、收藏夹、稍后再看、合集、视频列表下载 |
 
 > **Note**
 >
@@ -391,72 +399,6 @@ yutto tensura1 --batch --alias-file='~/.yutto_alias'
 ```bash
 cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 ```
-
-#### 仅下载视频流
-
--  参数 `--video-only`
--  默认值 `False`
-
-> **Note**
->
-> 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
->
-> 「仅下载音频流」也是同样的。
-
-#### 仅下载音频流
-
--  参数 `--audio-only`
--  默认值 `False`
-
-仅下载其中的音频流，保存为 `.aac` 文件。
-
-#### 不生成弹幕文件
-
--  参数 `--no-danmaku`
--  默认值 `False`
-
-#### 不生成章节信息
-
--  参数 `--no-chapter-info`
--  默认值 `False`
-
-不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
-
-#### 仅生成弹幕文件
-
--  参数 `--danmaku-only`
--  默认值 `False`
-
-#### 不生成字幕文件
-
--  参数 `--no-subtitle`
--  默认值 `False`
-
-#### 仅生成字幕文件
-
--  参数 `--subtitle-only`
--  默认值 `False`
-
-#### 生成媒体元数据文件
-
--  参数 `--with-metadata`
--  默认值 `False`
-
-目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
-
-#### 仅生成媒体元数据文件
-
--  参数 `--metadata-only`
--  默认值 `False`
-
-#### 不生成视频封面
-
--  参数 `--no-cover`
--  默认值 `False`
-
-> [!NOTE]
->
-> 当前仅支持为包含视频流的视频生成封面。
 
 #### 指定媒体元数据值的格式
 
@@ -504,6 +446,167 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 
 -  参数 `--debug`
 -  默认值 `False`
+
+</details>
+
+### 资源选择参数
+
+此外有一些参数专用于资源选择，比如选择是否下载弹幕、音频、视频等等。
+
+<details>
+<summary>点击展开详细参数</summary>
+
+#### 仅下载视频流
+
+-  参数 `--video-only`
+-  默认值 `False`
+
+> **Note**
+>
+> 这里「仅下载视频流」是指视频中音视频流仅选择视频流，而不是仅仅下载视频而不下载弹幕字幕等资源，如果需要取消字幕等资源下载，请额外使用 `--no-danmaku` 等参数。
+>
+> 「仅下载音频流」也是同样的。
+
+#### 仅下载音频流
+
+-  参数 `--audio-only`
+-  默认值 `False`
+
+仅下载其中的音频流，保存为 `.m4a` 文件。
+
+#### 不生成弹幕文件
+
+-  参数 `--no-danmaku`
+-  默认值 `False`
+
+#### 仅生成弹幕文件
+
+-  参数 `--danmaku-only`
+-  默认值 `False`
+
+#### 不生成字幕文件
+
+-  参数 `--no-subtitle`
+-  默认值 `False`
+
+#### 仅生成字幕文件
+
+-  参数 `--subtitle-only`
+-  默认值 `False`
+
+#### 生成媒体元数据文件
+
+-  参数 `--with-metadata`
+-  默认值 `False`
+
+目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
+
+#### 仅生成媒体元数据文件
+
+-  参数 `--metadata-only`
+-  默认值 `False`
+
+#### 不生成视频封面
+
+-  参数 `--no-cover`
+-  默认值 `False`
+
+> [!NOTE]
+>
+> 当前仅支持为包含视频流的视频生成封面。
+
+#### 生成视频流封面时单独保存封面
+
+-  参数 `--save-cover`
+-  默认值 `False`
+
+#### 仅生成视频封面
+
+-  参数 `--cover-only`
+-  默认值 `False`
+
+#### 不生成章节信息
+
+-  参数 `--no-chapter-info`
+-  默认值 `False`
+
+不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
+
+</details>
+
+### 弹幕设置参数<sup>Experimental</sup>
+
+yutto 通过与 biliass 的集成，提供了一些 ASS 弹幕选项，包括字号、字体、速度等～
+
+<details>
+<summary>点击展开详细参数</summary>
+
+#### 弹幕字体大小
+
+-  参数 `--danmaku-font-size`
+-  默认值 `video_width / 40`
+
+#### 弹幕字体
+
+-  参数 `--danmaku-font`
+-  默认值 `"SimHei"`
+
+#### 弹幕不透明度
+
+-  参数 `--danmaku-opacity`
+-  默认值 `0.8`
+
+#### 弹幕显示区域与视频高度的比例
+
+-  参数 `--danmaku-display-region-ratio`
+-  默认值 `1.0`
+
+#### 弹幕速度
+
+-  参数 `--danmaku-speed`
+-  默认值 `1.0`
+
+#### 屏蔽顶部弹幕
+
+-  参数 `--danmaku-block-top`
+-  默认值 `False`
+
+#### 屏蔽底部弹幕
+
+-  参数 `--danmaku-block-bottom`
+-  默认值 `False`
+
+#### 屏蔽滚动弹幕
+
+-  参数 `--danmaku-block-scroll`
+-  默认值 `False`
+
+#### 屏蔽逆向弹幕
+
+-  参数 `--danmaku-block-reverse`
+-  默认值 `False`
+
+#### 屏蔽固定弹幕（顶部、底部）
+
+-  参数 `--danmaku-block-fixed`
+-  默认值 `False`
+
+#### 屏蔽高级弹幕
+
+-  参数 `--danmaku-block-special`
+-  默认值 `False`
+
+#### 屏蔽彩色弹幕
+
+-  参数 `--danmaku-block-colorful`
+-  默认值 `False`
+
+#### 屏蔽关键词
+
+-  参数 `--danmaku-block-keyword-patterns`
+-  默认值 `None`
+
+按关键词屏蔽，支持正则，使用 `,` 分隔
 
 </details>
 
@@ -591,6 +694,57 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 </details>
 
+### 配置文件<sup>Experimental</sup>
+
+yutto 自 `2.0.0-rc.3` 起增加了实验性的配置文件功能，你可以通过 `--config` 选项来指定配置文件路径，比如
+
+```bash
+yutto --config /path/to/config.toml <url>
+```
+
+如果不指定配置文件路径，yutto 也支持配置自动发现，根据优先级，搜索路径如下：
+
+-  当前目录下的 `yutto.toml`
+-  搜索 [`XDG_CONFIG_HOME`](https://specifications.freedesktop.org/basedir-spec/latest/) 下的 `yutto/yutto.toml` 文件
+-  非 Windows 系统下的 `~/.config/yutto/yutto.toml`，Windows 系统下的 `~/AppData/Roaming/yutto/yutto.toml`
+
+你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
+
+```toml
+# yutto.toml
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
+[basic]
+# 设置下载目录
+dir = "/path/to/download"
+# 设置临时文件目录
+tmp_dir = "/path/to/tmp"
+# 设置 SESSDATA
+sessdata = "***************"
+# 设置大会员严格校验
+vip_strict = true
+# 设置登录严格校验
+login_strict = true
+
+[resource]
+# 不下载字幕
+require_subtitle = false
+
+[danmaku]
+# 设置弹幕速度
+speed = 2.0
+# 设置弹幕屏蔽关键词
+block_keyword_patterns = [
+   ".*keyword1.*",
+   ".*keyword2.*",
+]
+
+[batch]
+# 下载额外剧集
+with_section = true
+```
+
+如果你使用 VS Code 对配置文件编辑，强烈建议使用 [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) 扩展，配合 yutto 提供的 schema，可以获得最佳的提示体验。
+
 ## 从 bilili1.x 迁移
 
 ### 取消的功能
@@ -633,6 +787,41 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 yutto --no-color --no-progress <url> > log
 ```
 
+### 使用配置自定义默认参数
+
+如果你希望修改 yutto 的部分参数，那么可能每次运行都需要在后面加上长长一串选项，为了避免这个问题，你可以尝试使用配置文件
+
+```toml
+# ~/.config/yutto/yutto.toml
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
+[basic]
+dir = "~/Movies/yutto"
+sessdata = "***************"
+num_workers = 16
+vcodec = "av1:copy"
+```
+
+当然，请手动修改 `sessdata` 内容为自己的 `SESSDATA` 哦～
+
+> [!TIP]
+>
+> 本方案可替代原有的「自定义命令别名」方式～
+>
+> <details>
+> <summary>原「自定义命令别名」方案</summary>
+>
+> 在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
+>
+> ```bash
+> alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:copy"'
+> ```
+>
+> 这样我每次只需要 `ytt <url>` 就可以直接使用这些参数进行下载啦～
+>
+> 由于我提前在 `~/.sessdata` 存储了我的 `SESSDATA`，所以避免每次都要手动输入 cookie 的问题。
+>
+> </details>
+
 ### 使用 url alias
 
 yutto 新增的 url alias 可以让你下载正在追的番剧时不必每次都打开浏览器复制 url，只需要将追番列表存储在一个文件中，并为这些 url 起一个别名即可
@@ -645,6 +834,15 @@ tensura-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 
 ```
 yutto --batch tensura-nikki --alias-file=/path/to/alias-file
+```
+
+你同样可以通过配置文件来实现这一点（推荐）
+
+```toml
+# ~/.config/yutto/yutto.toml
+#:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
+[basic.aliases]
+tensura-nikki = "https://www.bilibili.com/bangumi/play/ss38221/"
 ```
 
 ### 使用任务列表
@@ -691,20 +889,6 @@ yutto file:///path/to/list --vcodec="avc:copy"
 
 最后，列表也是支持嵌套的哦（虽然没什么用 2333）
 
-### 自定义命令别名
-
-如果你不习惯于 yutto 的默认参数，那么可能每次运行都需要在后面加上长长一串参数，为了避免这一点，我是这样做的：
-
-在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
-
-```bash
-alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:copy"'
-```
-
-这样我每次只需要 `ytt <url>` 就可以直接使用这些参数进行下载啦～
-
-由于我提前在 `~/.sessdata` 存储了我的 `SESSDATA`，所以避免每次都要手动输入 cookie 的问题。
-
 ## FAQ
 
 ### 名字的由来
@@ -717,7 +901,7 @@ yutto 添加任何特性都需要以保证可维护性为前提，因此 yutto �
 
 ### yutto 会替代 bilili 吗
 
-yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bilili 了，因此 bilili 将会在 yutto 正式版发布后正式停止维护～（咳，正式版还要再过段时间～ ○ω●）
+yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bilili 了，由于 B 站接口的不断变化，bilili 也不再适用于现在的环境，因此请 bilili 用户尽快迁移到 yutto ～
 
 ## 其他应用
 
@@ -727,21 +911,21 @@ yutto 自诞生以来已经过去三年多了，功能上基本可以替代 bili
 
 ## Roadmap
 
-### 2.0.0-rc
-
--  [x] feat: 投稿视频描述文件支持
--  [x] refactor: 整理路径变量名
--  [x] feat: 视频合集选集支持（合集貌似有取代分 p 的趋势，需要对其进行合适的处理）
--  [x] refactor: 重写 biliass
-
 ### 2.0.0
 
--  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
--  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
+-  [x] feat: 支持弹幕字体、字号、速度等设置
+-  [x] feat: 配置文件支持
+-  [x] feat: 配置文件功能优化，支持自定义配置路径
+-  [x] docs: issue template 添加配置引导
+-  [x] docs: 优化 biliass rust 重构后的贡献指南
 
 ### future
 
+-  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
+-  [ ] feat: 新的基于 toml 的任务列表
+-  [ ] refactor: 配置参数复用 pydantic 验证
+-  [ ] refactor: 针对视频合集优化路径变量
+-  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
 -  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
 -  [ ] feat: 更多批下载支持
 -  [ ] feat: 以及更加可爱～

@@ -1,0 +1,441 @@
+{
+  "$defs": {
+    "YuttoBasicSettings": {
+      "properties": {
+        "num_workers": {
+          "default": 8,
+          "exclusiveMinimum": 0,
+          "title": "Num Workers",
+          "type": "integer"
+        },
+        "video_quality": {
+          "default": 127,
+          "enum": [
+            127,
+            126,
+            125,
+            120,
+            116,
+            112,
+            100,
+            80,
+            74,
+            64,
+            32,
+            16
+          ],
+          "title": "Video Quality",
+          "type": "integer"
+        },
+        "audio_quality": {
+          "default": 30251,
+          "enum": [
+            30251,
+            30255,
+            30250,
+            30280,
+            30232,
+            30216
+          ],
+          "title": "Audio Quality",
+          "type": "integer"
+        },
+        "vcodec": {
+          "default": "avc:copy",
+          "title": "Vcodec",
+          "type": "string"
+        },
+        "acodec": {
+          "default": "mp4a:copy",
+          "title": "Acodec",
+          "type": "string"
+        },
+        "download_vcodec_priority": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Download Vcodec Priority"
+        },
+        "output_format": {
+          "default": "infer",
+          "enum": [
+            "infer",
+            "mp4",
+            "mkv",
+            "mov"
+          ],
+          "title": "Output Format",
+          "type": "string"
+        },
+        "output_format_audio_only": {
+          "default": "infer",
+          "enum": [
+            "infer",
+            "m4a",
+            "aac",
+            "mp3",
+            "flac",
+            "mp4",
+            "mkv",
+            "mov"
+          ],
+          "title": "Output Format Audio Only",
+          "type": "string"
+        },
+        "danmaku_format": {
+          "default": "ass",
+          "enum": [
+            "xml",
+            "ass",
+            "protobuf"
+          ],
+          "title": "Danmaku Format",
+          "type": "string"
+        },
+        "block_size": {
+          "default": 0.5,
+          "title": "Block Size",
+          "type": "number"
+        },
+        "overwrite": {
+          "default": false,
+          "title": "Overwrite",
+          "type": "boolean"
+        },
+        "proxy": {
+          "default": "auto",
+          "title": "Proxy",
+          "type": "string"
+        },
+        "dir": {
+          "default": "./",
+          "title": "Dir",
+          "type": "string"
+        },
+        "tmp_dir": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tmp Dir"
+        },
+        "sessdata": {
+          "default": "",
+          "title": "Sessdata",
+          "type": "string"
+        },
+        "subpath_template": {
+          "default": "{auto}",
+          "title": "Subpath Template",
+          "type": "string"
+        },
+        "aliases": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "Aliases",
+          "type": "object"
+        },
+        "metadata_format_premiered": {
+          "default": "%Y-%m-%d",
+          "title": "Metadata Format Premiered",
+          "type": "string"
+        },
+        "download_interval": {
+          "default": 0,
+          "title": "Download Interval",
+          "type": "integer"
+        },
+        "banned_mirrors_pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Banned Mirrors Pattern"
+        },
+        "no_color": {
+          "default": false,
+          "title": "No Color",
+          "type": "boolean"
+        },
+        "no_progress": {
+          "default": false,
+          "title": "No Progress",
+          "type": "boolean"
+        },
+        "debug": {
+          "default": false,
+          "title": "Debug",
+          "type": "boolean"
+        },
+        "vip_strict": {
+          "default": false,
+          "title": "Vip Strict",
+          "type": "boolean"
+        },
+        "login_strict": {
+          "default": false,
+          "title": "Login Strict",
+          "type": "boolean"
+        }
+      },
+      "title": "YuttoBasicSettings",
+      "type": "object"
+    },
+    "YuttoBatchSettings": {
+      "properties": {
+        "with_section": {
+          "default": false,
+          "title": "With Section",
+          "type": "boolean"
+        },
+        "batch_filter_start_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Batch Filter Start Time"
+        },
+        "batch_filter_end_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Batch Filter End Time"
+        }
+      },
+      "title": "YuttoBatchSettings",
+      "type": "object"
+    },
+    "YuttoDanmakuSettings": {
+      "properties": {
+        "font_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Font Size"
+        },
+        "font": {
+          "default": "SimHei",
+          "title": "Font",
+          "type": "string"
+        },
+        "opacity": {
+          "default": 0.8,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "display_region_ratio": {
+          "default": 1.0,
+          "title": "Display Region Ratio",
+          "type": "number"
+        },
+        "speed": {
+          "default": 1.0,
+          "title": "Speed",
+          "type": "number"
+        },
+        "block_top": {
+          "default": false,
+          "title": "Block Top",
+          "type": "boolean"
+        },
+        "block_bottom": {
+          "default": false,
+          "title": "Block Bottom",
+          "type": "boolean"
+        },
+        "block_scroll": {
+          "default": false,
+          "title": "Block Scroll",
+          "type": "boolean"
+        },
+        "block_reverse": {
+          "default": false,
+          "title": "Block Reverse",
+          "type": "boolean"
+        },
+        "block_fixed": {
+          "default": false,
+          "title": "Block Fixed",
+          "type": "boolean"
+        },
+        "block_special": {
+          "default": false,
+          "title": "Block Special",
+          "type": "boolean"
+        },
+        "block_colorful": {
+          "default": false,
+          "title": "Block Colorful",
+          "type": "boolean"
+        },
+        "block_keyword_patterns": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Block Keyword Patterns",
+          "type": "array"
+        }
+      },
+      "title": "YuttoDanmakuSettings",
+      "type": "object"
+    },
+    "YuttoResourceSettings": {
+      "properties": {
+        "require_video": {
+          "default": true,
+          "title": "Require Video",
+          "type": "boolean"
+        },
+        "require_audio": {
+          "default": true,
+          "title": "Require Audio",
+          "type": "boolean"
+        },
+        "require_subtitle": {
+          "default": true,
+          "title": "Require Subtitle",
+          "type": "boolean"
+        },
+        "require_metadata": {
+          "default": false,
+          "title": "Require Metadata",
+          "type": "boolean"
+        },
+        "require_danmaku": {
+          "default": true,
+          "title": "Require Danmaku",
+          "type": "boolean"
+        },
+        "require_cover": {
+          "default": true,
+          "title": "Require Cover",
+          "type": "boolean"
+        },
+        "require_chapter_info": {
+          "default": true,
+          "title": "Require Chapter Info",
+          "type": "boolean"
+        },
+        "save_cover": {
+          "default": false,
+          "title": "Save Cover",
+          "type": "boolean"
+        }
+      },
+      "title": "YuttoResourceSettings",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "basic": {
+      "$ref": "#/$defs/YuttoBasicSettings",
+      "default": {
+        "num_workers": 8,
+        "video_quality": 127,
+        "audio_quality": 30251,
+        "vcodec": "avc:copy",
+        "acodec": "mp4a:copy",
+        "download_vcodec_priority": null,
+        "output_format": "infer",
+        "output_format_audio_only": "infer",
+        "danmaku_format": "ass",
+        "block_size": 0.5,
+        "overwrite": false,
+        "proxy": "auto",
+        "dir": "./",
+        "tmp_dir": null,
+        "sessdata": "",
+        "subpath_template": "{auto}",
+        "aliases": {},
+        "metadata_format_premiered": "%Y-%m-%d",
+        "download_interval": 0,
+        "banned_mirrors_pattern": null,
+        "no_color": false,
+        "no_progress": false,
+        "debug": false,
+        "vip_strict": false,
+        "login_strict": false
+      }
+    },
+    "resource": {
+      "$ref": "#/$defs/YuttoResourceSettings",
+      "default": {
+        "require_video": true,
+        "require_audio": true,
+        "require_subtitle": true,
+        "require_metadata": false,
+        "require_danmaku": true,
+        "require_cover": true,
+        "require_chapter_info": true,
+        "save_cover": false
+      }
+    },
+    "danmaku": {
+      "$ref": "#/$defs/YuttoDanmakuSettings",
+      "default": {
+        "font_size": null,
+        "font": "SimHei",
+        "opacity": 0.8,
+        "display_region_ratio": 1.0,
+        "speed": 1.0,
+        "block_top": false,
+        "block_bottom": false,
+        "block_scroll": false,
+        "block_reverse": false,
+        "block_fixed": false,
+        "block_special": false,
+        "block_colorful": false,
+        "block_keyword_patterns": []
+      }
+    },
+    "batch": {
+      "$ref": "#/$defs/YuttoBatchSettings",
+      "default": {
+        "with_section": false,
+        "batch_filter_start_time": null,
+        "batch_filter_end_time": null
+      }
+    }
+  },
+  "title": "YuttoSettings",
+  "type": "object"
+}

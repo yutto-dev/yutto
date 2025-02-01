@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13-dev"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} unit test
     steps:
@@ -22,7 +22,7 @@ jobs:
           submodules: recursive
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v5
 
       - name: Install python
         uses: actions/setup-python@v5
@@ -39,6 +39,12 @@ jobs:
         run: |
           just ci-install
 
-      - name: unit test
+      - name: Run unit tests
         run: |
           just ci-test
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        if: "matrix.python-version == '3.13' && github.event_name != 'merge_group'"
+        with:
+          run: uv run pytest --codspeed

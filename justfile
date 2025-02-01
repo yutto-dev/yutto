@@ -18,7 +18,7 @@ fmt:
   uv run ruff format .
 
 lint:
-  uv run pyright src/yutto tests
+  uv run pyright src/yutto packages/biliass/src/biliass tests
   uv run ruff check .
   uv run typos
 
@@ -45,6 +45,7 @@ clean:
     -e mp4 \
     -e mkv \
     -e mov \
+    -e m4a \
     -e aac \
     -e mp3 \
     -e flac \
@@ -65,6 +66,9 @@ clean-builds:
   rm -rf build/
   rm -rf dist/
   rm -rf yutto.egg-info/
+
+generate-schema:
+  uv run scripts/generate-schema.py
 
 # CI specific
 ci-install:

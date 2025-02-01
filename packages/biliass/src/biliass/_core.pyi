@@ -1,28 +1,40 @@
+class ConversionOptions:
+    def __init__(
+        self,
+        stage_width: int,
+        stage_height: int,
+        display_region_ratio: float,
+        font_face: str,
+        font_size: float,
+        text_opacity: float,
+        duration_marquee: float,
+        duration_still: float,
+        is_reduce_comments: bool,
+    ) -> None: ...
+
+class BlockOptions:
+    def __init__(
+        self,
+        block_top: bool,
+        block_bottom: bool,
+        block_scroll: bool,
+        block_reverse: bool,
+        block_special: bool,
+        block_colorful: bool,
+        block_keyword_patterns: list[str],
+    ) -> None: ...
+    @staticmethod
+    def default() -> BlockOptions: ...
+
 def xml_to_ass(
     inputs: list[str],
-    stage_width: int,
-    stage_height: int,
-    reserve_blank: int,
-    font_face: str,
-    font_size: float,
-    text_opacity: float,
-    duration_marquee: float,
-    duration_still: float,
-    comment_filter: list[str],
-    is_reduce_comments: bool,
+    conversion_options: ConversionOptions,
+    block_options: BlockOptions,
 ) -> str: ...
 def protobuf_to_ass(
     inputs: list[bytes],
-    stage_width: int,
-    stage_height: int,
-    reserve_blank: int,
-    font_face: str,
-    font_size: float,
-    text_opacity: float,
-    duration_marquee: float,
-    duration_still: float,
-    comment_filter: list[str],
-    is_reduce_comments: bool,
+    conversion_options: ConversionOptions,
+    block_options: BlockOptions,
 ) -> str: ...
 def get_danmaku_meta_size(buffer: bytes) -> int: ...
 def enable_tracing() -> None: ...

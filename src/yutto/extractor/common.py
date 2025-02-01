@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from yutto._typing import AvId, EpisodeData, EpisodeId, format_ids
@@ -30,16 +29,18 @@ from yutto.processor.path_resolver import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.metadata import attach_chapter_info
 
 if TYPE_CHECKING:
     import argparse
+    from pathlib import Path
 
     import httpx
 
 
 async def extract_bangumi_data(
+    ctx: FetcherContext,
     client: httpx.AsyncClient,
     bangumi_info: BangumiListItem,
     args: argparse.Namespace,
@@ -54,16 +55,20 @@ async def extract_bangumi_data(
         if bangumi_info["is_preview"]:
             Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
         videos, audios = (
-            await get_bangumi_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
+            await get_bangumi_playurl(ctx, client, avid, cid) if args.require_video or args.require_audio else ([], [])
         )
-        subtitles = await get_bangumi_subtitles(client, avid, cid) if args.require_subtitle else []
+        subtitles = await get_bangumi_subtitles(ctx, client, avid, cid) if args.require_subtitle else []
         danmaku = (
-            await get_danmaku(client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+            await get_danmaku(ctx, client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         )
         metadata = bangumi_info["metadata"] if args.require_metadata else None
-        cover_data = await Fetcher.fetch_bin(client, bangumi_info["metadata"]["thumb"]) if args.require_cover else None
+        cover_data = (
+            await Fetcher.fetch_bin(ctx, client, bangumi_info["metadata"]["thumb"]) if args.require_cover else None
+        )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": UNKNOWN,
@@ -74,8 +79,8 @@ async def extract_bangumi_data(
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        file_path = Path(args.dir, subpath)
-        output_dir, filename = str(file_path.parent), file_path.name
+        file_path: Path = args.dir / subpath
+        output_dir, filename = file_path.parent, file_path.name
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -94,6 +99,7 @@ async def extract_bangumi_data(
 
 
 async def extract_cheese_data(
+    ctx: FetcherContext,
     client: httpx.AsyncClient,
     episode_id: EpisodeId,
     cheese_info: CheeseListItem,
@@ -107,18 +113,22 @@ async def extract_cheese_data(
         name = cheese_info["name"]
         id = cheese_info["id"]
         videos, audios = (
-            await get_cheese_playurl(client, avid, episode_id, cid)
+            await get_cheese_playurl(ctx, client, avid, episode_id, cid)
             if args.require_video or args.require_audio
             else ([], [])
         )
-        subtitles = await get_cheese_subtitles(client, avid, cid) if args.require_subtitle else []
+        subtitles = await get_cheese_subtitles(ctx, client, avid, cid) if args.require_subtitle else []
         danmaku = (
-            await get_danmaku(client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+            await get_danmaku(ctx, client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         )
         metadata = cheese_info["metadata"] if args.require_metadata else None
-        cover_data = await Fetcher.fetch_bin(client, cheese_info["metadata"]["thumb"]) if args.require_cover else None
+        cover_data = (
+            await Fetcher.fetch_bin(ctx, client, cheese_info["metadata"]["thumb"]) if args.require_cover else None
+        )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": UNKNOWN,
@@ -129,8 +139,8 @@ async def extract_cheese_data(
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        file_path = Path(args.dir, subpath)
-        output_dir, filename = str(file_path.parent), file_path.name
+        file_path: Path = args.dir / subpath
+        output_dir, filename = file_path.parent, file_path.name
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -149,6 +159,7 @@ async def extract_cheese_data(
 
 
 async def extract_ugc_video_data(
+    ctx: FetcherContext,
     client: httpx.AsyncClient,
     avid: AvId,
     ugc_video_info: UgcVideoListItem,
@@ -161,29 +172,36 @@ async def extract_ugc_video_data(
         name = ugc_video_info["name"]
         id = ugc_video_info["id"]
         videos, audios = (
-            await get_ugc_video_playurl(client, avid, cid) if args.require_video or args.require_audio else ([], [])
+            await get_ugc_video_playurl(ctx, client, avid, cid)
+            if args.require_video or args.require_audio
+            else ([], [])
         )
-        subtitles = await get_ugc_video_subtitles(client, avid, cid) if args.require_subtitle else []
-        chapter_info_data = await get_ugc_video_chapters(client, avid, cid) if args.require_chapter_info else []
+        subtitles = await get_ugc_video_subtitles(ctx, client, avid, cid) if args.require_subtitle else []
+        chapter_info_data = await get_ugc_video_chapters(ctx, client, avid, cid) if args.require_chapter_info else []
         danmaku = (
-            await get_danmaku(client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
+            await get_danmaku(ctx, client, cid, avid, args.danmaku_format) if args.require_danmaku else EmptyDanmakuData
         )
         metadata = ugc_video_info["metadata"] if args.require_metadata else None
         if metadata and chapter_info_data:
             attach_chapter_info(metadata, chapter_info_data)
         cover_data = (
-            await Fetcher.fetch_bin(client, ugc_video_info["metadata"]["thumb"]) if args.require_cover else None
+            await Fetcher.fetch_bin(ctx, client, ugc_video_info["metadata"]["thumb"]) if args.require_cover else None
         )
         owner_uid: str = (
             ugc_video_info["metadata"]["actor"][0]["profile"].split("/")[-1]
             if ugc_video_info["metadata"]["actor"]
             else UNKNOWN
         )
+        username: str = (
+            ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
+        )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
-            "username": UNKNOWN,
+            "username": username,
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
             "download_date": ugc_video_info["metadata"]["dateadded"],
@@ -191,8 +209,8 @@ async def extract_ugc_video_data(
         }
         subpath_variables_base.update(subpath_variables)
         subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        file_path = Path(args.dir, subpath)
-        output_dir, filename = str(file_path.parent), file_path.name
+        file_path: Path = args.dir / subpath
+        output_dir, filename = file_path.parent, file_path.name
         return EpisodeData(
             videos=videos,
             audios=audios,
