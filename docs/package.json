@@ -15,7 +15,8 @@
   "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev": "vitepress dev",
-    "build": "vitepress build"
+    "build": "vitepress build",
+    "serve": "vitepress serve"
   },
   "devDependencies": {
     "@moefy-canvas/core": "^0.5.2",
