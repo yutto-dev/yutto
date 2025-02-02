@@ -19,8 +19,8 @@
     "serve": "vitepress serve"
   },
   "devDependencies": {
-    "@moefy-canvas/core": "^0.5.2",
-    "@moefy-canvas/theme-sparkler": "^0.5.2",
+    "@moefy-canvas/core": "^0.6.0",
+    "@moefy-canvas/theme-sparkler": "^0.6.0",
     "vite": "^6.0.11",
     "vitepress": "1.6.3",
     "vue": "^3.5.13"

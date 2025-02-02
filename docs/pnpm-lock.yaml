@@ -9,11 +9,11 @@ importers:
   .:
     devDependencies:
       '@moefy-canvas/core':
-        specifier: ^0.5.2
-        version: 0.5.2
+        specifier: ^0.6.0
+        version: 0.6.0
       '@moefy-canvas/theme-sparkler':
-        specifier: ^0.5.2
-        version: 0.5.2
+        specifier: ^0.6.0
+        version: 0.6.0
       vite:
         specifier: ^6.0.11
         version: 6.0.11
@@ -435,14 +435,14 @@ packages:
   '@jridgewell/sourcemap-codec@1.5.0':
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
 
-  '@moefy-canvas/core@0.5.2':
-    resolution: {integrity: sha512-XkaVE91Tiwb35zFmI1DbrJpMh0xe54QbzQrc7ATwMos4C08dxBnwExwXEVS7oEct7owVDY1UWxtRRVE7smtzHw==}
+  '@moefy-canvas/core@0.6.0':
+    resolution: {integrity: sha512-i3GUeqfiEVs6Uuk32x/LYw8W0g8E9jc7y28hjZj/H1/PASYhN++lFmvJc0MhbWqjNmaUBfaWkUFIYw3RqnGcjQ==}
 
-  '@moefy-canvas/theme-sparkler@0.5.2':
-    resolution: {integrity: sha512-mh6eqcH/sE+MPEsGyLSy9WTfTmT6Ny4E2i1ANDzYGmBRGvxtjWR1VhF+0L9Bc9vtl8wWrdtaCZQsemFzTidbdA==}
+  '@moefy-canvas/theme-sparkler@0.6.0':
+    resolution: {integrity: sha512-w/a91ZhsuCW74vXloDbxAYziiRHex5Es2hmvKQBs0Tqbx1/P/qniULj1Zh5Et7oPCyCuPQt0A/GACZpxuVWt6w==}
 
-  '@moefy-canvas/utils@0.5.2':
-    resolution: {integrity: sha512-DnI8I/cTBFfn3xoXwyyLEtye4pMI6zJFMxU1qps731xgYTWmzBqJPkZZd/2gfNnH5NnLUOGG7Ui3sMkmJ0vg0w==}
+  '@moefy-canvas/utils@0.6.0':
+    resolution: {integrity: sha512-QYW5FP8PhXTG0Y7fBkGDBNFLFNp70amwMqJiDvVYcDjSJVZYiZuvxrgvfKZYp+piL9oKBbfxgzYir9gbwZpZjA==}
 
   '@rollup/rollup-android-arm-eabi@4.34.0':
     resolution: {integrity: sha512-Eeao7ewDq79jVEsrtWIj5RNqB8p2knlm9fhR6uJ2gqP7UfbLrTrxevudVrEPDM7Wkpn/HpRC2QfazH7MXLz3vQ==}
@@ -1280,18 +1280,18 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.5.0': {}
 
-  '@moefy-canvas/core@0.5.2': {}
+  '@moefy-canvas/core@0.6.0': {}
 
-  '@moefy-canvas/theme-sparkler@0.5.2':
+  '@moefy-canvas/theme-sparkler@0.6.0':
     dependencies:
-      '@moefy-canvas/core': 0.5.2
-      '@moefy-canvas/utils': 0.5.2
+      '@moefy-canvas/core': 0.6.0
+      '@moefy-canvas/utils': 0.6.0
       color2k: 2.0.3
       ts-debounce: 4.0.0
 
-  '@moefy-canvas/utils@0.5.2':
+  '@moefy-canvas/utils@0.6.0':
     dependencies:
-      '@moefy-canvas/core': 0.5.2
+      '@moefy-canvas/core': 0.6.0
 
   '@rollup/rollup-android-arm-eabi@4.34.0':
     optional: true
