@@ -34,7 +34,7 @@ export default defineConfig({
 
     footer: {
       message: 'Released under the GPL3.0 License.',
-      copyright: 'Copyright © 2022-present Nyakku Shigure',
+      copyright: 'Copyright © 2025-present Nyakku Shigure',
     },
 
     editLink: {
