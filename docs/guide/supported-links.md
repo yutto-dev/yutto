@@ -1,20 +1,28 @@
 # 支持的链接
 
+本页面主要介绍了我所支持的链接类型，即 `yutto <url>` 中的 `<url>` 具体可以是哪些值。
+
 ## 一表速览
 
 <!-- prettier-ignore -->
-|Type|Batch|Example url|Path template|
-|-|-|-|-|
-|投稿视频|:x:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}`|
-|投稿视频|:white_check_mark:|`https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ`|`{title}/{name}`|
-|番剧|:x:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211`|`{name}`|
-|番剧|:white_check_mark:|`https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903`|`{title}/{name}`|
-|用户指定收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist?fid=1306978874`|`{username}的收藏夹/{series_title}/{title}/{name}`|
-|用户全部收藏夹|:white_check_mark:|`https://space.bilibili.com/100969474/favlist`|`{username}的收藏夹/{series_title}/{title}/{name}`|
-|UP 主个人空间|:white_check_mark:|`https://space.bilibili.com/100969474/video`|`{username}的全部投稿视频/{title}/{name}`|
-|合集和视频列表|:white_check_mark:|`https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195` <br/> `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439` <br/> `https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439`|`{series_title}/{title}/{name}`|
+| 类型 | 是否支持选集 | 示例链接 | 默认路径模板 |
+| - | - | - | - |
+| 投稿视频 | - | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}` |
+| 投稿视频 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}/{name}` |
+| 番剧 | - | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211` | `{name}` |
+| 番剧 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903` | `{title}/{name}` |
+| 课程 | - | `https://www.bilibili.com/cheese/play/ep6902` | `{name}` |
+| 课程 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/cheese/play/ep6902` <br/> `https://www.bilibili.com/cheese/play/ss298` | `{title}/{name}` |
+| 用户指定收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create` | `{username}的收藏夹/{series_title}/{title}/{name}` |
+| 当前用户稍后再看 <sup>批量</sup> | :x: | `https://www.bilibili.com/watchlater` | `稍后再看/{title}/{name}` |
+| 用户全部收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist` | `{username}的收藏夹/{series_title}/{title}/{name}` |
+| UP 主个人空间 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/video` | `{username}的全部投稿视频/{title}/{name}` |
+| 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season` <br/> `https://space.bilibili.com/3546619314178489/channel/collectiondetail?sid=3221717`<sup>旧版页面</sup> <br/> `https://space.bilibili.com/100969474/favlist?fid=3221717&ftype=collect&ctype=21` | `{series_title}/{title}` |
+| 视频列表 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/lists/1947439?type=series` <br/> `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439`<sup>旧版页面</sup> <br/> `https://www.bilibili.com/list/100969474?sid=1947439` | `{series_title}/{title}/{name}` |
 
-本表格展示了我所支持的所有类型的链接，以及最终下载的路径形式。
+本表格展示了我所支持的所有类型的链接，以及最终下载的文件结构。
+
+值得注意的是，这里标记「批量」的视频都必须通过 `-b/--batch` 参数来下载，否则会按照单个视频来解析下载。
 
 ::: tip 其他链接
 
@@ -24,14 +32,14 @@
 
 ## 投稿视频
 
-### 单投稿视频
+### 投稿视频单 P
 
 对于投稿视频，AV 号、BV 号的链接我都会支持，对于没有 `?p=n` 选集参数的页面，默认会认为是第一话。
 
 ```bash
-yutto https://www.bilibili.com/video/BV1vZ4y1M7mQ
-yutto https://www.bilibili.com/video/av371660125
-yutto "https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1"
+yutto https://www.bilibili.com/video/BV1vZ4y1M7mQ/
+yutto https://www.bilibili.com/video/av371660125/
+yutto "https://www.bilibili.com/video/BV1vZ4y1M7mQ/?p=1"
 ```
 
 另外，我还支持直接直接使用 AV 号和 BV 号作为视频链接的唯一标识符。
@@ -87,11 +95,34 @@ yutto -b md28233903
 yutto -b md28233903 -p 2
 ```
 
+## 课程
+
+### 课程单集
+
+课程的链接是以 `cheese` 开头的，与番剧非常类似，课程也是支持 EP 号的。
+
+```bash
+yutto https://www.bilibili.com/cheese/play/ep6902
+```
+
+注意，课程并不支持直接使用 EP 号作为唯一标识符，因为这会和番剧混淆。
+
+### 课程全集 <Badge type="tip" text="批量" /><Badge type="tip" text="支持选集" />
+
+课程全集的下载方式也和番剧很类似，你可以使用 EP 号或者 SS 号来下载。
+
+```bash
+yutto -b https://www.bilibili.com/cheese/play/ep6902
+yutto -b https://www.bilibili.com/cheese/play/ss298
+```
+
+同样，你不可以直接使用 EP 号和 SS 号作为唯一标识符来下载以免混淆。
+
 ## 用户个人空间
 
 ::: warning ⚠️ 注意
 
-请注意公开性，比如未公开的收藏夹是无法下载的，这可以在 `个人中心` -> `设置` 中进行调节。
+请注意公开性，比如在未登录的情况下，未公开的收藏夹是无法下载的，这可以在 `个人中心` -> `设置` 中进行调节。
 
 :::
 
@@ -125,21 +156,33 @@ yutto -b https://space.bilibili.com/100969474/favlist
 yutto -b "https://space.bilibili.com/100969474/favlist?fid=1306978874"
 ```
 
+### 当前用户稍后再看 <Badge type="tip" text="批量" />
+
+稍后再看的页面链接也是支持的。
+
+```bash
+yutto -b https://www.bilibili.com/watchlater
+```
+
+当然，由于你无权访问其他用户的稍后再看，这里只支持当前用户的稍后再看下载。另一方面，这强依赖于你的登录状态，如果你处于未登录状态，那么我当然也是无法获取到你的稍后再看列表的哦～
+
 ### 合集和列表 <Badge type="tip" text="批量" />
 
-与其他的相同，你可以在 `个人中心` -> `合集和列表` 进入具体列表获取对应合集/列表的链接。
+与其他的相同，你可以在 `个人中心` -> `合集`（旧版页面为 `合集和列表`） 进入具体列表获取对应合集/列表的链接。
 
 ```bash
 # 合集
-yutto -b "https://space.bilibili.com/361469957/channel/collectiondetail?sid=23195"
+yutto -b "https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season"
+yutto -b "https://space.bilibili.com/3546619314178489/channel/collectiondetail?sid=3221717" # 旧版页面链接
 # 列表
-yutto -b "https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439"
+yutto -b "https://space.bilibili.com/100969474/lists/1947439?type=series"
+yutto -b "https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439" # 旧版页面链接
 ```
 
 另外，视频列表的播放页面也可以唯一定位该视频列表
 
 ```bash
-yutto -b "https://www.bilibili.com/medialist/play/100969474?business=space_series&business_id=1947439"
+yutto -b "https://www.bilibili.com/list/100969474?sid=1947439"
 ```
 
 ## 任务列表
@@ -178,11 +221,9 @@ rimuru2 --batch -p $
 yutto file:///path/to/list --vcodec="avc:copy"
 ```
 
-最终下载的 rimuru1 会是 "hevc:copy"，而 rimuru2 则会是 "avc:copy"
+最终下载的 `rimuru1` 会是 `"hevc:copy"`，而 `rimuru2` 则会是 `"avc:copy"`
 
-另外，文件列表也是支持 alias 的，你完全可以为该列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～
-
-最后，列表也是支持嵌套的哦（虽然没什么用 2333）
+另外说一点，列表也是支持嵌套的哦（虽然没什么用 2333）
 
 ## 配置别名
 
@@ -199,3 +240,5 @@ rimuru-nikki=https://www.bilibili.com/bangumi/play/ss38221/
 ```bash
 yutto -b rimuru-nikki --alias-file=~/yutto-aliases
 ```
+
+当然，文件列表也是支持 alias 的，你完全可以为你的常用列表起一个别名，一个比较特别的用例是将你所有追番的内容放在一个文件里，然后为该文件起一个别名（比如 `subscription`），这样只需要 `yutto subscription --alias-file path/to/alias/file` 就可以达到追番效果啦～

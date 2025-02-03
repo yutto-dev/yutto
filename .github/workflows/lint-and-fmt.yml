@@ -74,3 +74,31 @@ jobs:
         working-directory: packages/biliass/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
+
+  lint-and-fmt-docs:
+    name: Lint and Format (Docs)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          package_json_file: "docs/package.json"
+          version: "latest"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: "docs/pnpm-lock.yaml"
+
+      - name: Install dependencies
+        working-directory: ./docs
+        run: pnpm i --frozen-lockfile
+
+      - name: Format check
+        working-directory: ./docs
+        run: pnpm fmt:check

@@ -16,11 +16,14 @@
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
-    "serve": "vitepress serve"
+    "serve": "vitepress serve",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check ."
   },
   "devDependencies": {
     "@moefy-canvas/core": "^0.6.0",
     "@moefy-canvas/theme-sparkler": "^0.6.0",
+    "prettier": "^3.4.2",
     "vite": "^6.0.11",
     "vitepress": "1.6.3",
     "vue": "^3.5.13"

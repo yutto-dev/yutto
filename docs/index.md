@@ -11,6 +11,9 @@ hero:
       - theme: alt
         text: 从 bilili 迁移
         link: /migration/
+      - theme: alt
+        text: GitHub
+        link: https://github.com/yutto-dev/yutto
    image:
       src: /logo.png
       alt: yutto-logo
