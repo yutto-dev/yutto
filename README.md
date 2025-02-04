@@ -28,40 +28,36 @@
 
 yutto 是一个 B 站视频下载器，它可以帮助你下载 B 站上的投稿视频、番剧、课程等资源，支持单个视频下载、批量下载等功能，就像这样：
 
-<div class="language-sh">
-<pre>
-<code>
-<span style="color:magenta;">❯</span> yutto https://www.bilibili.com/video/BV1ZEf9YiE2h/
- <span style="color:#0096FF;">INFO</span>  发现配置文件 yutto.toml，加载中……
-<span style="color:white;background-color:magenta;font-weight:bold"> 大会员 </span> 成功以大会员身份登录～
-<span style="color:white;background-color:cyan;"> 投稿视频 </span> 植物大战僵尸融合版2.2正式版宣传片
- <span style="color:#0096FF;">INFO</span>  开始处理视频 植物大战僵尸融合版2.2正式版宣传片
- <span style="color:#0096FF;">INFO</span>  共包含以下 15 个视频流：
- <span style="color:#0096FF;">INFO</span>  <span style="color:#0096FF;">* 0 [AVC ] [1920x1080] <1080P 60帧> #3</span>
- <span style="color:#0096FF;">INFO</span>    1 [HEVC] [1920x1080] &lt;1080P 60帧&gt; #3
- <span style="color:#0096FF;">INFO</span>    2 [AV1 ] [1920x1080] &lt;1080P 60帧&gt; #3
- <span style="color:#0096FF;">INFO</span>    3 [AVC ] [1920x1080] &lt;1080P 高清&gt; #3
- <span style="color:#0096FF;">INFO</span>    4 [HEVC] [1920x1080] &lt;1080P 高清&gt; #3
- <span style="color:#0096FF;">INFO</span>    5 [AV1 ] [1920x1080] &lt;1080P 高清&gt; #3
- <span style="color:#0096FF;">INFO</span>    6 [AVC ] [1280x720 ] &lt;720P 高清 &gt; #3
- <span style="color:#0096FF;">INFO</span>    7 [HEVC] [1280x720 ] &lt;720P 高清 &gt; #3
- <span style="color:#0096FF;">INFO</span>    8 [AV1 ] [1280x720 ] &lt;720P 高清 &gt; #3
- <span style="color:#0096FF;">INFO</span>    9 [AVC ] [ 852x480 ] &lt;480P 清晰 &gt; #3
- <span style="color:#0096FF;">INFO</span>   10 [HEVC] [ 852x480 ] &lt;480P 清晰 &gt; #3
- <span style="color:#0096FF;">INFO</span>   11 [AV1 ] [ 852x480 ] &lt;480P 清晰 &gt; #3
- <span style="color:#0096FF;">INFO</span>   12 [AVC ] [ 640x360 ] &lt;360P 流畅 &gt; #3
- <span style="color:#0096FF;">INFO</span>   13 [HEVC] [ 640x360 ] &lt;360P 流畅 &gt; #3
- <span style="color:#0096FF;">INFO</span>   14 [AV1 ] [ 640x360 ] &lt;360P 流畅 &gt; #3
- <span style="color:#0096FF;">INFO</span>  共包含以下 3 个音频流：
- <span style="color:#0096FF;">INFO</span>  <span style="color:magenta;">* 0 [MP4A] <320kbps ></span>
- <span style="color:#0096FF;">INFO</span>    1 [MP4A] &lt; 64kbps &gt;
- <span style="color:#0096FF;">INFO</span>    2 [MP4A] &lt;128kbps &gt;
-<span style="color:white;background-color:cyan;"> 弹幕 </span> ASS 弹幕已生成
- <span style="color:#0096FF;">INFO</span>  开始下载……
-<span style="color:green;">━━━━━━━━━━━━━━━━━━━━━━━━━━━╸</span>━━━━━━━━━━━━━━━━━━━━━━  39.05 MiB/ 72.13 MiB 32.22 MiB/⚡
-</code>
-</pre>
-</div>
+```bash
+❯ yutto https://www.bilibili.com/video/BV1ZEf9YiE2h/
+ INFO  发现配置文件 yutto.toml，加载中……
+ 大会员  成功以大会员身份登录～
+ 投稿视频  植物大战僵尸融合版2.2正式版宣传片
+ INFO  开始处理视频 植物大战僵尸融合版2.2正式版宣传片
+ INFO  共包含以下 15 个视频流：
+ INFO  * 0 [AVC ] [1920x1080] <1080P 60帧> #3
+ INFO    1 [HEVC] [1920x1080] <1080P 60帧> #3
+ INFO    2 [AV1 ] [1920x1080] <1080P 60帧> #3
+ INFO    3 [AVC ] [1920x1080] <1080P 高清> #3
+ INFO    4 [HEVC] [1920x1080] <1080P 高清> #3
+ INFO    5 [AV1 ] [1920x1080] <1080P 高清> #3
+ INFO    6 [AVC ] [1280x720 ] <720P 高清 > #3
+ INFO    7 [HEVC] [1280x720 ] <720P 高清 > #3
+ INFO    8 [AV1 ] [1280x720 ] <720P 高清 > #3
+ INFO    9 [AVC ] [ 852x480 ] <480P 清晰 > #3
+ INFO   10 [HEVC] [ 852x480 ] <480P 清晰 > #3
+ INFO   11 [AV1 ] [ 852x480 ] <480P 清晰 > #3
+ INFO   12 [AVC ] [ 640x360 ] <360P 流畅 > #3
+ INFO   13 [HEVC] [ 640x360 ] <360P 流畅 > #3
+ INFO   14 [AV1 ] [ 640x360 ] <360P 流畅 > #3
+ INFO  共包含以下 3 个音频流：
+ INFO  * 0 [MP4A] <320kbps >
+ INFO    1 [MP4A] < 64kbps >
+ INFO    2 [MP4A] <128kbps >
+ 弹幕  ASS 弹幕已生成
+ INFO  开始下载……
+━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━  39.05 MiB/ 72.13 MiB 32.22 MiB/⚡
+```
 
 ## 从安装开始～
 
