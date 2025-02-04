@@ -12,6 +12,7 @@ export default defineConfig({
   cleanUrls: true,
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-mini.svg' }]],
   themeConfig: {
+    logo: '/logo-mini.svg',
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/quick-start' },
