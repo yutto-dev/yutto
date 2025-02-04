@@ -163,17 +163,17 @@ def cli() -> argparse.ArgumentParser:
         default=settings.basic.banned_mirrors_pattern,
         help="禁用下载链接的镜像源，使用正则匹配",
     )
-    group_basic.add_argument("--no-color", default=settings.basic.no_color, action="store_true", help="不使用颜色")
-    group_basic.add_argument(
-        "--no-progress", default=settings.basic.no_progress, action="store_true", help="不显示进度条"
-    )
-    group_basic.add_argument("--debug", default=settings.basic.debug, action="store_true", help="启用 debug 模式")
     group_basic.add_argument(
         "--vip-strict", default=settings.basic.vip_strict, action="store_true", help="启用严格检查大会员生效"
     )
     group_basic.add_argument(
         "--login-strict", default=settings.basic.login_strict, action="store_true", help="启用严格检查登录状态"
     )
+    group_basic.add_argument("--no-color", default=settings.basic.no_color, action="store_true", help="不使用颜色")
+    group_basic.add_argument(
+        "--no-progress", default=settings.basic.no_progress, action="store_true", help="不显示进度条"
+    )
+    group_basic.add_argument("--debug", default=settings.basic.debug, action="store_true", help="启用 debug 模式")
 
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")

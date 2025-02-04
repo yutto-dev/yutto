@@ -7,8 +7,8 @@
 <!-- prettier-ignore -->
 | 类型 | 是否支持选集 | 示例链接 | 默认路径模板 |
 | - | - | - | - |
-| 投稿视频 | - | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}` |
-| 投稿视频 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}/{name}` |
+| 投稿视频 | - | `https://www.bilibili.com/video/BV1vZ4y1M7mQ/` <br/> `https://www.bilibili.com/video/av371660125/` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}` |
+| 投稿视频 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/video/BV1vZ4y1M7mQ/` <br/> `https://www.bilibili.com/video/av371660125/`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}/{name}` |
 | 番剧 | - | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211` | `{name}` |
 | 番剧 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903` | `{title}/{name}` |
 | 课程 | - | `https://www.bilibili.com/cheese/play/ep6902` | `{name}` |
@@ -55,8 +55,8 @@ yutto "BV1vZ4y1M7mQ?p=1"
 与投稿视频单集相同，这同样支持 AV 号和 BV 号的链接，但 `?p=n` 的选集参数在此时是无效的，我会认为这只是一个入口链接，而你既然指定了要批量下载，那么我会解析该投稿视频的全集。如果你仍然想要指定下载剧集，请参考选集参数 `-p/--episodes`。
 
 ```bash
-yutto -b https://www.bilibili.com/video/BV1vZ4y1M7mQ
-yutto -b https://www.bilibili.com/video/av371660125
+yutto -b https://www.bilibili.com/video/BV1vZ4y1M7mQ/
+yutto -b https://www.bilibili.com/video/av371660125/
 yutto -b BV1vZ4y1M7mQ
 yutto -b av371660125
 yutto -b "BV1vZ4y1M7mQ?p=2" # 仍然会下载全集

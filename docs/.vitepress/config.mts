@@ -36,8 +36,30 @@ export default defineConfig({
               text: '支持的链接',
               link: '/guide/supported-links',
             },
+            {
+              text: '命令行参数',
+              link: '/guide/cli',
+              collapsed: true,
+              items: [
+                {
+                  text: '基础参数',
+                  link: '/guide/cli/basic',
+                },
+                {
+                  text: '资源选择参数',
+                  link: '/guide/cli/resource',
+                },
+                {
+                  text: '弹幕设置参数',
+                  link: '/guide/cli/danmaku',
+                },
+                {
+                  text: '批量下载参数',
+                  link: '/guide/cli/batch',
+                },
+              ],
+            },
           ],
-          collapsed: false,
         },
         {
           text: 'FAQ',
@@ -56,38 +78,6 @@ export default defineConfig({
           link: '/guide/thanks',
         },
       ],
-      '/reference': [
-        {
-          text: '参考',
-          items: [
-            {
-              text: '命令行参数',
-              link: '/reference/cli',
-            },
-            {
-              text: '配置',
-              link: '/reference/config',
-            },
-            {
-              text: '详细参数',
-              items: [
-                {
-                  text: '基础参数',
-                  link: '/reference/arguments-basic',
-                },
-                {
-                  text: '批量参数',
-                  link: '/reference/arguments-batch',
-                },
-                {
-                  text: '弹幕参数',
-                  link: '/reference/arguments-danmaku',
-                },
-              ],
-            },
-          ],
-        },
-      ],
     },
 
     footer: {
@@ -97,7 +87,7 @@ export default defineConfig({
 
     editLink: {
       pattern: 'https://github.com/yutto-dev/yutto/edit/main/docs/:path',
-      text: '为此页提供修改建议',
+      text: '欸？我刚刚哪里说错了？你可以帮我改正一下哦～',
     },
 
     socialLinks: [

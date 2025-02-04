@@ -95,8 +95,8 @@ uv tool install git+https://github.com/yutto-dev/yutto.git@main         # 通过
 <!-- prettier-ignore -->
 | 类型 | 是否支持选集 | 示例链接 | 默认路径模板 |
 | - | - | - | - |
-| 投稿视频 | - | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}` |
-| 投稿视频 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/video/BV1vZ4y1M7mQ` <br/> `https://www.bilibili.com/video/av371660125`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}/{name}` |
+| 投稿视频 | - | `https://www.bilibili.com/video/BV1vZ4y1M7mQ/` <br/> `https://www.bilibili.com/video/av371660125/` <br/> `https://www.bilibili.com/video/BV1vZ4y1M7mQ/?p=1` <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}` |
+| 投稿视频 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/video/BV1vZ4y1M7mQ/` <br/> `https://www.bilibili.com/video/av371660125/`  <br/> `av371660125` <br/> `BV1vZ4y1M7mQ` | `{title}/{name}` |
 | 番剧 | - | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `ep395211` | `{name}` |
 | 番剧 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/bangumi/play/ep395211` <br/> `https://www.bilibili.com/bangumi/play/ss38221` <br/> `https://www.bilibili.com/bangumi/media/md28233903` <br/> `ep395211` <br/> `ss38221` <br/> `md28233903` | `{title}/{name}` |
 | 课程 | - | `https://www.bilibili.com/cheese/play/ep6902` | `{name}` |
@@ -183,8 +183,6 @@ yutto 支持一些基础参数，无论是批量下载还是单视频下载都�
 | 16 | 360P 流畅 |
 
 并不是说指定某个清晰度就一定会下载该清晰度的视频，yutto 只会尽可能满足你的要求，如果不存在指定的清晰度，yutto 就会按照默认的清晰度搜索机制进行调节，比如指定清晰度为 `80`，**首先会依次降清晰度搜索** `74`、`64`、`32`、`16`，如果依然找不到合适的则**继续升清晰度搜索** `100`、`112`、`116`、`120`、`125`、`126`、`127`。
-
-值得注意的是，目前杜比视界视频只能简单下载音视频流并合并，合并后并不能达到在线观看的效果。
 
 #### 指定音频码率等级
 
@@ -408,16 +406,6 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  默认值 `"%Y-%m-%d"`
 -  常用值 `"%Y-%m-%d %H:%M:%S"`
 
-#### 严格校验大会员状态有效
-
--  参数 `--vip-strict`
--  默认值 `False`
-
-#### 严格校验登录状态有效
-
--  参数 `--login-strict`
--  默认值 `False`
-
 #### 设置下载间隔
 
 -  参数 `--download-interval`
@@ -431,6 +419,16 @@ cat ~/.yutto_alias | yutto tensura-nikki --batch --alias-file -
 -  默认值 `None`
 
 使用正则禁用特定镜像，比如 `--banned-mirrors-pattern "mirrorali"` 将禁用 url 中包含 `mirrorali` 的镜像
+
+#### 严格校验大会员状态有效
+
+-  参数 `--vip-strict`
+-  默认值 `False`
+
+#### 严格校验登录状态有效
+
+-  参数 `--login-strict`
+-  默认值 `False`
 
 #### 不显示颜色
 

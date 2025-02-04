@@ -53,11 +53,11 @@ class YuttoBasicSettings(BaseModel):
     metadata_format_premiered: Annotated[str, Field(TIME_DATE_FMT)]
     download_interval: Annotated[int, Field(0)]
     banned_mirrors_pattern: Annotated[Optional[str], Field(None)]  # noqa: UP007
+    vip_strict: Annotated[bool, Field(False)]
+    login_strict: Annotated[bool, Field(False)]
     no_color: Annotated[bool, Field(False)]
     no_progress: Annotated[bool, Field(False)]
     debug: Annotated[bool, Field(False)]
-    vip_strict: Annotated[bool, Field(False)]
-    login_strict: Annotated[bool, Field(False)]
 
 
 class YuttoResourceSettings(BaseModel):
