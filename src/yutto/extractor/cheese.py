@@ -38,9 +38,10 @@ class CheeseExtractor(SingleExtractor):
     def resolve_shortcut(self, id: str) -> tuple[bool, str]:
         matched = False
         url = id
-        if match_obj := self.REGEX_EP_ID.match(id):
-            url = f"https://www.bilibili.com/cheese/play/ep{match_obj.group('episode_id')}"
-            matched = True
+        # TODO 和番剧的快捷方式冲突，课程中暂时放弃快捷方式特性
+        # if match_obj := self.REGEX_EP_ID.match(id):
+        #     url = f"https://www.bilibili.com/cheese/play/ep{match_obj.group('episode_id')}"
+        #     matched = True
         return matched, url
 
     def match(self, url: str) -> bool:
