@@ -97,6 +97,9 @@ docker-publish:
   docker buildx build --no-cache --platform=linux/amd64,linux/arm64 -t "{{DOCKER_NAME}}:{{VERSION}}" -t "{{DOCKER_NAME}}:latest" . --push
 
 # docs specific
+docs-setup:
+  cd docs; pnpm i
+
 docs-dev:
   cd docs; pnpm dev
 

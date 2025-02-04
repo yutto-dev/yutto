@@ -70,8 +70,7 @@ yutto --config /path/to/config.toml <url>
 
 你可以通过配置文件来设置一些默认参数，整体上与命令行参数基本一致，下面以一些示例来展示配置文件的写法：
 
-```toml
-# yutto.toml
+```toml [yutto.toml]
 #:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
 [basic]
 # 设置下载目录
