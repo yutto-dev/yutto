@@ -63,9 +63,9 @@ class YuttoBasicSettings(BaseModel):
 class YuttoResourceSettings(BaseModel):
     require_video: Annotated[bool, Field(True)]
     require_audio: Annotated[bool, Field(True)]
+    require_danmaku: Annotated[bool, Field(True)]
     require_subtitle: Annotated[bool, Field(True)]
     require_metadata: Annotated[bool, Field(False)]
-    require_danmaku: Annotated[bool, Field(True)]
     require_cover: Annotated[bool, Field(True)]
     require_chapter_info: Annotated[bool, Field(True)]
     save_cover: Annotated[bool, Field(False)]

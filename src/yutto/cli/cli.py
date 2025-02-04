@@ -252,9 +252,9 @@ def cli() -> argparse.ArgumentParser:
     group_resource.set_defaults(
         require_video=settings.resource.require_video,
         require_audio=settings.resource.require_audio,
+        require_danmaku=settings.resource.require_danmaku,
         require_subtitle=settings.resource.require_subtitle,
         require_metadata=settings.resource.require_metadata,
-        require_danmaku=settings.resource.require_danmaku,
         require_cover=settings.resource.require_cover,
         require_chapter_info=settings.resource.require_chapter_info,
     )

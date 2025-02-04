@@ -9,7 +9,6 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/quick-start' },
-      { text: '参考', link: '/reference/cli' },
       { text: '迁移', link: '/migration/' },
       {
         text: '支持我',
@@ -39,7 +38,7 @@ export default defineConfig({
             {
               text: '命令行参数',
               link: '/guide/cli',
-              collapsed: true,
+              collapsed: false,
               items: [
                 {
                   text: '基础参数',
@@ -60,6 +59,10 @@ export default defineConfig({
               ],
             },
           ],
+        },
+        {
+          text: '小技巧',
+          link: '/guide/tips',
         },
         {
           text: 'FAQ',
