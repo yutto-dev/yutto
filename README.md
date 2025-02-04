@@ -177,7 +177,7 @@ yutto 还支持很多功能，限于篇幅不在 `README` 中展示，你可以�
 
 ### future
 
--  [ ] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
+-  [x] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
 -  [ ] feat: 新的基于 toml 的任务列表
 -  [ ] refactor: 配置参数复用 pydantic 验证
 -  [ ] refactor: 针对视频合集优化路径变量
