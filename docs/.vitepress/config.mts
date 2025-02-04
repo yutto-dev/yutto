@@ -1,10 +1,16 @@
 import { defineConfig } from 'vitepress'
+import {
+  groupIconMdPlugin,
+  groupIconVitePlugin,
+  localIconLoader,
+} from 'vitepress-plugin-group-icons'
 
 export default defineConfig({
   lang: 'zh-CN',
   title: 'yutto',
   description: '🧊 yutto，一个可爱且任性的 B 站下载器（CLI）',
   cleanUrls: true,
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-mini.svg' }]],
   themeConfig: {
     nav: [
       { text: '首页', link: '/' },
@@ -101,5 +107,23 @@ export default defineConfig({
     search: {
       provider: 'local',
     },
+  },
+
+  markdown: {
+    image: {
+      lazyLoading: true,
+    },
+    config(md) {
+      md.use(groupIconMdPlugin)
+    },
+  },
+  vite: {
+    plugins: [
+      groupIconVitePlugin({
+        customIcon: {
+          yutto: localIconLoader(import.meta.url, '../public/logo-mini.svg'),
+        },
+      }) as any,
+    ],
   },
 })
