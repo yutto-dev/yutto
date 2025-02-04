@@ -157,7 +157,7 @@ yutto --batch https://www.bilibili.com/bangumi/play/ep395211
 
 ### 更多功能
 
-yutto 还支持更多功能，限于篇幅不在 `README` 中展示，你可以前往 [yutto 文档](https://yutto.nyakku.moe/) 查看更多详细内容～
+yutto 还支持很多功能，限于篇幅不在 `README` 中展示，你可以前往 [yutto 文档](https://yutto.nyakku.moe/) 查看更多详细内容～
 
 ## 其他应用
 
