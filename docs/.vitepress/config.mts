@@ -8,7 +8,7 @@ import {
 export default defineConfig({
   lang: 'zh-CN',
   title: 'yutto',
-  description: '🧊 yutto，一个可爱且任性的 B 站下载器（CLI）',
+  description: '🧊 yutto，一个可爱且任性的 B 站视频下载器（CLI）',
   cleanUrls: true,
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-mini.svg' }]],
   themeConfig: {

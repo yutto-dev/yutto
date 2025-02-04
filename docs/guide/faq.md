@@ -1,5 +1,9 @@
 # FAQ
 
+## 版本号为什么是 2.0
+
+因为 yutto 是 [bilili](https://github.com/yutto-dev/bilili) 的後輩呀～
+
 ## 名字的由来
 
 [《転スラ日記》第一话 00:24](https://www.bilibili.com/bangumi/play/ep395211?t=24)
