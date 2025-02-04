@@ -211,4 +211,4 @@ yutto -b https://www.bilibili.com/bangumi/play/ep395211
 这里给出一些推荐内容，你可以尝试：
 
 - 如果你希望了解我具体都支持哪些链接，可以尝试前往 [支持的链接](./supported-links) 查看
-- 如果你希望了解我的进阶用法，可以尝试前往 [命令行参数](./cli/index) 查看
+- 如果你希望了解我的进阶用法，可以尝试前往 [命令行参数](./cli/introduction) 查看

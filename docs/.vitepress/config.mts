@@ -44,9 +44,12 @@ export default defineConfig({
             },
             {
               text: '命令行参数',
-              link: '/guide/cli',
               collapsed: false,
               items: [
+                {
+                  text: '介绍',
+                  link: '/guide/cli/introduction',
+                },
                 {
                   text: '基础参数',
                   link: '/guide/cli/basic',

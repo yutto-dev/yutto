@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import GitHubUser from './GitHubUser.vue'
-import { defineProps, ref, onMounted, type Ref } from 'vue'
+import { ref, onMounted, type Ref } from 'vue'
 
 interface Contributor {
   login: string
