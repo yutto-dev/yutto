@@ -21,7 +21,7 @@ export default defineConfig({
     ['meta', { property: 'og:url', content: 'https://yutto.nyakku.moe/' }],
   ],
   themeConfig: {
-    logo: '/logo-mini.svg',
+    logo: { src: '/logo-mini.svg', width: 24, height: 24 },
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/quick-start' },
