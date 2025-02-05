@@ -10,7 +10,16 @@ export default defineConfig({
   title: 'yutto',
   description: '🧊 yutto，一个可爱且任性的 B 站视频下载器（CLI）',
   cleanUrls: true,
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-mini.svg' }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-mini.svg' }],
+    ['meta', { name: 'theme-color', content: '#67e8e2' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:locale', content: 'zh-CN' }],
+    ['meta', { property: 'og:title', content: '🧊 yutto，一个可爱且任性的 B 站视频下载器（CLI）' }],
+    ['meta', { property: 'og:site_name', content: 'yutto' }],
+    ['meta', { property: 'og:image', content: 'https://yutto.nyakku.moe/logo.png' }],
+    ['meta', { property: 'og:url', content: 'https://yutto.nyakku.moe/' }],
+  ],
   themeConfig: {
     logo: '/logo-mini.svg',
     nav: [

@@ -24,5 +24,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <canvas ref="el"></canvas>
+  <canvas ref="el" style="position: fixed; top: 0; left: 0; pointer-events: none"></canvas>
 </template>
