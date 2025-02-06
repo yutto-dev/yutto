@@ -41,6 +41,7 @@
 <GitHubUser username="vaxl029"/>
 <GitHubUser username="aheadlead"/>
 <GitHubUser username="symant233"/>
+<GitHubUser username="Nightingale0504"/>
 
 ## 以及你的支持～
 
