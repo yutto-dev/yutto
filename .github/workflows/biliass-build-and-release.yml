@@ -22,6 +22,9 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  cancel-in-progress: true
+
 jobs:
   linux:
     runs-on: ${{ matrix.platform.runner }}
