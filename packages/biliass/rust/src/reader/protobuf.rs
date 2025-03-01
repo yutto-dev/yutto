@@ -1,6 +1,6 @@
 use crate::comment::{Comment, CommentData, CommentPosition, NormalCommentData};
 use crate::error::{BiliassError, DecodeError};
-use crate::filter::{should_skip_parse, BlockOptions};
+use crate::filter::{BlockOptions, should_skip_parse};
 use crate::proto::danmaku::DmSegMobileReply;
 use crate::reader::{special, utils};
 use prost::Message;
