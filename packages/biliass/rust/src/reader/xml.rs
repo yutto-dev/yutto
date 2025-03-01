@@ -1,6 +1,6 @@
 use crate::comment::{Comment, CommentData, CommentPosition, NormalCommentData};
 use crate::error::{BiliassError, DecodeError, ParseError};
-use crate::filter::{should_skip_parse, BlockOptions};
+use crate::filter::{BlockOptions, should_skip_parse};
 use crate::reader::{special, utils};
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
@@ -190,7 +190,7 @@ where
                     _ => {
                         return Err(BiliassError::ParseError(ParseError::Xml(
                             "Unknown XML version".to_string(),
-                        )))
+                        )));
                     }
                 }
             }

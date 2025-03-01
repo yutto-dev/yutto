@@ -49,7 +49,7 @@ class YuttoBasicSettings(BaseModel):
     tmp_dir: Annotated[Optional[str], Field(None)]  # noqa: UP007
     sessdata: Annotated[str, Field("")]
     subpath_template: Annotated[str, Field("{auto}")]
-    aliases: Annotated[dict[str, str], Field({})]
+    aliases: Annotated[dict[str, str], Field(dict[str, str]())]
     metadata_format_premiered: Annotated[str, Field(TIME_DATE_FMT)]
     download_interval: Annotated[int, Field(0)]
     banned_mirrors_pattern: Annotated[Optional[str], Field(None)]  # noqa: UP007
@@ -84,7 +84,7 @@ class YuttoDanmakuSettings(BaseModel):
     block_fixed: Annotated[bool, Field(False)]
     block_special: Annotated[bool, Field(False)]
     block_colorful: Annotated[bool, Field(False)]
-    block_keyword_patterns: Annotated[list[str], Field([])]
+    block_keyword_patterns: Annotated[list[str], Field(list[str]())]
 
 
 class YuttoBatchSettings(BaseModel):
