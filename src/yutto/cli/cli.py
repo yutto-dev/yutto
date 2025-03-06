@@ -34,7 +34,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
 
 def parse_config_path() -> Path | None:
     pre_parser = argparse.ArgumentParser(description="yutto pre parser", add_help=False)
-    pre_parser.add_argument("--config", type=path_from_cli, default=search_for_settings_file(), help="配置文件路径")
+    pre_parser.add_argument("--config", type=path_from_cli, default=search_for_settings_file(), help="配置文件路径（UTF-8格式）")
     args, _ = pre_parser.parse_known_args()
     return args.config
 
