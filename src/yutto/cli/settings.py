@@ -114,7 +114,7 @@ def search_for_settings_file() -> Path | None:
 
 
 def load_settings_file(settings_file: Path) -> YuttoSettings:
-    with settings_file.open("r", encoding="UTF-8") as f:
+    with settings_file.open("r", encoding="utf-8") as f:
         settings_raw: Any = tomllib.loads(f.read())  # pyright: ignore[reportUnknownMemberType]
     return YuttoSettings.model_validate(settings_raw)
 
