@@ -201,8 +201,10 @@ def merge_video_and_audio(
     # https://aaron.cc/ffmpeg-hevc-apple-devices/
     # see also: https://github.com/yutto-dev/yutto/issues/85
     vtag: str | None = None
-    if options["video_save_codec"] == "hevc" or (
-        options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc"
+    if (
+        options["video_save_codec"] == "hevc"
+        or (options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc")
+        and video["quality"] != 126  # skip for Dolby Vision
     ):
         vtag = "hvc1"
 

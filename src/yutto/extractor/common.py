@@ -67,6 +67,8 @@ async def extract_bangumi_data(
         )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": UNKNOWN,
@@ -125,6 +127,8 @@ async def extract_cheese_data(
         )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
             "username": UNKNOWN,
@@ -188,11 +192,16 @@ async def extract_ugc_video_data(
             if ugc_video_info["metadata"]["actor"]
             else UNKNOWN
         )
+        username: str = (
+            ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
+        )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
+            "aid": str(avid.as_aid()),
+            "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
-            "username": UNKNOWN,
+            "username": username,
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
             "download_date": ugc_video_info["metadata"]["dateadded"],

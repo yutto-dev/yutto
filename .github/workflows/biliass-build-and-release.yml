@@ -2,16 +2,29 @@ name: Build and Release (biliass)
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "biliass*" # Push events to matching biliass*, i.e. biliass@1.0.0
+    branches:
+      - main
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   pull_request:
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   merge_group:
+    paths:
+      - "packages/biliass/**"
+      - ".github/**"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   linux:
@@ -207,8 +220,11 @@ jobs:
           merge-multiple: true
           path: dist/
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Publish release distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        run: uv publish -v
 
   publish-release:
     runs-on: ubuntu-latest

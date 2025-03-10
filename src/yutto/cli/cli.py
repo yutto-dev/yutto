@@ -34,7 +34,9 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
 
 def parse_config_path() -> Path | None:
     pre_parser = argparse.ArgumentParser(description="yutto pre parser", add_help=False)
-    pre_parser.add_argument("--config", type=path_from_cli, default=search_for_settings_file(), help="配置文件路径")
+    pre_parser.add_argument(
+        "--config", type=path_from_cli, default=search_for_settings_file(), help="配置文件路径（UTF-8 格式）"
+    )
     args, _ = pre_parser.parse_known_args()
     return args.config
 
@@ -163,17 +165,17 @@ def cli() -> argparse.ArgumentParser:
         default=settings.basic.banned_mirrors_pattern,
         help="禁用下载链接的镜像源，使用正则匹配",
     )
-    group_basic.add_argument("--no-color", default=settings.basic.no_color, action="store_true", help="不使用颜色")
-    group_basic.add_argument(
-        "--no-progress", default=settings.basic.no_progress, action="store_true", help="不显示进度条"
-    )
-    group_basic.add_argument("--debug", default=settings.basic.debug, action="store_true", help="启用 debug 模式")
     group_basic.add_argument(
         "--vip-strict", default=settings.basic.vip_strict, action="store_true", help="启用严格检查大会员生效"
     )
     group_basic.add_argument(
         "--login-strict", default=settings.basic.login_strict, action="store_true", help="启用严格检查登录状态"
     )
+    group_basic.add_argument("--no-color", default=settings.basic.no_color, action="store_true", help="不使用颜色")
+    group_basic.add_argument(
+        "--no-progress", default=settings.basic.no_progress, action="store_true", help="不显示进度条"
+    )
+    group_basic.add_argument("--debug", default=settings.basic.debug, action="store_true", help="启用 debug 模式")
 
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")
@@ -252,9 +254,9 @@ def cli() -> argparse.ArgumentParser:
     group_resource.set_defaults(
         require_video=settings.resource.require_video,
         require_audio=settings.resource.require_audio,
+        require_danmaku=settings.resource.require_danmaku,
         require_subtitle=settings.resource.require_subtitle,
         require_metadata=settings.resource.require_metadata,
-        require_danmaku=settings.resource.require_danmaku,
         require_cover=settings.resource.require_cover,
         require_chapter_info=settings.resource.require_chapter_info,
     )

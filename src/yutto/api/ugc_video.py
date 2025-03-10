@@ -87,6 +87,10 @@ async def get_ugc_video_info(ctx: FetcherContext, client: AsyncClient, avid: AvI
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
+    if res_json["code"] == 62012:
+        raise NoAccessPermissionError(
+            f"无法获取该视频 {avid} 信息，原因：{res_json['message']}（当前稿件up主设置为仅自见）"
+        )
     if res_json["code"] == -404:
         raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
     assert res_json_data is not None, "响应数据无 data 域"
@@ -146,9 +150,9 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
     for i, (item, page_info) in enumerate(zip(cast(list[Any], res_json["data"]), video_info["pages"])):
         # TODO: 这里 part 出现了两次，需要都修改，后续去除其中一个冗余数据
         if _is_meaningless_name(item["part"]):
-            item["part"] = f"{video_title}_P{i+1:02}"
+            item["part"] = f"{video_title}_P{i + 1:02}"
         if _is_meaningless_name(page_info["part"]):
-            page_info["part"] = f"{video_title}_P{i+1:02}"
+            page_info["part"] = f"{video_title}_P{i + 1:02}"
 
     result["pages"] = [
         {

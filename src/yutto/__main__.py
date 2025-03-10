@@ -4,6 +4,7 @@ import asyncio
 import copy
 import os
 import re
+import shlex
 import sys
 from typing import TYPE_CHECKING, Callable
 
@@ -75,7 +76,7 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
 
         for i, args in enumerate(args_list):
             if len(args_list) > 1:
-                Logger.custom(f"列表项 {args.url}", Badge(f"[{i+1}/{len(args_list)}]", fore="black", back="cyan"))
+                Logger.custom(f"列表项 {args.url}", Badge(f"[{i + 1}/{len(args_list)}]", fore="black", back="cyan"))
 
             # 验证批量参数
             if args.batch:
@@ -165,7 +166,7 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
                 if args.batch:
                     Logger.custom(
                         f"{episode_data['filename']}",
-                        Badge(f"[{i+1}/{len(download_list)}]", fore="black", back="cyan"),
+                        Badge(f"[{i + 1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
 
                 current_download_state = await start_downloader(
@@ -215,9 +216,9 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
         args_list: list[argparse.Namespace] = []
         # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):
-            local_args = parser.parse_args(line.split(), args)
+            local_args = parser.parse_args(shlex.split(line), args)
             if local_args.no_inherit:
-                local_args = parser.parse_args(line.split())
+                local_args = parser.parse_args(shlex.split(line))
             Logger.debug(f"列表参数: {local_args}")
             args_list += flatten_args(local_args, parser)
         return args_list

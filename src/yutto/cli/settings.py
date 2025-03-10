@@ -49,23 +49,23 @@ class YuttoBasicSettings(BaseModel):
     tmp_dir: Annotated[Optional[str], Field(None)]  # noqa: UP007
     sessdata: Annotated[str, Field("")]
     subpath_template: Annotated[str, Field("{auto}")]
-    aliases: Annotated[dict[str, str], Field({})]
+    aliases: Annotated[dict[str, str], Field(dict[str, str]())]
     metadata_format_premiered: Annotated[str, Field(TIME_DATE_FMT)]
     download_interval: Annotated[int, Field(0)]
     banned_mirrors_pattern: Annotated[Optional[str], Field(None)]  # noqa: UP007
+    vip_strict: Annotated[bool, Field(False)]
+    login_strict: Annotated[bool, Field(False)]
     no_color: Annotated[bool, Field(False)]
     no_progress: Annotated[bool, Field(False)]
     debug: Annotated[bool, Field(False)]
-    vip_strict: Annotated[bool, Field(False)]
-    login_strict: Annotated[bool, Field(False)]
 
 
 class YuttoResourceSettings(BaseModel):
     require_video: Annotated[bool, Field(True)]
     require_audio: Annotated[bool, Field(True)]
+    require_danmaku: Annotated[bool, Field(True)]
     require_subtitle: Annotated[bool, Field(True)]
     require_metadata: Annotated[bool, Field(False)]
-    require_danmaku: Annotated[bool, Field(True)]
     require_cover: Annotated[bool, Field(True)]
     require_chapter_info: Annotated[bool, Field(True)]
     save_cover: Annotated[bool, Field(False)]
@@ -84,7 +84,7 @@ class YuttoDanmakuSettings(BaseModel):
     block_fixed: Annotated[bool, Field(False)]
     block_special: Annotated[bool, Field(False)]
     block_colorful: Annotated[bool, Field(False)]
-    block_keyword_patterns: Annotated[list[str], Field([])]
+    block_keyword_patterns: Annotated[list[str], Field(list[str]())]
 
 
 class YuttoBatchSettings(BaseModel):
@@ -114,7 +114,7 @@ def search_for_settings_file() -> Path | None:
 
 
 def load_settings_file(settings_file: Path) -> YuttoSettings:
-    with settings_file.open("r") as f:
+    with settings_file.open("r", encoding="utf-8") as f:
         settings_raw: Any = tomllib.loads(f.read())  # pyright: ignore[reportUnknownMemberType]
     return YuttoSettings.model_validate(settings_raw)
 

@@ -1,6 +1,6 @@
 [project]
 name = "yutto"
-version = "2.0.0-rc.6"
+version = "2.0.1"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,7 +29,7 @@ dependencies = [
   "dict2xml>=1.7.6",
   "httpx[http2,socks]>=0.28.1",
   "tomli>=2.0.2; python_version < '3.11'",
-  "pydantic>=2.10.3",
+  "pydantic>=2.10.6",
 ]
 
 [project.urls]
@@ -43,13 +43,13 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.390",
-  "ruff>=0.8.3",
-  "typos>=1.28.3",
+  "pyright>=1.1.395",
+  "ruff>=0.9.9",
+  "typos>=1.30.0",
   "pytest>=8.3.4",
   "pytest-rerunfailures>=15.0",
-  "syrupy>=4.8.0",
-  "pytest-codspeed>=3.1.0",
+  "syrupy>=4.8.2",
+  "pytest-codspeed>=3.2.0",
 ]
 
 [tool.uv.sources]
@@ -69,7 +69,6 @@ typeCheckingMode = "strict"
 [tool.ruff]
 line-length = 120
 target-version = "py39"
-exclude = ["*_pb2.py", "*_pb2.pyi"]
 
 [tool.ruff.lint]
 select = [
@@ -99,7 +98,7 @@ select = [
   # Pygrep-hooks
   "PGH004",
   # Flake8-type-checking
-  "TCH",
+  "TC",
   # Flake8-raise
   "RSE",
   # Refurb
@@ -121,10 +120,7 @@ known-first-party = ["yutto"]
 combine-as-imports = true
 
 [tool.ruff.lint.flake8-type-checking]
-runtime-evaluated-base-classes = [
-  "pydantic.BaseModel",
-  "pydantic_settings.BaseSettings",
-]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]

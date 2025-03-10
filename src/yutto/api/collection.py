@@ -43,7 +43,7 @@ async def get_collection_details(
 
 
 async def _get_collection_avids(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId, mid: MId) -> list[AvId]:
-    api = "https://api.bilibili.com/x/polymer/space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
+    api = "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
     ps = 30
     pn = 1
     total = 1

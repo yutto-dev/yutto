@@ -107,30 +107,43 @@ async def get_bangumi_playurl(
         Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
     if video_info.get("dash") is None:
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
-    return (
-        [
+
+    videos: list[VideoUrlMeta] = [
+        {
+            "url": video["base_url"],
+            "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
+            "codec": video_codec_map[video["codecid"]],
+            "width": video["width"],
+            "height": video["height"],
+            "quality": video["id"],
+        }
+        for video in video_info["dash"]["video"]
+    ]
+    audios: list[AudioUrlMeta] = [
+        {
+            "url": audio["base_url"],
+            "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
+            "codec": audio_codec_map[audio["codecid"]],
+            "width": 0,
+            "height": 0,
+            "quality": audio["id"],
+        }
+        for audio in video_info["dash"]["audio"]
+    ]
+    if video_info["dash"]["dolby"] is not None and video_info["dash"]["dolby"]["audio"] is not None:
+        dolby_audios_json = video_info["dash"]["dolby"]["audio"]
+        audios.extend(
             {
-                "url": video["base_url"],
-                "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
-                "codec": video_codec_map[video["codecid"]],
-                "width": video["width"],
-                "height": video["height"],
-                "quality": video["id"],
-            }
-            for video in video_info["dash"]["video"]
-        ],
-        [
-            {
-                "url": audio["base_url"],
-                "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
-                "codec": audio_codec_map[audio["codecid"]],
+                "url": dolby_audio_json["base_url"],
+                "mirrors": dolby_audio_json["backup_url"] if dolby_audio_json["backup_url"] is not None else [],
+                "codec": "eac3",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
                 "width": 0,
                 "height": 0,
-                "quality": audio["id"],
+                "quality": dolby_audio_json["id"],
             }
-            for audio in video_info["dash"]["audio"]
-        ],
-    )
+            for dolby_audio_json in dolby_audios_json
+        )
+    return (videos, audios)
 
 
 async def get_bangumi_subtitles(
