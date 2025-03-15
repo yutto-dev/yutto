@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from yutto._typing import EpisodeData, MId, SeriesId
 from yutto.api.space import get_medialist_avids, get_medialist_title, get_user_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
-from yutto.exceptions import NotFoundError
+from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
@@ -69,7 +69,7 @@ class SeriesExtractor(BatchExtractor):
                             ugc_video_list["pubdate"],
                         )
                     )
-            except NotFoundError as e:
+            except (NotFoundError, NoAccessPermissionError) as e:
                 Logger.error(e.message)
                 continue
 
