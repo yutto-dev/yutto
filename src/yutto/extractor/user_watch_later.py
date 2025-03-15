@@ -24,10 +24,11 @@ if TYPE_CHECKING:
 class UserWatchLaterExtractor(BatchExtractor):
     """用户稍后再看"""
 
-    REGEX_WATCH_LATER = re.compile(r"https?://www\.bilibili\.com/watchlater/?.*?$")
+    REGEX_WATCH_LATER_INDEX = re.compile(r"https?://www\.bilibili\.com/watchlater/?.*?$")
+    REGEX_WATCH_LATER_LIST = re.compile(r"https?://www\.bilibili\.com/list/watchlater/?.*?$")
 
     def match(self, url: str) -> bool:
-        if self.REGEX_WATCH_LATER.match(url):
+        if self.REGEX_WATCH_LATER_INDEX.match(url) or self.REGEX_WATCH_LATER_LIST.match(url):
             return True
         else:
             return False
