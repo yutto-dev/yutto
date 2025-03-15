@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
-from yutto.exceptions import NotFoundError
+from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.processor.selector import parse_episodes_selection
@@ -70,7 +70,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
-        except NotFoundError as e:
+        except (NotFoundError, NoAccessPermissionError) as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
             Logger.error(e.message)
             return []
