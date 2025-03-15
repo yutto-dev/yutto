@@ -249,13 +249,24 @@ def merge_video_and_audio(
 
     Logger.info("合并完成！")
 
+
+def cleanup_tmp_files(
+    video: VideoUrlMeta | None,
+    audio: AudioUrlMeta | None,
+    chapter_info_data: list[ChapterInfoData],
+    cover_data: bytes | None,
+    video_path: Path,
+    audio_path: Path,
+    chapter_info_path: Path,
+    cover_path: Path,
+):
     if video is not None:
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
     if chapter_info_data:
         chapter_info_path.unlink()
-    if cover_data is not None and not options["save_cover"]:
+    if cover_data is not None:
         cover_path.unlink()
 
 
@@ -298,10 +309,10 @@ async def start_downloader(
     Logger.info(f"开始处理视频 {filename}")
     output_dir.mkdir(parents=True, exist_ok=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    video_path = tmp_dir.joinpath(filename + "_video.m4s")
-    audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
-    cover_path = tmp_dir.joinpath(filename + "-poster.jpg")
-    chapter_info_path = tmp_dir.joinpath(filename + "_chapter_info.ini")
+    video_path = tmp_dir.joinpath(f"{filename}_video.m4s")
+    audio_path = tmp_dir.joinpath(f"{filename}_audio.m4s")
+    cover_path = tmp_dir.joinpath(f"{filename}_cover.jpg")
+    chapter_info_path = tmp_dir.joinpath(f"{filename}_chapter_info.ini")
 
     video = select_video(
         videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
@@ -366,7 +377,9 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
-        if options["save_cover"] or (not will_download_video and not will_download_audio):
+        if options["save_cover"]:
+            cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
+            cover_save_path.write_bytes(cover_data)
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
 
     if output_path.exists():
@@ -379,6 +392,16 @@ async def start_downloader(
 
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
+        cleanup_tmp_files(
+            video,
+            audio,
+            chapter_info_data,
+            cover_data,
+            video_path,
+            audio_path,
+            chapter_info_path,
+            cover_path,
+        )
         return DownloadState.SKIP
 
     video = video if will_download_video else None
@@ -403,5 +426,15 @@ async def start_downloader(
         chapter_info_path,
         output_path,
         options,
+    )
+    cleanup_tmp_files(
+        video,
+        audio,
+        chapter_info_data,
+        cover_data,
+        video_path,
+        audio_path,
+        chapter_info_path,
+        cover_path,
     )
     return DownloadState.DONE
