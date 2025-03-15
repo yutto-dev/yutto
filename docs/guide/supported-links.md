@@ -14,7 +14,7 @@
 | 课程 | - | `https://www.bilibili.com/cheese/play/ep6902` | `{name}` |
 | 课程 <sup>批量</sup> | :white_check_mark: | `https://www.bilibili.com/cheese/play/ep6902` <br/> `https://www.bilibili.com/cheese/play/ss298` | `{title}/{name}` |
 | 用户指定收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist?fid=1306978874&ftype=create` | `{username}的收藏夹/{series_title}/{title}/{name}` |
-| 当前用户稍后再看 <sup>批量</sup> | :x: | `https://www.bilibili.com/watchlater` | `稍后再看/{title}/{name}` |
+| 当前用户稍后再看 <sup>批量</sup> | :x: | `https://www.bilibili.com/watchlater` <br/> `https://www.bilibili.com/list/watchlater` | `稍后再看/{title}/{name}` |
 | 用户全部收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist` | `{username}的收藏夹/{series_title}/{title}/{name}` |
 | UP 主个人空间 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/video` | `{username}的全部投稿视频/{title}/{name}` |
 | 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season` <br/> `https://space.bilibili.com/3546619314178489/channel/collectiondetail?sid=3221717`<sup>旧版页面</sup> <br/> `https://space.bilibili.com/100969474/favlist?fid=3221717&ftype=collect&ctype=21` | `{series_title}/{title}` |
