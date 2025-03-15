@@ -6,6 +6,7 @@ import os
 import re
 import shlex
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 import httpx
@@ -165,7 +166,7 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
                 episode_data = ensure_unique_path(episode_data, unique_path)
                 if args.batch:
                     Logger.custom(
-                        f"{episode_data['filename']}",
+                        f"{episode_data['path'].name}",
                         Badge(f"[{i + 1}/{len(download_list)}]", fore="black", back="cyan"),
                     )
 
@@ -174,6 +175,8 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
                     client,
                     episode_data,
                     {
+                        "output_dir": args.dir,
+                        "tmp_dir": args.tmp_dir or args.dir,
                         "require_video": args.require_video,
                         "require_chapter_info": args.require_chapter_info,
                         "video_quality": args.video_quality,
@@ -227,11 +230,11 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
 
 
 def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable[[str], str]) -> EpisodeData:
-    original_filename = episode_data["filename"]
-    new_name = unique_name_resolver(original_filename)
-    episode_data["filename"] = new_name
-    if original_filename != new_name:
-        Logger.warning(f"文件名重复，已重命名为 {new_name}")
+    original_path = episode_data["path"]
+    new_path = Path(unique_name_resolver(str(original_path)))
+    episode_data["path"] = new_path
+    if original_path != new_path:
+        Logger.warning(f"文件名重复，已重命名为 {new_path.name}")
     return episode_data
 
 

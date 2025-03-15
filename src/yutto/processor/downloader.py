@@ -259,6 +259,17 @@ def merge_video_and_audio(
         cover_path.unlink()
 
 
+def resolve_path(base_output_dir: Path, base_tmp_dir: Path, path: Path) -> tuple[Path, Path, str]:
+    output_full_path = base_output_dir / path
+    output_dir, filename = output_full_path.parent, output_full_path.name
+    tmp_full_path = base_tmp_dir / path
+    tmp_dir, filename_tmp = tmp_full_path.parent, tmp_full_path.name
+    assert filename == filename_tmp, (
+        f"Filename should be the same in output and tmp dir, but got {filename} and {filename_tmp}"
+    )
+    return output_dir, tmp_dir, filename
+
+
 class DownloadState(Enum):
     DONE = 0
     SKIP = 1
@@ -279,15 +290,13 @@ async def start_downloader(
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
     chapter_info_data = episode_data["chapter_info_data"]
-    output_dir = episode_data["output_dir"]
-    tmp_dir = episode_data["tmp_dir"]
-    filename = episode_data["filename"]
+    output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
     require_video = options["require_video"]
     require_audio = options["require_audio"]
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
-
     Logger.info(f"开始处理视频 {filename}")
+    output_dir.mkdir(parents=True, exist_ok=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(filename + "_video.m4s")
     audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
@@ -311,7 +320,6 @@ async def start_downloader(
         audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportArgumentType]
     )
 
-    output_dir.mkdir(parents=True, exist_ok=True)
     output_format = ".mp4"
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
