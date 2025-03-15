@@ -56,7 +56,7 @@ def convert_to_ass(
             if isinstance(input, str):
                 raise ValueError("Protobuf can only be read from bytes")
         return protobuf_to_ass(
-            cast(list[bytes], inputs),
+            cast("list[bytes]", inputs),
             conversion_options,
             block_options,
         )
