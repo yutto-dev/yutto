@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from yutto._typing import AvId, EpisodeData, EpisodeId, format_ids
@@ -34,7 +35,6 @@ from yutto.utils.metadata import attach_chapter_info
 
 if TYPE_CHECKING:
     import argparse
-    from pathlib import Path
 
     import httpx
 
@@ -78,9 +78,7 @@ async def extract_bangumi_data(
             "owner_uid": UNKNOWN,
         }
         subpath_variables_base.update(subpath_variables)
-        subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        file_path: Path = args.dir / subpath
-        output_dir, filename = file_path.parent, file_path.name
+        path = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -89,9 +87,7 @@ async def extract_bangumi_data(
             danmaku=danmaku,
             cover_data=cover_data,
             chapter_info_data=[],
-            output_dir=output_dir,
-            tmp_dir=args.tmp_dir or output_dir,
-            filename=filename,
+            path=Path(path),
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -138,9 +134,7 @@ async def extract_cheese_data(
             "owner_uid": UNKNOWN,
         }
         subpath_variables_base.update(subpath_variables)
-        subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        file_path: Path = args.dir / subpath
-        output_dir, filename = file_path.parent, file_path.name
+        path = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -149,9 +143,7 @@ async def extract_cheese_data(
             danmaku=danmaku,
             cover_data=cover_data,
             chapter_info_data=[],
-            output_dir=output_dir,
-            tmp_dir=args.tmp_dir or output_dir,
-            filename=filename,
+            path=Path(path),
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -208,9 +200,7 @@ async def extract_ugc_video_data(
             "owner_uid": owner_uid,
         }
         subpath_variables_base.update(subpath_variables)
-        subpath = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
-        file_path: Path = args.dir / subpath
-        output_dir, filename = file_path.parent, file_path.name
+        path = resolve_path_template(args.subpath_template, auto_subpath_template, subpath_variables_base)
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -219,9 +209,7 @@ async def extract_ugc_video_data(
             danmaku=danmaku,
             cover_data=cover_data,
             chapter_info_data=chapter_info_data,
-            output_dir=output_dir,
-            tmp_dir=args.tmp_dir or output_dir,
-            filename=filename,
+            path=Path(path),
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)

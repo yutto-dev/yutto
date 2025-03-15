@@ -221,12 +221,12 @@ class EpisodeData(TypedDict):
     danmaku: DanmakuData
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
-    output_dir: Path
-    tmp_dir: Path
-    filename: str
+    path: Path
 
 
 class DownloaderOptions(TypedDict):
+    output_dir: Path
+    tmp_dir: Path
     require_video: bool
     require_chapter_info: bool
     save_cover: bool
