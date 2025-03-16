@@ -382,6 +382,10 @@ async def start_downloader(
             cover_save_path.write_bytes(cover_data)
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
 
+    # 保存章节信息
+    if chapter_info_data:
+        write_chapter_info(filename, chapter_info_data, chapter_info_path)
+
     if output_path.exists():
         if not options["overwrite"]:
             Logger.info(f"文件 {filename} 已存在")
@@ -406,10 +410,6 @@ async def start_downloader(
 
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
-
-    # 保存章节信息
-    if chapter_info_data:
-        write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
     # 下载视频 / 音频
     await download_video_and_audio(ctx, client, video, video_path, audio, audio_path, options)
