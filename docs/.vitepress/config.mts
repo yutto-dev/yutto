@@ -4,6 +4,7 @@ import {
   groupIconVitePlugin,
   localIconLoader,
 } from 'vitepress-plugin-group-icons'
+import llmstxt from 'vitepress-plugin-llms'
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -132,6 +133,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [
+      llmstxt(),
       groupIconVitePlugin({
         customIcon: {
           yutto: localIconLoader(import.meta.url, '../public/logo-mini.svg'),
