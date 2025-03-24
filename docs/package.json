@@ -12,7 +12,7 @@
     "url": "https://github.com/yutto-dev/yutto/issues"
   },
   "homepage": "https://github.com/yutto-dev/yutto#readme",
-  "packageManager": "pnpm@10.6.3",
+  "packageManager": "pnpm@10.6.5",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
