@@ -69,7 +69,7 @@ class FFmpeg(metaclass=Singleton):
 
 
 def concat_commands(commands: list[list[str]]) -> list[str]:
-    return reduce(operator.add, commands, [])
+    return reduce(operator.add, commands, list[str]())
 
 
 class FFmpegInput:
