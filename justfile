@@ -71,7 +71,7 @@ generate-schema:
   uv run scripts/generate-schema.py
 
 # CI specific
-ci-install pyversion:
+ci-install:
   uv sync --all-extras --dev
 
 ci-fmt-check:

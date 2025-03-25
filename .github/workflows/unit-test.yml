@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          just ci-install ${{ matrix.python-version }}
+          just ci-install
 
       - name: Run unit tests
         run: |
