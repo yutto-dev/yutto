@@ -138,7 +138,7 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v4
-      - uses: Quansight-Labs/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.13t
           architecture: ${{ matrix.platform.target }}
