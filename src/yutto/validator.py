@@ -66,6 +66,18 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
     if args.batch_filter_end_time:
         Filter.set_timer("batch_filter_end_time", args.batch_filter_end_time)
 
+    # cover_only 时自动设置 save_cover
+    if (
+        args.require_cover
+        and not args.require_video
+        and not args.require_audio
+        and not args.require_danmaku
+        and not args.require_subtitle
+        and not args.require_metadata
+        and not args.require_chapter_info
+    ):
+        args.save_cover = True
+
 
 def validate_basic_arguments(args: argparse.Namespace):
     """检查 argparse 无法检查的选项，并设置某些全局的状态"""

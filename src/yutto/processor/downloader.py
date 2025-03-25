@@ -249,14 +249,36 @@ def merge_video_and_audio(
 
     Logger.info("合并完成！")
 
+
+def cleanup_tmp_files(
+    video: VideoUrlMeta | None,
+    audio: AudioUrlMeta | None,
+    chapter_info_data: list[ChapterInfoData],
+    cover_data: bytes | None,
+    video_path: Path,
+    audio_path: Path,
+    chapter_info_path: Path,
+    cover_path: Path,
+):
     if video is not None:
         video_path.unlink()
     if audio is not None:
         audio_path.unlink()
     if chapter_info_data:
         chapter_info_path.unlink()
-    if cover_data is not None and not options["save_cover"]:
+    if cover_data is not None:
         cover_path.unlink()
+
+
+def resolve_path(base_output_dir: Path, base_tmp_dir: Path, path: Path) -> tuple[Path, Path, str]:
+    output_full_path = base_output_dir / path
+    output_dir, filename = output_full_path.parent, output_full_path.name
+    tmp_full_path = base_tmp_dir / path
+    tmp_dir, filename_tmp = tmp_full_path.parent, tmp_full_path.name
+    assert filename == filename_tmp, (
+        f"Filename should be the same in output and tmp dir, but got {filename} and {filename_tmp}"
+    )
+    return output_dir, tmp_dir, filename
 
 
 class DownloadState(Enum):
@@ -279,20 +301,18 @@ async def start_downloader(
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
     chapter_info_data = episode_data["chapter_info_data"]
-    output_dir = episode_data["output_dir"]
-    tmp_dir = episode_data["tmp_dir"]
-    filename = episode_data["filename"]
+    output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
     require_video = options["require_video"]
     require_audio = options["require_audio"]
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
-
     Logger.info(f"开始处理视频 {filename}")
+    output_dir.mkdir(parents=True, exist_ok=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    video_path = tmp_dir.joinpath(filename + "_video.m4s")
-    audio_path = tmp_dir.joinpath(filename + "_audio.m4s")
-    cover_path = tmp_dir.joinpath(filename + "-poster.jpg")
-    chapter_info_path = tmp_dir.joinpath(filename + "_chapter_info.ini")
+    video_path = tmp_dir.joinpath(f"{filename}_video.m4s")
+    audio_path = tmp_dir.joinpath(f"{filename}_audio.m4s")
+    cover_path = tmp_dir.joinpath(f"{filename}_cover.jpg")
+    chapter_info_path = tmp_dir.joinpath(f"{filename}_chapter_info.ini")
 
     video = select_video(
         videos, options["video_quality"], options["video_download_codec"], options["video_download_codec_priority"]
@@ -311,7 +331,6 @@ async def start_downloader(
         audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportArgumentType]
     )
 
-    output_dir.mkdir(parents=True, exist_ok=True)
     output_format = ".mp4"
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
@@ -358,8 +377,14 @@ async def start_downloader(
     # 保存封面
     if cover_data is not None:
         cover_path.write_bytes(cover_data)
-        if options["save_cover"] or (not will_download_video and not will_download_audio):
+        if options["save_cover"]:
+            cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
+            cover_save_path.write_bytes(cover_data)
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
+
+    # 保存章节信息
+    if chapter_info_data:
+        write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
     if output_path.exists():
         if not options["overwrite"]:
@@ -371,14 +396,20 @@ async def start_downloader(
 
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
+        cleanup_tmp_files(
+            video,
+            audio,
+            chapter_info_data,
+            cover_data,
+            video_path,
+            audio_path,
+            chapter_info_path,
+            cover_path,
+        )
         return DownloadState.SKIP
 
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
-
-    # 保存章节信息
-    if chapter_info_data:
-        write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
     # 下载视频 / 音频
     await download_video_and_audio(ctx, client, video, video_path, audio, audio_path, options)
@@ -395,5 +426,15 @@ async def start_downloader(
         chapter_info_path,
         output_path,
         options,
+    )
+    cleanup_tmp_files(
+        video,
+        audio,
+        chapter_info_data,
+        cover_data,
+        video_path,
+        audio_path,
+        chapter_info_path,
+        cover_path,
     )
     return DownloadState.DONE

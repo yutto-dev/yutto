@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from yutto.api.space import get_watch_later_avids
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
-from yutto.exceptions import NotFoundError, NotLoginError
+from yutto.exceptions import NoAccessPermissionError, NotFoundError, NotLoginError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
@@ -24,10 +24,11 @@ if TYPE_CHECKING:
 class UserWatchLaterExtractor(BatchExtractor):
     """用户稍后再看"""
 
-    REGEX_WATCH_LATER = re.compile(r"https?://www\.bilibili\.com/watchlater/?.*?$")
+    REGEX_WATCH_LATER_INDEX = re.compile(r"https?://www\.bilibili\.com/watchlater/?.*?$")
+    REGEX_WATCH_LATER_LIST = re.compile(r"https?://www\.bilibili\.com/list/watchlater/?.*?$")
 
     def match(self, url: str) -> bool:
-        if self.REGEX_WATCH_LATER.match(url):
+        if self.REGEX_WATCH_LATER_INDEX.match(url) or self.REGEX_WATCH_LATER_LIST.match(url):
             return True
         else:
             return False
@@ -61,7 +62,7 @@ class UserWatchLaterExtractor(BatchExtractor):
                             "稍后再看",
                         )
                     )
-            except NotFoundError as e:
+            except (NotFoundError, NoAccessPermissionError) as e:
                 Logger.error(e.message)
                 continue
 

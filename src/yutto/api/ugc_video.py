@@ -147,7 +147,7 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
         return result
 
     # 对无意义的分 p 视频名进行修改
-    for i, (item, page_info) in enumerate(zip(cast(list[Any], res_json["data"]), video_info["pages"])):
+    for i, (item, page_info) in enumerate(zip(cast("list[Any]", res_json["data"]), video_info["pages"])):
         # TODO: 这里 part 出现了两次，需要都修改，后续去除其中一个冗余数据
         if _is_meaningless_name(item["part"]):
             item["part"] = f"{video_title}_P{i + 1:02}"
@@ -162,7 +162,7 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
             "cid": CId(str(item["cid"])),
             "metadata": _parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
         }
-        for i, (item, page_info) in enumerate(zip(cast(list[Any], res_json["data"]), video_info["pages"]))
+        for i, (item, page_info) in enumerate(zip(cast("list[Any]", res_json["data"]), video_info["pages"]))
     ]
     return result
 
