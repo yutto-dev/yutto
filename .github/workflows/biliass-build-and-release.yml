@@ -14,9 +14,6 @@ on:
       - "packages/biliass/**"
       - ".github/**"
   merge_group:
-    paths:
-      - "packages/biliass/**"
-      - ".github/**"
   workflow_dispatch:
 
 permissions:
@@ -201,7 +198,7 @@ jobs:
   publish-pypi:
     runs-on: ubuntu-latest
     name: Publish to PyPI
-    if: "startsWith(github.ref, 'refs/tags/')"
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
     needs:
       - linux
       - musllinux
@@ -229,7 +226,7 @@ jobs:
   publish-release:
     runs-on: ubuntu-latest
     name: Publish to GitHub
-    if: "startsWith(github.ref, 'refs/tags/')"
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
     needs:
       - linux
       - musllinux
