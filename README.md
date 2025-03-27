@@ -72,10 +72,19 @@ brew tap siguremo/tap
 brew install yutto
 ```
 
-使用 [paru](https://github.com/Morganamilo/paru)（Arch 上的 AUR 包管理器）的用户可以尝试下这样的命令（感谢 @ouuan）：
+Arch Linux 用户可以从 [AUR](https://aur.archlinux.org/packages/yutto) （感谢 @ouuan）或 [archlinuxcn](https://github.com/archlinuxcn/repo) 安装：
+
+#### 从 AUR 安装
 
 ```bash
-paru -S yutto
+yay -S yutto # 适用于 yay 用户
+paru -S yutto # 适用于 paru 用户
+```
+
+#### 从 archlinuxcn 安装
+
+```bash
+sudo pacman -S yutto
 ```
 
 ### 使用 Docker
