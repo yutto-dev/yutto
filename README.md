@@ -76,8 +76,8 @@ Arch Linux 用户可以从 [AUR](https://aur.archlinux.org/packages/yutto)（感
 
 ```bash
 # 从 AUR 安装
-yay -S yutto # 适用于 yay 用户
-paru -S yutto # 适用于 paru 用户
+yay -S yutto      # 适用于 yay 用户
+paru -S yutto     # 适用于 paru 用户
 # 或者从 archlinuxcn 安装
 sudo pacman -S yutto
 ```
