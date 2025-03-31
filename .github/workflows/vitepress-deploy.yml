@@ -22,7 +22,6 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           package_json_file: "docs/package.json"
-          version: "latest"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
