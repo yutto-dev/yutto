@@ -8,7 +8,7 @@ authors = [
   { name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" },
 ]
 keywords = ["bilibili", "yutto", "danmaku", "ASS"]
-license = { text = "GPLv3" }
+license = { file = "LICENSE" }
 classifiers = [
   "Operating System :: OS Independent",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
