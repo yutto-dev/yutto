@@ -8,8 +8,10 @@
 
 我的正常运作离不开以下项目的支持
 
+- [HTTPX](https://github.com/encode/httpx) 用于 HTTP 请求发送
 - [FFmpeg](https://github.com/FFmpeg/FFmpeg) 用于视频的合并
-- [biliass](https://github.com/yutto-dev/yutto/tree/main/packages/biliass) 用于 XML 弹幕转换为 ASS 弹幕
+- [biliass](https://github.com/yutto-dev/yutto/tree/main/packages/biliass) 用于 Bilibili XML/Protobuf 格式弹幕转换为 ASS 弹幕
+- [Pydantic](https://github.com/pydantic/pydantic) 用于配置格式校验
 - [VitePress](https://github.com/vuejs/vitepress) 本文档的生成器
 
 ## 参考项目
