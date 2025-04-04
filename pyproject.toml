@@ -29,6 +29,7 @@ dependencies = [
   "httpx[http2,socks]>=0.28.1",
   "tomli>=2.0.2; python_version < '3.11'",
   "pydantic>=2.11.2",
+  "returns>=0.25.0",
 ]
 
 [project.urls]
