@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import random
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import quote, unquote
 
 # Temporary fix for h2 stubs not found error by using `type: ignore`,
@@ -19,7 +19,7 @@ from yutto.utils.asynclib import async_cache
 from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine, Mapping
+    from collections.abc import Callable, Coroutine, Mapping
 
     from yutto.utils.file_buffer import AsyncFileBuffer
 

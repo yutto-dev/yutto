@@ -49,9 +49,9 @@
 
 :::
 
-### Python 解释器安装 <Badge type="tip" text="3.9+"/>
+### Python 解释器安装 <Badge type="tip" text="3.10+"/>
 
-你可能会好奇，我是怎么指挥你的设备来帮助你下载想要的视频的，其实这很大程度归功于 Python 前辈的帮忙，有了 <span title="指 Python">TA</span>，我才能和你的设备正常沟通。不过有一点需要注意的就是，必须要 3.9 以上版本的 Python 前辈才可以哦，不然可能 <span title="指 Python">TA</span> 也听不懂我的一些「方言」呢～
+你可能会好奇，我是怎么指挥你的设备来帮助你下载想要的视频的，其实这很大程度归功于 Python 前辈的帮忙，有了 <span title="指 Python">TA</span>，我才能和你的设备正常沟通。不过有一点需要注意的就是，必须要 3.10 以上版本的 Python 前辈才可以哦，不然可能 <span title="指 Python">TA</span> 也听不懂我的一些「方言」呢～
 
 如果你是 Windows，请自行去 [Python 官网](https://www.python.org/)下载并安装，安装时记得要勾选「Add to PATH」选项，不然可能需要你手动添加到环境变量。
 

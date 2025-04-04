@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, TypedDict, Union
+from typing import Literal, TypeAlias, TypedDict
 
 from biliass import BlockOptions, convert_to_ass
 
@@ -10,7 +10,7 @@ DanmakuSaveType = Literal["xml", "ass", "protobuf"]
 
 DanmakuSourceDataXml = str
 DanmakuSourceDataProtobuf = bytes
-DanmakuSourceDataType = Union[DanmakuSourceDataXml, DanmakuSourceDataProtobuf]
+DanmakuSourceDataType: TypeAlias = DanmakuSourceDataXml | DanmakuSourceDataProtobuf
 
 
 class DanmakuOptions(TypedDict):

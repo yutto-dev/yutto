@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from html import unescape
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal
 
 from yutto.utils.console.logger import Logger
 from yutto.utils.time import get_time_str_by_stamp
@@ -11,7 +11,7 @@ from yutto.utils.time import get_time_str_by_stamp
 PathTemplateVariable = Literal[
     "title", "id", "aid", "bvid", "name", "username", "series_title", "pubdate", "download_date", "owner_uid"
 ]
-PathTemplateVariableDict = dict[PathTemplateVariable, Union[int, str]]
+PathTemplateVariableDict = dict[PathTemplateVariable, int | str]
 UNKNOWN: str = "unknown_variable"
 
 _count: int = 0

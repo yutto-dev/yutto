@@ -4,7 +4,7 @@ import asyncio
 import os
 import re
 from enum import Enum
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
 from yutto.processor.progressbar import show_progress
@@ -21,6 +21,7 @@ from yutto.utils.metadata import ChapterInfoData, write_chapter_info, write_meta
 from yutto.utils.subtitle import write_subtitle
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
     import httpx

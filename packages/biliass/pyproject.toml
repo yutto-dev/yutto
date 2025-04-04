@@ -2,7 +2,7 @@
 name = "biliass"
 description = "💬 将 B 站 XML/protobuf 弹幕转换为 ASS 弹幕"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
   { name = "Star Brilliant", email = "m13253@hotmail.com" },
   { name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" },
@@ -14,7 +14,6 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -39,7 +38,7 @@ module-name = "biliass._core"
 
 [tool.pyright]
 include = ["src/biliass"]
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 typeCheckingMode = "basic"
 
 [build-system]
