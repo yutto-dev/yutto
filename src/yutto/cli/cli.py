@@ -16,8 +16,7 @@ from yutto.utils.funcutils.option import map_some
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
-
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 DownloadResourceType: TypeAlias = Literal["video", "audio", "subtitle", "metadata", "danmaku", "cover", "chapter_info"]

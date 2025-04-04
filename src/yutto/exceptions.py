@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -28,7 +28,7 @@ class SuccessCode(Enum):
     SUCCESS = 0
 
 
-ReturnCode = Union[ErrorCode, SuccessCode]
+ReturnCode: TypeAlias = ErrorCode | SuccessCode
 
 
 class YuttoBaseException(Exception):

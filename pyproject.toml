@@ -3,7 +3,7 @@ name = "yutto"
 version = "2.0.3"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" }]
 keywords = ["python", "bilibili", "video", "downloader", "danmaku"]
 license = { text = "GPL-3.0" }
@@ -14,7 +14,6 @@ classifiers = [
   "Typing :: Typed",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -63,12 +62,12 @@ markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
 
 [tool.pyright]
 include = ["src/yutto", "packages/biliass/src/biliass", "tests"]
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 typeCheckingMode = "strict"
 
 [tool.ruff]
 line-length = 120
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -109,9 +108,10 @@ select = [
   "RUF100",
 ]
 ignore = [
-  "E501", # line too long, duplicate with ruff fmt
-  "F401", # imported but unused, duplicate with pyright
-  "F841", # local variable is assigned to but never used, duplicate with pyright
+  "E501",  # line too long, duplicate with ruff fmt
+  "F401",  # imported but unused, duplicate with pyright
+  "F841",  # local variable is assigned to but never used, duplicate with pyright
+  "UP038", # It will cause the performance regression on python3.10
 ]
 
 [tool.ruff.lint.isort]

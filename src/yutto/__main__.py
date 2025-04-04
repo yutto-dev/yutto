@@ -7,7 +7,7 @@ import re
 import shlex
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import httpx
 from biliass import BlockOptions
@@ -46,6 +46,7 @@ from yutto.validator import (
 
 if TYPE_CHECKING:
     import argparse
+    from collections.abc import Callable
 
     from yutto._typing import EpisodeData
 

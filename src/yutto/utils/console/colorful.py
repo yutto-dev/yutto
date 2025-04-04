@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Final, Literal, NamedTuple, TypedDict, Union
+from typing import Final, Literal, NamedTuple, TypeAlias, TypedDict
 
 # thirt-party imports
 # if system is windows, initialize colorama, which translates UNIX console color sequences into windows color sequences
@@ -39,8 +39,8 @@ TextColor = Literal[
     "bright_white",
 ]
 
-Color = Union[TextColor, RGBColor]
-Style = Literal["reset", "bold", "italic", "underline", "defaultfg", "defaultbg"]
+Color: TypeAlias = TextColor | RGBColor
+Style: TypeAlias = Literal["reset", "bold", "italic", "underline", "defaultfg", "defaultbg"]
 
 _no_color = False
 
