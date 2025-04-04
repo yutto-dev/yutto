@@ -11,7 +11,7 @@ from yutto.bilibili_typing.quality import (
 from yutto.cli.settings import YuttoSettings, load_settings_file, search_for_settings_file
 from yutto.processor.parser import alias_parser, path_from_cli
 from yutto.utils.console.logger import Logger
-from yutto.utils.funcutils.option import map_some
+from yutto.utils.funcutils.functional import map_optional
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -135,7 +135,7 @@ def cli() -> argparse.ArgumentParser:
     )
     group_basic.add_argument(
         "--tmp-dir",
-        default=map_some(path_from_cli, settings.basic.tmp_dir),
+        default=map_optional(path_from_cli, settings.basic.tmp_dir),
         type=path_from_cli,
         help="用来存放下载过程中临时文件的目录，默认为下载目录",
     )
