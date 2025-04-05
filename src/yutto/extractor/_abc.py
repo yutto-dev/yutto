@@ -4,11 +4,9 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
 
-    from yutto._typing import EpisodeData
+    from yutto._typing import EpisodeData, ExtractorOptions
     from yutto.utils.asynclib import CoroutineWrapper
     from yutto.utils.fetcher import FetcherContext
 
@@ -27,32 +25,32 @@ class Extractor(metaclass=ABCMeta):
 
     @abstractmethod
     async def __call__(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         raise NotImplementedError
 
 
 class SingleExtractor(Extractor):
     async def __call__(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        return [await self.extract(ctx, client, args)]
+        return [await self.extract(ctx, client, options)]
 
     @abstractmethod
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         raise NotImplementedError
 
 
 class BatchExtractor(Extractor):
     async def __call__(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
-        return await self.extract(ctx, client, args)
+        return await self.extract(ctx, client, options)
 
     @abstractmethod
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         raise NotImplementedError

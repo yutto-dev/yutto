@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
     from yutto.bilibili_typing.codec import AudioCodec, VideoCodec
     from yutto.bilibili_typing.quality import AudioQuality, VideoQuality
-    from yutto.utils.danmaku import DanmakuData, DanmakuOptions
+    from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
     from yutto.utils.metadata import ChapterInfoData, MetaData
     from yutto.utils.subtitle import SubtitleData
 
@@ -209,6 +209,20 @@ class AudioUrlMeta(TypedDict):
 class MultiLangSubtitle(TypedDict):
     lang: str
     lines: SubtitleData
+
+
+class ExtractorOptions(TypedDict):
+    episodes: str
+    with_section: bool
+    require_video: bool
+    require_audio: bool
+    require_danmaku: bool
+    require_subtitle: bool
+    require_metadata: bool
+    require_cover: bool
+    require_chapter_info: bool
+    danmaku_format: DanmakuSaveType
+    subpath_template: str
 
 
 class EpisodeData(TypedDict):

@@ -12,10 +12,9 @@ from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
 
+    from yutto._typing import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -58,14 +57,14 @@ class CheeseBatchExtractor(BatchExtractor):
             self.season_id = SeasonId(self._match_result.group("season_id"))
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         await self._parse_ids(ctx, client)
 
         cheese_list = await get_cheese_list(ctx, client, self.season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(cheese_list["pages"]))
+        episodes = parse_episodes_selection(options["episodes"], len(cheese_list["pages"]))
         cheese_list["pages"] = list(filter(lambda item: item["id"] in episodes, cheese_list["pages"]))
         return [
             CoroutineWrapper(
@@ -74,7 +73,7 @@ class CheeseBatchExtractor(BatchExtractor):
                     client,
                     cheese_item["episode_id"],
                     cheese_item,
-                    args,
+                    options,
                     {
                         "title": cheese_list["title"],
                     },

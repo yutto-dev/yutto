@@ -15,9 +15,9 @@ from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
+
+    from yutto._typing import ExtractorOptions
 
 
 class UserAllUgcVideosExtractor(BatchExtractor):
@@ -35,7 +35,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username = await get_user_name(ctx, client, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
@@ -67,7 +67,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,
-                    args,
+                    options,
                     {
                         "title": title,
                         "username": username,

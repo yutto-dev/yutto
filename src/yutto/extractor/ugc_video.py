@@ -17,10 +17,9 @@ from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
 
+    from yutto._typing import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -73,7 +72,7 @@ class UgcVideoExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
@@ -85,7 +84,7 @@ class UgcVideoExtractor(SingleExtractor):
                     client,
                     self.avid,
                     ugc_video_list["pages"][self.page - 1],
-                    args,
+                    options,
                     {
                         "title": ugc_video_list["title"],
                         "pubdate": ugc_video_list["pubdate"],

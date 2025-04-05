@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import httpx
 from biliass import BlockOptions
 
+from yutto._typing import ExtractorOptions
 from yutto.cli.cli import cli
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
@@ -133,7 +134,23 @@ async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
             # 提取信息，构造解析任务～
             for extractor in extractors:
                 if extractor.match(url):
-                    download_list = await extractor(ctx, client, args)
+                    download_list = await extractor(
+                        ctx,
+                        client,
+                        ExtractorOptions(
+                            episodes=args.episodes,
+                            with_section=args.with_section,
+                            require_video=args.require_video,
+                            require_audio=args.require_audio,
+                            require_danmaku=args.require_danmaku,
+                            require_subtitle=args.require_subtitle,
+                            require_metadata=args.require_metadata,
+                            require_cover=args.require_cover,
+                            require_chapter_info=args.require_chapter_info,
+                            danmaku_format=args.danmaku_format,
+                            subpath_template=args.subpath_template,
+                        ),
+                    )
                     break
             else:
                 if args.batch:

@@ -16,9 +16,9 @@ from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
+
+    from yutto._typing import ExtractorOptions
 
 
 class SeriesExtractor(BatchExtractor):
@@ -46,7 +46,7 @@ class SeriesExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, series_title = await asyncio.gather(
             get_user_name(ctx, client, self.mid), get_medialist_title(ctx, client, self.series_id)
@@ -80,7 +80,7 @@ class SeriesExtractor(BatchExtractor):
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,
-                    args,
+                    options,
                     {
                         "series_title": series_title,
                         "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
