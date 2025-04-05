@@ -9,7 +9,7 @@ from yutto.bilibili_typing.quality import (
     video_quality_priority_default,
 )
 from yutto.cli.settings import YuttoSettings, load_settings_file, search_for_settings_file
-from yutto.processor.parser import alias_parser, path_from_cli
+from yutto.parser import alias_parser, path_from_cli
 from yutto.utils.console.logger import Logger
 from yutto.utils.funcutils.functional import map_optional
 

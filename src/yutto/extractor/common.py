@@ -23,7 +23,7 @@ from yutto.exceptions import (
     NotFoundError,
     UnSupportedTypeError,
 )
-from yutto.processor.path_resolver import (
+from yutto.path_resolver import (
     UNKNOWN,
     PathTemplateVariableDict,
     resolve_path_template,

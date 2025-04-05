@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from yutto.processor.path_resolver import create_unique_path_resolver
+from yutto.path_resolver import create_unique_path_resolver
 
 
 @pytest.mark.processor

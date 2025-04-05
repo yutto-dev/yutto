@@ -11,7 +11,7 @@ from yutto.api.bangumi import (
 )
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
-from yutto.processor.selector import parse_episodes_selection
+from yutto.parser import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
