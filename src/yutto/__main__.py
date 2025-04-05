@@ -14,6 +14,7 @@ from biliass import BlockOptions
 
 from yutto._typing import ExtractorOptions
 from yutto.cli.cli import cli
+from yutto.downloader.downloader import DownloadState, start_downloader
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
     BangumiBatchExtractor,
@@ -29,9 +30,8 @@ from yutto.extractor import (
     UserAllUgcVideosExtractor,
     UserWatchLaterExtractor,
 )
-from yutto.processor.downloader import DownloadState, start_downloader
-from yutto.processor.parser import file_scheme_parser
-from yutto.processor.path_resolver import create_unique_path_resolver
+from yutto.parser import file_scheme_parser
+from yutto.path_resolver import create_unique_path_resolver
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions

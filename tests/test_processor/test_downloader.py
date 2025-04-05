@@ -5,7 +5,7 @@ import asyncio
 import httpx
 import pytest
 
-from yutto.processor.downloader import slice_blocks
+from yutto.downloader.downloader import slice_blocks
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.fetcher import Fetcher, FetcherContext, create_client
 from yutto.utils.file_buffer import AsyncFileBuffer

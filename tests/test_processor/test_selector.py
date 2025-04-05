@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from yutto.processor.selector import (
+from yutto.parser import (
     parse_episodes_selection,
     validate_episodes_selection,
 )
