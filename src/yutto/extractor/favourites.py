@@ -16,9 +16,9 @@ from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
+
+    from yutto._typing import ExtractorOptions
 
 
 class FavouritesExtractor(BatchExtractor):
@@ -38,7 +38,7 @@ class FavouritesExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, favourite_info = await asyncio.gather(
             get_user_name(ctx, client, self.mid),
@@ -76,7 +76,7 @@ class FavouritesExtractor(BatchExtractor):
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,
-                    args,
+                    options,
                     {
                         "title": title,
                         "username": username,

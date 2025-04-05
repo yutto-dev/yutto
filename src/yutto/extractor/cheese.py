@@ -19,10 +19,9 @@ from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
 
+    from yutto._typing import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -52,7 +51,7 @@ class CheeseExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         cheese_list = await get_cheese_list(ctx, client, season_id)
@@ -72,7 +71,7 @@ class CheeseExtractor(SingleExtractor):
                     client,
                     self.episode_id,
                     cheese_list_item,
-                    args,
+                    options,
                     {
                         "title": cheese_list["title"],
                     },

@@ -19,10 +19,9 @@ from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
 
+    from yutto._typing import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -51,7 +50,7 @@ class BangumiExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> CoroutineWrapper[EpisodeData | None] | None:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         bangumi_list = await get_bangumi_list(ctx, client, season_id)
@@ -70,7 +69,7 @@ class BangumiExtractor(SingleExtractor):
                     ctx,
                     client,
                     bangumi_list_item,
-                    args,
+                    options,
                     {
                         "title": bangumi_list["title"],
                     },

@@ -18,9 +18,9 @@ from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
+
+    from yutto._typing import ExtractorOptions
 
 
 class CollectionExtractor(BatchExtractor):
@@ -53,7 +53,7 @@ class CollectionExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         username, collection_details = await asyncio.gather(
             get_user_name(ctx, client, self.mid),
@@ -65,7 +65,7 @@ class CollectionExtractor(BatchExtractor):
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
 
         # 选集过滤
-        episodes = parse_episodes_selection(args.episodes, len(collection_details["pages"]))
+        episodes = parse_episodes_selection(options["episodes"], len(collection_details["pages"]))
         collection_details["pages"] = list(filter(lambda item: item["id"] in episodes, collection_details["pages"]))
 
         for item in collection_details["pages"]:
@@ -97,7 +97,7 @@ class CollectionExtractor(BatchExtractor):
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,
-                    args,
+                    options,
                     {
                         # TODO: 关于对于 id 的优化
                         # TODO: 关于对于 title 的优化（最好使用合集标题，而不是原来的视频标题）

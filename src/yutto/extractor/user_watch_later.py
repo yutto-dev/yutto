@@ -14,11 +14,9 @@ from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
-    import argparse
-
     import httpx
 
-    from yutto._typing import EpisodeData
+    from yutto._typing import EpisodeData, ExtractorOptions
 
 
 class UserWatchLaterExtractor(BatchExtractor):
@@ -34,7 +32,7 @@ class UserWatchLaterExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, args: argparse.Namespace
+        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
     ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
         Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
@@ -73,7 +71,7 @@ class UserWatchLaterExtractor(BatchExtractor):
                     client,
                     ugc_video_item["avid"],
                     ugc_video_item,
-                    args,
+                    options,
                     {
                         "title": title,
                         "username": "",
