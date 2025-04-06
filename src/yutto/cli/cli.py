@@ -29,6 +29,16 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "cover",
     "chapter_info",
 ]
+SUBCOMMANDS: list[str] = ["download", "mcp"]
+
+
+def handle_default_subcommand(argv: list[str]) -> list[str]:
+    if len(argv) == 0:
+        return ["download", *argv]
+    if argv[0] not in SUBCOMMANDS and argv[0] not in ["-v", "--version"]:
+        argv.insert(0, "download")
+
+    return argv
 
 
 def parse_config_path() -> Path | None:
@@ -47,9 +57,27 @@ def cli() -> argparse.ArgumentParser:
     else:
         Logger.info(f"发现配置文件 {settings_file}，加载中……")
         settings = load_settings_file(settings_file)
-
     parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {yutto_version}")
+
+    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
+    group_config = parser.add_argument_group("config", "配置文件参数")
+    group_config.add_argument("--config", help="配置文件路径")
+
+    # 创建子命令解析器
+    subparsers = parser.add_subparsers(dest="command", help="支持的子命令")
+
+    # 添加默认下载子命令（保持向后兼容）
+    download_parser = subparsers.add_parser("download", help="下载视频")
+    add_download_arguments(download_parser, settings)
+
+    # 添加其他子命令
+    mcp_parser = subparsers.add_parser("mcp", help="启动 MCP 进程")
+    add_mcp_arguments(mcp_parser, settings)
+    return parser
+
+
+def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
     # 如果需要创建其他子命令可参考
     # https://stackoverflow.com/questions/29998417/create-parser-with-subcommands-in-argparse-customize-positional-arguments
     parser.add_argument("url", help="视频主页 url 或 url 列表（需使用 file scheme）")
@@ -329,11 +357,9 @@ def cli() -> argparse.ArgumentParser:
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
     group_batch_file.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
 
-    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
-    group_config = parser.add_argument_group("config", "配置文件参数")
-    group_config.add_argument("--config", help="配置文件路径")
 
-    return parser
+def add_mcp_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    pass
 
 
 def create_select_required_action(

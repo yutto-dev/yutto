@@ -31,6 +31,7 @@ dependencies = [
   "pydantic>=2.11.2",
   "returns>=0.25.0",
 ]
+optional-dependencies.mcp = ["mcp[cli]>=1.6.0"]
 
 [project.urls]
 Homepage = "https://github.com/yutto-dev/yutto"
@@ -44,7 +45,7 @@ yutto = "yutto.__main__:main"
 [dependency-groups]
 dev = [
   "pyright>=1.1.398",
-  "ruff>=0.11.0",
+  "ruff>=0.11.4",
   "typos>=1.31.1",
   "pytest>=8.3.5",
   "pytest-rerunfailures>=15.0",

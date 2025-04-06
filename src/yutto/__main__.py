@@ -8,7 +8,7 @@ import shlex
 import sys
 from typing import TYPE_CHECKING
 
-from yutto.cli.cli import cli
+from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.download_manager import DownloadManager, DownloadTask
 from yutto.exceptions import ErrorCode
 from yutto.parser import file_scheme_parser
@@ -26,19 +26,28 @@ if TYPE_CHECKING:
 
 def main():
     parser = cli()
-    args = parser.parse_args()
-    ctx = FetcherContext()
-    initial_validation(ctx, args)
-    args_list = flatten_args(args, parser)
-    try:
-        run(ctx, args_list)
-    except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
-        Logger.info("已终止下载，再次运行即可继续下载～")
-        sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
+    args = parser.parse_args(handle_default_subcommand(sys.argv[1:]))
+    match args.command:
+        case "download":
+            ctx = FetcherContext()
+            initial_validation(ctx, args)
+            args_list = flatten_args(args, parser)
+            try:
+                run_download(ctx, args_list)
+            except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
+                Logger.info("已终止下载，再次运行即可继续下载～")
+                sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
+        case "mcp":
+            from yutto.mcp import run_mcp
+
+            run_mcp()
+
+        case _:
+            raise ValueError("Invalid command")
 
 
 @as_sync
-async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
+async def run_download(ctx: FetcherContext, args_list: list[argparse.Namespace]):
     manager = DownloadManager()
     manager.start(ctx)
     if len(args_list) > 1:
