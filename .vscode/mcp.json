@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "yutto": {
+      "command": "uvx",
+      "args": ["--with-editable", "${workspaceFolder}[mcp]", "yutto", "mcp"],
+      "env": {}
+    }
+  }
+}
