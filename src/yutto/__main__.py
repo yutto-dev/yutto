@@ -41,15 +41,13 @@ def main():
 async def run(ctx: FetcherContext, args_list: list[argparse.Namespace]):
     manager = DownloadManager()
     manager.start(ctx)
-    for args in args_list:
+    if len(args_list) > 1:
+        Logger.info(f"列表里共检测到 {len(args_list)} 项")
+
+    for i, args in enumerate(args_list):
         if len(args_list) > 1:
-            Logger.info(f"列表里共检测到 {len(args_list)} 项")
-
-        for i, args in enumerate(args_list):
-            if len(args_list) > 1:
-                Logger.custom(f"列表项 {args.url}", Badge(f"[{i + 1}/{len(args_list)}]", fore="black", back="cyan"))
-            await manager.add_task(DownloadTask(args=args))
-
+            Logger.custom(f"列表项 {args.url}", Badge(f"[{i + 1}/{len(args_list)}]", fore="black", back="cyan"))
+        await manager.add_task(DownloadTask(args=args))
     await manager.add_stop_task()
     await manager.wait_for_completion()
 
