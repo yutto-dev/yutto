@@ -60,10 +60,6 @@ def cli() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="yutto 一个可爱且任性的 B 站视频下载器", prog="yutto")
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {yutto_version}")
 
-    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
-    group_config = parser.add_argument_group("config", "配置文件参数")
-    group_config.add_argument("--config", help="配置文件路径")
-
     # 创建子命令解析器
     subparsers = parser.add_subparsers(dest="command", help="支持的子命令")
 
@@ -356,6 +352,9 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     # 仅任务列表中使用
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
     group_batch_file.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
+
+    group_config = parser.add_argument_group("config", "配置文件参数")
+    group_config.add_argument("--config", help="配置文件路径")
 
 
 def add_mcp_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
