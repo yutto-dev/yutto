@@ -353,7 +353,7 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     group_batch_file = parser.add_argument_group("batch file", "批量下载文件参数")
     group_batch_file.add_argument("--no-inherit", action="store_true", help="不继承父级参数")
 
-    # 占位是必要的，因为在子命令中可能会使用到。不占位会导致子命令解析失败`unrecognized arguments`
+    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
     group_config = parser.add_argument_group("config", "配置文件参数")
     group_config.add_argument("--config", help="配置文件路径")
 
