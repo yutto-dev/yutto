@@ -274,6 +274,12 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         action="store_true",
         help="生成视频流封面后单独保存封面文件",
     )
+    group_resource.add_argument(
+        "--parse-resources",
+        default=settings.resource.parse_resources,
+        action="store_true",
+        help="解析视频资源列表但所有内容均不下载",
+    )
     group_resource.set_defaults(
         require_video=settings.resource.require_video,
         require_audio=settings.resource.require_audio,

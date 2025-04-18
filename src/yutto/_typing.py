@@ -233,9 +233,10 @@ class EpisodeData(TypedDict):
     subtitles: list[MultiLangSubtitle]
     metadata: MetaData | None
     danmaku: DanmakuData
-    cover_data: bytes | None
+    cover_link: str | None
     chapter_info_data: list[ChapterInfoData]
     path: Path
+    url: str
 
 
 class DownloaderOptions(TypedDict):
@@ -244,6 +245,7 @@ class DownloaderOptions(TypedDict):
     require_video: bool
     require_chapter_info: bool
     save_cover: bool
+    parse_resources: bool
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str
