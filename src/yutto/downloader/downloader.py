@@ -305,6 +305,7 @@ async def start_downloader(
     output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
     require_video = options["require_video"]
     require_audio = options["require_audio"]
+    parse_resources = options["parse_resources"]
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
     Logger.info(f"开始处理视频 {filename}")
@@ -350,42 +351,80 @@ async def start_downloader(
 
     # 保存字幕
     if subtitles:
-        for subtitle in subtitles:
-            write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
-        Logger.custom(
-            "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
-            badge=Badge("字幕", fore="black", back="cyan"),
-        )
+        if not parse_resources:
+            for subtitle in subtitles:
+                write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+            Logger.custom(
+                "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
+                badge=Badge("字幕", fore="black", back="cyan"),
+            )
+        else:
+            Logger.custom(
+                "存在可下载字幕",
+                badge=Badge("字幕", fore="black", back="cyan"),
+            )
 
     # 保存弹幕
     if danmaku["data"]:
-        write_danmaku(
-            danmaku,
-            str(output_path),
-            video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
-            video["width"] if video is not None else 1920,
-            danmaku_options,
-        )
-        Logger.custom(
-            "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
-        )
+        if not parse_resources:
+            write_danmaku(
+                danmaku,
+                str(output_path),
+                video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
+                video["width"] if video is not None else 1920,
+                danmaku_options,
+            )
+            Logger.custom(
+                "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
+            )
+        else:
+            Logger.custom(
+                "存在可下载弹幕",
+                badge=Badge("弹幕", fore="black", back="cyan"),
+            )
 
     # 保存媒体描述文件
     if metadata is not None:
-        write_metadata(metadata, output_path, metadata_format)
-        Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+        if not parse_resources:
+            write_metadata(metadata, output_path, metadata_format)
+            Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+        else:
+            # TODO 可以考虑直接 show nfo
+            Logger.custom(
+                "存在可下载 NFO 媒体描述文件",
+                badge=Badge("描述文件", fore="black", back="cyan"),
+            )
 
     # 保存封面
     if cover_data is not None:
-        cover_path.write_bytes(cover_data)
-        if options["save_cover"]:
-            cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
-            cover_save_path.write_bytes(cover_data)
-            Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
+        if not parse_resources:            
+            cover_path.write_bytes(cover_data)
+            if options["save_cover"]:
+                cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
+                cover_save_path.write_bytes(cover_data)
+                Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
+        else:
+            # TODO 可以考虑直接下载封面，如果 nfo 中不存在可引用的封面链接
+            Logger.custom(
+                "存在可下载封面",
+                badge=Badge("封面", fore="black", back="cyan"),
+            )
+
 
     # 保存章节信息
     if chapter_info_data:
-        write_chapter_info(filename, chapter_info_data, chapter_info_path)
+        if not parse_resources:
+            write_chapter_info(filename, chapter_info_data, chapter_info_path)
+        else:
+            # TODO 了解一下章节信息
+            Logger.custom(
+                "存在可下载章节信息",
+                badge=Badge("章节", fore="black", back="cyan"),
+            )
+    
+    if parse_resources:
+        # 跳过下载.
+        return DownloadState.SKIP
 
     if output_path.exists():
         if not options["overwrite"]:
