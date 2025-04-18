@@ -233,7 +233,7 @@ class EpisodeData(TypedDict):
     subtitles: list[MultiLangSubtitle]
     metadata: MetaData | None
     danmaku: DanmakuData
-    cover_data: bytes | None
+    cover_link: str | None
     chapter_info_data: list[ChapterInfoData]
     path: Path
     url: str

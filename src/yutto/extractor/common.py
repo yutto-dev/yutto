@@ -64,11 +64,7 @@ async def extract_bangumi_data(
             else EmptyDanmakuData
         )
         metadata = bangumi_info["metadata"] if options["require_metadata"] else None
-        cover_data = (
-            await Fetcher.fetch_bin(ctx, client, bangumi_info["metadata"]["thumb"])
-            if options["require_cover"]
-            else None
-        )
+        cover_link = bangumi_info["metadata"]["thumb"] if options["require_cover"] else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "aid": str(avid.as_aid()),
@@ -90,7 +86,7 @@ async def extract_bangumi_data(
             subtitles=subtitles,
             metadata=metadata,
             danmaku=danmaku,
-            cover_data=cover_data,
+            cover_link=cover_link,
             chapter_info_data=[],
             path=Path(path),
             url=url
@@ -126,9 +122,7 @@ async def extract_cheese_data(
             else EmptyDanmakuData
         )
         metadata = cheese_info["metadata"] if options["require_metadata"] else None
-        cover_data = (
-            await Fetcher.fetch_bin(ctx, client, cheese_info["metadata"]["thumb"]) if options["require_cover"] else None
-        )
+        cover_link = cheese_info["metadata"]["thumb"] if options["require_cover"] else None
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "aid": str(avid.as_aid()),
@@ -150,7 +144,7 @@ async def extract_cheese_data(
             subtitles=subtitles,
             metadata=metadata,
             danmaku=danmaku,
-            cover_data=cover_data,
+            cover_link=cover_link,
             chapter_info_data=[],
             path=Path(path),
             url=url,
@@ -190,11 +184,7 @@ async def extract_ugc_video_data(
         metadata = ugc_video_info["metadata"] if options["require_metadata"] else None
         if metadata and chapter_info_data:
             attach_chapter_info(metadata, chapter_info_data)
-        cover_data = (
-            await Fetcher.fetch_bin(ctx, client, ugc_video_info["metadata"]["thumb"])
-            if options["require_cover"]
-            else None
-        )
+        cover_link = ugc_video_info["metadata"]["thumb"] if options["require_cover"] else None
         owner_uid: str = (
             ugc_video_info["metadata"]["actor"][0]["profile"].split("/")[-1]
             if ugc_video_info["metadata"]["actor"]
@@ -224,7 +214,7 @@ async def extract_ugc_video_data(
             subtitles=subtitles,
             metadata=metadata,
             danmaku=danmaku,
-            cover_data=cover_data,
+            cover_link=cover_link,
             chapter_info_data=chapter_info_data,
             path=Path(path),
             url=url,

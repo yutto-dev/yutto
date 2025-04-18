@@ -300,7 +300,8 @@ async def start_downloader(
     subtitles = episode_data["subtitles"]
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
-    cover_data = episode_data["cover_data"]
+    cover_link = episode_data["cover_link"]
+    cover_data: bytes | None = None
     url:str = episode_data["url"]
     chapter_info_data = episode_data["chapter_info_data"]
     output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
@@ -397,19 +398,22 @@ async def start_downloader(
             )
 
     # 保存封面
-    if cover_data is not None:
+    if cover_link is not None:
         if not parse_resources:
-            cover_path.write_bytes(cover_data)
+            cover_data = await Fetcher.fetch_bin(ctx, client, cover_link)
+            cover_path.write_bytes(cover_data) if cover_data else None
             if options["save_cover"]:
                 cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
-                cover_save_path.write_bytes(cover_data)
+                cover_save_path.write_bytes(cover_data) if cover_data else None
                 Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
         else:
             # TODO 可以考虑直接下载封面，如果 nfo 中不存在可引用的封面链接
             Logger.custom(
-                "存在可下载封面",
+                f"{cover_link}",
                 badge=Badge("封面", fore="black", back="cyan"),
             )
+    else:
+        Logger.warning("封面链接不存在，跳过下载")
 
 
     # 保存章节信息
