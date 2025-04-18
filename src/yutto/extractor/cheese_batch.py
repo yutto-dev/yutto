@@ -66,6 +66,7 @@ class CheeseBatchExtractor(BatchExtractor):
         # 选集过滤
         episodes = parse_episodes_selection(options["episodes"], len(cheese_list["pages"]))
         cheese_list["pages"] = list(filter(lambda item: item["id"] in episodes, cheese_list["pages"]))
+        print(cheese_list["pages"])
         return [
             CoroutineWrapper(
                 extract_cheese_data(

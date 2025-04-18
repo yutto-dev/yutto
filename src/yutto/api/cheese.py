@@ -32,6 +32,7 @@ class CheeseListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     metadata: MetaData
+    url: str
 
 
 class CheeseList(TypedDict):
@@ -55,6 +56,8 @@ async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: S
         raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["data"]
     section_episodes = result["episodes"]
+    # print(result)
+    print(section_episodes)
     return {
         "title": result["title"],
         "pages": [
@@ -65,6 +68,7 @@ async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: S
                 "episode_id": EpisodeId(str(item["id"])),
                 "avid": AId(str(item["aid"])),
                 "metadata": _parse_cheese_metadata(item),
+                "url": f"https://www.bilibili.com/cheese/play/ep{item['id']}",
             }
             for i, item in enumerate(section_episodes)
         ],
