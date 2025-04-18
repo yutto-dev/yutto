@@ -73,9 +73,6 @@ async def get_bangumi_list(ctx: FetcherContext, client: AsyncClient, season_id: 
             # 和 https://www.bilibili.com/bangumi/play/ep424859 中的「编辑推荐」
             section_episodes += section["episodes"]
 
-    # for i,item in enumerate(result["episodes"] + section_episodes):
-    #     print(i,"share_url:",item["share_url"])
-    #     print(item)
     return {
         "title": result["title"],
         "pages": [

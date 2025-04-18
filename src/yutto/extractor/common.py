@@ -30,11 +30,12 @@ from yutto.path_resolver import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
-from yutto.utils.fetcher import FetcherContext
 from yutto.utils.metadata import attach_chapter_info
 
 if TYPE_CHECKING:
     import httpx
+
+    from yutto.utils.fetcher import FetcherContext
 
 
 async def extract_bangumi_data(

@@ -393,7 +393,7 @@ async def start_downloader(
         else:
             # TODO 可以考虑直接 show nfo
             Logger.custom(
-                "存在可下载 NFO 媒体描述文件",
+                f"{metadata}",
                 badge=Badge("描述文件", fore="black", back="cyan"),
             )
 
@@ -420,9 +420,8 @@ async def start_downloader(
         if not parse_resources:
             write_chapter_info(filename, chapter_info_data, chapter_info_path)
         else:
-            # TODO 了解一下章节信息
             Logger.custom(
-                "存在可下载章节信息",
+                f"{chapter_info_data}",
                 badge=Badge("章节", fore="black", back="cyan"),
             )
 
