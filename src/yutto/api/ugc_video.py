@@ -58,7 +58,7 @@ class UgcVideoListItem(TypedDict):
     avid: AvId
     cid: CId
     metadata: MetaData
-    url: str  # Bvid to url.
+    url: str  # https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=1
 
 
 class UgcVideoList(TypedDict):

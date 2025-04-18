@@ -32,7 +32,7 @@ class CheeseListItem(TypedDict):
     episode_id: EpisodeId
     avid: AvId
     metadata: MetaData
-    url: str
+    url: str # https://www.bilibili.com/cheese/play/ep487830
 
 
 class CheeseList(TypedDict):

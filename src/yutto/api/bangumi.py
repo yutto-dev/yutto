@@ -31,7 +31,7 @@ class BangumiListItem(TypedDict):
     id: int
     name: str
     cid: CId
-    url: str
+    url: str # https://www.bilibili.com/bangumi/play/ep1448960
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
