@@ -30,7 +30,7 @@ from yutto.path_resolver import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import FetcherContext
 from yutto.utils.metadata import attach_chapter_info
 
 if TYPE_CHECKING:
@@ -79,7 +79,7 @@ async def extract_bangumi_data(
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
-        url:str = bangumi_info["url"]
+        url: str = bangumi_info["url"]
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -89,7 +89,7 @@ async def extract_bangumi_data(
             cover_link=cover_link,
             chapter_info_data=[],
             path=Path(path),
-            url=url
+            url=url,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -137,7 +137,7 @@ async def extract_cheese_data(
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
-        url:str = cheese_info["url"]
+        url: str = cheese_info["url"]
         return EpisodeData(
             videos=videos,
             audios=audios,

@@ -302,7 +302,7 @@ async def start_downloader(
     metadata = episode_data["metadata"]
     cover_link = episode_data["cover_link"]
     cover_data: bytes | None = None
-    url:str = episode_data["url"]
+    url: str = episode_data["url"]
     chapter_info_data = episode_data["chapter_info_data"]
     output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
     require_video = options["require_video"]
@@ -414,7 +414,6 @@ async def start_downloader(
             )
     else:
         Logger.warning("封面链接不存在，跳过下载")
-
 
     # 保存章节信息
     if chapter_info_data:
