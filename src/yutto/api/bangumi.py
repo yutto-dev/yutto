@@ -31,6 +31,7 @@ class BangumiListItem(TypedDict):
     id: int
     name: str
     cid: CId
+    url: str
     episode_id: EpisodeId
     avid: AvId
     is_section: bool  # 是否属于专区
@@ -71,9 +72,10 @@ async def get_bangumi_list(ctx: FetcherContext, client: AsyncClient, season_id: 
             # 如 https://www.bilibili.com/bangumi/play/ep409825 中的「次元发电机采访」
             # 和 https://www.bilibili.com/bangumi/play/ep424859 中的「编辑推荐」
             section_episodes += section["episodes"]
-    
-    for i,item in enumerate(result["episodes"] + section_episodes):
-        print(i,":",item["share_url"])
+
+    # for i,item in enumerate(result["episodes"] + section_episodes):
+    #     print(i,"share_url:",item["share_url"])
+    #     print(item)
     return {
         "title": result["title"],
         "pages": [

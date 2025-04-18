@@ -83,6 +83,7 @@ async def extract_bangumi_data(
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+        url:str = bangumi_info["url"]
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -92,6 +93,7 @@ async def extract_bangumi_data(
             cover_data=cover_data,
             chapter_info_data=[],
             path=Path(path),
+            url=url
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)

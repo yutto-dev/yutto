@@ -301,6 +301,7 @@ async def start_downloader(
     danmaku = episode_data["danmaku"]
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
+    url:str = episode_data["url"]
     chapter_info_data = episode_data["chapter_info_data"]
     output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
     require_video = options["require_video"]
@@ -322,7 +323,7 @@ async def start_downloader(
     audio = select_audio(audios, options["audio_quality"], options["audio_download_codec"])
     will_download_video = video is not None and require_video
     will_download_audio = audio is not None and require_audio
-
+    Logger.custom(f"{url}", badge=Badge("url", fore="black", back="cyan"))
     # 显示音视频详细信息
     show_videos_info(
         videos,
@@ -397,7 +398,7 @@ async def start_downloader(
 
     # 保存封面
     if cover_data is not None:
-        if not parse_resources:            
+        if not parse_resources:
             cover_path.write_bytes(cover_data)
             if options["save_cover"]:
                 cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
@@ -421,7 +422,7 @@ async def start_downloader(
                 "存在可下载章节信息",
                 badge=Badge("章节", fore="black", back="cyan"),
             )
-    
+
     if parse_resources:
         # 跳过下载.
         return DownloadState.SKIP

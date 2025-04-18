@@ -236,6 +236,7 @@ class EpisodeData(TypedDict):
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
     path: Path
+    url: str
 
 
 class DownloaderOptions(TypedDict):
