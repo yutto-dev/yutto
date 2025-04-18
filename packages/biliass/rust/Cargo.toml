@@ -24,7 +24,7 @@ rayon = "1.10.0"
 
 [build-dependencies]
 prost-build = "0.13.5"
-protox = "0.7.2"
+protox = "0.8.0"
 
 [profile.release]
 lto = true      # Enables link to optimizations
