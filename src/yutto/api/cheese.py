@@ -26,13 +26,13 @@ if TYPE_CHECKING:
 
 
 class CheeseListItem(TypedDict):
+    url: str  # https://www.bilibili.com/cheese/play/ep487830
     id: int
     name: str
     cid: CId
     episode_id: EpisodeId
     avid: AvId
     metadata: MetaData
-    url: str  # https://www.bilibili.com/cheese/play/ep487830
 
 
 class CheeseList(TypedDict):
