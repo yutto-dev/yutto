@@ -27,7 +27,7 @@ def cli() -> argparse.Namespace:
 
 def main():
     args = cli()
-    with Path(args.file).open("r") as f:
+    with Path(args.file).open("r", encoding="utf-8") as f:
         code = f.read()
     tree = ast.parse(code)
     analyzer = VersionAnalyzer(args.literal_name)
