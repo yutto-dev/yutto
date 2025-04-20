@@ -140,3 +140,8 @@ require_danmaku = false
 
 - 配置项 `resource.save_cover`
 - 默认值 `False`
+
+### 是否跳过对选中资源的下载
+
+- 配置项 `resource.skip_download`
+- 默认值 `False`
