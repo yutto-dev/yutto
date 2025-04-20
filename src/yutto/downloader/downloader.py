@@ -307,7 +307,7 @@ async def start_downloader(
     output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
     require_video = options["require_video"]
     require_audio = options["require_audio"]
-    parse_resources = options["parse_resources"]
+    skip_download = options["skip_download"]
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
     Logger.info(f"开始处理视频 {filename}")
@@ -324,7 +324,7 @@ async def start_downloader(
     audio = select_audio(audios, options["audio_quality"], options["audio_download_codec"])
     will_download_video = video is not None and require_video
     will_download_audio = audio is not None and require_audio
-    Logger.custom(f"{url}", badge=Badge("url", fore="black", back="cyan"))
+    Logger.custom(url, badge=Badge("LINK", fore="black", back="cyan"))
     # 显示音视频详细信息
     show_videos_info(
         videos,
@@ -353,7 +353,7 @@ async def start_downloader(
 
     # 保存字幕
     if subtitles:
-        if not parse_resources:
+        if not skip_download:
             for subtitle in subtitles:
                 write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
             Logger.custom(
@@ -368,7 +368,7 @@ async def start_downloader(
 
     # 保存弹幕
     if danmaku["data"]:
-        if not parse_resources:
+        if not skip_download:
             write_danmaku(
                 danmaku,
                 str(output_path),
@@ -387,7 +387,7 @@ async def start_downloader(
 
     # 保存媒体描述文件
     if metadata is not None:
-        if not parse_resources:
+        if not skip_download:
             write_metadata(metadata, output_path, metadata_format)
             Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
         else:
@@ -399,7 +399,7 @@ async def start_downloader(
 
     # 保存封面
     if cover_link is not None:
-        if not parse_resources:
+        if not skip_download:
             cover_data = await Fetcher.fetch_bin(ctx, client, cover_link)
             cover_path.write_bytes(cover_data) if cover_data else None
             if options["save_cover"]:
@@ -417,7 +417,7 @@ async def start_downloader(
 
     # 保存章节信息
     if chapter_info_data:
-        if not parse_resources:
+        if not skip_download:
             write_chapter_info(filename, chapter_info_data, chapter_info_path)
         else:
             Logger.custom(
@@ -425,7 +425,7 @@ async def start_downloader(
                 badge=Badge("章节", fore="black", back="cyan"),
             )
 
-    if parse_resources:
+    if skip_download:
         # 跳过下载.
         return DownloadState.SKIP
 

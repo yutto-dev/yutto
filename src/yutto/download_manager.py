@@ -247,7 +247,7 @@ class DownloadManager:
                     "block_size": int(args.block_size * 1024 * 1024),
                     "num_workers": args.num_workers,
                     "save_cover": args.save_cover,
-                    "parse_resources": args.parse_resources,
+                    "skip_download": args.skip_download,
                     "metadata_format": {
                         "premiered": args.metadata_format_premiered,
                         "dateadded": TIME_FULL_FMT,
