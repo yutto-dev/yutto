@@ -8,8 +8,8 @@ aside: true
 
 ## 仅下载视频流
 
-- 参数 `--video-only`
-- 默认值 `False`
+-  参数 `--video-only`
+-  默认值 `False`
 
 ::: tip
 
@@ -21,47 +21,47 @@ aside: true
 
 ## 仅下载音频流
 
-- 参数 `--audio-only`
-- 默认值 `False`
+-  参数 `--audio-only`
+-  默认值 `False`
 
 仅下载其中的音频流，保存为 `.m4a` 文件。
 
 ## 不生成弹幕文件
 
-- 参数 `--no-danmaku`
-- 默认值 `False`
+-  参数 `--no-danmaku`
+-  默认值 `False`
 
 ## 仅生成弹幕文件
 
-- 参数 `--danmaku-only`
-- 默认值 `False`
+-  参数 `--danmaku-only`
+-  默认值 `False`
 
 ## 不生成字幕文件
 
-- 参数 `--no-subtitle`
-- 默认值 `False`
+-  参数 `--no-subtitle`
+-  默认值 `False`
 
 ## 仅生成字幕文件
 
-- 参数 `--subtitle-only`
-- 默认值 `False`
+-  参数 `--subtitle-only`
+-  默认值 `False`
 
 ## 生成媒体元数据文件
 
-- 参数 `--with-metadata`
-- 默认值 `False`
+-  参数 `--with-metadata`
+-  默认值 `False`
 
 目前媒体元数据生成尚在试验阶段，可能提取出的信息并不完整。
 
 ## 仅生成媒体元数据文件
 
-- 参数 `--metadata-only`
-- 默认值 `False`
+-  参数 `--metadata-only`
+-  默认值 `False`
 
 ## 不生成视频封面
 
-- 参数 `--no-cover`
-- 默认值 `False`
+-  参数 `--no-cover`
+-  默认值 `False`
 
 ::: tip
 
@@ -71,18 +71,18 @@ aside: true
 
 ## 生成视频流封面时单独保存封面
 
-- 参数 `--save-cover`
-- 默认值 `False`
+-  参数 `--save-cover`
+-  默认值 `False`
 
 ## 仅生成视频封面
 
-- 参数 `--cover-only`
-- 默认值 `False`
+-  参数 `--cover-only`
+-  默认值 `False`
 
 ## 不生成章节信息
 
-- 参数 `--no-chapter-info`
-- 默认值 `False`
+-  参数 `--no-chapter-info`
+-  默认值 `False`
 
 不生成章节信息，包含 MetaData 和嵌入视频流的章节信息。
 
@@ -103,45 +103,45 @@ require_danmaku = false
 
 ### 是否需要视频流
 
-- 配置项 `resource.video_only`
-- 默认值 `True`
+-  配置项 `resource.video_only`
+-  默认值 `True`
 
 ### 是否需要音频流
 
-- 配置项 `resource.require_audio`
-- 默认值 `True`
+-  配置项 `resource.require_audio`
+-  默认值 `True`
 
 ### 是否需要弹幕
 
-- 配置项 `resource.require_danmaku`
-- 默认值 `True`
+-  配置项 `resource.require_danmaku`
+-  默认值 `True`
 
 ### 是否需要字幕
 
-- 配置项 `resource.require_subtitle`
-- 默认值 `True`
+-  配置项 `resource.require_subtitle`
+-  默认值 `True`
 
 ### 是否需要媒体元数据
 
-- 配置项 `resource.require_metadata`
-- 默认值 `False`
+-  配置项 `resource.require_metadata`
+-  默认值 `False`
 
 ### 是否需要视频封面
 
-- 配置项 `resource.require_cover`
-- 默认值 `True`
+-  配置项 `resource.require_cover`
+-  默认值 `True`
 
 ### 是否需要章节信息
 
-- 配置项 `resource.require_chapter_info`
-- 默认值 `True`
+-  配置项 `resource.require_chapter_info`
+-  默认值 `True`
 
 ### 生成视频流封面时单独保存封面
 
-- 配置项 `resource.save_cover`
-- 默认值 `False`
+-  配置项 `resource.save_cover`
+-  默认值 `False`
 
 ### 是否跳过对选中资源的下载
 
-- 配置项 `resource.skip_download`
-- 默认值 `False`
+-  配置项 `resource.skip_download`
+-  默认值 `False`
