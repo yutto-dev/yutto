@@ -274,6 +274,12 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         action="store_true",
         help="生成视频流封面后单独保存封面文件",
     )
+    group_resource.add_argument(
+        "--skip-download",
+        default=settings.resource.skip_download,
+        action="store_true",
+        help="仅解析视频信息和资源项，跳过资源项目下载。",
+    )
     group_resource.set_defaults(
         require_video=settings.resource.require_video,
         require_audio=settings.resource.require_audio,
