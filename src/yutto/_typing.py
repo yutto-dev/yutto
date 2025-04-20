@@ -239,7 +239,6 @@ class EpisodeData(TypedDict):
     path: Path
 
 
-
 class DownloaderOptions(TypedDict):
     output_dir: Path
     tmp_dir: Path

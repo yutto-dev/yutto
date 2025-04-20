@@ -199,10 +199,6 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         "--no-progress", default=settings.basic.no_progress, action="store_true", help="不显示进度条"
     )
     group_basic.add_argument("--debug", default=settings.basic.debug, action="store_true", help="启用 debug 模式")
-    group_basic.add_argument("--skip-download",
-                             default=settings.basic.skip_download,
-                             action="store_true",
-                             help="仅解析视频信息和资源项，跳过资源项目下载。")
 
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")
