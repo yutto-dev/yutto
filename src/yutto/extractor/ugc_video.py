@@ -28,6 +28,10 @@ class UgcVideoExtractor(SingleExtractor):
 
     REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)/?(\?p=(?P<page>\d+))?")
     REGEX_BV = re.compile(r"https?://www\.bilibili\.com/video/(?P<bvid>(bv|BV)\w+)/?(\?p=(?P<page>\d+))?")
+    REGEX_BV_COMPLEX = re.compile(
+        r"https?://www\.bilibili\.com/video/(?P<bvid>(bv|BV)\w+)/?(?:\?[^#]*p=(?P<page>\d+))?"
+    )
+    REGEX_AV_COMPLEX = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)/?(?:\?[^#]*p=(?P<page>\d+))?")
 
     REGEX_AV_ID = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
     REGEX_BV_ID = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
@@ -51,6 +55,20 @@ class UgcVideoExtractor(SingleExtractor):
             if match_obj.group("page") is not None:
                 page = int(match_obj.group("page"))
             url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}?p={page}"
+            matched = True
+        # https://www.bilibili.com/video/BV1vZ4y1M7mQ\?vd_source\=d7601f0fc447d708fff71aa75186ea10\&p\=2\&spm_id_from\=333.788.videopod.episodes -> https://www.bilibili.com/video/BV1vZ4y1M7mQ/?p=2
+        elif match_obj := self.REGEX_BV_COMPLEX.match(id):
+            page: int = 1
+            if match_obj.group("page") is not None:
+                page = int(match_obj.group("page"))
+            url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}?p={page}"
+            matched = True
+        # https://www.bilibili.com/video/av371660125\?vd_source\=d7601f0fc447d708fff71aa75186ea10\&p\=2\&spm_id_from\=333.788.videopod.episodes -> https://www.bilibili.com/video/av371660125/?p=2
+        elif match_obj := self.REGEX_AV_COMPLEX.match(id):
+            page: int = 1
+            if match_obj.group("page") is not None:
+                page = int(match_obj.group("page"))
+            url = f"https://www.bilibili.com/video/av{match_obj.group('aid')}?p={page}"
             matched = True
         return matched, url
 
