@@ -56,13 +56,14 @@ class UgcVideoExtractor(SingleExtractor):
                 page = int(match_obj.group("page"))
             url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}?p={page}"
             matched = True
-        # 把复杂的 BV 链接转换为简单的 BV 链接
+        # https://www.bilibili.com/video/BV1vZ4y1M7mQ\?vd_source\=d7601f0fc447d708fff71aa75186ea10\&p\=2\&spm_id_from\=333.788.videopod.episodes -> https://www.bilibili.com/video/BV1vZ4y1M7mQ?p=2
         elif match_obj := self.REGEX_BV_COMPLEX.match(id):
             page: int = 1
             if match_obj.group("page") is not None:
                 page = int(match_obj.group("page"))
             url = f"https://www.bilibili.com/video/{match_obj.group('bvid')}?p={page}"
             matched = True
+        # https://www.bilibili.com/video/av371660125\?vd_source\=d7601f0fc447d708fff71aa75186ea10\&p\=2\&spm_id_from\=333.788.videopod.episodes -> https://www.bilibili.com/video/av371660125?p=2
         elif match_obj := self.REGEX_AV_COMPLEX.match(id):
             page: int = 1
             if match_obj.group("page") is not None:
