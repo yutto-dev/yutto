@@ -66,9 +66,7 @@ class UgcVideoExtractor(SingleExtractor):
                 self.avid = AId(match_obj.group("aid"))
             else:
                 self.avid = BvId(match_obj.group("bvid"))
-            parsed_url = urlparse(url)
-            query_string = parsed_url.query
-            query_params = parse_qs(query_string)
+            query_params = parse_qs(urlparse(url).query)
             if p_queries := query_params.get("p"):
                 try:
                     assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
