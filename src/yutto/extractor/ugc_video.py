@@ -66,12 +66,17 @@ class UgcVideoExtractor(SingleExtractor):
                 self.avid = AId(match_obj.group("aid"))
             else:
                 self.avid = BvId(match_obj.group("bvid"))
-            parsed_url = urlparse(url)
-            query_string = parsed_url.query
-            query_params = parse_qs(query_string)
-            if p_queries := query_params.get("p"):
-                assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
-                self.page = int(p_queries[0])
+            try:
+                parsed_url = urlparse(url)
+                query_string = parsed_url.query
+                query_params = parse_qs(query_string)
+                if p_queries := query_params.get("p"):
+                    assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
+                    self.page = int(p_queries[0])
+            except Exception as e:
+                Logger.error(f"Failed to parse URL `{url}`: {e}")
+                return False
+
             return True
         else:
             return False
