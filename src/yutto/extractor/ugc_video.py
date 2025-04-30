@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import re
-from urllib.parse import urlparse, parse_qs
 from typing import TYPE_CHECKING
+from urllib.parse import parse_qs, urlparse
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
