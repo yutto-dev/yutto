@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING
+from urllib.parse import parse_qs, urlparse
 
 from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
@@ -26,8 +27,8 @@ if TYPE_CHECKING:
 class UgcVideoExtractor(SingleExtractor):
     """投稿视频单视频"""
 
-    REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)/?(\?p=(?P<page>\d+))?")
-    REGEX_BV = re.compile(r"https?://www\.bilibili\.com/video/(?P<bvid>(bv|BV)\w+)/?(\?p=(?P<page>\d+))?")
+    REGEX_AV = re.compile(r"https?://www\.bilibili\.com/video/av(?P<aid>\d+)/?")
+    REGEX_BV = re.compile(r"https?://www\.bilibili\.com/video/(?P<bvid>(bv|BV)\w+)/?")
 
     REGEX_AV_ID = re.compile(r"av(?P<aid>\d+)(\?p=(?P<page>\d+))?")
     REGEX_BV_ID = re.compile(r"(?P<bvid>(bv|BV)\w+)(\?p=(?P<page>\d+))?")
@@ -65,8 +66,14 @@ class UgcVideoExtractor(SingleExtractor):
                 self.avid = AId(match_obj.group("aid"))
             else:
                 self.avid = BvId(match_obj.group("bvid"))
-            if "page" in match_obj.groupdict() and match_obj.group("page") is not None:
-                self.page = int(match_obj.group("page"))
+            query_params = parse_qs(urlparse(url).query)
+            if p_queries := query_params.get("p"):
+                try:
+                    assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
+                    self.page = int(p_queries[0])
+                except (ValueError, AssertionError) as e:
+                    Logger.error(f"url 的 page 信息不正确, `{e}`, 请检查 `p=` 的值是否为整数且唯一～")
+                    return False
             return True
         else:
             return False
