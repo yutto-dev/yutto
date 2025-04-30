@@ -71,9 +71,7 @@ class UgcVideoExtractor(SingleExtractor):
             query_params = parse_qs(query_string)
             if p_queries := query_params.get("p"):
                 try:
-                    assert len(p_queries) == 1, (
-                        f"p should only have one value in url `{url}`, but got {len(p_queries)}"
-                    )
+                    assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
                     self.page = int(p_queries[0])
                 except (ValueError, AssertionError) as e:
                     Logger.error(f"url 的 page 信息不正确, `{e}`, 请检查 `p=` 的值是否为整数且唯一～")
