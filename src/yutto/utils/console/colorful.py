@@ -7,7 +7,7 @@ from typing import Final, Literal, NamedTuple, TypeAlias, TypedDict
 # thirt-party imports
 # if system is windows, initialize colorama, which translates UNIX console color sequences into windows color sequences
 if sys.platform == "win32":
-    from colorama import init  # type: ignore
+    from colorama import init
 
     init()
 

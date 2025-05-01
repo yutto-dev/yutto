@@ -21,7 +21,7 @@ P = ParamSpec("P")
 def initial_async_policy():
     if platform.system() == "Windows":
         Logger.debug("Windows 平台，单独设置 EventLoopPolicy")
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # type: ignore
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # pyright: ignore
 
 
 class CoroutineWrapper(Generic[RetT]):

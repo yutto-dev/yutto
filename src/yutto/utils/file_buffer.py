@@ -47,9 +47,7 @@ class AsyncFileBuffer(aobject):
     ```
     """
 
-    async def __ainit__(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, file_path: str | Path, overwrite: bool = False
-    ):
+    async def __ainit__(self, file_path: str | Path, overwrite: bool = False):
         self.file_path = Path(file_path)
         if overwrite:
             self.file_path.unlink(missing_ok=True)

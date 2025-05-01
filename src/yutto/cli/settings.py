@@ -18,7 +18,7 @@ from yutto.utils.time import TIME_DATE_FMT
 if sys.version_info >= (3, 11):
     import tomllib
 else:
-    import tomli as tomllib  # type: ignore
+    import tomli as tomllib  # pyright: ignore[reportMissingImports]
 
 
 def xdg_config_home() -> Path:
