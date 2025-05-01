@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, cast
 
-from mcp.server.fastmcp import Context, FastMCP
+from fastmcp import Context, FastMCP
 from pydantic import Field
 
 from yutto.download_manager import DownloadManager, DownloadTask
@@ -21,7 +21,7 @@ class AppContext:
 
 
 @asynccontextmanager
-async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
+async def app_lifespan(server: FastMCP[AppContext]) -> AsyncIterator[AppContext]:
     """Manage application lifecycle with type-safe context"""
     # Initialize on startup
     ctx = FetcherContext()
