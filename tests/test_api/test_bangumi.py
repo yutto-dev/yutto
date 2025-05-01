@@ -6,7 +6,7 @@ from yutto._typing import BvId, CId, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_playurl,
-    get_bangumi_subtitles,  # type: ignore
+    get_bangumi_subtitles,  # pyright: ignore[reportUnusedImport]
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )

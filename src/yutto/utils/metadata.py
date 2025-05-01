@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
-from dict2xml import dict2xml  # type: ignore
+from dict2xml import dict2xml  # pyright: ignore[reportUnknownVariableType,reportMissingTypeStubs]
 
 from yutto.utils.time import get_time_str_by_stamp
 
@@ -55,9 +55,9 @@ def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[s
     custom_root = "episodedetails"  # TODO: 不同视频类型使用不同的 root name
     # 增加字段格式化内容，后续如果需要调整可以继续调整
     user_formatted_metadata = metadata_value_format(metadata, metadata_format) if metadata_format else metadata
-    xml_content = dict2xml(user_formatted_metadata, wrap=custom_root, indent="  ")  # type: ignore
-    with metadata_path.open("w", encoding="utf-8") as f:  # type: ignore
-        f.write(xml_content)  # type: ignore
+    xml_content = cast("str", dict2xml(user_formatted_metadata, wrap=custom_root, indent="  "))  # pyright: ignore[reportUnknownVariableType]
+    with metadata_path.open("w", encoding="utf-8") as f:
+        f.write(xml_content)
 
 
 def attach_chapter_info(metadata: MetaData, chapter_info_data: list[ChapterInfoData]):
