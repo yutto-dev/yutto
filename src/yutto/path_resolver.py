@@ -9,7 +9,17 @@ from yutto.utils.console.logger import Logger
 from yutto.utils.time import get_time_str_by_stamp
 
 PathTemplateVariable = Literal[
-    "title", "id", "aid", "bvid", "name", "username", "series_title", "pubdate", "download_date", "owner_uid", "owner_uname"
+    "title",
+    "id",
+    "aid",
+    "bvid",
+    "name",
+    "username",
+    "series_title",
+    "pubdate",
+    "download_date",
+    "owner_uid",
+    "owner_uname",
 ]
 PathTemplateVariableDict = dict[PathTemplateVariable, int | str]
 UNKNOWN: str = "unknown_variable"
