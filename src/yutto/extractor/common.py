@@ -80,6 +80,7 @@ async def extract_bangumi_data(
             "pubdate": UNKNOWN,
             "download_date": bangumi_info["metadata"]["dateadded"],
             "owner_uid": UNKNOWN,
+            "owner_uname": UNKNOWN,
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
@@ -138,6 +139,7 @@ async def extract_cheese_data(
             "pubdate": UNKNOWN,
             "download_date": UNKNOWN,
             "owner_uid": UNKNOWN,
+            "owner_uname": UNKNOWN,
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
@@ -196,7 +198,7 @@ async def extract_ugc_video_data(
             if ugc_video_info["metadata"]["actor"]
             else UNKNOWN
         )
-        username: str = (
+        owner_uname: str = (
             ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
         )
         subpath_variables_base: PathTemplateVariableDict = {
@@ -205,11 +207,12 @@ async def extract_ugc_video_data(
             "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
-            "username": username,
+            "username": owner_uname,  # 在不同情境下 username 的指代不明确，暂时约定 username 为视频作者名称，后续计划移除该字段
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
             "download_date": ugc_video_info["metadata"]["dateadded"],
             "owner_uid": owner_uid,
+            "owner_uname": owner_uname,
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
