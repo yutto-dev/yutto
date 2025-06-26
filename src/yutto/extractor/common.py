@@ -201,16 +201,13 @@ async def extract_ugc_video_data(
         owner_uname: str = (
             ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
         )
-        username: str = (
-            ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
-        )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
             "aid": str(avid.as_aid()),
             "bvid": str(avid.as_bvid()),
             "name": name,
             "title": UNKNOWN,
-            "username": username,
+            "username": owner_uname,  # 在不同情境下 username 的指代不明确，暂时约定 username 为视频作者名称，后续计划移除该字段
             "series_title": UNKNOWN,
             "pubdate": UNKNOWN,
             "download_date": ugc_video_info["metadata"]["dateadded"],
