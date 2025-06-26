@@ -80,6 +80,7 @@ async def extract_bangumi_data(
             "pubdate": UNKNOWN,
             "download_date": bangumi_info["metadata"]["dateadded"],
             "owner_uid": UNKNOWN,
+            "owner_uname": UNKNOWN,
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
@@ -138,6 +139,7 @@ async def extract_cheese_data(
             "pubdate": UNKNOWN,
             "download_date": UNKNOWN,
             "owner_uid": UNKNOWN,
+            "owner_uname": UNKNOWN,
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
@@ -196,6 +198,9 @@ async def extract_ugc_video_data(
             if ugc_video_info["metadata"]["actor"]
             else UNKNOWN
         )
+        owner_uname: str = (
+            ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
+        )
         username: str = (
             ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
         )
@@ -210,6 +215,7 @@ async def extract_ugc_video_data(
             "pubdate": UNKNOWN,
             "download_date": ugc_video_info["metadata"]["dateadded"],
             "owner_uid": owner_uid,
+            "owner_uname": owner_uname,
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
