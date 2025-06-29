@@ -34,7 +34,7 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
     let mut buf = Vec::new();
 
     if let Ok(Event::Text(e)) = reader.read_event_into(&mut buf) {
-        content = Some(e.decode().unwrap().into_owned());
+        content = Some(e.unescape().unwrap().into_owned());
     }
     buf.clear();
 
