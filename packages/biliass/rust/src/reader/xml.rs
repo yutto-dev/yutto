@@ -21,7 +21,7 @@ fn parse_raw_p(reader: &mut Reader<&[u8]>, element: &BytesStart) -> Result<Strin
                 attr.decode_and_unescape_value(reader.decoder())
                     .map(|s| s.to_string())
                     .map_err(|e| {
-                        ParseError::Xml(format!("Error decoding version attribute: {}", e))
+                        ParseError::Xml(format!("Error decoding version attribute: {e}"))
                     })?,
             );
         }
@@ -62,13 +62,13 @@ fn parse_comment_item(
         "1" | "4" | "5" | "6" | "7" => {
             let mut timeline = split_p[p_offset]
                 .parse::<f64>()
-                .map_err(|e| ParseError::Xml(format!("Error parsing timeline: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing timeline: {e}")))?;
             if version == XmlVersion::V2 {
                 timeline /= 1000.0;
             }
             let timestamp = split_p[4 + p_offset]
                 .parse::<u64>()
-                .map_err(|e| ParseError::Xml(format!("Error parsing timestamp: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing timestamp: {e}")))?;
             let comment_pos = match danmaku_type_id {
                 "1" => CommentPosition::Scroll,
                 "4" => CommentPosition::Top,
@@ -82,10 +82,10 @@ fn parse_comment_item(
             }
             let color = split_p[3 + p_offset]
                 .parse::<u32>()
-                .map_err(|e| ParseError::Xml(format!("Error parsing color: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing color: {e}")))?;
             let size = split_p[2 + p_offset]
                 .parse::<i32>()
-                .map_err(|e| ParseError::Xml(format!("Error parsing size: {}", e)))?;
+                .map_err(|e| ParseError::Xml(format!("Error parsing size: {e}")))?;
             let (comment_content, size, comment_data) = if comment_pos != CommentPosition::Special {
                 let comment_content = utils::unescape_newline(content);
                 let size = (size as f32) * fontsize / 25.0;
