@@ -89,7 +89,6 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 - 配置项 `batch.filter_start_time` 和 `batch.filter_end_time`
 - 默认 `不限制`
 - 支持的格式
-
    - `%Y-%m-%d`
    - `%Y-%m-%d %H:%M:%S`
 
