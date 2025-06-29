@@ -64,12 +64,12 @@ video_quality_map = {
         "height": 720,
     },
     64: {
-        "description": "720P 高清",
+        "description": "720P 准高清",
         "width": 1280,
         "height": 720,
     },
     32: {
-        "description": "480P 清晰",
+        "description": "480P 标清",
         "width": 852,
         "height": 480,
     },

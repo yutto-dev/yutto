@@ -16,7 +16,7 @@ pub fn convert_timestamp(timestamp: f64) -> String {
     let second = second as u32;
     let centsecond = centsecond as u32;
 
-    format!("{}:{:02}:{:02}.{:02}", hour, minute, second, centsecond)
+    format!("{hour}:{minute:02}:{second:02}.{centsecond:02}")
 }
 
 pub fn ass_escape(text: &str) -> String {
@@ -56,7 +56,7 @@ pub fn convert_color(rgb: u32, width: Option<u32>, height: Option<u32>) -> Strin
     let g = (rgb >> 8) & 0xFF;
     let b = rgb & 0xFF;
     if width < 1280 && height < 576 {
-        format!("{:02X}{:02X}{:02X}", b, g, r)
+        format!("{b:02X}{g:02X}{r:02X}")
     } else {
         format!(
             "{:02X}{:02X}{:02X}",
