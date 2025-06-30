@@ -30,15 +30,47 @@ fn parse_raw_p(reader: &mut Reader<&[u8]>, element: &BytesStart) -> Result<Strin
 }
 
 fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
-    let mut content = None;
+    let mut contents = Vec::new();
     let mut buf = Vec::new();
 
-    if let Ok(Event::Text(e)) = reader.read_event_into(&mut buf) {
-        content = Some(e.unescape().unwrap().into_owned());
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Text(e)) => {
+                contents.push(
+                    e.decode()
+                        .map_err(|e| ParseError::Xml(format!("Error decoding text: {e}")))?
+                        .into_owned(),
+                );
+            }
+            Ok(Event::GeneralRef(e)) => {
+                let entity_str = std::str::from_utf8(e.as_ref())
+                    .map_err(|e| ParseError::Xml(format!("Error decoding entity: {e}")))?;
+                let resolved_entity = quick_xml::escape::resolve_predefined_entity(entity_str)
+                    .ok_or_else(|| {
+                        ParseError::Xml(format!("Error resolving entity: {entity_str}"))
+                    })?;
+                contents.push(resolved_entity.to_string());
+            }
+            Ok(Event::End(_) | Event::Eof) => {
+                break;
+            }
+            Ok(_) => {
+                // Ignore other events
+                continue;
+            }
+            Err(e) => {
+                return Err(ParseError::Xml(format!(
+                    "Error reading comment content: {e}"
+                )));
+            }
+        }
+        buf.clear();
     }
-    buf.clear();
 
-    content.ok_or(ParseError::Xml("No content found in comment".to_string()))
+    if contents.is_empty() {
+        return Err(ParseError::Xml("No content found in comment".to_string()));
+    }
+    Ok(contents.into_iter().collect::<String>())
 }
 
 fn parse_comment_item(
@@ -201,7 +233,7 @@ where
                             "No version specified".to_string(),
                         )));
                     }
-                    if let Ok(comment_option) = parse_comment(
+                    match parse_comment(
                         &mut reader,
                         e,
                         version.clone().unwrap(),
@@ -210,11 +242,18 @@ where
                         count,
                         block_options,
                     ) {
-                        if let Some(comment) = comment_option {
-                            comments.push(comment);
+                        Ok(comment_option) => {
+                            if let Some(comment) = comment_option {
+                                comments.push(comment);
+                            }
                         }
-                    } else {
-                        eprintln!("Error parsing comment at {:?}", reader.buffer_position());
+                        Err(e) => {
+                            eprintln!(
+                                "Error parsing comment at {:?}, {}",
+                                reader.buffer_position(),
+                                e
+                            );
+                        }
                     }
                     count += 1;
                 }
