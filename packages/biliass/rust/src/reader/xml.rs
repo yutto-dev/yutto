@@ -64,8 +64,8 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
                 )));
             }
         }
+        buf.clear();
     }
-    buf.clear();
 
     if contents.is_empty() {
         return Err(ParseError::Xml("No content found in comment".to_string()));
