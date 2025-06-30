@@ -36,7 +36,11 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Text(e)) => {
-                contents.push(e.decode().unwrap().into_owned());
+                contents.push(
+                    e.decode()
+                        .map_err(|e| ParseError::Xml(format!("Error decoding text: {e}")))?
+                        .into_owned(),
+                );
             }
             Ok(Event::GeneralRef(e)) => {
                 let entity_str = std::str::from_utf8(e.as_ref())
