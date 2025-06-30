@@ -7,7 +7,7 @@
 <div class="language-sh">
 <pre>
 <code>
-<span style="color:magenta;">❯</span> yutto https://www.bilibili.com/video/BV1ZEf9YiE2h/
+<span style="color:magenta;">❯</span> yutto https://www.bilibili.com/video/BV1CTMHziEaB/
  <span style="color:#0096FF;">INFO</span>  发现配置文件 yutto.toml，加载中……
 <span style="color:var(--vp-code-block-bg);background-color:magenta;font-weight:bold"> 大会员 </span> 成功以大会员身份登录～
 <span style="color:var(--vp-code-block-bg);background-color:cyan;"> 投稿视频 </span> 《原神》动画短片——「尘间星旅」

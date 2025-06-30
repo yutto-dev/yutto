@@ -29,7 +29,7 @@
 yutto 是一个 B 站视频下载器，它可以帮助你下载 B 站上的投稿视频、番剧、课程等资源，支持单个视频下载、批量下载等功能，就像这样：
 
 ```bash
-❯ yutto https://www.bilibili.com/video/BV1ZEf9YiE2h/
+❯ yutto https://www.bilibili.com/video/BV1CTMHziEaB/
  INFO  发现配置文件 yutto.toml，加载中……
  大会员  成功以大会员身份登录～
  投稿视频  《原神》动画短片——「尘间星旅」
