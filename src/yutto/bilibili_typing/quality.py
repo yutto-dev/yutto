@@ -34,7 +34,7 @@ video_quality_map = {
         "height": 2160,
     },
     120: {
-        "description": "4K 超清",
+        "description": "4K 超高清",
         "width": 3840,
         "height": 2160,
     },
