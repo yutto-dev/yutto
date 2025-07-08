@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
   "aiofiles>=24.1.0",
-  "biliass==2.2.2",
+  "biliass==2.3.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
   "typing-extensions>=4.13.2",
   "dict2xml>=1.7.6",
