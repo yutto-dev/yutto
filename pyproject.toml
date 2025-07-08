@@ -24,14 +24,14 @@ dependencies = [
   "aiofiles>=24.1.0",
   "biliass==2.3.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
-  "typing-extensions>=4.13.2",
+  "typing-extensions>=4.14.1",
   "dict2xml>=1.7.6",
   "httpx[http2,socks]>=0.28.1",
   "tomli>=2.0.2; python_version < '3.11'",
-  "pydantic>=2.11.4",
+  "pydantic>=2.11.7",
   "returns>=0.25.0",
 ]
-optional-dependencies.mcp = ["fastmcp>=2.2.6"]
+optional-dependencies.mcp = ["fastmcp>=2.10.2"]
 
 [project.urls]
 Homepage = "https://github.com/yutto-dev/yutto"
@@ -44,12 +44,12 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.400",
-  "ruff>=0.11.8",
-  "typos>=1.31.2",
-  "pytest>=8.3.5",
-  "pytest-rerunfailures>=15.0",
-  "syrupy>=4.9.0",
+  "pyright>=1.1.402",
+  "ruff>=0.12.2",
+  "typos>=1.34.0",
+  "pytest>=8.4.1",
+  "pytest-rerunfailures>=15.1",
+  "syrupy>=4.9.1",
   "pytest-codspeed>=3.2.0",
 ]
 
