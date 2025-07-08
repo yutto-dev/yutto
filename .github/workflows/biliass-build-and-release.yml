@@ -46,6 +46,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -78,6 +79,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -107,6 +109,7 @@ jobs:
         with:
           python-version: "3.13"
           architecture: ${{ matrix.platform.target }}
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -142,6 +145,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-versions }}
           architecture: ${{ matrix.platform.target }}
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -169,6 +173,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
