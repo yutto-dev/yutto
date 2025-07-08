@@ -152,7 +152,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-free-threaded-${{ matrix.platform.target }}
+          name: wheels-windows-free-threaded-${{ matrix.python-versions }}-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
   macos:
