@@ -145,7 +145,7 @@ class Fetcher:
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
-            if resp.status_code != httpx.codes.OK:
+            if not resp.is_success:
                 return None
             return resp.text
 
@@ -162,7 +162,7 @@ class Fetcher:
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
-            if resp.status_code != httpx.codes.OK:
+            if not resp.is_success:
                 return None
             return resp.read()
 
@@ -179,7 +179,7 @@ class Fetcher:
             Logger.debug(f"Fetch json: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
-            if resp.status_code != httpx.codes.OK:
+            if not resp.is_success:
                 return None
             return resp.json()
 
