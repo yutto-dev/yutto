@@ -4,7 +4,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-from typing import Annotated, Any, Literal, Optional
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +36,7 @@ class YuttoBasicSettings(BaseModel):
     audio_quality: Annotated[AudioQuality, Field(30251)]
     vcodec: Annotated[str, Field("avc:copy")]
     acodec: Annotated[str, Field("mp4a:copy")]
-    download_vcodec_priority: Annotated[Optional[list[str]], Field(None)]  # noqa: UP007
+    download_vcodec_priority: Annotated[list[str] | None, Field(None)]
     output_format: Annotated[Literal["infer", "mp4", "mkv", "mov"], Field("infer")]
     output_format_audio_only: Annotated[
         Literal["infer", "m4a", "aac", "mp3", "flac", "mp4", "mkv", "mov"], Field("infer")
@@ -46,13 +46,13 @@ class YuttoBasicSettings(BaseModel):
     overwrite: Annotated[bool, Field(False)]
     proxy: Annotated[str, Field("auto")]
     dir: Annotated[str, Field("./")]
-    tmp_dir: Annotated[Optional[str], Field(None)]  # noqa: UP007
+    tmp_dir: Annotated[str | None, Field(None)]
     sessdata: Annotated[str, Field("")]
     subpath_template: Annotated[str, Field("{auto}")]
     aliases: Annotated[dict[str, str], Field(dict[str, str]())]
     metadata_format_premiered: Annotated[str, Field(TIME_DATE_FMT)]
     download_interval: Annotated[int, Field(0)]
-    banned_mirrors_pattern: Annotated[Optional[str], Field(None)]  # noqa: UP007
+    banned_mirrors_pattern: Annotated[str | None, Field(None)]
     vip_strict: Annotated[bool, Field(False)]
     login_strict: Annotated[bool, Field(False)]
     no_color: Annotated[bool, Field(False)]
@@ -72,7 +72,7 @@ class YuttoResourceSettings(BaseModel):
 
 
 class YuttoDanmakuSettings(BaseModel):
-    font_size: Annotated[Optional[int], Field(None)]  # noqa: UP007
+    font_size: Annotated[int | None, Field(None)]
     font: Annotated[str, Field("SimHei")]
     opacity: Annotated[float, Field(0.8)]
     display_region_ratio: Annotated[float, Field(1.0)]
@@ -89,8 +89,8 @@ class YuttoDanmakuSettings(BaseModel):
 
 class YuttoBatchSettings(BaseModel):
     with_section: Annotated[bool, Field(False)]
-    batch_filter_start_time: Annotated[Optional[str], Field(None)]  # noqa: UP007
-    batch_filter_end_time: Annotated[Optional[str], Field(None)]  # noqa: UP007
+    batch_filter_start_time: Annotated[str | None, Field(None)]
+    batch_filter_end_time: Annotated[str | None, Field(None)]
 
 
 class YuttoSettings(BaseModel):

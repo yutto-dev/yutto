@@ -3,7 +3,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any
 
 from fastmcp import Context, FastMCP
 from pydantic import Field
@@ -13,6 +13,7 @@ from yutto.utils.fetcher import FetcherContext
 
 if TYPE_CHECKING:
     from mcp.server.session import ServerSession
+    from mcp.shared.context import RequestContext
 
 
 @dataclass
@@ -47,15 +48,15 @@ def parse_args(url: str, dir: str):
 
 @mcp.tool()
 async def add_task(
-    ctx: Context,  # pyright: ignore[reportMissingTypeArgument, reportUnknownParameterType]
+    ctx: Context,
     url: str = Field(description="The URL to download, you can also use a short link like 'BV1CrfKYLEeP'"),
     dir: str = Field(description="The directory to save the downloaded file"),
 ) -> str:
     """
     Use this tool to download a video from Bilibili using the given URL or short link.
     """
-    ctx_typed = cast("Context[ServerSession, AppContext]", ctx)
-    download_manager: DownloadManager = ctx_typed.request_context.lifespan_context.download_manager
+    request_context: RequestContext[ServerSession, AppContext, Any] = ctx.request_context  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    download_manager: DownloadManager = request_context.lifespan_context.download_manager
     await download_manager.add_task(DownloadTask(args=parse_args(url, dir)))
     return "Task added"
 

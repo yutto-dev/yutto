@@ -1096,22 +1096,22 @@ requires-dist = [
     { name = "biliass", editable = "packages/biliass" },
     { name = "colorama", marker = "sys_platform == 'win32'", specifier = ">=0.4.6" },
     { name = "dict2xml", specifier = ">=1.7.6" },
-    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.2.6" },
+    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.10.2" },
     { name = "httpx", extras = ["http2", "socks"], specifier = ">=0.28.1" },
-    { name = "pydantic", specifier = ">=2.11.4" },
+    { name = "pydantic", specifier = ">=2.11.7" },
     { name = "returns", specifier = ">=0.25.0" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.2" },
-    { name = "typing-extensions", specifier = ">=4.13.2" },
+    { name = "typing-extensions", specifier = ">=4.14.1" },
 ]
 provides-extras = ["mcp"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pyright", specifier = ">=1.1.400" },
-    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pyright", specifier = ">=1.1.402" },
+    { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-codspeed", specifier = ">=3.2.0" },
-    { name = "pytest-rerunfailures", specifier = ">=15.0" },
-    { name = "ruff", specifier = ">=0.11.8" },
-    { name = "syrupy", specifier = ">=4.9.0" },
-    { name = "typos", specifier = ">=1.31.2" },
+    { name = "pytest-rerunfailures", specifier = ">=15.1" },
+    { name = "ruff", specifier = ">=0.12.2" },
+    { name = "syrupy", specifier = ">=4.9.1" },
+    { name = "typos", specifier = ">=1.34.0" },
 ]
