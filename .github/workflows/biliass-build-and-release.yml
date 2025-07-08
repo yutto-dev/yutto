@@ -46,11 +46,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.13 3.13t'
+          args: --release --out dist --interpreter '3.14 3.13t 3.14t'
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
@@ -78,11 +79,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.13 3.13t'
+          args: --release --out dist --interpreter '3.14 3.13t 3.14t'
           sccache: "true"
           manylinux: musllinux_1_2
           working-directory: packages/biliass
@@ -107,6 +109,7 @@ jobs:
         with:
           python-version: "3.13"
           architecture: ${{ matrix.platform.target }}
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -133,12 +136,16 @@ jobs:
             target: x64
           - runner: windows-latest
             target: x86
+        python-versions:
+          - 3.13t
+          - 3.14t
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.13t
+          python-version: ${{ matrix.python-versions }}
           architecture: ${{ matrix.platform.target }}
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -149,7 +156,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-free-threaded-${{ matrix.platform.target }}
+          name: wheels-windows-free-threaded-${{ matrix.python-versions }}-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
   macos:
@@ -166,11 +173,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.13 3.13t'
+          args: --release --out dist --interpreter '3.14 3.13t 3.14t'
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
