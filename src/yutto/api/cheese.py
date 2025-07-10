@@ -129,26 +129,15 @@ async def get_cheese_subtitles(
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
-        subtitle_url = sub_info.get("subtitle_url", "")
-
-        # 验证字幕URL的有效性
-        if not subtitle_url or subtitle_url == "/" or not subtitle_url.startswith("//"):
-            Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}）: {subtitle_url}")
+        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + sub_info["subtitle_url"])
+        if subtitle_text is None:
             continue
-
-        try:
-            subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)
-            if subtitle_text is None:
-                continue
-            results.append(
-                {
-                    "lang": sub_info["lan_doc"],
-                    "lines": subtitle_text["body"],
-                }
-            )
-        except (ValueError, Exception) as e:
-            Logger.warning(f"获取字幕失败（{format_ids(avid, cid)}），URL: {subtitle_url}，错误: {e}")
-            continue
+        results.append(
+            {
+                "lang": sub_info["lan_doc"],
+                "lines": subtitle_text["body"],
+            }
+        )
 
     return results
 
