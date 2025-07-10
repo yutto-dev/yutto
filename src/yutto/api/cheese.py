@@ -129,7 +129,10 @@ async def get_cheese_subtitles(
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
-        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + sub_info["subtitle_url"])
+        subtitle_url = sub_info["subtitle_url"]
+        if not subtitle_url or subtitle_url.strip() == "":
+            continue
+        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)
         if subtitle_text is None:
             continue
         results.append(
