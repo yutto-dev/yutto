@@ -160,7 +160,14 @@ async def get_bangumi_subtitles(
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
-        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + sub_info["subtitle_url"])
+        subtitle_url = sub_info["subtitle_url"]
+
+        # 检查 subtitle_url 是否有效
+        if subtitle_url is None or not subtitle_url.strip():
+            Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}")
+            continue
+
+        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)
         if subtitle_text is None:
             continue
         results.append(
