@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from yutto._typing import EpisodeData, MId
+from yutto.types import EpisodeData, MId
 from yutto.api.space import get_all_favourites, get_favourite_avids, get_user_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
@@ -17,7 +17,7 @@ from yutto.utils.filter import Filter
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import ExtractorOptions
+    from yutto.types import ExtractorOptions
 
 
 class UserAllFavouritesExtractor(BatchExtractor):

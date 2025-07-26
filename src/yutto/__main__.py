@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING
 from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.download_manager import DownloadManager, DownloadTask
 from yutto.exceptions import ErrorCode
-from yutto.parser import file_scheme_parser
+from yutto.input_parser import file_scheme_parser
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import FetcherContext
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 from yutto.validator import (
     initial_validation,
     validate_basic_arguments,
@@ -38,7 +38,7 @@ def main():
                 Logger.info("已终止下载，再次运行即可继续下载～")
                 sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
         case "mcp":
-            from yutto.mcp import run_mcp
+            from yutto.mcp_server import run_mcp
 
             run_mcp()
 

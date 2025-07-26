@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypeVar
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import EpisodeData, ExtractorOptions
+    from yutto.types import EpisodeData, ExtractorOptions
     from yutto.utils.asynclib import CoroutineWrapper
     from yutto.utils.fetcher import FetcherContext
 

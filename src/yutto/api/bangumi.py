@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from yutto._typing import (
+from yutto.types import (
     AudioUrlMeta,
     AvId,
     BvId,
@@ -19,7 +19,7 @@ from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
-from yutto.utils.funcutils import data_has_chained_keys
+from yutto.utils.functional import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
 

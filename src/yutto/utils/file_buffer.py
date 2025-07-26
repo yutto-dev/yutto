@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import aiofiles
 
 from yutto.utils.console.logger import Logger
-from yutto.utils.funcutils import aobject
+from yutto.utils.functional import aobject
 
 if TYPE_CHECKING:
     from types import TracebackType

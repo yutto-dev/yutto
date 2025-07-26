@@ -4,7 +4,7 @@ import re
 import sys
 from typing import TYPE_CHECKING
 
-from yutto._typing import EpisodeData, EpisodeId
+from yutto.types import EpisodeData, EpisodeId
 from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
 from yutto.exceptions import (
     ErrorCode,
@@ -21,7 +21,7 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import ExtractorOptions
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 

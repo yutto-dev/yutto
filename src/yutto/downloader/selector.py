@@ -16,7 +16,7 @@ from yutto.media.quality import (
 )
 
 if TYPE_CHECKING:
-    from yutto._typing import AudioUrlMeta, VideoUrlMeta
+    from yutto.types import AudioUrlMeta, VideoUrlMeta
 
 
 def select_video(

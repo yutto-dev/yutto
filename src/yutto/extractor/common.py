@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yutto._typing import AvId, EpisodeData, EpisodeId, ExtractorOptions, format_ids
+from yutto.types import AvId, EpisodeData, EpisodeId, ExtractorOptions, format_ids
 from yutto.api.bangumi import (
     BangumiListItem,
     get_bangumi_playurl,
@@ -23,7 +23,7 @@ from yutto.exceptions import (
     NotFoundError,
     UnSupportedTypeError,
 )
-from yutto.path_resolver import (
+from yutto.path_templates import (
     UNKNOWN,
     PathTemplateVariableDict,
     resolve_path_template,

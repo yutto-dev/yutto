@@ -9,9 +9,9 @@ from yutto.media.quality import (
     audio_quality_priority_default,
     video_quality_priority_default,
 )
-from yutto.parser import alias_parser, path_from_cli
+from yutto.input_parser import alias_parser, path_from_cli
 from yutto.utils.console.logger import Logger
-from yutto.utils.funcutils.functional import map_optional
+from yutto.utils.functional.functional import map_optional
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

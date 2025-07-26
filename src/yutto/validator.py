@@ -11,7 +11,7 @@ import biliass
 from yutto.api.user_info import get_user_info
 from yutto.exceptions import ErrorCode
 from yutto.media.codec import VideoCodec, audio_codec_priority_default, video_codec_priority_default
-from yutto.parser import validate_episodes_selection
+from yutto.input_parser import validate_episodes_selection
 from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
@@ -22,7 +22,7 @@ from yutto.utils.filter import Filter
 if TYPE_CHECKING:
     import argparse
 
-    from yutto._typing import UserInfo
+    from yutto.types import UserInfo
 
 
 def initial_validation(ctx: FetcherContext, args: argparse.Namespace):

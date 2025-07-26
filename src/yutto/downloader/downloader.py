@@ -16,7 +16,7 @@ from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
-from yutto.utils.funcutils import filter_none_value, xmerge
+from yutto.utils.functional import filter_none_values, xmerge
 from yutto.utils.metadata import ChapterInfoData, write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     import httpx
 
-    from yutto._typing import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
+    from yutto.types import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
@@ -169,7 +169,7 @@ async def download_video_and_audio(
     # 为保证音频流和视频流尽可能并行，因此将两者混合一下～
     coroutines = list(xmerge(*coroutines_list))
     coroutines.insert(
-        0, CoroutineWrapper(show_progress(list(filter_none_value(buffers)), sum(filter_none_value(sizes))))
+        0, CoroutineWrapper(show_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))))
     )
     Logger.info("开始下载……")
     await asyncio.gather(*coroutines)

@@ -3,18 +3,18 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from yutto._typing import EpisodeData, EpisodeId, SeasonId
+from yutto.types import EpisodeData, EpisodeId, SeasonId
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_cheese_data
-from yutto.parser import parse_episodes_selection
+from yutto.input_parser import parse_episodes_selection
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import ExtractorOptions
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
