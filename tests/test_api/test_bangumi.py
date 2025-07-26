@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-from yutto._typing import BvId, CId, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_playurl,
@@ -10,8 +9,9 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
+from yutto.types import BvId, CId, EpisodeId, MediaId, SeasonId
 from yutto.utils.fetcher import FetcherContext, create_client
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 
 
 @pytest.mark.api

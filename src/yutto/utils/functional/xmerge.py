@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import chain, zip_longest
 from typing import TYPE_CHECKING, TypeVar
 
-from .filter_none_value import filter_none_value
+from .filter_none_values import filter_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -26,4 +26,4 @@ def xmerge(*multi_list: Iterable[T]) -> Iterable[T]:
     # [1, 6, 9, 2, 7, 10, 3, 8, 11, 4, 12, 5]
     ```
     """
-    return filter_none_value(chain(*zip_longest(*multi_list)))
+    return filter_none_values(chain(*zip_longest(*multi_list)))

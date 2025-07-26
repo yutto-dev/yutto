@@ -3,9 +3,9 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from yutto._typing import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
 from yutto.api.user_info import encode_wbi, get_wbi_img
 from yutto.exceptions import NotLoginError
+from yutto.types import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
 

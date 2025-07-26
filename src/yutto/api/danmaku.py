@@ -11,7 +11,7 @@ from yutto.utils.fetcher import Fetcher, FetcherContext
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import AvId, CId
+    from yutto.types import AvId, CId
     from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
 
 

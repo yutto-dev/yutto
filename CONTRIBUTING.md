@@ -67,7 +67,7 @@ uv run yutto -v
 │       ├── __init__.py
 │       ├── __main__.py                   # 命令行入口，含所有命令选项
 │       ├── __version__.py
-│       ├── _typing.py                    # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
+│       ├── types.py                      # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
 │       ├── api                           # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
 │       │   ├── __init__.py
 │       │   ├── bangumi.py                # 番剧相关
@@ -77,7 +77,12 @@ uv run yutto -v
 │       │   ├── space.py                  # 个人空间相关（收藏夹、合集、列表）
 │       │   ├── ugc_video.py              # 投稿视频相关
 │       │   └── user_info.py              # 用户信息相关
-│       ├── bilibili_typing               # bilibili 自己的一些数据类型绑定
+│       ├── cli                           # 命令行界面相关模块
+│       │   ├── __init__.py
+│       │   ├── cli.py                    # 命令行解析
+│       │   └── settings.py               # 设置相关
+│       ├── download_manager.py           # 下载管理器
+│       ├── media                         # bilibili 自己的一些数据类型绑定
 │       │   ├── __init__.py
 │       │   ├── codec.py                  # bilibili 的 codec
 │       │   └── quality.py                # bilibili 的 qn
@@ -98,15 +103,16 @@ uv run yutto -v
 │       │   ├── user_all_favourites.py    # 全部收藏夹
 │       │   ├── user_all_ugc_videos.py    # 个人空间全部
 │       │   └── user_watch_later.py       # 稍后再看
-│       ├── processor                     # 一些在提取/下载过程中用到的基本处理方法（该部分很可能进一步重构）
+│       ├── downloader                    # 下载器相关模块
 │       │   ├── __init__.py
 │       │   ├── downloader.py             # 下载器
-│       │   ├── parser.py                 # 文件解析器（解析任务列表、alias 文件）
-│       │   ├── path_resolver.py          # 路径处理器（需处理路径变量）
 │       │   ├── progressbar.py            # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
 │       │   └── selector.py               # 选集、内容过滤器（本部分可修改成支持交互的）
+│       ├── input_parser.py               # 文件解析器（解析任务列表、alias 文件）
+│       ├── mcp_server.py                 # MCP 服务器
+│       ├── path_templates.py             # 路径处理器（需处理路径变量）
 │       ├── py.typed
-│       ├── utils                         # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、processor），含部分类型资源的基本封装（弹幕、字幕、描述文件）
+│       ├── utils                         # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、downloader），含部分类型资源的基本封装（弹幕、字幕、描述文件）
 │       │   ├── __init__.py
 │       │   ├── asynclib.py               # 封装部分异步相关方法
 │       │   ├── console                   # 命令行打印相关
@@ -121,12 +127,13 @@ uv run yutto -v
 │       │   ├── ffmpeg.py                 # FFmpeg 驱动单例模块
 │       │   ├── file_buffer.py            # 文件缓冲器（yutto 下载原理的核心）
 │       │   ├── filter.py                 # 数据过滤器（根据时间过滤选择的剧集）
-│       │   ├── funcutils                 # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
+│       │   ├── functional                # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
 │       │   │   ├── __init__.py           # 一些实用函数
-│       │   │   ├── aobject.py            # 一个简单的抽象类
-│       │   │   ├── as_sync.py            # 异步转同步
+│       │   │   ├── async_object.py       # 一个简单的抽象类
+│       │   │   ├── async_to_sync.py      # 异步转同步
 │       │   │   ├── data_access.py        # 数据访问
-│       │   │   ├── filter_none_value.py  # 过滤 None 值
+│       │   │   ├── filter_none_values.py # 过滤 None 值
+│       │   │   ├── functional.py         # 函数式编程工具
 │       │   │   ├── singleton.py          # 单例模式
 │       │   │   └── xmerge.py             # 合并多个迭代器
 │       │   ├── metadata.py               # 「资源文件」描述文件基本封装
@@ -147,7 +154,7 @@ uv run yutto -v
 │   │   ├── test_ugc_video.py
 │   │   └── test_user_info.py
 │   ├── test_e2e.py                       # 端到端测试
-│   ├── test_processor                    # processor 测试模块，对应 yutto/processor
+│   ├── test_processor                    # processor 测试模块，对应 yutto/downloader
 │   │   ├── __init__.py
 │   │   ├── test_downloader.py
 │   │   ├── test_path_resolver.py
@@ -164,7 +171,7 @@ uv run yutto -v
 切入代码的最好方式自然是从入口开始啦～ yutto 的命令行入口是 [`src/yutto/__main__.py`](./src/yutto/__main__.py)，这里列出了 yutto 整个的工作流程：
 
 1. 解析参数并利用 [yutto/validator.py](./src/yutto/validator.py) 验证参数的正确性，虽然 argparse 已经做了基本的验证，但 validator 会进一步的验证。另外目前 validator 还会顺带做全局状态的设置的工作，这部分以后可能修改。
-2. 利用 [yutto/processor/parser.py](./src/yutto/processor/parser.py) 解析 alias 和任务列表
+2. 利用 [yutto/input_parser.py](./src/yutto/input_parser.py) 解析 alias 和任务列表
 3. 遍历任务列表下载：
    1. 初始化提取器 [yutto/extractor/](./src/yutto/extractor/)
    2. 利用所有提取器处理 id 为可识别的 url
@@ -179,7 +186,7 @@ uv run yutto -v
          3. 选集（如果支持的话）
          4. 根据列表构造协程任务（任务包含了解析信息和利用低阶提取器提取）
          5. 构造解析任务
-   5. 依次执行解析任务，并将结果依次传入 [`src/yutto/utils/downloader.py`](src/yutto/utils/../processor/downloader.py) 进行下载
+   5. 依次执行解析任务，并将结果依次传入 [`src/yutto/downloader/downloader.py`](src/yutto/downloader/downloader.py) 进行下载
       1. 选择清晰度
       2. 显示详细信息
       3. 字幕、弹幕、描述文件等额外资源下载

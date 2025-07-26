@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-from yutto._typing import AId, BvId, FId, MId, SeriesId
 from yutto.api.space import (
     get_all_favourites,
     get_favourite_avids,
@@ -12,8 +11,9 @@ from yutto.api.space import (
     get_user_name,
     get_user_space_all_videos_avids,
 )
+from yutto.types import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import FetcherContext, create_client
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 
 
 @pytest.mark.api

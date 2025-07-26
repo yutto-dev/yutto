@@ -4,7 +4,7 @@ import asyncio
 import math
 from typing import TYPE_CHECKING, TypedDict
 
-from yutto._typing import AvId, BvId, MId, SeriesId
+from yutto.types import AvId, BvId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher, FetcherContext
 
 if TYPE_CHECKING:

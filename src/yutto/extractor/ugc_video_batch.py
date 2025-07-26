@@ -3,19 +3,19 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from yutto._typing import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
-from yutto.parser import parse_episodes_selection
+from yutto.input_parser import parse_episodes_selection
+from yutto.types import AId, AvId, BvId, EpisodeData
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import ExtractorOptions
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 

@@ -16,7 +16,7 @@ from yutto.utils.filter import Filter
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import EpisodeData, ExtractorOptions
+    from yutto.types import EpisodeData, ExtractorOptions
 
 
 class UserWatchLaterExtractor(BatchExtractor):

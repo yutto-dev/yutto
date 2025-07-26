@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from yutto.utils.funcutils.data_access import Undefined, data_has_chained_keys
+from yutto.utils.functional.data_access import Undefined, data_has_chained_keys
 
 TEST_DATA: list[tuple[Any, list[str], bool]] = [
     # basic

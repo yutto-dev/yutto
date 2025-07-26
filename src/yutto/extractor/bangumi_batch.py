@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
-from yutto._typing import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_season_id_by_episode_id,
@@ -11,14 +10,15 @@ from yutto.api.bangumi import (
 )
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_bangumi_data
-from yutto.parser import parse_episodes_selection
+from yutto.input_parser import parse_episodes_selection
+from yutto.types import EpisodeData, EpisodeId, MediaId, SeasonId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto._typing import ExtractorOptions
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 

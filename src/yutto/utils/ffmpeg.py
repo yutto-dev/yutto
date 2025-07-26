@@ -8,7 +8,7 @@ from functools import cached_property, reduce
 from pathlib import Path
 
 from yutto.utils.console.logger import Logger
-from yutto.utils.funcutils import Singleton
+from yutto.utils.functional import Singleton
 
 
 class FFmpegNotFoundError(Exception):

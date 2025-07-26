@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from yutto.bilibili_typing.codec import (
+from yutto.media.codec import (
     AudioCodec,
     VideoCodec,
     gen_acodec_priority,
     gen_vcodec_priority,
 )
-from yutto.bilibili_typing.quality import (
+from yutto.media.quality import (
     AudioQuality,
     VideoQuality,
     gen_audio_quality_priority,
@@ -16,7 +16,7 @@ from yutto.bilibili_typing.quality import (
 )
 
 if TYPE_CHECKING:
-    from yutto._typing import AudioUrlMeta, VideoUrlMeta
+    from yutto.types import AudioUrlMeta, VideoUrlMeta
 
 
 def select_video(

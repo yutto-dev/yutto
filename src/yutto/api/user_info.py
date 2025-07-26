@@ -9,7 +9,7 @@ import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from yutto._typing import UserInfo
+from yutto.types import UserInfo
 from yutto.utils.asynclib import async_cache
 from yutto.utils.fetcher import Fetcher, FetcherContext
 

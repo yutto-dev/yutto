@@ -4,7 +4,7 @@ import pytest
 
 from yutto.api.user_info import get_user_info
 from yutto.utils.fetcher import FetcherContext, create_client
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 
 
 @pytest.mark.api

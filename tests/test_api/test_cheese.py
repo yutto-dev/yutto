@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from yutto._typing import AId, AudioUrlMeta, CId, EpisodeId, SeasonId, VideoUrlMeta
 from yutto.api.cheese import (
     get_cheese_list,
     get_cheese_playurl,
     get_season_id_by_episode_id,
 )
+from yutto.types import AId, AudioUrlMeta, CId, EpisodeId, SeasonId, VideoUrlMeta
 from yutto.utils.fetcher import FetcherContext, create_client
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 
 
 @pytest.mark.api
