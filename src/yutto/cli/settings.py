@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
-from yutto.bilibili_typing.quality import (
+from yutto.media.quality import (
     AudioQuality,
     VideoQuality,
 )

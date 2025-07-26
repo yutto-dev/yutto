@@ -13,7 +13,7 @@ from httpx import AsyncClient
 from returns.maybe import Maybe, Nothing, Some
 
 from yutto._typing import EpisodeData, ExtractorOptions
-from yutto.downloader.downloader import DownloadState, start_downloader
+from yutto.downloader.downloader import DownloadState, process_download
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
     BangumiBatchExtractor,
@@ -224,7 +224,7 @@ class DownloadManager:
                     Badge(f"[{i + 1}/{len(download_list)}]", fore="black", back="cyan"),
                 )
 
-            current_download_state = await start_downloader(
+            current_download_state = await process_download(
                 ctx,
                 client,
                 episode_data,

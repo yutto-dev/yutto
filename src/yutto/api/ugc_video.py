@@ -14,12 +14,12 @@ from yutto._typing import (
     VideoUrlMeta,
     format_ids,
 )
-from yutto.bilibili_typing.codec import audio_codec_map, video_codec_map
 from yutto.exceptions import (
     NoAccessPermissionError,
     NotFoundError,
     UnSupportedTypeError,
 )
+from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.funcutils.data_access import data_has_chained_keys

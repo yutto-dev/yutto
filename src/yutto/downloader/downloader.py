@@ -6,9 +6,9 @@ import re
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from yutto.bilibili_typing.quality import audio_quality_map, video_quality_map
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
+from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
@@ -287,7 +287,7 @@ class DownloadState(Enum):
     SKIP = 1
 
 
-async def start_downloader(
+async def process_download(
     ctx: FetcherContext,
     client: httpx.AsyncClient,
     episode_data: EpisodeData,
