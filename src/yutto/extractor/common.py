@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yutto.types import AvId, EpisodeData, EpisodeId, ExtractorOptions, format_ids
 from yutto.api.bangumi import (
     BangumiListItem,
     get_bangumi_playurl,
@@ -28,6 +27,7 @@ from yutto.path_templates import (
     PathTemplateVariableDict,
     resolve_path_template,
 )
+from yutto.types import AvId, EpisodeData, EpisodeId, ExtractorOptions, format_ids
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher, FetcherContext

@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from yutto.__version__ import VERSION as yutto_version
 from yutto.cli.settings import YuttoSettings, load_settings_file, search_for_settings_file
+from yutto.input_parser import alias_parser, path_from_cli
 from yutto.media.quality import (
     audio_quality_priority_default,
     video_quality_priority_default,
 )
-from yutto.input_parser import alias_parser, path_from_cli
 from yutto.utils.console.logger import Logger
 from yutto.utils.functional.functional import map_optional
 

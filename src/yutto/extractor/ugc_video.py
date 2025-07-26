@@ -4,7 +4,6 @@ import re
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
-from yutto.types import AId, AvId, BvId, EpisodeData
 from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import (
     HttpStatusError,
@@ -14,6 +13,7 @@ from yutto.exceptions import (
 )
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.types import AId, AvId, BvId, EpisodeData
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 

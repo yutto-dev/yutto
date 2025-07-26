@@ -67,7 +67,7 @@ uv run yutto -v
 │       ├── __init__.py
 │       ├── __main__.py                   # 命令行入口，含所有命令选项
 │       ├── __version__.py
-│       ├── types.py                     # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
+│       ├── types.py                      # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
 │       ├── api                           # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
 │       │   ├── __init__.py
 │       │   ├── bangumi.py                # 番剧相关

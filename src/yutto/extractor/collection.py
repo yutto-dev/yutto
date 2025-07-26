@@ -4,7 +4,6 @@ import asyncio
 import re
 from typing import TYPE_CHECKING
 
-from yutto.types import EpisodeData, MId, SeriesId
 from yutto.api.collection import get_collection_details
 from yutto.api.space import get_user_name
 from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
@@ -12,6 +11,7 @@ from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.input_parser import parse_episodes_selection
+from yutto.types import EpisodeData, MId, SeriesId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext

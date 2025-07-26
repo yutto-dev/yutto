@@ -12,7 +12,6 @@ from biliass import BlockOptions
 from httpx import AsyncClient
 from returns.maybe import Maybe, Nothing, Some
 
-from yutto.types import EpisodeData, ExtractorOptions
 from yutto.downloader.downloader import DownloadState, process_download
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
@@ -30,6 +29,7 @@ from yutto.extractor import (
     UserWatchLaterExtractor,
 )
 from yutto.path_templates import create_unique_path_resolver
+from yutto.types import EpisodeData, ExtractorOptions
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
