@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from yutto._typing import AvId, CId
 from yutto.api.danmaku import get_danmaku, get_protobuf_danmaku_segment, get_xml_danmaku
+from yutto.types import AvId, CId
 from yutto.utils.fetcher import FetcherContext, create_client
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 
 
 @pytest.mark.api

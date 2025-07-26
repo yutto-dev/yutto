@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from yutto._typing import BvId, MId, SeriesId
 from yutto.api.collection import get_collection_details
+from yutto.types import BvId, MId, SeriesId
 from yutto.utils.fetcher import FetcherContext, create_client
-from yutto.utils.funcutils import as_sync
+from yutto.utils.functional import as_sync
 
 
 @pytest.mark.api

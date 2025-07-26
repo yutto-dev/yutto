@@ -82,7 +82,7 @@ uv run yutto -v
 │       │   ├── cli.py                    # 命令行解析
 │       │   └── settings.py               # 设置相关
 │       ├── download_manager.py           # 下载管理器
-│       ├── media                        # bilibili 自己的一些数据类型绑定
+│       ├── media                         # bilibili 自己的一些数据类型绑定
 │       │   ├── __init__.py
 │       │   ├── codec.py                  # bilibili 的 codec
 │       │   └── quality.py                # bilibili 的 qn
@@ -103,7 +103,7 @@ uv run yutto -v
 │       │   ├── user_all_favourites.py    # 全部收藏夹
 │       │   ├── user_all_ugc_videos.py    # 个人空间全部
 │       │   └── user_watch_later.py       # 稍后再看
-│       ├── downloader                   # 下载器相关模块
+│       ├── downloader                    # 下载器相关模块
 │       │   ├── __init__.py
 │       │   ├── downloader.py             # 下载器
 │       │   ├── progressbar.py            # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
@@ -127,7 +127,7 @@ uv run yutto -v
 │       │   ├── ffmpeg.py                 # FFmpeg 驱动单例模块
 │       │   ├── file_buffer.py            # 文件缓冲器（yutto 下载原理的核心）
 │       │   ├── filter.py                 # 数据过滤器（根据时间过滤选择的剧集）
-│       │   ├── functional               # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
+│       │   ├── functional                # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
 │       │   │   ├── __init__.py           # 一些实用函数
 │       │   │   ├── async_object.py       # 一个简单的抽象类
 │       │   │   ├── async_to_sync.py      # 异步转同步
