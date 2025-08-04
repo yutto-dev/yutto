@@ -43,10 +43,10 @@ jobs:
 
       - name: Run unit tests
         run: |
-          just ci-test
+          just ci-test ${{ matrix.python-version }}
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         if: ${{ matrix.python-version == '3.13' && github.event_name != 'merge_group' }}
         with:
-          run: uv run pytest --codspeed
+          run: uv run -p ${{ matrix.python-version }} pytest --codspeed

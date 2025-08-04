@@ -80,11 +80,11 @@ ci-fmt-check:
 ci-lint:
   just lint
 
-ci-test:
-  uv run pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
+ci-test pyversion:
+  uv run -p {{pyversion}} pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
 
-ci-e2e-test:
-  uv run pytest -m "e2e and not (ci_skip or ignore)"
+ci-e2e-test pyversion:
+  uv run -p {{pyversion}} pytest -m "e2e and not (ci_skip or ignore)"
 
 # docker specific
 docker-run *ARGS:

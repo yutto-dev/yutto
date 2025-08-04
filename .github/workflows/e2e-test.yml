@@ -53,4 +53,4 @@ jobs:
 
       - name: e2e test
         run: |
-          just ci-e2e-test
+          just ci-e2e-test ${{ matrix.python-version }}
