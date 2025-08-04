@@ -42,7 +42,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          just ci-install
+          just ci-install ${{ matrix.python-version }}
 
       - name: e2e without subprocess
         run: |
