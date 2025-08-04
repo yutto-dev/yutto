@@ -64,13 +64,13 @@ class NotLoginError(YuttoBaseException):
     code = ErrorCode.NOT_LOGIN_ERROR
 
 
-def handleUncaughtException(exctype: type[Exception], exception: Exception, trace: TracebackType):
-    oldHook(exctype, exception, trace)
+def handle_uncaught_exception(exctype: type[Exception], exception: Exception, trace: TracebackType):
+    old_hook(exctype, exception, trace)
     if isinstance(exception, YuttoBaseException):
         sys.exit(exception.code.value)
 
 
-sys.excepthook, oldHook = handleUncaughtException, sys.excepthook
+sys.excepthook, old_hook = handle_uncaught_exception, sys.excepthook
 
 
 if __name__ == "__main__":
