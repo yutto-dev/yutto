@@ -51,7 +51,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.14 3.13t 3.14t'
+          args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
@@ -84,7 +84,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.14 3.13t 3.14t'
+          args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
           manylinux: musllinux_1_2
           working-directory: packages/biliass
@@ -136,14 +136,11 @@ jobs:
             target: x64
           - runner: windows-latest
             target: x86
-        python-versions:
-          - 3.13t
-          - 3.14t
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-versions }}
+          python-version: "3.14t"
           architecture: ${{ matrix.platform.target }}
           allow-prereleases: true
       - name: Build wheels
@@ -178,7 +175,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.14 3.13t 3.14t'
+          args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
