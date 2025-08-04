@@ -35,7 +35,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          just ci-install
+          just ci-install-all ${{ matrix.python-version }}
 
       - name: lint
         run: |

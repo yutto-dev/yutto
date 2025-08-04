@@ -71,8 +71,11 @@ generate-schema:
   uv run scripts/generate-schema.py
 
 # CI specific
-ci-install:
-  uv sync --all-extras --dev
+ci-install pyversion:
+  uv sync --dev -p {{pyversion}}
+
+ci-install-all pyversion:
+  uv sync --all-extras --dev -p {{pyversion}}
 
 ci-fmt-check:
   uv run ruff format --check --diff .
@@ -80,11 +83,11 @@ ci-fmt-check:
 ci-lint:
   just lint
 
-ci-test:
-  uv run pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
+ci-test pyversion:
+  uv run -p {{pyversion}} pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
 
-ci-e2e-test:
-  uv run pytest -m "e2e and not (ci_skip or ignore)"
+ci-e2e-test pyversion:
+  uv run -p {{pyversion}} pytest -m "e2e and not (ci_skip or ignore)"
 
 # docker specific
 docker-run *ARGS:

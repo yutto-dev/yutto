@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.13t"]
+        python-version:
+          ["3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} e2e test
     steps:
@@ -27,6 +28,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
+          allow-prereleases: true
 
       - name: Install tools
         run: |
@@ -40,7 +42,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          just ci-install
+          just ci-install ${{ matrix.python-version }}
 
       - name: e2e without subprocess
         run: |
@@ -51,4 +53,4 @@ jobs:
 
       - name: e2e test
         run: |
-          just ci-e2e-test
+          just ci-e2e-test ${{ matrix.python-version }}
