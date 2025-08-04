@@ -71,6 +71,8 @@ generate-schema:
   uv run scripts/generate-schema.py
 
 # CI specific
+# TODO(SigureMo): Install all extra when cryptography support 3.14t.
+# See https://github.com/pyca/cryptography/issues/12489#issuecomment-3133415491 for more details.
 ci-install pyversion:
   uv sync --dev -p {{pyversion}}
 
