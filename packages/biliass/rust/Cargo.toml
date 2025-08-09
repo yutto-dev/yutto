@@ -13,19 +13,26 @@ pyo3 = { version = "0.25.1", features = ["abi3-py310"] }
 bytes = "1.10.1"
 prost = "0.14.1"
 thiserror = "2.0.12"
-quick-xml = "0.38.0"
-cached = "0.56.0"
+quick-xml = "0.38.1"
 serde = "1.0.219"
 serde_json = "1.0.140"
 regex = "1.11.1"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 rayon = "1.10.0"
+rustc-hash = "2.0.0"
 
 [build-dependencies]
 prost-build = "0.14.1"
 protox = "0.9.0"
 
 [profile.release]
-lto = true      # Enables link to optimizations
-opt-level = "s" # Optimize for binary size
+lto = "fat"             # Full link-time optimization
+opt-level = 3           # Maximum optimization for speed
+codegen-units = 1       # Better optimization at cost of compilation time
+panic = "abort"         # Smaller binaries, slightly faster
+overflow-checks = false # Disable overflow checks in release mode
+
+[profile.release.package."*"]
+opt-level = 3
+overflow-checks = false

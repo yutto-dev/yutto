@@ -1,6 +1,72 @@
+use rustc_hash::FxHashMap;
+use std::sync::{Mutex, OnceLock};
 use tracing::warn;
 
-use cached::proc_macro::cached;
+// Type aliases for better readability
+type SourceSize = (u32, u32);
+type TargetSize = (u32, u32);
+type ZoomResult = (f32, f32, f32);
+type ZoomKey = (SourceSize, TargetSize);
+
+/// High-performance cache for zoom factor calculations
+struct ZoomFactorCache {
+    cache: Mutex<FxHashMap<ZoomKey, ZoomResult>>,
+}
+
+impl ZoomFactorCache {
+    fn new() -> Self {
+        Self {
+            cache: Mutex::new(FxHashMap::default()),
+        }
+    }
+
+    fn get_or_compute<F>(&self, key: ZoomKey, compute_fn: F) -> ZoomResult
+    where
+        F: FnOnce() -> ZoomResult,
+    {
+        let mut cache = self.cache.lock().unwrap();
+        *cache.entry(key).or_insert_with(compute_fn)
+    }
+}
+
+static ZOOM_CACHE: OnceLock<ZoomFactorCache> = OnceLock::new();
+
+fn get_cache() -> &'static ZoomFactorCache {
+    ZOOM_CACHE.get_or_init(ZoomFactorCache::new)
+}
+
+fn compute_zoom_factor(source_size: SourceSize, target_size: TargetSize) -> ZoomResult {
+    let source_size_f = (source_size.0 as f32, source_size.1 as f32);
+    let target_size_f = (target_size.0 as f32, target_size.1 as f32);
+    let source_aspect = source_size_f.0 / source_size_f.1;
+    let target_aspect = target_size_f.0 / target_size_f.1;
+
+    if target_aspect < source_aspect {
+        // narrower
+        let scale_factor = target_size_f.0 / source_size_f.0;
+        (
+            scale_factor,
+            0.0,
+            (target_size_f.1 - target_size_f.0 / source_aspect) / 2.0,
+        )
+    } else if target_aspect > source_aspect {
+        // wider
+        let scale_factor = target_size_f.1 / source_size_f.1;
+        (
+            scale_factor,
+            (target_size_f.0 - target_size_f.1 * source_aspect) / 2.0,
+            0.0,
+        )
+    } else {
+        (target_size_f.0 / source_size_f.0, 0.0, 0.0)
+    }
+}
+
+/// Public interface for getting zoom factor with caching
+pub fn get_zoom_factor(source_size: SourceSize, target_size: TargetSize) -> ZoomResult {
+    let key = (source_size, target_size);
+    get_cache().get_or_compute(key, || compute_zoom_factor(source_size, target_size))
+}
 
 fn divmod(a: f64, b: f64) -> (f64, f64) {
     (a / b, a % b)
@@ -76,33 +142,6 @@ pub fn convert_color(rgb: u32, width: Option<u32>, height: Option<u32>) -> Strin
                 .clamp(0.0, 255.0)
                 .round() as u8,
         )
-    }
-}
-
-#[cached]
-pub fn get_zoom_factor(source_size: (u32, u32), target_size: (u32, u32)) -> (f32, f32, f32) {
-    let source_size = (source_size.0 as f32, source_size.1 as f32);
-    let target_size = (target_size.0 as f32, target_size.1 as f32);
-    let source_aspect = source_size.0 / source_size.1;
-    let target_aspect = target_size.0 / target_size.1;
-    if target_aspect < source_aspect {
-        // narrower
-        let scale_factor = target_size.0 / source_size.0;
-        (
-            scale_factor,
-            0.0,
-            (target_size.1 - target_size.0 / source_aspect) / 2.0,
-        )
-    } else if target_aspect > source_aspect {
-        // wider
-        let scale_factor = target_size.1 / source_size.1;
-        (
-            scale_factor,
-            (target_size.0 - target_size.1 * source_aspect) / 2.0,
-            0.0,
-        )
-    } else {
-        (target_size.0 / source_size.0, 0.0, 0.0)
     }
 }
 
