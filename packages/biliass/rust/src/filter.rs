@@ -12,9 +12,13 @@ pub struct BlockOptions {
     pub block_keyword_patterns: Vec<Regex>,
 }
 
+#[inline(always)]
 pub fn should_skip_parse(pos: &CommentPosition, block_options: &BlockOptions) -> bool {
-    matches!(pos, CommentPosition::Top) && block_options.block_top
-        || matches!(pos, CommentPosition::Bottom) && block_options.block_bottom
-        || matches!(pos, CommentPosition::Scroll) && block_options.block_scroll
-        || matches!(pos, CommentPosition::Special) && block_options.block_reverse
+    match pos {
+        CommentPosition::Top => block_options.block_top,
+        CommentPosition::Bottom => block_options.block_bottom,
+        CommentPosition::Scroll => block_options.block_scroll,
+        CommentPosition::Reversed => block_options.block_reverse,
+        CommentPosition::Special => block_options.block_special,
+    }
 }
