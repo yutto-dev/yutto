@@ -38,10 +38,10 @@ pub fn test_free_rows(
         while current_row < rowmax && (res as f32) < comment_data.height {
             if target_row != rows[comment_pos_id][current_row] {
                 target_row = rows[comment_pos_id][current_row];
-                if let Some(target_row) = target_row {
-                    if target_row.timeline + duration_still > comment.timeline {
-                        break;
-                    }
+                if let Some(target_row) = target_row
+                    && target_row.timeline + duration_still > comment.timeline
+                {
+                    break;
                 }
             }
             current_row += 1;
