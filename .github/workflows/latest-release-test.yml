@@ -31,9 +31,9 @@ jobs:
       - name: Test yutto from source
         run: |
           uv cache clean
-          uvx --no-binary yutto@latest -v
-          uvx --no-binary yutto@latest -h
-          uvx --no-binary yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+          uvx --no-binary-package=yutto yutto@latest -v
+          uvx --no-binary-package=yutto yutto@latest -h
+          uvx --no-binary-package=yutto yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
 
       - name: Test yutto from wheel
         run: |
@@ -49,10 +49,10 @@ jobs:
       - name: Test biliass from source
         run: |
           uv cache clean
-          uvx --no-binary biliass@latest -v
-          uvx --no-binary biliass@latest -h
-          uvx --no-binary biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
-          uvx --no-binary biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
+          uvx --no-binary-package=biliass biliass@latest -v
+          uvx --no-binary-package=biliass biliass@latest -h
+          uvx --no-binary-package=biliass biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
+          uvx --no-binary-package=biliass biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
 
       - name: Test biliass from wheel
         run: |
