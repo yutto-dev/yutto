@@ -24,6 +24,7 @@ pub fn calculate_length(s: &str) -> f32 {
         .unwrap_or(0) as f32
 }
 
+#[inline]
 pub fn unescape_newline(s: &str) -> String {
     s.replace("/n", "\n")
 }

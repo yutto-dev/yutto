@@ -30,17 +30,16 @@ fn parse_raw_p(reader: &mut Reader<&[u8]>, element: &BytesStart) -> Result<Strin
 }
 
 fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseError> {
-    let mut contents = Vec::new();
+    let mut content = String::new();
     let mut buf = Vec::new();
 
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Text(e)) => {
-                contents.push(
-                    e.decode()
-                        .map_err(|e| ParseError::Xml(format!("Error decoding text: {e}")))?
-                        .into_owned(),
-                );
+                let text = e
+                    .decode()
+                    .map_err(|e| ParseError::Xml(format!("Error decoding text: {e}")))?;
+                content.push_str(&text);
             }
             Ok(Event::GeneralRef(e)) => {
                 let entity_str = std::str::from_utf8(e.as_ref())
@@ -49,7 +48,7 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
                     .ok_or_else(|| {
                         ParseError::Xml(format!("Error resolving entity: {entity_str}"))
                     })?;
-                contents.push(resolved_entity.to_string());
+                content.push_str(resolved_entity);
             }
             Ok(Event::End(_) | Event::Eof) => {
                 break;
@@ -67,10 +66,10 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
         buf.clear();
     }
 
-    if contents.is_empty() {
+    if content.is_empty() {
         return Err(ParseError::Xml("No content found in comment".to_string()));
     }
-    Ok(contents.into_iter().collect::<String>())
+    Ok(content)
 }
 
 fn parse_comment_item(
