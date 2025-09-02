@@ -276,7 +276,7 @@ async def get_ugc_video_subtitles(
 async def get_ugc_video_chapters(
     ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
 ) -> list[ChapterInfoData]:
-    chapter_api = "https://api.bilibili.com/x/player/v2?avid={aid}&bvid={bvid}&cid={cid}"
+    chapter_api = "https://api.bilibili.com/x/player/v2?aid={aid}&bvid={bvid}&cid={cid}"
     chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
     chapter_json_info = await Fetcher.fetch_json(ctx, client, chapter_url)
     if chapter_json_info is None:
