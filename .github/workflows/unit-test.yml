@@ -48,4 +48,5 @@ jobs:
         uses: CodSpeedHQ/action@v4
         if: ${{ matrix.python-version == '3.13' && github.event_name != 'merge_group' }}
         with:
+          mode: instrumentation
           run: uv run -p ${{ matrix.python-version }} pytest --codspeed
