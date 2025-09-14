@@ -11,23 +11,28 @@ from yutto.exceptions import (
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
     AId,
-    AudioUrlMeta,
-    AvId,
     BvId,
     CId,
     EpisodeId,
-    MultiLangSubtitle,
-    VideoUrlMeta,
     format_ids,
 )
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional.data_access import data_has_chained_keys
-from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
+from yutto.utils.metadata import Actor, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
+
+    from yutto.types import (
+        AudioUrlMeta,
+        AvId,
+        MultiLangSubtitle,
+        VideoUrlMeta,
+    )
+    from yutto.utils.fetcher import FetcherContext
+    from yutto.utils.metadata import ChapterInfoData
 
 
 class _UgcVideoPageInfo(TypedDict):

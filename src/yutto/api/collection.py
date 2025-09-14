@@ -4,11 +4,14 @@ import asyncio
 import math
 from typing import TYPE_CHECKING, TypedDict
 
-from yutto.types import AvId, BvId, MId, SeriesId
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.types import BvId
+from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
+
+    from yutto.types import AvId, MId, SeriesId
+    from yutto.utils.fetcher import FetcherContext
 
 
 class CollectionDetailsItem(TypedDict):

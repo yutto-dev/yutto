@@ -6,11 +6,12 @@ import time
 from typing import TYPE_CHECKING
 
 from yutto.utils.console.attributes import get_terminal_size
-from yutto.utils.console.colorful import Color, RGBColor, Style, colored_string
+from yutto.utils.console.colorful import RGBColor, colored_string
 from yutto.utils.console.formatter import size_format
 from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
+    from yutto.utils.console.colorful import Color, Style
     from yutto.utils.file_buffer import AsyncFileBuffer
 
 

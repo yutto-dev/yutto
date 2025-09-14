@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal, TypeAlias, TypedDict
+from typing import TYPE_CHECKING, Literal, TypeAlias, TypedDict
 
-from biliass import BlockOptions, convert_to_ass
+from biliass import convert_to_ass
+
+if TYPE_CHECKING:
+    from biliass import BlockOptions
 
 DanmakuSourceType = Literal["xml", "protobuf"]
 DanmakuSaveType = Literal["xml", "ass", "protobuf"]

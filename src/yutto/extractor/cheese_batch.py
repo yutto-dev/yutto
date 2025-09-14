@@ -7,14 +7,14 @@ from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_cheese_data
 from yutto.input_parser import parse_episodes_selection
-from yutto.types import EpisodeData, EpisodeId, SeasonId
+from yutto.types import EpisodeId, SeasonId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import ExtractorOptions
+    from yutto.types import EpisodeData, ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 

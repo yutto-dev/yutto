@@ -4,14 +4,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from yutto.api.bangumi import (
-    BangumiListItem,
     get_bangumi_playurl,
     get_bangumi_subtitles,
 )
-from yutto.api.cheese import CheeseListItem, get_cheese_playurl, get_cheese_subtitles
+from yutto.api.cheese import get_cheese_playurl, get_cheese_subtitles
 from yutto.api.danmaku import get_danmaku
 from yutto.api.ugc_video import (
-    UgcVideoListItem,
     get_ugc_video_chapters,
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
@@ -24,17 +22,29 @@ from yutto.exceptions import (
 )
 from yutto.path_templates import (
     UNKNOWN,
-    PathTemplateVariableDict,
     resolve_path_template,
 )
-from yutto.types import AvId, EpisodeData, EpisodeId, ExtractorOptions, format_ids
+from yutto.types import EpisodeData, format_ids
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import attach_chapter_info
 
 if TYPE_CHECKING:
     import httpx
+
+    from yutto.api.bangumi import (
+        BangumiListItem,
+    )
+    from yutto.api.cheese import CheeseListItem
+    from yutto.api.ugc_video import (
+        UgcVideoListItem,
+    )
+    from yutto.path_templates import (
+        PathTemplateVariableDict,
+    )
+    from yutto.types import AvId, EpisodeId, ExtractorOptions
+    from yutto.utils.fetcher import FetcherContext
 
 
 async def extract_bangumi_data(

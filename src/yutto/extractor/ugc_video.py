@@ -13,14 +13,14 @@ from yutto.exceptions import (
 )
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import extract_ugc_video_data
-from yutto.types import AId, AvId, BvId, EpisodeData
+from yutto.types import AId, BvId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import ExtractorOptions
+    from yutto.types import AvId, EpisodeData, ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 

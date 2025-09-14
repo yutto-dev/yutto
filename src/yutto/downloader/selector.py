@@ -3,19 +3,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from yutto.media.codec import (
-    AudioCodec,
-    VideoCodec,
     gen_acodec_priority,
     gen_vcodec_priority,
 )
 from yutto.media.quality import (
-    AudioQuality,
-    VideoQuality,
     gen_audio_quality_priority,
     gen_video_quality_priority,
 )
 
 if TYPE_CHECKING:
+    from yutto.media.codec import (
+        AudioCodec,
+        VideoCodec,
+    )
+    from yutto.media.quality import (
+        AudioQuality,
+        VideoQuality,
+    )
     from yutto.types import AudioUrlMeta, VideoUrlMeta
 
 
