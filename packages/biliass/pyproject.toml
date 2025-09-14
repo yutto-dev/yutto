@@ -12,6 +12,7 @@ license = { file = "LICENSE" }
 classifiers = [
   "Operating System :: OS Independent",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Rust",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
@@ -20,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Free Threading :: 4 - Resilient",
 ]
 dependencies = []
 dynamic = ["version"]
