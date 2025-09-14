@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yutto.utils.console.colorful import Color, Style, colored_string
+from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.formatter import get_string_width
 from yutto.utils.console.status_bar import StatusBar
+
+if TYPE_CHECKING:
+    from yutto.utils.console.colorful import Color, Style
 
 _logger_debug: bool = False
 

@@ -9,8 +9,7 @@ from typing import TYPE_CHECKING
 
 import httpx
 from biliass import BlockOptions
-from httpx import AsyncClient
-from returns.maybe import Maybe, Nothing, Some
+from returns.maybe import Nothing, Some
 
 from yutto.downloader.downloader import DownloadState, process_download
 from yutto.exceptions import ErrorCode
@@ -33,7 +32,7 @@ from yutto.types import EpisodeData, ExtractorOptions
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
-from yutto.utils.fetcher import Fetcher, FetcherContext, create_client
+from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.time import TIME_FULL_FMT
 from yutto.validator import (
     validate_batch_arguments,
@@ -44,7 +43,11 @@ if TYPE_CHECKING:
     import argparse
     from collections.abc import Callable
 
+    from httpx import AsyncClient
+    from returns.maybe import Maybe
+
     from yutto.types import EpisodeData
+    from yutto.utils.fetcher import FetcherContext
 
 
 @dataclass

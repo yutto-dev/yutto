@@ -8,7 +8,6 @@ from urllib.parse import quote, unquote
 
 import h2.exceptions
 import httpx
-from httpx import AsyncClient
 from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
@@ -17,6 +16,8 @@ from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
+
+    from httpx import AsyncClient
 
     from yutto.utils.file_buffer import AsyncFileBuffer
 

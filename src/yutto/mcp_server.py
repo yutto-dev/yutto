@@ -1,19 +1,22 @@
-# noqa: I002
+from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from fastmcp import Context, FastMCP
+from fastmcp import (
+    Context,
+    FastMCP,
+)
+from mcp.server.session import ServerSession
+from mcp.shared.context import RequestContext
 from pydantic import Field
 
 from yutto.download_manager import DownloadManager, DownloadTask
 from yutto.utils.fetcher import FetcherContext
 
 if TYPE_CHECKING:
-    from mcp.server.session import ServerSession
-    from mcp.shared.context import RequestContext
+    from collections.abc import AsyncIterator
 
 
 @dataclass

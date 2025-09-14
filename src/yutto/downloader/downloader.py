@@ -13,11 +13,11 @@ from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import filter_none_values, xmerge
-from yutto.utils.metadata import ChapterInfoData, write_chapter_info, write_metadata
+from yutto.utils.metadata import write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 if TYPE_CHECKING:
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.types import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
+    from yutto.utils.fetcher import FetcherContext
+    from yutto.utils.metadata import ChapterInfoData
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:

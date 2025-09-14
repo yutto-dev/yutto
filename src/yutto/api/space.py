@@ -5,12 +5,15 @@ from typing import TYPE_CHECKING
 
 from yutto.api.user_info import encode_wbi, get_wbi_img
 from yutto.exceptions import NotLoginError
-from yutto.types import AvId, BvId, FavouriteMetaData, FId, MId, SeriesId
+from yutto.types import BvId, FavouriteMetaData, FId
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
+
+    from yutto.types import AvId, MId, SeriesId
+    from yutto.utils.fetcher import FetcherContext
 
 
 # 个人空间·全部

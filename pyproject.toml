@@ -29,10 +29,11 @@ dependencies = [
   "dict2xml>=1.7.7",
   "httpx[http2,socks]>=0.28.1",
   "tomli>=2.2.1; python_version < '3.11'",
-  "pydantic>=2.12.0a1",
+  # "pydantic>=2.12.0a1",
+  "pydantic==2.11.9",
   "returns>=0.26.0",
 ]
-optional-dependencies.mcp = ["fastmcp>=2.10.2"]
+optional-dependencies.mcp = ["fastmcp>=2.12.3"]
 
 [project.urls]
 Homepage = "https://github.com/yutto-dev/yutto"
@@ -45,11 +46,11 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.404",
-  "ruff>=0.12.11",
-  "typos>=1.35.6",
-  "pytest>=8.4.1",
-  "pytest-rerunfailures>=16.0",
+  "pyright>=1.1.405",
+  "ruff>=0.13.0",
+  "typos>=1.36.2",
+  "pytest>=8.4.2",
+  "pytest-rerunfailures>=16.0.1",
   "syrupy>=4.9.1",
   "pytest-codspeed>=4.0.0",
 ]
@@ -111,11 +112,11 @@ select = [
   "RUF100",
 ]
 ignore = [
-  "E501",  # line too long, duplicate with ruff fmt
-  "F401",  # imported but unused, duplicate with pyright
-  "F841",  # local variable is assigned to but never used, duplicate with pyright
-  "UP038", # It will cause the performance regression on python3.10
+  "E501", # line too long, duplicate with ruff fmt
+  "F401", # imported but unused, duplicate with pyright
+  "F841", # local variable is assigned to but never used, duplicate with pyright
 ]
+future-annotations = true
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
@@ -124,6 +125,7 @@ combine-as-imports = true
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+runtime-evaluated-decorators = ["fastmcp.FastMCP.tool"]
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]

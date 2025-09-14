@@ -11,10 +11,12 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto.types import UserInfo
 from yutto.utils.asynclib import async_cache
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
+
+    from yutto.utils.fetcher import FetcherContext
 
 
 class WbiImg(TypedDict):

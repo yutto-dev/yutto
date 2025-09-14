@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING
 from biliass import get_danmaku_meta_size
 
 from yutto.api.user_info import get_user_info
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
     import httpx
 
     from yutto.types import AvId, CId
     from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
+    from yutto.utils.fetcher import FetcherContext
 
 
 async def get_xml_danmaku(ctx: FetcherContext, client: httpx.AsyncClient, cid: CId) -> str:

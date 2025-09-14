@@ -5,20 +5,22 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_favourite_avids, get_favourite_info, get_user_name
-from yutto.api.ugc_video import UgcVideoListItem, get_ugc_video_list
+from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
-from yutto.types import EpisodeData, FId, MId
+from yutto.types import FId, MId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import ExtractorOptions
+    from yutto.api.ugc_video import UgcVideoListItem
+    from yutto.types import EpisodeData, ExtractorOptions
+    from yutto.utils.fetcher import FetcherContext
 
 
 class FavouritesExtractor(BatchExtractor):
