@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # TODO(SigureMo): Add 3.14 and 3.14t when we release 2.1.0 (Current is 2.0.3)
+        # TODO(SigureMo): Add 3.14 and 3.14t when we release 2.1.0 (Current is 2.1.0-beta.1)
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} latest release test

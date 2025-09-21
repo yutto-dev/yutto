@@ -1681,7 +1681,7 @@ wheels = [
 
 [[package]]
 name = "yutto"
-version = "2.0.3"
+version = "2.1.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
