@@ -53,7 +53,7 @@ jobs:
           uvx --no-binary-package=biliass biliass@latest -v
           uvx --no-binary-package=biliass biliass@latest -h
           uvx --no-binary-package=biliass biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
-          uvx --no-binary-package=biliass biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
+          uvx --no-binary-package=biliass biliass@latest biliass-corpus/corpus/protobuf/18678311/18678311-*.pb -s 1920x1080 -f protobuf -o protobuf.ass
 
       - name: Test biliass from wheel
         run: |
@@ -61,4 +61,4 @@ jobs:
           uvx biliass@latest -v
           uvx biliass@latest -h
           uvx biliass@latest biliass-corpus/corpus/xml/18678311.xml -s 1920x1080 -f xml -o xml.ass
-          uvx biliass@latest biliass-corpus/corpus/protobuf/18678311-0.pb biliass-corpus/corpus/protobuf/18678311-1.pb biliass-corpus/corpus/protobuf/18678311-2.pb biliass-corpus/corpus/protobuf/18678311-3.pb -s 1920x1080 -f protobuf -o protobuf.ass
+          uvx biliass@latest biliass-corpus/corpus/protobuf/18678311/18678311-*.pb -s 1920x1080 -f protobuf -o protobuf.ass
