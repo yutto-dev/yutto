@@ -182,7 +182,7 @@ async def extract_ugc_video_data(
         name = ugc_video_info["name"]
         id = ugc_video_info["id"]
         videos, audios = (
-            await get_ugc_video_playurl(ctx, client, avid, cid)
+            await get_ugc_video_playurl(ctx, client, avid, cid, options["ai_translation_language"])
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )

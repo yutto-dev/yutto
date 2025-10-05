@@ -188,6 +188,7 @@ class DownloadManager:
                         require_chapter_info=args.require_chapter_info,
                         danmaku_format=args.danmaku_format,
                         subpath_template=args.subpath_template,
+                        ai_translation_language=args.ai_translation_language,
                     ),
                 )
                 break

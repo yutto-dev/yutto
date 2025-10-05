@@ -16,6 +16,7 @@ from yutto.types import (
     EpisodeId,
     format_ids,
 )
+from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional.data_access import data_has_chained_keys
@@ -174,11 +175,46 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
     return result
 
 
+def show_ai_translation_language(resp_json: dict[str, Any], ai_translation_language: str | None) -> None:
+    # AI 原声翻译功能检测和展示，Example: BV1G3HEz5ETU
+    if not data_has_chained_keys(resp_json, ["data", "language", "items"]):
+        if not ai_translation_language:
+            Logger.warning(f"该视频未启用 AI 原声翻译功能, 无法获得 {ai_translation_language} 语言翻译哦～")
+        return
+    if not resp_json["data"]["language"]["items"]:
+        if not ai_translation_language:
+            Logger.warning(f"该视频未启用 AI 原声翻译功能, 无法获得 {ai_translation_language} 语言翻译哦～")
+        return
+    current_lang_id = -1
+    Logger.info("该视频已启用的 AI 原声翻译语言列表：")
+    for i, lang_info in enumerate(resp_json["data"]["language"]["items"]):
+        if lang_info["lang"] == ai_translation_language:
+            current_lang_id = i
+        log = "{}{:2} {} (code: {})".format(
+            "*" if i == current_lang_id else " ",
+            i,
+            lang_info["title"],
+            lang_info["lang"],
+        )
+        if i == current_lang_id:
+            log = colored_string(log, "green")
+        Logger.info(log)
+    if current_lang_id != -1:
+        # language found, do-nothing
+        return
+    if ai_translation_language:
+        Logger.warning(f"该视频未为语言 {ai_translation_language} 支持 AI 原声翻译功能哦～")
+        return
+    Logger.info("若想启用 AI 原声翻译功能，可以使用 `--ai-translation-language=<code>` 参数指定目标语言喔～")
+
+
 async def get_ugc_video_playurl(
-    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
+    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId, ai_translation_language: str | None = None
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     # 4048 = 16(useDash) | 64(useHDR) | 128(use4K) | 256(useDolby) | 512(useXXX) | 1024(use8K) | 2048(useAV1)
     play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&type=&otype=json&fnver=0&fnval=4048&fourk=1"
+    if ai_translation_language:
+        play_api += f"&cur_language={ai_translation_language}"
 
     resp_json = await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
     if resp_json is None:
@@ -244,6 +280,8 @@ async def get_ugc_video_playurl(
                 "quality": hi_res_audio_json["id"],
             }
         )
+
+    show_ai_translation_language(resp_json, ai_translation_language)
 
     return (videos, audios)
 
