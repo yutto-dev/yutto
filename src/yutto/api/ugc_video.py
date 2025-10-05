@@ -200,7 +200,7 @@ def show_ai_translation_language(resp_json: dict[str, Any], ai_translation_langu
             log = colored_string(log, "green")
         Logger.info(log)
     if current_lang_id != -1:
-        # language found, do-nothing
+        # language found, do nothing
         return
     if ai_translation_language:
         Logger.warning(f"该视频未为语言 {ai_translation_language} 支持 AI 原声翻译功能哦～")
