@@ -178,11 +178,11 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
 def show_ai_translation_language(resp_json: dict[str, Any], ai_translation_language: str | None) -> None:
     # AI 原声翻译功能检测和展示，Example: BV1G3HEz5ETU
     if not data_has_chained_keys(resp_json, ["data", "language", "items"]):
-        if not ai_translation_language:
+        if ai_translation_language:
             Logger.warning(f"该视频未启用 AI 原声翻译功能, 无法获得 {ai_translation_language} 语言翻译哦～")
         return
     if not resp_json["data"]["language"]["items"]:
-        if not ai_translation_language:
+        if ai_translation_language:
             Logger.warning(f"该视频未启用 AI 原声翻译功能, 无法获得 {ai_translation_language} 语言翻译哦～")
         return
     current_lang_id = -1
