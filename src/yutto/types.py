@@ -223,6 +223,7 @@ class ExtractorOptions(TypedDict):
     require_chapter_info: bool
     danmaku_format: DanmakuSaveType
     subpath_template: str
+    ai_translation_language: str | None
 
 
 class EpisodeData(TypedDict):

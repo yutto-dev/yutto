@@ -128,6 +128,11 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         help="仅包含音频流时所使用的输出格式（infer 为自动推断）",
     )
     group_basic.add_argument(
+        "--ai-translation-language",
+        default=settings.basic.ai_translation_language,
+        help="启用 AI 原声翻译功能，并指定翻译目标语言（如 en 等）",
+    )
+    group_basic.add_argument(
         "-df",
         "--danmaku-format",
         default=settings.basic.danmaku_format,

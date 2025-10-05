@@ -140,6 +140,15 @@ download_vcodec_priority = ["hevc", "avc", "av1"]
 
 :::
 
+## 启用 AI 原声翻译功能
+
+- 参数 `--ai-translation-language`
+- 配置项 `basic.ai_translation_language`
+- 可选值 语言代码，比如 `"en"` 等，具体可用值根据视频而定
+- 默认值 `None`
+
+启用 AI 原声翻译功能后，如果视频支持该功能，音视频源会被替换为启用 AI 原声翻译功能后的源（主要为音频，视频可能有口型微调）。
+
 ## 弹幕格式选择
 
 - 参数 `-df` 或 `--danmaku-format`

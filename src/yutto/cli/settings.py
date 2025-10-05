@@ -41,6 +41,7 @@ class YuttoBasicSettings(BaseModel):
     output_format_audio_only: Annotated[
         Literal["infer", "m4a", "aac", "mp3", "flac", "mp4", "mkv", "mov"], Field("infer")
     ]
+    ai_translation_language: Annotated[str | None, Field(None)]
     danmaku_format: Annotated[Literal["xml", "ass", "protobuf"], Field("ass")]
     block_size: Annotated[float, Field(0.5)]
     overwrite: Annotated[bool, Field(False)]
