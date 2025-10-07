@@ -153,9 +153,9 @@ async def get_bangumi_playurl(
 async def get_bangumi_subtitles(
     ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
 ) -> list[MultiLangSubtitle]:
-    subtitile_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
-    subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    subtitles_json_info = await Fetcher.fetch_json(ctx, client, subtitile_url)
+    subtitle_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
+    subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
+    subtitles_json_info = await Fetcher.fetch_json(ctx, client, subtitle_url)
     if subtitles_json_info is None:
         return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):

@@ -289,9 +289,9 @@ async def get_ugc_video_playurl(
 async def get_ugc_video_subtitles(
     ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
 ) -> list[MultiLangSubtitle]:
-    subtitile_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
-    subtitile_url = subtitile_api.format(**avid.to_dict(), cid=cid)
-    res_json = await Fetcher.fetch_json(ctx, client, subtitile_url)
+    subtitle_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
+    subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
+    res_json = await Fetcher.fetch_json(ctx, client, subtitle_url)
     assert res_json is not None, "无法获取该视频的字幕信息"
     if not data_has_chained_keys(res_json, ["data", "subtitle", "subtitles"]):
         return []
