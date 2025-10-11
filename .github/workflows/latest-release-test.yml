@@ -14,7 +14,7 @@ jobs:
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} latest release test
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
 
       - name: Install python
         uses: actions/setup-python@v6
