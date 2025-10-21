@@ -27,20 +27,13 @@ class SeriesExtractor(BatchExtractor):
     """视频列表"""
 
     REGEX_SERIES_LISTS = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/lists/(?P<series_id>\d+)\?type=series")
-    REGEX_SERIES_LEGACY: re.Pattern[str] = re.compile(
-        r"https?://space\.bilibili\.com/(?P<mid>\d+)/channel/seriesdetail\?sid=(?P<series_id>\d+)"
-    )
     REGEX_SERIES_PLAYLIST = re.compile(r"https?://www\.bilibili\.com/list/(?P<mid>\d+)\?sid=(?P<series_id>\d+)")
 
     mid: MId
     series_id: SeriesId
 
     def match(self, url: str) -> bool:
-        if (
-            (match_obj := self.REGEX_SERIES_LISTS.match(url))
-            or (match_obj := self.REGEX_SERIES_LEGACY.match(url))
-            or (match_obj := self.REGEX_SERIES_PLAYLIST.match(url))
-        ):
+        if (match_obj := self.REGEX_SERIES_LISTS.match(url)) or (match_obj := self.REGEX_SERIES_PLAYLIST.match(url)):
             self.mid = MId(match_obj.group("mid"))
             self.series_id = SeriesId(match_obj.group("series_id"))
             return True

@@ -17,8 +17,8 @@
 | 当前用户稍后再看 <sup>批量</sup> | :x: | `https://www.bilibili.com/watchlater` <br/> `https://www.bilibili.com/list/watchlater` | `稍后再看/{title}/{name}` |
 | 用户全部收藏夹 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/favlist` | `{username}的收藏夹/{series_title}/{title}/{name}` |
 | UP 主个人空间 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/video` | `{username}的全部投稿视频/{title}/{name}` |
-| 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season` <br/> `https://space.bilibili.com/3546619314178489/channel/collectiondetail?sid=3221717`<sup>旧版页面</sup> <br/> `https://space.bilibili.com/100969474/favlist?fid=3221717&ftype=collect&ctype=21` | `{series_title}/{title}` |
-| 视频列表 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/lists/1947439?type=series` <br/> `https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439`<sup>旧版页面</sup> <br/> `https://www.bilibili.com/list/100969474?sid=1947439` | `{series_title}/{title}/{name}` |
+| 合集 <sup>批量</sup> | :white_check_mark: | `https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season` <br/> `https://space.bilibili.com/100969474/favlist?fid=3221717&ftype=collect&ctype=21` | `{series_title}/{title}` |
+| 视频列表 <sup>批量</sup> | :x: | `https://space.bilibili.com/100969474/lists/1947439?type=series` <br/> `https://www.bilibili.com/list/100969474?sid=1947439` | `{series_title}/{title}/{name}` |
 
 本表格展示了我所支持的所有类型的链接，以及最终下载的文件结构。
 
@@ -173,10 +173,8 @@ yutto -b https://www.bilibili.com/watchlater
 ```bash
 # 合集
 yutto -b "https://space.bilibili.com/3546619314178489/lists?sid=3221717?type=season"
-yutto -b "https://space.bilibili.com/3546619314178489/channel/collectiondetail?sid=3221717" # 旧版页面链接
 # 列表
 yutto -b "https://space.bilibili.com/100969474/lists/1947439?type=series"
-yutto -b "https://space.bilibili.com/100969474/channel/seriesdetail?sid=1947439" # 旧版页面链接
 ```
 
 另外，视频列表的播放页面也可以唯一定位该视频列表
