@@ -11,7 +11,7 @@ from yutto.utils.functional import as_sync
 @pytest.mark.api
 @as_sync
 async def test_get_collection_details():
-    # 测试页面：https://space.bilibili.com/6762654/channel/collectiondetail?sid=39879&ctype=0
+    # 测试页面：https://space.bilibili.com/6762654/lists?sid=39879&ctype=0
     series_id = SeriesId("39879")
     mid = MId("6762654")
     ctx = FetcherContext()
