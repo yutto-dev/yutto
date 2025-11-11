@@ -28,7 +28,7 @@ importers:
         version: 1.6.5(vite@7.2.2)
       vitepress-plugin-llms:
         specifier: ^1.8.0
-        version: 1.9.0
+        version: 1.9.1
       vue:
         specifier: ^3.5.22
         version: 3.5.24
@@ -1353,8 +1353,8 @@ packages:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
 
-  tokenx@1.2.0:
-    resolution: {integrity: sha512-x4bRrL23b22H+EqW2pbhIkkt3ouj27ZGmAS1QoIqpocEO4m0sAl2H1M4L1UzKqleikY4U9lz/TbEw4jeG8tm2A==}
+  tokenx@1.2.1:
+    resolution: {integrity: sha512-lVhFIhR2qh3uUyUA8Ype+HGzcokUJbHmRSN1TJKOe4Y26HkawQuLiGkUCkR5LD9dx+Rtp+njrwzPL8AHHYQSYA==}
 
   trim-lines@3.0.1:
     resolution: {integrity: sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg==}
@@ -1477,8 +1477,8 @@ packages:
       vite:
         optional: true
 
-  vitepress-plugin-llms@1.9.0:
-    resolution: {integrity: sha512-Tq8F00w8/OZs936c4kRnRJbLJDi0/MlKfDBbmSaEs9J9q5pD/fi9EwCJdn6C3RQWfZ383VxTvMihU4LaWmI05Q==}
+  vitepress-plugin-llms@1.9.1:
+    resolution: {integrity: sha512-ICFDp2g5l0oXdB8bqpf6la1tXkl1x5Vb3cmBe17ZoxywmqbDJoOTTORl7NNxXo91Dy0YhMlB/VKWPF4mjqve5w==}
 
   vitepress@1.6.4:
     resolution: {integrity: sha512-+2ym1/+0VVrbhNyRoFFesVvBvHAVMZMK0rw60E3X/5349M1GuVdKeazuksqopEdvkKwKGs21Q729jX81/bkBJg==}
@@ -2870,7 +2870,7 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
 
-  tokenx@1.2.0: {}
+  tokenx@1.2.1: {}
 
   trim-lines@3.0.1: {}
 
@@ -2960,7 +2960,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vitepress-plugin-llms@1.9.0:
+  vitepress-plugin-llms@1.9.1:
     dependencies:
       gray-matter: 4.0.3
       markdown-it: 14.1.0
@@ -2973,7 +2973,7 @@ snapshots:
       pretty-bytes: 7.1.0
       remark: 15.0.1
       remark-frontmatter: 5.0.0
-      tokenx: 1.2.0
+      tokenx: 1.2.1
       unist-util-remove: 4.0.0
       unist-util-visit: 5.0.0
     transitivePeerDependencies:
