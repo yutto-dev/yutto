@@ -49,7 +49,7 @@ def write_subtitle(subtitle_data: SubtitleData, video_path: Path, lang: str):
     video_path = Path(video_path)
     video_name = video_path.stem
     sub = Subtitle()
-    subtitle_path = video_path.with_name(f"{video_name}_{lang}.srt")
+    subtitle_path = video_path.with_name(f"{video_name}.{lang}.srt")
     for subline in subtitle_data:
         sub.write_subtitle(subline)
     with subtitle_path.open("w", encoding="utf-8") as f:
