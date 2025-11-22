@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import platform
+import sys
 import time
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
@@ -19,7 +20,7 @@ P = ParamSpec("P")
 
 
 def initial_async_policy():
-    if platform.system() == "Windows":
+    if sys.version_info < (3, 11) and platform.system() == "Windows":
         Logger.debug("Windows 平台，单独设置 EventLoopPolicy")
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # pyright: ignore
 
