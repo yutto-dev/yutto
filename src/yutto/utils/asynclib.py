@@ -21,7 +21,7 @@ P = ParamSpec("P")
 
 def initial_async_policy():
     if sys.version_info < (3, 11) and platform.system() == "Windows":
-        Logger.debug("Windows 平台，单独设置 EventLoopPolicy")
+        Logger.debug("Windows 平台（Python < 3.11），单独设置 EventLoopPolicy")
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # pyright: ignore
 
 
