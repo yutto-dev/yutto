@@ -29,7 +29,7 @@ video_quality_map = {
         "height": 2160,
     },  # Example: BV1eV411W7tt
     125: {
-        "description": "HDR 真彩",
+        "description": "4K·HDR10",
         "width": 3840,
         "height": 2160,
     },
