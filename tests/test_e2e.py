@@ -47,6 +47,7 @@ def test_batch_file_e2e():
     short_ugc_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt") as tmp:
         tmp.write(f'{short_ugc_video} --batch -p $ --no-danmaku --vcodec="hevc:copy"\n')
+        tmp.flush()  # Ensure content is written to disk before subprocess reads it
         tmp_path = Path(tmp.name)
 
         subprocess.run(
