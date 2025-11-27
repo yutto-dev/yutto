@@ -75,9 +75,9 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
         args_list: list[argparse.Namespace] = []
         # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):
-            local_args = parser.parse_args(shlex.split(line), args)
+            local_args = parser.parse_args(handle_default_subcommand(shlex.split(line)), args)
             if local_args.no_inherit:
-                local_args = parser.parse_args(shlex.split(line))
+                local_args = parser.parse_args(handle_default_subcommand(shlex.split(line)))
             Logger.debug(f"列表参数: {local_args}")
             args_list += flatten_args(local_args, parser)
         return args_list
