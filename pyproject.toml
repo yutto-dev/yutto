@@ -45,13 +45,13 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.406",
-  "ruff>=0.14.0",
-  "typos>=1.38.1",
-  "pytest>=8.4.2",
-  "pytest-rerunfailures>=16.0.1",
+  "pyright>=1.1.407",
+  "ruff>=0.14.6",
+  "typos>=1.40.0",
+  "pytest>=9.0.1",
+  "pytest-rerunfailures>=16.1",
   "syrupy>=5.0.0",
-  "pytest-codspeed>=4.1.1",
+  "pytest-codspeed>=4.2.0",
 ]
 
 [tool.uv.sources]

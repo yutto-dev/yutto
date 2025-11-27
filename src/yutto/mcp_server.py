@@ -58,7 +58,7 @@ async def add_task(
     """
     Use this tool to download a video from Bilibili using the given URL or short link.
     """
-    request_context: RequestContext[ServerSession, AppContext, Any] = ctx.request_context  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    request_context: RequestContext[ServerSession, AppContext, Any] = ctx.request_context  # pyright: ignore[reportAssignmentType]
     download_manager: DownloadManager = request_context.lifespan_context.download_manager
     await download_manager.add_task(DownloadTask(args=parse_args(url, dir)))
     return "Task added"
