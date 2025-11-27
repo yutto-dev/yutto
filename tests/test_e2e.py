@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tempfile
+from pathlib import Path
 
 import pytest
 
@@ -38,3 +40,21 @@ def test_ugc_video_e2e():
         capture_output=True,
         check=True,
     )
+
+
+@pytest.mark.e2e
+def test_batch_file_e2e():
+    short_ugc_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as tmp:
+        tmp.write(f'{short_ugc_video} --batch -p $ --no-danmaku --vcodec="hevc:copy"\n')
+        tmp_path = Path(tmp.name)
+
+    try:
+        subprocess.run(
+            [PYTHON, "-m", "yutto", str(tmp_path), f"-d={TEST_DIR}", "-q=16", "-w"],
+            capture_output=True,
+            check=True,
+        )
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
