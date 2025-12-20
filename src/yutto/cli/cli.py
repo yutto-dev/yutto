@@ -53,7 +53,7 @@ def parse_config_path() -> Path | None:
 def cli() -> argparse.ArgumentParser:
     settings_file = parse_config_path()
     if settings_file is None:
-        settings = YuttoSettings()  # pyright: ignore[reportCallIssue]
+        settings = YuttoSettings()  # ty: ignore[missing-argument]
     else:
         Logger.info(f"发现配置文件 {settings_file}，加载中……")
         settings = load_settings_file(settings_file)

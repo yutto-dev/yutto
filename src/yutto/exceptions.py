@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from enum import Enum
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -64,7 +64,9 @@ class NotLoginError(YuttoBaseException):
     code = ErrorCode.NOT_LOGIN_ERROR
 
 
-def handle_uncaught_exception(exctype: type[Exception], exception: Exception, trace: TracebackType):
+def handle_uncaught_exception(
+    exctype: type[BaseException], exception: BaseException, trace: TracebackType | None
+) -> Any:
     old_hook(exctype, exception, trace)
     if isinstance(exception, YuttoBaseException):
         sys.exit(exception.code.value)

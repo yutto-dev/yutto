@@ -70,7 +70,7 @@ def _get_mixin_key(string: str) -> str:
     return "".join([string[idx] for idx in char_indices[:32]])
 
 
-def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
+def encode_wbi(params: dict[str, Any], wbi_img: WbiImg) -> dict[str, Any]:
     img_key = wbi_img["img_key"]
     sub_key = wbi_img["sub_key"]
     illegal_char_remover = re.compile(r"[!'\(\)*]")
@@ -78,7 +78,7 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
     mixin_key = _get_mixin_key(img_key + sub_key)
     time_stamp = int(time.time())
     params_with_wts = dict(params, wts=time_stamp)
-    params_with_dm = {
+    params_with_dm: dict[str, Any] = {
         **params_with_wts,
         "dm_img_list": "[]",
         "dm_img_str": dm_img_str_cache,
@@ -91,5 +91,5 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
         }
     )  # fmt: skip
     w_rid = hashlib.md5((url_encoded_params + mixin_key).encode()).hexdigest()
-    all_params = dict(params_with_dm, w_rid=w_rid)
+    all_params = dict(params_with_dm, w_rid=w_rid)  # ty: ignore[no-matching-overload]
     return all_params

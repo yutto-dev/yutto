@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
-import urllib
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -36,8 +36,8 @@ def alias_parser(file_path: str) -> dict[str, str]:
 
 
 def file_scheme_parser(url: str) -> list[str]:
-    file_url: str = urllib.parse.urlparse(url).path  # pyright: ignore[reportUnknownMemberType,reportAttributeAccessIssue,reportUnknownVariableType]
-    file_path = path_from_cli(urllib.request.url2pathname(file_url))  # pyright: ignore[reportUnknownMemberType,reportUnknownArgumentType]
+    file_url: str = urllib.parse.urlparse(url).path
+    file_path = path_from_cli(urllib.request.url2pathname(file_url))
     Logger.info(f"解析下载列表 {file_path} 中...")
     result: list[str] = []
     with file_path.open("r", encoding="utf-8") as f:
@@ -108,7 +108,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         else:
             out_of_range.append(episode)
     if out_of_range:
-        Logger.warning("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))))
+        Logger.warning("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))))  # ty: ignore[invalid-argument-type]
 
     Logger.info("已选择第 {} 话".format(",".join(list(map(str, episodes)))))
     if not episodes:
