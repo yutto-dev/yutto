@@ -33,6 +33,8 @@ class MaxRetry:
     - max_retry (int): 额外重试次数（如重试次数为 2，则最多尝试 3 次）
     """
 
+    max_retry: int
+
     def __init__(self, max_retry: int = 2):
         self.max_retry = max_retry
 
@@ -221,7 +223,7 @@ class Fetcher:
     @MaxRetry(2)
     # 对于相同 session，同样的页面没必要重复 touch
     @async_cache(lambda args: f"client_id={id(args.arguments['client'])}, url={args.arguments['url']}")
-    async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str):
+    async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str) -> None:
         async with ctx.fetch_guard():
             Logger.debug(f"Touch url: {url}")
             await client.get(url)

@@ -4,7 +4,7 @@ import asyncio
 import os
 import re
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
@@ -125,7 +125,7 @@ async def download_video_and_audio(
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     ctx.set_download_semaphore(options["num_workers"])
     if video is not None:
-        vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
+        vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])  # ty: ignore[invalid-await]
         vsize = await first_successful_with_check(
             [Fetcher.get_size(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
         )
@@ -147,7 +147,7 @@ async def download_video_and_audio(
         buffers[0], sizes[0] = vbuf, vsize
 
     if audio is not None:
-        abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
+        abuf: AsyncFileBuffer = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])  # ty: ignore[invalid-await]
         asize = await first_successful_with_check(
             [Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
         )
@@ -327,25 +327,25 @@ async def process_download(
     # 显示音视频详细信息
     show_videos_info(
         videos,
-        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportArgumentType]
+        videos.index(cast("VideoUrlMeta", video)) if will_download_video else -1,
     )
     show_audios_info(
         audios,
-        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportArgumentType]
+        audios.index(cast("AudioUrlMeta", audio)) if will_download_audio else -1,
     )
 
     output_format = ".mp4"
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
             output_format = "." + options["output_format_audio_only"]
-        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and cast("AudioUrlMeta", audio)["codec"] == "flac":
             output_format = ".flac"
         else:
             output_format = ".m4a"
     else:
         if options["output_format"] != "infer":
             output_format = "." + options["output_format"]
-        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and cast("AudioUrlMeta", audio)["codec"] == "flac":
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)

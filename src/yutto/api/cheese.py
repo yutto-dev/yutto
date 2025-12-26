@@ -6,9 +6,11 @@ from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
     AId,
+    AudioUrlMeta,
     CId,
     EpisodeId,
     SeasonId,
+    VideoUrlMeta,
     format_ids,
 )
 from yutto.utils.console.logger import Logger
@@ -21,10 +23,8 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
     from yutto.types import (
-        AudioUrlMeta,
         AvId,
         MultiLangSubtitle,
-        VideoUrlMeta,
     )
     from yutto.utils.fetcher import FetcherContext
 
@@ -59,20 +59,20 @@ async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: S
         raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["data"]
     section_episodes = result["episodes"]
-    return {
-        "title": result["title"],
-        "pages": [
-            {
-                "id": i + 1,
-                "name": item["title"],
-                "cid": CId(str(item["cid"])),
-                "episode_id": EpisodeId(str(item["id"])),
-                "avid": AId(str(item["aid"])),
-                "metadata": _parse_cheese_metadata(item),
-            }
+    return CheeseList(
+        title=result["title"],
+        pages=[
+            CheeseListItem(
+                id=i + 1,
+                name=item["title"],
+                cid=CId(str(item["cid"])),
+                episode_id=EpisodeId(str(item["id"])),
+                avid=AId(str(item["aid"])),
+                metadata=_parse_cheese_metadata(item),
+            )
             for i, item in enumerate(section_episodes)
         ],
-    }
+    )
 
 
 async def get_cheese_playurl(
@@ -95,25 +95,25 @@ async def get_cheese_playurl(
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
     return (
         [
-            {
-                "url": video["base_url"],
-                "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
-                "codec": video_codec_map[video["codecid"]],
-                "width": video["width"],
-                "height": video["height"],
-                "quality": video["id"],
-            }
+            VideoUrlMeta(
+                url=video["base_url"],
+                mirrors=video["backup_url"] if video["backup_url"] is not None else [],
+                codec=video_codec_map[video["codecid"]],
+                width=video["width"],
+                height=video["height"],
+                quality=video["id"],
+            )
             for video in resp_json["data"]["dash"]["video"]
         ],
         [
-            {
-                "url": audio["base_url"],
-                "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
-                "codec": audio_codec_map[audio["codecid"]],
-                "width": 0,
-                "height": 0,
-                "quality": audio["id"],
-            }
+            AudioUrlMeta(
+                url=audio["base_url"],
+                mirrors=audio["backup_url"] if audio["backup_url"] is not None else [],
+                codec=audio_codec_map[audio["codecid"]],
+                width=0,
+                height=0,
+                quality=audio["id"],
+            )
             for audio in resp_json["data"]["dash"]["audio"]
         ],
     )
