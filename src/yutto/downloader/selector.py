@@ -55,7 +55,8 @@ def select_audio(
     audio_quality: AudioQuality = 30280,
     audio_codec: AudioCodec = "mp4a",
 ) -> AudioUrlMeta | None:
-    if all(is_encrypted_audio_quality(audio["quality"]) for audio in audios):
+    # Only treat this as an encrypted-audio-only situation when there is at least one audio stream
+    if audios and all(is_encrypted_audio_quality(audio["quality"]) for audio in audios):
         raise CryptoError("yutto 目前不支持加密音频哦～")
     audio_quality_priority = gen_audio_quality_priority(audio_quality)
     audio_codec_priority = gen_acodec_priority(audio_codec)
