@@ -1,21 +1,16 @@
 from __future__ import annotations
 
-from enum import Enum
 from typing import Literal
 
 from yutto.utils.priority import gen_priority_sequence
 
-
-class Media(Enum):
-    VIDEO = 0
-    AUDIO = 30200
-
-
 VideoQuality = Literal[127, 126, 125, 120, 116, 112, 100, 80, 74, 64, 32, 16]
 AudioQuality = Literal[30251, 30255, 30250, 30280, 30232, 30216]
+AudioCryptoQuality = Literal[100010, 100009, 100008]
 
 video_quality_priority_default: list[VideoQuality] = [127, 126, 125, 120, 116, 112, 100, 80, 74, 64, 32, 16]
 audio_quality_priority_default: list[AudioQuality] = [30251, 30255, 30250, 30280, 30232, 30216]
+audio_encrypted_quality_priorities: list[AudioCryptoQuality] = [100010, 100009, 100008]
 
 video_quality_map = {
     127: {
@@ -110,6 +105,10 @@ audio_quality_map = {
         "bitrate": 0,
     },
 }
+
+
+def is_encrypted_audio_quality(quality: int) -> bool:
+    return quality in audio_encrypted_quality_priorities
 
 
 def gen_video_quality_priority(quality: VideoQuality) -> list[VideoQuality]:
