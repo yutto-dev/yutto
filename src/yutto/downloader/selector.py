@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yutto.exceptions import CryptoError
 from yutto.media.codec import (
     gen_acodec_priority,
     gen_vcodec_priority,
@@ -9,6 +10,7 @@ from yutto.media.codec import (
 from yutto.media.quality import (
     gen_audio_quality_priority,
     gen_video_quality_priority,
+    is_encrypted_audio_quality,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +55,8 @@ def select_audio(
     audio_quality: AudioQuality = 30280,
     audio_codec: AudioCodec = "mp4a",
 ) -> AudioUrlMeta | None:
+    if audios and all(is_encrypted_audio_quality(audio["quality"]) for audio in audios):
+        raise CryptoError("yutto 目前不支持加密音频哦～")
     audio_quality_priority = gen_audio_quality_priority(audio_quality)
     audio_codec_priority = gen_acodec_priority(audio_codec)
 
