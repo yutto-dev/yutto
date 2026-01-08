@@ -69,10 +69,6 @@ class CryptoError(YuttoBaseException):
     code = ErrorCode.CRYPTO_ERROR
 
 
-class CryptoError(YuttoBaseException):
-    code = ErrorCode.CRYPTO_ERROR
-
-
 def handle_uncaught_exception(
     exctype: type[BaseException], exception: BaseException, trace: TracebackType | None
 ) -> Any:
