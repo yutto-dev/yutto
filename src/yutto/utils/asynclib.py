@@ -5,6 +5,7 @@ import inspect
 import platform
 import sys
 import time
+import types
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
@@ -54,6 +55,8 @@ def async_cache(
     def decorator(fn: Callable[P, Coroutine[Any, Any, RetT]]) -> Callable[P, Coroutine[Any, Any, RetT]]:
         @wraps(fn)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:
+            assert isinstance(fn, types.FunctionType)
+
             sig = inspect.signature(fn)
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()

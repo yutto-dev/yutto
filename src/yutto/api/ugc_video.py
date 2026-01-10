@@ -11,29 +11,26 @@ from yutto.exceptions import (
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
     AId,
+    AudioUrlMeta,
     BvId,
     CId,
     EpisodeId,
+    MultiLangSubtitle,
+    VideoUrlMeta,
     format_ids,
 )
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional.data_access import data_has_chained_keys
-from yutto.utils.metadata import Actor, MetaData
+from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
 
-    from yutto.types import (
-        AudioUrlMeta,
-        AvId,
-        MultiLangSubtitle,
-        VideoUrlMeta,
-    )
+    from yutto.types import AvId
     from yutto.utils.fetcher import FetcherContext
-    from yutto.utils.metadata import ChapterInfoData
 
 
 class _UgcVideoPageInfo(TypedDict):
@@ -111,28 +108,28 @@ async def get_ugc_video_info(ctx: FetcherContext, client: AsyncClient, avid: AvI
     actors = _parse_actor_info(res_json_data)
     genres = _parse_genre_info(res_json_data)
     tags: list[str] = await get_ugc_video_tag(ctx, client, avid)
-    return {
-        "avid": BvId(res_json_data["bvid"]),
-        "aid": AId(str(res_json_data["aid"])),
-        "bvid": BvId(res_json_data["bvid"]),
-        "episode_id": episode_id,
-        "is_bangumi": bool(episode_id),
-        "cid": CId(str(res_json_data["cid"])),
-        "picture": res_json_data["pic"],
-        "title": res_json_data["title"],
-        "pubdate": res_json_data["pubdate"],
-        "description": res_json_data["desc"],
-        "pages": [
-            {
-                "part": page["part"],
-                "first_frame": page.get("first_frame"),
-            }
+    return _UgcVideoInfo(
+        avid=BvId(res_json_data["bvid"]),
+        aid=AId(str(res_json_data["aid"])),
+        bvid=BvId(res_json_data["bvid"]),
+        episode_id=episode_id,
+        is_bangumi=bool(episode_id),
+        cid=CId(str(res_json_data["cid"])),
+        picture=res_json_data["pic"],
+        title=res_json_data["title"],
+        pubdate=res_json_data["pubdate"],
+        description=res_json_data["desc"],
+        pages=[
+            _UgcVideoPageInfo(
+                part=page["part"],
+                first_frame=page.get("first_frame"),
+            )
             for page in res_json_data["pages"]
         ],
-        "actor": actors,
-        "tag": tags,
-        "genre": genres,
-    }
+        actor=actors,
+        tag=tags,
+        genre=genres,
+    )
 
 
 async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> UgcVideoList:
@@ -161,13 +158,13 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
             page_info["part"] = f"{video_title}_P{i + 1:02}"
 
     result["pages"] = [
-        {
-            "id": i + 1,
-            "name": item["part"],
-            "avid": avid,
-            "cid": CId(str(item["cid"])),
-            "metadata": _parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
-        }
+        UgcVideoListItem(
+            id=i + 1,
+            name=item["part"],
+            avid=avid,
+            cid=CId(str(item["cid"])),
+            metadata=_parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
+        )
         for i, (item, page_info) in enumerate(
             zip(cast("list[Any]", res_json["data"]), video_info["pages"], strict=True)
         )
@@ -227,14 +224,14 @@ async def get_ugc_video_playurl(
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
     videos: list[VideoUrlMeta] = (
         [
-            {
-                "url": video["base_url"],
-                "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
-                "codec": video_codec_map[video["codecid"]],
-                "width": video["width"],
-                "height": video["height"],
-                "quality": video["id"],
-            }
+            VideoUrlMeta(
+                url=video["base_url"],
+                mirrors=video["backup_url"] if video["backup_url"] is not None else [],
+                codec=video_codec_map[video["codecid"]],
+                width=video["width"],
+                height=video["height"],
+                quality=video["id"],
+            )
             for video in resp_json["data"]["dash"]["video"]
         ]
         if resp_json["data"]["dash"]["video"]
@@ -242,14 +239,14 @@ async def get_ugc_video_playurl(
     )
     audios: list[AudioUrlMeta] = (
         [
-            {
-                "url": audio["base_url"],
-                "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
-                "codec": audio_codec_map[audio["codecid"]],
-                "width": 0,
-                "height": 0,
-                "quality": audio["id"],
-            }
+            AudioUrlMeta(
+                url=audio["base_url"],
+                mirrors=audio["backup_url"] if audio["backup_url"] is not None else [],
+                codec=audio_codec_map[audio["codecid"]],
+                width=0,
+                height=0,
+                quality=audio["id"],
+            )
             for audio in resp_json["data"]["dash"]["audio"]
         ]
         if resp_json["data"]["dash"]["audio"]
@@ -258,27 +255,27 @@ async def get_ugc_video_playurl(
     if resp_json["data"]["dash"]["dolby"] is not None and resp_json["data"]["dash"]["dolby"]["audio"] is not None:
         dolby_audios_json = resp_json["data"]["dash"]["dolby"]["audio"]
         audios.extend(
-            {
-                "url": dolby_audio_json["base_url"],
-                "mirrors": dolby_audio_json["backup_url"] if dolby_audio_json["backup_url"] is not None else [],
-                "codec": "eac3",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
-                "width": 0,
-                "height": 0,
-                "quality": dolby_audio_json["id"],
-            }
+            AudioUrlMeta(
+                url=dolby_audio_json["base_url"],
+                mirrors=dolby_audio_json["backup_url"] if dolby_audio_json["backup_url"] is not None else [],
+                codec="eac3",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
+                width=0,
+                height=0,
+                quality=dolby_audio_json["id"],
+            )
             for dolby_audio_json in dolby_audios_json
         )
     if resp_json["data"]["dash"]["flac"] is not None and resp_json["data"]["dash"]["flac"]["audio"] is not None:
         hi_res_audio_json = resp_json["data"]["dash"]["flac"]["audio"]
         audios.append(
-            {
-                "url": hi_res_audio_json["base_url"],
-                "mirrors": hi_res_audio_json["backup_url"] if hi_res_audio_json["backup_url"] is not None else [],
-                "codec": "flac",  # TODO: 同上，硬编码
-                "width": 0,
-                "height": 0,
-                "quality": hi_res_audio_json["id"],
-            }
+            AudioUrlMeta(
+                url=hi_res_audio_json["base_url"],
+                mirrors=hi_res_audio_json["backup_url"] if hi_res_audio_json["backup_url"] is not None else [],
+                codec="flac",  # TODO: 同上，硬编码
+                width=0,
+                height=0,
+                quality=hi_res_audio_json["id"],
+            )
         )
 
     show_ai_translation_language(resp_json, ai_translation_language)
@@ -308,10 +305,10 @@ async def get_ugc_video_subtitles(
         if subtitle_text is None:
             continue
         results.append(
-            {
-                "lang": sub_info["lan_doc"],
-                "lines": subtitle_text["body"],
-            }
+            MultiLangSubtitle(
+                lang=sub_info["lan_doc"],
+                lines=subtitle_text["body"],
+            )
         )
     return results
 
@@ -330,7 +327,7 @@ async def get_ugc_video_chapters(
 
     raw_chapter_info = chapter_json_info["data"]["view_points"]
     return [
-        {"content": chapter_info["content"], "start": chapter_info["from"], "end": chapter_info["to"]}
+        ChapterInfoData(content=chapter_info["content"], start=chapter_info["from"], end=chapter_info["to"])
         for chapter_info in raw_chapter_info
     ]
 

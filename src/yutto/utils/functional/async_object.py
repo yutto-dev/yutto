@@ -14,7 +14,6 @@ class aobject:
 
     ``` python
     class MyClass(aobject):
-        # pyright: reportIncompatibleMethodOverride=false
         async def __ainit__(self):
             ...
 

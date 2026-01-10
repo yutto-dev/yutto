@@ -4,7 +4,7 @@ import asyncio
 import os
 import re
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
@@ -327,25 +327,25 @@ async def process_download(
     # 显示音视频详细信息
     show_videos_info(
         videos,
-        videos.index(video) if will_download_video else -1,  # pyright: ignore [reportArgumentType]
+        videos.index(cast("VideoUrlMeta", video)) if will_download_video else -1,
     )
     show_audios_info(
         audios,
-        audios.index(audio) if will_download_audio else -1,  # pyright: ignore [reportArgumentType]
+        audios.index(cast("AudioUrlMeta", audio)) if will_download_audio else -1,
     )
 
     output_format = ".mp4"
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
             output_format = "." + options["output_format_audio_only"]
-        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and cast("AudioUrlMeta", audio)["codec"] == "flac":
             output_format = ".flac"
         else:
             output_format = ".m4a"
     else:
         if options["output_format"] != "infer":
             output_format = "." + options["output_format"]
-        elif will_download_audio and audio["codec"] == "flac":  # pyright: ignore [reportOptionalSubscript]
+        elif will_download_audio and cast("AudioUrlMeta", audio)["codec"] == "flac":
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
