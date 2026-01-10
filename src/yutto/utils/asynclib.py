@@ -57,6 +57,8 @@ def async_cache(
 
         @wraps(fn)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:
+            assert isinstance(fn, types.FunctionType)
+
             sig = inspect.signature(fn)
             bound_args = sig.bind(*args, **kwargs)
             bound_args.apply_defaults()
