@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING, Any, TypedDict
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
+    AudioUrlMeta,
     BvId,
     CId,
     EpisodeId,
     SeasonId,
+    VideoUrlMeta,
     format_ids,
 )
 from yutto.utils.console.logger import Logger
@@ -22,11 +24,9 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
     from yutto.types import (
-        AudioUrlMeta,
         AvId,
         MediaId,
         MultiLangSubtitle,
-        VideoUrlMeta,
     )
     from yutto.utils.fetcher import FetcherContext
 
@@ -75,22 +75,22 @@ async def get_bangumi_list(ctx: FetcherContext, client: AsyncClient, season_id: 
             # 如 https://www.bilibili.com/bangumi/play/ep409825 中的「次元发电机采访」
             # 和 https://www.bilibili.com/bangumi/play/ep424859 中的「编辑推荐」
             section_episodes += section["episodes"]
-    return {
-        "title": result["title"],
-        "pages": [
-            {
-                "id": i + 1,
-                "name": _bangumi_episode_title(item["title"], item["long_title"]),
-                "cid": CId(str(item["cid"])),
-                "episode_id": EpisodeId(str(item["id"])),
-                "avid": BvId(item["bvid"]),
-                "is_section": i >= len(result["episodes"]),
-                "is_preview": item["badge"] == "预告",  # 并不是一种鲁棒的方式，但目前貌似没有更好的方式了
-                "metadata": _parse_bangumi_metadata(item),
-            }
+    return BangumiList(
+        title=result["title"],
+        pages=[
+            BangumiListItem(
+                id=i + 1,
+                name=_bangumi_episode_title(item["title"], item["long_title"]),
+                cid=CId(str(item["cid"])),
+                episode_id=EpisodeId(str(item["id"])),
+                avid=BvId(item["bvid"]),
+                is_section=i >= len(result["episodes"]),
+                is_preview=item["badge"] == "预告",  # 并不是一种鲁棒的方式，但目前貌似没有更好的方式了
+                metadata=_parse_bangumi_metadata(item),
+            )
             for i, item in enumerate(result["episodes"] + section_episodes)
         ],
-    }
+    )
 
 
 async def get_bangumi_playurl(
@@ -113,38 +113,38 @@ async def get_bangumi_playurl(
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
 
     videos: list[VideoUrlMeta] = [
-        {
-            "url": video["base_url"],
-            "mirrors": video["backup_url"] if video["backup_url"] is not None else [],
-            "codec": video_codec_map[video["codecid"]],
-            "width": video["width"],
-            "height": video["height"],
-            "quality": video["id"],
-        }
+        VideoUrlMeta(
+            url=video["base_url"],
+            mirrors=video["backup_url"] if video["backup_url"] is not None else [],
+            codec=video_codec_map[video["codecid"]],
+            width=video["width"],
+            height=video["height"],
+            quality=video["id"],
+        )
         for video in video_info["dash"]["video"]
     ]
     audios: list[AudioUrlMeta] = [
-        {
-            "url": audio["base_url"],
-            "mirrors": audio["backup_url"] if audio["backup_url"] is not None else [],
-            "codec": audio_codec_map[audio["codecid"]],
-            "width": 0,
-            "height": 0,
-            "quality": audio["id"],
-        }
+        AudioUrlMeta(
+            url=audio["base_url"],
+            mirrors=audio["backup_url"] if audio["backup_url"] is not None else [],
+            codec=audio_codec_map[audio["codecid"]],
+            width=0,
+            height=0,
+            quality=audio["id"],
+        )
         for audio in video_info["dash"]["audio"]
     ]
     if video_info["dash"]["dolby"] is not None and video_info["dash"]["dolby"]["audio"] is not None:
         dolby_audios_json = video_info["dash"]["dolby"]["audio"]
         audios.extend(
-            {
-                "url": dolby_audio_json["base_url"],
-                "mirrors": dolby_audio_json["backup_url"] if dolby_audio_json["backup_url"] is not None else [],
-                "codec": "eac3",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
-                "width": 0,
-                "height": 0,
-                "quality": dolby_audio_json["id"],
-            }
+            AudioUrlMeta(
+                url=dolby_audio_json["base_url"],
+                mirrors=dolby_audio_json["backup_url"] if dolby_audio_json["backup_url"] is not None else [],
+                codec="eac3",  # TODO: 由于这里的 codecid 仍然是 0，所以无法通过 audio_codec_map 转换，暂时直接硬编码
+                width=0,
+                height=0,
+                quality=dolby_audio_json["id"],
+            )
             for dolby_audio_json in dolby_audios_json
         )
     return (videos, audios)

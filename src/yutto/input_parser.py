@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
-import urllib
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
