@@ -1,7 +1,7 @@
 {
   "recommendations": [
     "ms-python.python",
-    "ms-python.vscode-pylance",
+    "astral-sh.ty",
     "charliermarsh.ruff",
     "esbenp.prettier-vscode",
     "EditorConfig.EditorConfig",

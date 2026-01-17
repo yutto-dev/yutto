@@ -39,11 +39,6 @@ biliass = "biliass.__main__:main"
 features = ["pyo3/extension-module"]
 module-name = "biliass._core"
 
-[tool.pyright]
-include = ["src/biliass"]
-pythonVersion = "3.10"
-typeCheckingMode = "basic"
-
 [build-system]
 requires = ["maturin>=1.4,<2.0"]
 build-backend = "maturin"
