@@ -55,7 +55,7 @@ def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[s
     custom_root = "episodedetails"  # TODO: 不同视频类型使用不同的 root name
     # 增加字段格式化内容，后续如果需要调整可以继续调整
     user_formatted_metadata = metadata_value_format(metadata, metadata_format) if metadata_format else metadata
-    xml_content = cast("str", dict2xml(user_formatted_metadata, wrap=custom_root, indent="  "))
+    xml_content = dict2xml(user_formatted_metadata, wrap=custom_root, indent="  ")
     with metadata_path.open("w", encoding="utf-8") as f:
         f.write(xml_content)
 
