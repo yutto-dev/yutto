@@ -5,7 +5,7 @@ import pytest
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_playurl,
-    get_bangumi_subtitles,  # pyright: ignore[reportUnusedImport]
+    get_bangumi_subtitles,  # noqa: F401
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
