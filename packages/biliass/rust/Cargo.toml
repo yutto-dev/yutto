@@ -9,7 +9,7 @@ name = "biliass_core"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.27.0", features = ["abi3-py310", "bytes"] }
+pyo3 = { version = "0.28.0", features = ["abi3-py310", "bytes"] }
 prost = "0.14.1"
 thiserror = "2.0.17"
 quick-xml = "0.39.0"
