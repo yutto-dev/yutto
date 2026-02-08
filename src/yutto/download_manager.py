@@ -280,7 +280,7 @@ def parse_danmaku_options(args: argparse.Namespace) -> DanmakuOptions:
         block_reverse=args.danmaku_block_reverse,
         block_special=args.danmaku_block_special,
         block_colorful=args.danmaku_block_colorful,
-        block_keyword_patterns=(args.danmaku_block_keyword_patterns if args.danmaku_block_keyword_patterns else []),
+        block_keyword_patterns=(args.danmaku_block_keyword_patterns or []),
     )
     return DanmakuOptions(
         font_size=args.danmaku_font_size,
