@@ -50,9 +50,8 @@ async def sleep_with_status_bar_refresh(seconds: float):
 def async_cache(
     args_to_cache_key: Callable[[inspect.BoundArguments], str],
 ) -> Callable[[Callable[P, Coroutine[Any, Any, RetT]]], Callable[P, Coroutine[Any, Any, RetT]]]:
-    CACHE: dict[str, RetT] = {}
-
     def decorator(fn: Callable[P, Coroutine[Any, Any, RetT]]) -> Callable[P, Coroutine[Any, Any, RetT]]:
+        CACHE: dict[str, RetT] = {}
         assert isinstance(fn, types.FunctionType)
 
         @wraps(fn)
