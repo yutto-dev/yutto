@@ -45,12 +45,12 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "ty>=0.0.14",
-  "ruff>=0.14.11",
-  "typos>=1.42.0",
+  "ty>=0.0.15",
+  "ruff>=0.15.0",
+  "typos>=1.43.3",
   "pytest>=9.0.2",
   "pytest-rerunfailures>=16.1",
-  "syrupy>=5.0.0",
+  "syrupy>=5.1.0",
   "pytest-codspeed>=4.2.0",
   "types-aiofiles>=25.1.0.20251011",
 ]
@@ -124,5 +124,5 @@ runtime-evaluated-decorators = ["fastmcp.FastMCP.tool"]
 "setup.py" = ["I"]
 
 [build-system]
-requires = ["uv_build>=0.9.0,<0.10.0"]
+requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
