@@ -91,5 +91,5 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg) -> dict[str, Any]:
         }
     )  # fmt: skip
     w_rid = hashlib.md5((url_encoded_params + mixin_key).encode()).hexdigest()
-    all_params = dict(params_with_dm, w_rid=w_rid)  # ty: ignore[no-matching-overload]
+    all_params = dict(params_with_dm, w_rid=w_rid)
     return all_params
