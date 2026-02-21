@@ -23,7 +23,7 @@ P = ParamSpec("P")
 def initial_async_policy():
     if sys.version_info < (3, 11) and platform.system() == "Windows":
         Logger.debug("Windows 平台（Python < 3.11），单独设置 EventLoopPolicy")
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # pyright: ignore
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # ty: ignore[unresolved-attribute]
 
 
 class CoroutineWrapper(Generic[RetT]):
@@ -50,9 +50,10 @@ async def sleep_with_status_bar_refresh(seconds: float):
 def async_cache(
     args_to_cache_key: Callable[[inspect.BoundArguments], str],
 ) -> Callable[[Callable[P, Coroutine[Any, Any, RetT]]], Callable[P, Coroutine[Any, Any, RetT]]]:
-    CACHE: dict[str, RetT] = {}
-
     def decorator(fn: Callable[P, Coroutine[Any, Any, RetT]]) -> Callable[P, Coroutine[Any, Any, RetT]]:
+        CACHE: dict[str, RetT] = {}
+        assert isinstance(fn, types.FunctionType)
+
         @wraps(fn)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:
             assert isinstance(fn, types.FunctionType)

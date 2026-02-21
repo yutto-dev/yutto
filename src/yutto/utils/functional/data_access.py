@@ -14,4 +14,4 @@ def data_has_chained_keys(data: Any, keys: list[str]) -> bool:
     if not isinstance(data, dict):
         return False
     key, *remaining_keys = keys
-    return data_has_chained_keys(data.get(key, Undefined()), remaining_keys)  # pyright: ignore[reportUnknownMemberType]
+    return data_has_chained_keys(data.get(key, Undefined()), remaining_keys)

@@ -45,13 +45,14 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "pyright>=1.1.408",
+  "ty>=0.0.18",
   "ruff>=0.15.0",
   "typos>=1.43.3",
   "pytest>=9.0.2",
   "pytest-rerunfailures>=16.1",
   "syrupy>=5.1.0",
   "pytest-codspeed>=4.2.0",
+  "types-aiofiles>=25.1.0.20251011",
 ]
 
 [tool.uv.sources]
@@ -62,11 +63,6 @@ members = ["packages/*"]
 
 [tool.pytest.ini_options]
 markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
-
-[tool.pyright]
-include = ["src/yutto", "packages/biliass/src/biliass", "tests"]
-pythonVersion = "3.10"
-typeCheckingMode = "strict"
 
 [tool.ruff]
 line-length = 120
@@ -112,8 +108,6 @@ select = [
 ]
 ignore = [
   "E501", # line too long, duplicate with ruff fmt
-  "F401", # imported but unused, duplicate with pyright
-  "F841", # local variable is assigned to but never used, duplicate with pyright
 ]
 future-annotations = true
 

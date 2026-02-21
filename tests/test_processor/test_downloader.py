@@ -23,7 +23,7 @@ async def test_150_kB_downloader():
     url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
     file_path = TEST_DIR / "test_150_kB.pdf"
     ctx = FetcherContext()
-    async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:
+    async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:  # ty: ignore[invalid-await]
         async with create_client(
             timeout=httpx.Timeout(7, connect=3),
         ) as client:
@@ -48,7 +48,7 @@ async def test_150_kB_no_slice_downloader():
     url = "https://github.com/nhegde610/samples-files/raw/main/file_example_MP4_480_1_5MG.mp4"
     file_path = TEST_DIR / "test_150_kB_no_slice.pdf"
     ctx = FetcherContext()
-    async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:
+    async with await AsyncFileBuffer(file_path, overwrite=False) as buffer:  # ty: ignore[invalid-await]
         async with create_client(
             timeout=httpx.Timeout(7, connect=3),
         ) as client:

@@ -18,7 +18,7 @@ fmt:
   uv run ruff format .
 
 lint:
-  uv run pyright src/yutto packages/biliass/src/biliass tests
+  uv run ty check --error-on-warning src/yutto packages/biliass/src/biliass tests
   uv run ruff check .
   uv run typos
 

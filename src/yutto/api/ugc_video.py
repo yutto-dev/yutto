@@ -358,7 +358,7 @@ def _parse_actor_info(video_info: dict[str, Any]):
     actors: list[Actor] = []
     if video_info.get("staff") and isinstance(video_info["staff"], list):
         _index: int = 0
-        staff_list: list[dict[str, Any]] = video_info["staff"]  # pyright: ignore[reportUnknownVariableType]
+        staff_list: list[dict[str, Any]] = video_info["staff"]
         for staff in staff_list:
             actors.append(
                 Actor(
@@ -371,7 +371,7 @@ def _parse_actor_info(video_info: dict[str, Any]):
             )
             _index += 1
     elif video_info.get("owner") and isinstance(video_info["owner"], dict):
-        staff_info: dict[str, Any] = video_info["owner"]  # pyright: ignore[reportUnknownVariableType]
+        staff_info: dict[str, Any] = video_info["owner"]
         actors.append(
             Actor(
                 name=staff_info["name"],

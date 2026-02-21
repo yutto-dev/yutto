@@ -125,7 +125,7 @@ async def download_video_and_audio(
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     ctx.set_download_semaphore(options["num_workers"])
     if video is not None:
-        vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
+        vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])  # ty: ignore[invalid-await]
         vsize = await first_successful_with_check(
             [Fetcher.get_size(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
         )
@@ -147,7 +147,7 @@ async def download_video_and_audio(
         buffers[0], sizes[0] = vbuf, vsize
 
     if audio is not None:
-        abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
+        abuf: AsyncFileBuffer = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])  # ty: ignore[invalid-await]
         asize = await first_successful_with_check(
             [Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
         )
