@@ -56,7 +56,7 @@ jobs:
           manylinux: auto
           working-directory: packages/biliass
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: packages/biliass/dist
@@ -89,7 +89,7 @@ jobs:
           manylinux: musllinux_1_2
           working-directory: packages/biliass
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
           path: packages/biliass/dist
@@ -118,7 +118,7 @@ jobs:
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: packages/biliass/dist
@@ -151,7 +151,7 @@ jobs:
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-free-threaded-${{ matrix.python-versions }}-${{ matrix.platform.target }}
           path: packages/biliass/dist
@@ -179,7 +179,7 @@ jobs:
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: packages/biliass/dist
@@ -195,7 +195,7 @@ jobs:
           args: --out dist
           working-directory: packages/biliass
       - name: Upload sdist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: packages/biliass/dist
@@ -216,7 +216,7 @@ jobs:
 
     steps:
       - name: Retrieve release distributions
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           merge-multiple: true
@@ -244,7 +244,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           merge-multiple: true
