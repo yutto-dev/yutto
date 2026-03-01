@@ -51,7 +51,9 @@ def run_login(args: Any):
         save_auth(auth_file, args.auth_profile, sessdata, bili_jct)
         auth = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct)
         if validate_login(auth, proxy=proxy, trust_env=trust_env):
-            Logger.info(f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）")
+            Logger.info(
+                f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）"
+            )
         else:
             Logger.warning(
                 f"SESSDATA 已写入认证文件，但登录状态校验失败，请稍后重试。文件：{auth_file}（profile: {args.auth_profile}）"
