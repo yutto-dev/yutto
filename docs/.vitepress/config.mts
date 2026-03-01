@@ -65,6 +65,10 @@ export default defineConfig({
                   link: '/guide/cli/basic',
                 },
                 {
+                  text: '个人信息认证参数',
+                  link: '/guide/cli/auth',
+                },
+                {
                   text: '资源选择参数',
                   link: '/guide/cli/resource',
                 },

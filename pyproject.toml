@@ -31,6 +31,7 @@ dependencies = [
   "tomli>=2.3.0; python_version < '3.11'",
   "pydantic>=2.12.5",
   "returns>=0.26.0",
+  "segno>=1.6.6",
 ]
 optional-dependencies.mcp = ["fastmcp>=2.12.3"]
 
@@ -52,6 +53,7 @@ dev = [
   "pytest-rerunfailures>=16.1",
   "syrupy>=5.1.0",
   "pytest-codspeed>=4.2.0",
+  "tomli>=2.3.0; python_version >= '3.11'",
 ]
 
 [tool.uv.sources]

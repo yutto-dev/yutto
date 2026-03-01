@@ -48,7 +48,7 @@ class YuttoBasicSettings(BaseModel):
     proxy: Annotated[str, Field("auto")]
     dir: Annotated[str, Field("./")]
     tmp_dir: Annotated[str | None, Field(None)]
-    sessdata: Annotated[str, Field("")]
+    sessdata: Annotated[str, Field("")]  # legacy 兼容字段，推荐使用 [auth].auth
     subpath_template: Annotated[str, Field("{auto}")]
     aliases: Annotated[dict[str, str], Field(dict[str, str]())]
     metadata_format_premiered: Annotated[str, Field(TIME_DATE_FMT)]
@@ -94,11 +94,18 @@ class YuttoBatchSettings(BaseModel):
     batch_filter_end_time: Annotated[str | None, Field(None)]
 
 
+class YuttoAuthSettings(BaseModel):
+    auth: Annotated[str, Field("")]
+    auth_file: Annotated[str | None, Field(None)]
+    auth_profile: Annotated[str, Field("default")]
+
+
 class YuttoSettings(BaseModel):
     basic: Annotated[YuttoBasicSettings, Field(YuttoBasicSettings())]  # pyright: ignore[reportCallIssue]
     resource: Annotated[YuttoResourceSettings, Field(YuttoResourceSettings())]  # pyright: ignore[reportCallIssue]
     danmaku: Annotated[YuttoDanmakuSettings, Field(YuttoDanmakuSettings())]  # pyright: ignore[reportCallIssue]
     batch: Annotated[YuttoBatchSettings, Field(YuttoBatchSettings())]  # pyright: ignore[reportCallIssue]
+    auth: Annotated[YuttoAuthSettings, Field(YuttoAuthSettings())]  # pyright: ignore[reportCallIssue]
 
 
 def search_for_settings_file() -> Path | None:

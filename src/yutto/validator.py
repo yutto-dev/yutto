@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import biliass
 
 from yutto.api.user_info import get_user_info
+from yutto.auth import format_auth_inline, load_auth, parse_auth_inline, resolve_auth_file
 from yutto.exceptions import ErrorCode
 from yutto.input_parser import validate_episodes_selection
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
@@ -22,9 +23,26 @@ from yutto.utils.filter import Filter
 if TYPE_CHECKING:
     import argparse
 
+    from yutto.auth import AuthInfo
     from yutto.media.codec import VideoCodec
     from yutto.types import UserInfo
     from yutto.utils.fetcher import FetcherContext
+
+
+def hydrate_auth(args: argparse.Namespace) -> AuthInfo | None:
+    if not args.auth and args.sessdata:
+        Logger.deprecated_warning('参数 --sessdata 已弃用，推荐改用 --auth="SESSDATA=...; bili_jct=..."')
+        args.auth = format_auth_inline(args.sessdata, bili_jct="")
+
+    if args.auth:
+        parsed_auth = parse_auth_inline(args.auth)
+        if parsed_auth is None:
+            Logger.error('auth 参数格式不正确哦，示例：--auth="SESSDATA=xxxxx; bili_jct=yyyyy"')
+            sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+        return parsed_auth
+
+    auth_file = resolve_auth_file(args)
+    return load_auth(auth_file, args.auth_profile)
 
 
 def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
@@ -53,10 +71,13 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
     ctx.set_proxy(args.proxy)
 
     # 大会员身份校验
-    if not args.sessdata:
-        Logger.info("未提供 SESSDATA，无法下载高清视频、字幕等资源哦～")
+    auth = hydrate_auth(args)
+    if not auth:
+        Logger.info(
+            "未提供登录认证信息，无法下载高清视频、字幕等资源哦～请通过 `--auth` 参数提供认证信息，或者先使用 `yutto login` 登录存储认证信息后再下载～"
+        )
     else:
-        ctx.set_sessdata(args.sessdata)
+        ctx.set_auth_info(auth)
         if asyncio.run(validate_user_info(ctx, {"vip_status": True, "is_login": True})):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:

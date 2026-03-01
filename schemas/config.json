@@ -1,5 +1,33 @@
 {
   "$defs": {
+    "YuttoAuthSettings": {
+      "properties": {
+        "auth": {
+          "default": "",
+          "title": "Auth",
+          "type": "string"
+        },
+        "auth_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Auth File"
+        },
+        "auth_profile": {
+          "default": "default",
+          "title": "Auth Profile",
+          "type": "string"
+        }
+      },
+      "title": "YuttoAuthSettings",
+      "type": "object"
+    },
     "YuttoBasicSettings": {
       "properties": {
         "num_workers": {
@@ -91,6 +119,18 @@
           "title": "Output Format Audio Only",
           "type": "string"
         },
+        "ai_translation_language": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ai Translation Language"
+        },
         "danmaku_format": {
           "default": "ass",
           "enum": [
@@ -173,6 +213,16 @@
           "default": null,
           "title": "Banned Mirrors Pattern"
         },
+        "vip_strict": {
+          "default": false,
+          "title": "Vip Strict",
+          "type": "boolean"
+        },
+        "login_strict": {
+          "default": false,
+          "title": "Login Strict",
+          "type": "boolean"
+        },
         "no_color": {
           "default": false,
           "title": "No Color",
@@ -186,16 +236,6 @@
         "debug": {
           "default": false,
           "title": "Debug",
-          "type": "boolean"
-        },
-        "vip_strict": {
-          "default": false,
-          "title": "Vip Strict",
-          "type": "boolean"
-        },
-        "login_strict": {
-          "default": false,
-          "title": "Login Strict",
           "type": "boolean"
         }
       },
@@ -330,6 +370,11 @@
           "title": "Require Audio",
           "type": "boolean"
         },
+        "require_danmaku": {
+          "default": true,
+          "title": "Require Danmaku",
+          "type": "boolean"
+        },
         "require_subtitle": {
           "default": true,
           "title": "Require Subtitle",
@@ -338,11 +383,6 @@
         "require_metadata": {
           "default": false,
           "title": "Require Metadata",
-          "type": "boolean"
-        },
-        "require_danmaku": {
-          "default": true,
-          "title": "Require Danmaku",
           "type": "boolean"
         },
         "require_cover": {
@@ -377,6 +417,7 @@
         "download_vcodec_priority": null,
         "output_format": "infer",
         "output_format_audio_only": "infer",
+        "ai_translation_language": null,
         "danmaku_format": "ass",
         "block_size": 0.5,
         "overwrite": false,
@@ -389,11 +430,11 @@
         "metadata_format_premiered": "%Y-%m-%d",
         "download_interval": 0,
         "banned_mirrors_pattern": null,
+        "vip_strict": false,
+        "login_strict": false,
         "no_color": false,
         "no_progress": false,
-        "debug": false,
-        "vip_strict": false,
-        "login_strict": false
+        "debug": false
       }
     },
     "resource": {
@@ -401,9 +442,9 @@
       "default": {
         "require_video": true,
         "require_audio": true,
+        "require_danmaku": true,
         "require_subtitle": true,
         "require_metadata": false,
-        "require_danmaku": true,
         "require_cover": true,
         "require_chapter_info": true,
         "save_cover": false
@@ -433,6 +474,14 @@
         "with_section": false,
         "batch_filter_start_time": null,
         "batch_filter_end_time": null
+      }
+    },
+    "auth": {
+      "$ref": "#/$defs/YuttoAuthSettings",
+      "default": {
+        "auth": "",
+        "auth_file": null,
+        "auth_profile": "default"
       }
     }
   },

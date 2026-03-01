@@ -12,6 +12,7 @@ from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.download_manager import DownloadManager, DownloadTask
 from yutto.exceptions import ErrorCode
 from yutto.input_parser import file_scheme_parser
+from yutto.login import run_login
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
@@ -41,6 +42,8 @@ def main():
             from yutto.mcp_server import run_mcp
 
             run_mcp()
+        case "login":
+            run_login(args)
 
         case _:
             raise ValueError("Invalid command")

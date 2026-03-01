@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
     from httpx import AsyncClient
 
+    from yutto.auth import AuthInfo
     from yutto.utils.file_buffer import AsyncFileBuffer
 
 RetT = TypeVar("RetT")
@@ -97,11 +98,13 @@ class FetcherContext:
     def set_download_semaphore(self, download_workers: int):
         self.download_semaphore = asyncio.Semaphore(download_workers)
 
-    def set_sessdata(self, sessdata: str):
+    def set_auth_info(self, auth_info: AuthInfo):
         self.cookies = httpx.Cookies()
         # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
         # 而番剧无法使用解码后的 SESSDATA
-        self.cookies.set("SESSDATA", quote(unquote(sessdata)))
+        self.cookies.set("SESSDATA", quote(unquote(auth_info["SESSDATA"])))
+        if auth_info["bili_jct"]:
+            self.cookies.set("bili_jct", auth_info["bili_jct"])
 
     def set_proxy(self, proxy: str):
         if proxy == "auto":
