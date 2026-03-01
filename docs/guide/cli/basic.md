@@ -199,32 +199,6 @@ B 站提供了 `xml` 与 `protobuf` 两种弹幕数据接口，`xml` 接口为�
 - 配置项 `basic.tmp_dir`
 - 默认值是“存放根目录”即 `-d, --dir` 的值
 
-## Cookies 设置
-
-- 参数 `-c` 或 `--sessdata`
-- 配置项 `basic.sessdata`
-- 默认值 `""`
-
-设置 Cookies 后你才可以下载更高清晰度以及更多的剧集，当你传入你的大会员 `SESSDATA` 时（当然前提是你是大会员），你就可以下载大会员可访问的资源咯。
-
-::: details `SESSDATA` 获取方式
-
-这里用 Chrome 作为示例，其它浏览器请尝试类似方法。
-
-首先，用你的帐号登录 B 站，然后随便打开一个 B 站网页，比如[首页](https://www.bilibili.com/)。
-
-按 F12 打开开发者工具，切换到 Network 栏，刷新页面，此时第一个加载的资源应该就是当前页面的 html，选中该资源，在右侧 「Request Headers」 中找到 「cookie」，在其中找到类似于 `SESSDATA=d8bc7493%2C2843925707%2C08c3e*81;` 的一串字符串，复制这里的 `d8bc7493%2C2843925707%2C08c3e*81`，这就是你需要的 `SESSDATA`。
-
-:::
-
-另外，由于 `SESSDATA` 中可能有特殊符号，所以传入时你可能需要使用双引号来包裹
-
-```bash
-yutto <url> -c "d8bc7493%2C2843925707%2C08c3e*81"
-```
-
-当然，示例里的 `SESSDATA` 是无效的，请使用自己的 `SESSDATA`。
-
 ## 存放子路径模板
 
 - 参数 `-tp` 或 `--subpath-template`

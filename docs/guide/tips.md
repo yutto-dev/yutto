@@ -17,29 +17,11 @@ yutto --no-color --no-progress <url> > log
 #:schema https://raw.githubusercontent.com/yutto-dev/yutto/refs/heads/main/schemas/config.json
 [basic]
 dir = "~/Movies/yutto"
-sessdata = "***************"
 num_workers = 16
 vcodec = "av1:copy"
+
+[auth]
+auth = "SESSDATA=***************; bili_jct=***************"
 ```
 
-当然，请手动修改 `sessdata` 内容为自己的 `SESSDATA` 哦～
-
-:::: tip
-
-本方案可替代原有的「自定义命令别名」方式～
-
-::: details 原「自定义命令别名」方案
-
-在 `~/.zshrc` / `~/.bashrc` 中自定义一条 alias，像这样
-
-```bash
-alias ytt='yutto -d ~/Movies/yutto/ -c `cat ~/.sessdata` -n 16 --vcodec="av1:copy"'
-```
-
-这样我每次只需要 `ytt <url>` 就可以直接使用这些参数进行下载啦～
-
-由于我提前在 `~/.sessdata` 存储了我的 `SESSDATA`，所以避免每次都要手动输入 cookie 的问题。
-
-:::
-
-::::
+当然，请手动修改 `auth` 内容为自己的 Cookie 哦～

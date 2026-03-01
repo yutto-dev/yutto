@@ -29,7 +29,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "cover",
     "chapter_info",
 ]
-SUBCOMMANDS: list[str] = ["download", "mcp"]
+SUBCOMMANDS: list[str] = ["download", "login", "mcp"]
 
 
 def handle_default_subcommand(argv: list[str]) -> list[str]:
@@ -68,14 +68,15 @@ def cli() -> argparse.ArgumentParser:
     add_download_arguments(download_parser, settings)
 
     # 添加其他子命令
+    login_parser = subparsers.add_parser("login", help="扫码登录并写入认证信息")
+    add_login_arguments(login_parser, settings)
+
     mcp_parser = subparsers.add_parser("mcp", help="启动 MCP 进程")
     add_mcp_arguments(mcp_parser, settings)
     return parser
 
 
 def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
-    # 如果需要创建其他子命令可参考
-    # https://stackoverflow.com/questions/29998417/create-parser-with-subcommands-in-argparse-customize-positional-arguments
     parser.add_argument("url", help="视频主页 url 或 url 列表（需使用 file scheme）")
     group_basic = parser.add_argument_group("basic", "基础参数")
     group_basic.add_argument(
@@ -168,7 +169,9 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         type=path_from_cli,
         help="用来存放下载过程中临时文件的目录，默认为下载目录",
     )
-    group_basic.add_argument("-c", "--sessdata", default=settings.basic.sessdata, help="Cookies 中的 SESSDATA 字段")
+    group_basic.add_argument(
+        "-c", "--sessdata", default=settings.basic.sessdata, help="（弃用）Cookies 中的 SESSDATA 字段，推荐改用 --auth"
+    )
     group_basic.add_argument(
         "-tp", "--subpath-template", default=settings.basic.subpath_template, help="多级目录的存储路径模板"
     )
@@ -204,6 +207,25 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         "--no-progress", default=settings.basic.no_progress, action="store_true", help="不显示进度条"
     )
     group_basic.add_argument("--debug", default=settings.basic.debug, action="store_true", help="启用 debug 模式")
+
+    # 个人信息认证
+    group_auth = parser.add_argument_group("auth", "个人信息认证参数")
+    group_auth.add_argument(
+        "--auth",
+        default=settings.auth.auth,
+        help="登录 Cookie，格式如 `SESSDATA=xxxxx; bili_jct=yyyyy`",
+    )
+    group_auth.add_argument(
+        "--auth-config",
+        default=map_optional(path_from_cli, settings.auth.auth_file),
+        type=path_from_cli,
+        help="认证信息文件路径",
+    )
+    group_auth.add_argument(
+        "--auth-profile",
+        default=settings.auth.auth_profile,
+        help="认证信息 profile 名称，默认 default",
+    )
 
     # 资源选择
     group_resource = parser.add_argument_group("resource", "资源选择参数")
@@ -365,6 +387,46 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
 
 def add_mcp_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
     pass
+
+
+def add_login_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    parser.add_argument(
+        "--mode",
+        default="terminal",
+        choices=["terminal", "web"],
+        help="二维码展示方式：terminal 在终端展示，web 调起系统图片预览",
+    )
+    parser.add_argument(
+        "--poll-interval",
+        default=2.0,
+        type=float,
+        help="登录轮询间隔，单位：秒",
+    )
+    parser.add_argument(
+        "--timeout",
+        default=180,
+        type=int,
+        help="扫码登录超时时间，单位：秒",
+    )
+    parser.add_argument(
+        "-x",
+        "--proxy",
+        default=settings.basic.proxy,
+        help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）",
+    )
+    parser.add_argument(
+        "--auth-config",
+        default=map_optional(path_from_cli, settings.auth.auth_file),
+        type=path_from_cli,
+        help="认证信息文件路径",
+    )
+    parser.add_argument(
+        "--auth-profile",
+        default=settings.auth.auth_profile,
+        help="认证信息 profile 名称，默认 default",
+    )
+    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
+    parser.add_argument("--config", help="配置文件路径")
 
 
 def create_select_required_action(

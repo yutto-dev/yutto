@@ -2,7 +2,7 @@
 
 既然我是基于 CLI（Command Line Interface）的工具，那么自然而然，我支持很多命令行参数来让你更好地调度我。
 
-就比如说，你可以添加 `-d` 参数来指定下载的视频路径，或者使用 `-c` 参数来设置用于登录状态的 Cookie（准确来说是其中的 `SESSDATA`）。
+就比如说，你可以添加 `-d` 参数来指定下载的视频路径，或者使用 `--auth` 参数来设置用于登录状态的 Cookie。
 
 ## 参数的使用方式
 
@@ -48,6 +48,7 @@ yutto -w <url> --d=/path/to/videos
 当然，这些只是冰山一角啦，我支持的参数远不止这些，你可以通过 `yutto --help` 来查看所有支持的参数。也可以前往以下页面查看具体介绍：
 
 - [基础参数](./basic)
+- [个人信息认证参数](./auth)
 - [资源选择参数](./resource)
 - [弹幕设置参数](./danmaku) <Badge text="Experimental" type="warning"/>
 - [批量下载参数](./batch)
@@ -77,12 +78,14 @@ yutto --config /path/to/config.toml <url>
 dir = "/path/to/download"
 # 设置临时文件目录
 tmp_dir = "/path/to/tmp"
-# 设置 SESSDATA
-sessdata = "***************"
 # 设置大会员严格校验
 vip_strict = true
 # 设置登录严格校验
 login_strict = true
+
+[auth]
+# 推荐的认证信息写法（inline cookie）
+auth = "SESSDATA=***************; bili_jct=***************"
 
 [resource]
 # 不下载字幕
