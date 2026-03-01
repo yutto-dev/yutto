@@ -68,7 +68,7 @@ def cli() -> argparse.ArgumentParser:
     add_download_arguments(download_parser, settings)
 
     # 添加其他子命令
-    login_parser = subparsers.add_parser("login", help="扫码登录并写入配置")
+    login_parser = subparsers.add_parser("login", help="扫码登录并写入认证信息")
     add_login_arguments(login_parser, settings)
 
     mcp_parser = subparsers.add_parser("mcp", help="启动 MCP 进程")

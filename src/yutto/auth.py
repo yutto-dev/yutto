@@ -85,7 +85,7 @@ def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
 
     try:
         auth_file_model = AuthFileModel.model_validate(tomllib.loads(auth_file.read_text(encoding="utf-8")))
-    except ValidationError:
+    except (ValidationError, ValueError):
         return None
 
     entry = auth_file_model.profiles.get(profile)
@@ -105,7 +105,7 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
         try:
             loaded = AuthFileModel.model_validate(tomllib.loads(auth_file.read_text(encoding="utf-8")))
             profiles = dict(loaded.profiles)
-        except ValidationError:
+        except (ValidationError, ValueError):
             profiles = {}
 
     original_entry = profiles.get(profile)

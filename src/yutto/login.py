@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import time
 from typing import Any, cast
 from urllib.parse import parse_qs, unquote, urlparse
@@ -37,7 +36,6 @@ def run_login(args: Any):
         proxy=proxy,
         follow_redirects=True,
         timeout=10,
-        verify=False,
     )
 
     try:
@@ -53,7 +51,7 @@ def run_login(args: Any):
         save_auth(auth_file, args.auth_profile, sessdata, bili_jct)
         auth = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct)
         if validate_login(auth, proxy=proxy, trust_env=trust_env):
-            Logger.info(f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {result_url}）")
+            Logger.info(f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）")
         else:
             Logger.warning(
                 f"SESSDATA 已写入认证文件，但登录状态校验失败，请稍后重试。文件：{auth_file}（profile: {args.auth_profile}）"
@@ -67,9 +65,17 @@ def _resolve_proxy(proxy: str) -> tuple[str | None, bool]:
         return None, True
     if proxy == "no":
         return None, False
-    if not re.match(r"https?://", proxy):
+    parsed = urlparse(proxy)
+    allowed_schemes = {"http", "https", "socks5", "socks5h"}
+    if not parsed.scheme or parsed.scheme not in allowed_schemes:
         raise ValueError(f"proxy 参数值（{proxy}）错误啦！")
     return proxy, False
+
+
+def sanitize_url_for_log(url: str) -> str:
+    parsed = urlparse(url)
+    path = parsed.path or "/"
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
 
 
 def generate_qr_login(client: httpx.Client) -> tuple[str, str]:
