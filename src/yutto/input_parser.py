@@ -108,7 +108,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         else:
             out_of_range.append(episode)
     if out_of_range:
-        Logger.warning("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))))  # ty: ignore[invalid-argument-type]
+        Logger.warning("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))))
 
     Logger.info("已选择第 {} 话".format(",".join(list(map(str, episodes)))))
     if not episodes:
