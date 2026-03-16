@@ -84,21 +84,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
         with:
-          package_json_file: "docs/package.json"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          cache: "pnpm"
+          node-version: '24'
+          cache: true
           cache-dependency-path: "docs/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: ./docs
-        run: pnpm i --frozen-lockfile
+        run: vp i --frozen-lockfile
 
-      - name: Format check
+      - name: Lint, format and type check
         working-directory: ./docs
-        run: pnpm fmt:check
+        run: vp check

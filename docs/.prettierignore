@@ -1,6 +1,0 @@
-*.html
-dist/
-node_modules/
-*.min.js
-lib/*
-pnpm-lock.yaml

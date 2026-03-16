@@ -18,24 +18,19 @@ jobs:
           fetch-depth: 0
           submodules: true
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
         with:
-          package_json_file: "docs/package.json"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          cache: "pnpm"
+          node-version: '24'
+          cache: true
           cache-dependency-path: "docs/pnpm-lock.yaml"
 
       - name: Install dependencies
         working-directory: ./docs
-        run: pnpm i --frozen-lockfile
+        run: vp i --frozen-lockfile
 
       - name: Build VitePress site
         working-directory: ./docs
-        run: pnpm build
+        run: vp run build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
