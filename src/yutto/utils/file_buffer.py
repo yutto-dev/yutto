@@ -3,7 +3,7 @@ from __future__ import annotations
 import heapq
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import aiofiles
 
@@ -13,7 +13,12 @@ from yutto.utils.functional import aobject
 if TYPE_CHECKING:
     from types import TracebackType
 
-    from typing_extensions import Self
+    from typing_extensions import Protocol, Self
+
+    class AsyncWritableBinaryFile(Protocol):
+        async def write(self, data: bytes) -> int: ...
+
+        async def close(self) -> None: ...
 
 
 @dataclass(order=True)
@@ -53,7 +58,7 @@ class AsyncFileBuffer(aobject):
             self.file_path.unlink(missing_ok=True)
         self.buffer = list[BufferChunk]()
         self.written_size = self.file_path.stat().st_size if not overwrite and self.file_path.exists() else 0
-        self.file_obj: aiofiles.threadpool.binary.AsyncBufferedIOBase | None = await aiofiles.open(file_path, "ab")
+        self.file_obj: AsyncWritableBinaryFile | None = cast("AsyncWritableBinaryFile", await aiofiles.open(file_path, "ab"))
 
     async def write(self, chunk: bytes, offset: int):
         buffer_chunk = BufferChunk(offset, chunk)
