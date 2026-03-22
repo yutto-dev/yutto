@@ -6,11 +6,11 @@ readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" }]
 keywords = ["python", "bilibili", "video", "downloader", "danmaku"]
-license = { text = "GPL-3.0" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 classifiers = [
   "Environment :: Console",
   "Operating System :: OS Independent",
-  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Typing :: Typed",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",

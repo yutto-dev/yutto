@@ -2,34 +2,32 @@
   "name": "yutto-docs",
   "version": "0.1.0",
   "private": true,
-  "author": "Nyakku Shigure <sigure.qaq@gmail.com>",
+  "homepage": "https://github.com/yutto-dev/yutto#readme",
+  "bugs": {
+    "url": "https://github.com/yutto-dev/yutto/issues"
+  },
   "license": "CC0-1.0",
+  "author": "Nyakku Shigure <sigure.qaq@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/yutto-dev/yutto.git"
   },
-  "bugs": {
-    "url": "https://github.com/yutto-dev/yutto/issues"
-  },
-  "homepage": "https://github.com/yutto-dev/yutto#readme",
-  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
-    "serve": "vitepress serve",
-    "fmt": "prettier --write .",
-    "fmt:check": "prettier --check ."
+    "serve": "vitepress serve"
   },
   "devDependencies": {
     "@moefy-canvas/core": "^0.6.0",
     "@moefy-canvas/theme-sparkler": "^0.6.0",
-    "prettier": "^3.6.2",
-    "vite": "^7.1.0",
-    "vitepress": "^1.6.4",
-    "vitepress-plugin-group-icons": "^1.6.3",
-    "vitepress-plugin-llms": "^1.8.0",
-    "vue": "^3.5.22"
+    "vite": "^8.0.0",
+    "vite-plus": "latest",
+    "vitepress": "^2.0.0-alpha.16",
+    "vitepress-plugin-group-icons": "^1.7.1",
+    "vitepress-plugin-llms": "^1.11.1",
+    "vue": "^3.5.30"
   },
+  "packageManager": "pnpm@10.32.1",
   "pnpm": {
     "peerDependencyRules": {
       "ignoreMissing": [
