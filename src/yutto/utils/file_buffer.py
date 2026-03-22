@@ -58,7 +58,9 @@ class AsyncFileBuffer(aobject):
             self.file_path.unlink(missing_ok=True)
         self.buffer = list[BufferChunk]()
         self.written_size = self.file_path.stat().st_size if not overwrite and self.file_path.exists() else 0
-        self.file_obj: AsyncWritableBinaryFile | None = cast("AsyncWritableBinaryFile", await aiofiles.open(file_path, "ab"))
+        self.file_obj: AsyncWritableBinaryFile | None = cast(
+            "AsyncWritableBinaryFile", await aiofiles.open(file_path, "ab")
+        )
 
     async def write(self, chunk: bytes, offset: int):
         buffer_chunk = BufferChunk(offset, chunk)
