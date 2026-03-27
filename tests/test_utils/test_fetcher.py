@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import ssl
+from typing import Any
+
 import pytest
 
-from yutto.utils.fetcher import FetcherContext, resolve_proxy
+from yutto.utils.fetcher import FetcherContext, create_sync_client, resolve_proxy
 
 
 def test_resolve_proxy_auto_uses_system_proxy():
@@ -25,3 +28,14 @@ def test_fetcher_context_set_proxy_reuses_shared_rules():
 def test_resolve_proxy_rejects_invalid_scheme():
     with pytest.raises(ValueError, match="proxy 参数值"):
         resolve_proxy("ftp://127.0.0.1:21")
+
+
+def test_create_sync_client_keeps_tls_verification_enabled():
+    client = create_sync_client()
+    try:
+        transport: Any = client._transport  # pyright: ignore[reportPrivateUsage]
+        ssl_context: ssl.SSLContext = transport._pool._ssl_context
+        assert ssl_context.verify_mode == ssl.CERT_REQUIRED
+        assert ssl_context.check_hostname
+    finally:
+        client.close()

@@ -302,7 +302,6 @@ def _client_kwargs(
         "proxy": proxy,
         "timeout": timeout,
         "follow_redirects": True,
-        "verify": False,
     }
 
 
@@ -322,6 +321,7 @@ def create_client(
             timeout=timeout,
         ),
         http2=True,
+        verify=False,
     )
     return client
 

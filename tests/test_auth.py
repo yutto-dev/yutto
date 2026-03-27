@@ -28,7 +28,7 @@ def test_resolve_auth_prefers_inline_auth(tmp_path: Path):
     save_auth(auth_file, "default", "from-file", "csrf")
 
     args = Namespace(
-        auth='SESSDATA=from-inline; bili_jct=inline-csrf',
+        auth="SESSDATA=from-inline; bili_jct=inline-csrf",
         auth_config=auth_file,
         auth_profile="default",
     )
