@@ -42,8 +42,19 @@ def test_create_client_keeps_download_tls_verification_disabled():
         asyncio.run(client.aclose())
 
 
-def test_create_sync_client_keeps_tls_verification_enabled():
+def test_create_sync_client_follows_default_download_tls_policy():
     client = create_sync_client()
+    try:
+        transport: Any = client._transport  # pyright: ignore[reportPrivateUsage]
+        ssl_context: ssl.SSLContext = transport._pool._ssl_context
+        assert ssl_context.verify_mode == ssl.CERT_NONE
+        assert not ssl_context.check_hostname
+    finally:
+        client.close()
+
+
+def test_create_sync_client_can_enable_tls_verification():
+    client = create_sync_client(verify=True)
     try:
         transport: Any = client._transport  # pyright: ignore[reportPrivateUsage]
         ssl_context: ssl.SSLContext = transport._pool._ssl_context

@@ -213,10 +213,12 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         help="登录 Cookie，格式如 `SESSDATA=xxxxx; bili_jct=yyyyy`",
     )
     group_auth.add_argument(
+        "--auth-file",
         "--auth-config",
+        dest="auth_file",
         default=map_optional(path_from_cli, settings.auth.auth_file),
         type=path_from_cli,
-        help="认证信息文件路径",
+        help="认证信息文件路径（兼容旧参数 --auth-config）",
     )
     group_auth.add_argument(
         "--auth-profile",
@@ -408,10 +410,12 @@ def add_login_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
         help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）",
     )
     parser.add_argument(
+        "--auth-file",
         "--auth-config",
+        dest="auth_file",
         default=map_optional(path_from_cli, settings.auth.auth_file),
         type=path_from_cli,
-        help="认证信息文件路径",
+        help="认证信息文件路径（兼容旧参数 --auth-config）",
     )
     parser.add_argument(
         "--auth-profile",

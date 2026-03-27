@@ -294,6 +294,8 @@ def _client_kwargs(
     trust_env: bool,
     proxy: str | None,
     timeout: int | httpx.Timeout,
+    http2: bool,
+    verify: bool,
 ) -> dict[str, Any]:
     return {
         "headers": headers,
@@ -302,6 +304,8 @@ def _client_kwargs(
         "proxy": proxy,
         "timeout": timeout,
         "follow_redirects": True,
+        "http2": http2,
+        "verify": verify,
     }
 
 
@@ -311,6 +315,9 @@ def create_client(
     trust_env: bool = DEFAULT_TRUST_ENV,
     proxy: str | None = DEFAULT_PROXY,
     timeout: int | httpx.Timeout = 5,
+    *,
+    http2: bool = True,
+    verify: bool = False,
 ) -> AsyncClient:
     client = httpx.AsyncClient(
         **_client_kwargs(
@@ -319,9 +326,9 @@ def create_client(
             trust_env=trust_env,
             proxy=proxy,
             timeout=timeout,
-        ),
-        http2=True,
-        verify=False,
+            http2=http2,
+            verify=verify,
+        )
     )
     return client
 
@@ -332,6 +339,9 @@ def create_sync_client(
     trust_env: bool = DEFAULT_TRUST_ENV,
     proxy: str | None = DEFAULT_PROXY,
     timeout: int | httpx.Timeout = 5,
+    *,
+    http2: bool = True,
+    verify: bool = False,
 ) -> httpx.Client:
     client = httpx.Client(
         **_client_kwargs(
@@ -340,6 +350,8 @@ def create_sync_client(
             trust_env=trust_env,
             proxy=proxy,
             timeout=timeout,
+            http2=http2,
+            verify=verify,
         )
     )
     return client

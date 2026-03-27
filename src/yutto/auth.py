@@ -68,8 +68,8 @@ def default_auth_file() -> Path:
 
 
 def resolve_auth_file(args: Namespace) -> Path:
-    if args.auth_config is not None:
-        return args.auth_config
+    if args.auth_file is not None:
+        return args.auth_file
     return default_auth_file()
 
 

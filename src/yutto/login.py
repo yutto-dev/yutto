@@ -33,7 +33,7 @@ def run_login(args: Any):
         Logger.error(str(e))
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    with create_sync_client(proxy=ctx.proxy, trust_env=ctx.trust_env, timeout=10) as client:
+    with create_sync_client(proxy=ctx.proxy, trust_env=ctx.trust_env, timeout=10, verify=True) as client:
         qr_login_url, qr_key = generate_qr_login(client)
         show_qr_code(qr_login_url, args.mode)
         Logger.info("请使用哔哩哔哩 App 扫码并确认登录")
@@ -194,7 +194,7 @@ def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -
     ctx = FetcherContext(proxy=proxy, trust_env=trust_env)
     ctx.set_auth_info(auth)
     try:
-        with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env) as client:
+        with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env, verify=True) as client:
             user_info = parse_user_info(request_json(client, USER_INFO_API, params={}))
         return user_info_matches(user_info, {"vip_status": False, "is_login": True})
     except Exception as e:
