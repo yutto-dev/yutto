@@ -61,7 +61,7 @@ auth = "SESSDATA=xxxxx; bili_jct=yyyyy"
 
 ## 认证文件
 
-- 参数 `--auth-file`（兼容旧参数 `--auth-config`）
+- 参数 `--auth-file`
 - 配置项 `auth.auth_file`
 
 用于指定 `auth.toml` 的路径，优先级：

@@ -214,11 +214,9 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     )
     group_auth.add_argument(
         "--auth-file",
-        "--auth-config",
-        dest="auth_file",
         default=map_optional(path_from_cli, settings.auth.auth_file),
         type=path_from_cli,
-        help="认证信息文件路径（兼容旧参数 --auth-config）",
+        help="认证信息文件路径",
     )
     group_auth.add_argument(
         "--auth-profile",
@@ -411,11 +409,9 @@ def add_login_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
     )
     parser.add_argument(
         "--auth-file",
-        "--auth-config",
-        dest="auth_file",
         default=map_optional(path_from_cli, settings.auth.auth_file),
         type=path_from_cli,
-        help="认证信息文件路径（兼容旧参数 --auth-config）",
+        help="认证信息文件路径",
     )
     parser.add_argument(
         "--auth-profile",
