@@ -57,7 +57,7 @@ def parse_auth_inline(auth: str) -> AuthInfo | None:
     return AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct or None)
 
 
-def format_auth_inline(sessdata: str, bili_jct: str) -> str:
+def format_auth_inline(sessdata: str, bili_jct: str | None = None) -> str:
     if bili_jct:
         return f"SESSDATA={sessdata}; bili_jct={bili_jct}"
     return f"SESSDATA={sessdata}"
@@ -78,14 +78,31 @@ def validate_profile(profile: str):
         raise ValueError(f"auth profile 名称不合法：{profile}")
 
 
-def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
-    validate_profile(profile)
+def load_auth_file(auth_file: Path) -> AuthFileModel | None:
     if not auth_file.exists():
         return None
 
     try:
-        auth_file_model = AuthFileModel.model_validate(tomllib.loads(auth_file.read_text(encoding="utf-8")))
+        return AuthFileModel.model_validate(tomllib.loads(auth_file.read_text(encoding="utf-8")))
     except (ValidationError, ValueError):
+        return None
+
+
+def resolve_auth(args: Namespace) -> AuthInfo | None:
+    if args.auth:
+        parsed_auth = parse_auth_inline(args.auth)
+        if parsed_auth is None:
+            raise ValueError('auth 参数格式不正确哦，示例：--auth="SESSDATA=xxxxx; bili_jct=yyyyy"')
+        return parsed_auth
+
+    auth_file = resolve_auth_file(args)
+    return load_auth(auth_file, args.auth_profile)
+
+
+def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
+    validate_profile(profile)
+    auth_file_model = load_auth_file(auth_file)
+    if auth_file_model is None:
         return None
 
     entry = auth_file_model.profiles.get(profile)
@@ -101,12 +118,9 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
     auth_file.parent.mkdir(parents=True, exist_ok=True)
 
     profiles: dict[str, AuthProfileModel] = {}
-    if auth_file.exists():
-        try:
-            loaded = AuthFileModel.model_validate(tomllib.loads(auth_file.read_text(encoding="utf-8")))
-            profiles = dict(loaded.profiles)
-        except (ValidationError, ValueError):
-            profiles = {}
+    loaded = load_auth_file(auth_file)
+    if loaded is not None:
+        profiles = dict(loaded.profiles)
 
     original_entry = profiles.get(profile)
     entry_payload: dict[str, Any] = {}
@@ -116,6 +130,8 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
     entry_payload["sessdata"] = sessdata
     if bili_jct is not None:
         entry_payload["bili_jct"] = bili_jct
+    else:
+        entry_payload.pop("bili_jct", None)
     entry_payload["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     profiles[profile] = AuthProfileModel.model_validate(entry_payload)

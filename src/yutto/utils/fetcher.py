@@ -4,7 +4,7 @@ import asyncio
 import random
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeVar
-from urllib.parse import quote, unquote
+from urllib.parse import quote, unquote, urlparse
 
 import h2.exceptions
 import httpx
@@ -67,6 +67,19 @@ DEFAULT_HEADERS: dict[str, str] = {
     "Referer": "https://www.bilibili.com",
 }
 DEFAULT_COOKIES = httpx.Cookies()
+SUPPORTED_PROXY_SCHEMES = frozenset({"http", "https", "socks5", "socks5h"})
+
+
+def resolve_proxy(proxy: str) -> tuple[str | None, bool]:
+    if proxy == "auto":
+        return None, True
+    if proxy == "no":
+        return None, False
+
+    parsed = urlparse(proxy)
+    if not parsed.scheme or parsed.scheme not in SUPPORTED_PROXY_SCHEMES:
+        raise ValueError(f"proxy 参数值（{proxy}）错误啦！")
+    return proxy, False
 
 
 class FetcherContext:
@@ -107,15 +120,7 @@ class FetcherContext:
             self.cookies.set("bili_jct", auth_info["bili_jct"])
 
     def set_proxy(self, proxy: str):
-        if proxy == "auto":
-            self.proxy = None
-            self.trust_env = True
-        elif proxy == "no":
-            self.proxy = None
-            self.trust_env = False
-        else:
-            self.proxy = proxy
-            self.trust_env = False
+        self.proxy, self.trust_env = resolve_proxy(proxy)
 
     @asynccontextmanager
     async def fetch_guard(self):
@@ -282,6 +287,25 @@ class Fetcher:
                     Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{e}），尝试重新连接...")
 
 
+def _client_kwargs(
+    *,
+    headers: dict[str, str],
+    cookies: httpx.Cookies,
+    trust_env: bool,
+    proxy: str | None,
+    timeout: int | httpx.Timeout,
+) -> dict[str, Any]:
+    return {
+        "headers": headers,
+        "cookies": cookies,
+        "trust_env": trust_env,
+        "proxy": proxy,
+        "timeout": timeout,
+        "follow_redirects": True,
+        "verify": False,
+    }
+
+
 def create_client(
     headers: dict[str, str] = DEFAULT_HEADERS,
     cookies: httpx.Cookies = DEFAULT_COOKIES,
@@ -290,13 +314,32 @@ def create_client(
     timeout: int | httpx.Timeout = 5,
 ) -> AsyncClient:
     client = httpx.AsyncClient(
-        headers=headers,
-        cookies=cookies,
-        trust_env=trust_env,
-        proxy=proxy,
-        timeout=timeout,
-        follow_redirects=True,
+        **_client_kwargs(
+            headers=headers,
+            cookies=cookies,
+            trust_env=trust_env,
+            proxy=proxy,
+            timeout=timeout,
+        ),
         http2=True,
-        verify=False,
+    )
+    return client
+
+
+def create_sync_client(
+    headers: dict[str, str] = DEFAULT_HEADERS,
+    cookies: httpx.Cookies = DEFAULT_COOKIES,
+    trust_env: bool = DEFAULT_TRUST_ENV,
+    proxy: str | None = DEFAULT_PROXY,
+    timeout: int | httpx.Timeout = 5,
+) -> httpx.Client:
+    client = httpx.Client(
+        **_client_kwargs(
+            headers=headers,
+            cookies=cookies,
+            trust_env=trust_env,
+            proxy=proxy,
+            timeout=timeout,
+        )
     )
     return client

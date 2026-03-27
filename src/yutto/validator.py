@@ -2,21 +2,19 @@ from __future__ import annotations
 
 import asyncio
 import os
-import re
 import sys
 from typing import TYPE_CHECKING
 
 import biliass
 
-from yutto.api.user_info import get_user_info
-from yutto.auth import format_auth_inline, load_auth, parse_auth_inline, resolve_auth_file
+from yutto.api.user_info import validate_user_info
+from yutto.auth import format_auth_inline, resolve_auth
 from yutto.exceptions import ErrorCode
 from yutto.input_parser import validate_episodes_selection
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
 from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
-from yutto.utils.fetcher import create_client
 from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.filter import Filter
 
@@ -25,24 +23,19 @@ if TYPE_CHECKING:
 
     from yutto.auth import AuthInfo
     from yutto.media.codec import VideoCodec
-    from yutto.types import UserInfo
     from yutto.utils.fetcher import FetcherContext
 
 
 def hydrate_auth(args: argparse.Namespace) -> AuthInfo | None:
     if not args.auth and args.sessdata:
         Logger.deprecated_warning('参数 --sessdata 已弃用，推荐改用 --auth="SESSDATA=...; bili_jct=..."')
-        args.auth = format_auth_inline(args.sessdata, bili_jct="")
+        args.auth = format_auth_inline(args.sessdata)
 
-    if args.auth:
-        parsed_auth = parse_auth_inline(args.auth)
-        if parsed_auth is None:
-            Logger.error('auth 参数格式不正确哦，示例：--auth="SESSDATA=xxxxx; bili_jct=yyyyy"')
-            sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-        return parsed_auth
-
-    auth_file = resolve_auth_file(args)
-    return load_auth(auth_file, args.auth_profile)
+    try:
+        return resolve_auth(args)
+    except ValueError as e:
+        Logger.error(str(e))
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
 
 def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
@@ -65,10 +58,11 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
     initial_async_policy()
 
     # proxy 校验
-    if args.proxy not in ["no", "auto"] and not re.match(r"https?://", args.proxy):
-        Logger.error(f"proxy 参数值（{args.proxy}）错误啦！")
+    try:
+        ctx.set_proxy(args.proxy)
+    except ValueError as e:
+        Logger.error(str(e))
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-    ctx.set_proxy(args.proxy)
 
     # 大会员身份校验
     auth = hydrate_auth(args)
@@ -188,21 +182,3 @@ def validate_batch_arguments(args: argparse.Namespace):
         # TODO: 错误信息链接到相应文档，当然需要先写文档……
         Logger.error(f"选集参数（{args.episodes}）格式不正确呀～重新检查一下下～")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
-
-
-async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> bool:
-    """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
-    async with create_client(
-        cookies=ctx.cookies,
-        trust_env=ctx.trust_env,
-        proxy=ctx.proxy,
-    ) as client:
-        if check_option["is_login"] or check_option["vip_status"]:
-            # 需要校验
-            # 这么写 if 是为了少一个 get_user_info 请求
-            user_info = await get_user_info(ctx, client)
-            if check_option["is_login"] and not user_info["is_login"]:
-                return False
-            if check_option["vip_status"] and not user_info["vip_status"]:
-                return False
-        return True

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from yutto.types import UserInfo
 from yutto.utils.asynclib import async_cache
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -39,6 +39,28 @@ async def get_user_info(ctx: FetcherContext, client: AsyncClient) -> UserInfo:
         vip_status=res_json_data.get("vipStatus") == 1,  # API 返回的是 int，如果未登录就没这个值
         is_login=res_json_data.get("isLogin"),  # API 返回的是 bool
     )
+
+
+def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
+    if check_option["is_login"] and not user_info["is_login"]:
+        return False
+    if check_option["vip_status"] and not user_info["vip_status"]:
+        return False
+    return True
+
+
+async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> bool:
+    """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
+    if not check_option["is_login"] and not check_option["vip_status"]:
+        return True
+
+    async with create_client(
+        cookies=ctx.cookies,
+        trust_env=ctx.trust_env,
+        proxy=ctx.proxy,
+    ) as client:
+        user_info = await get_user_info(ctx, client)
+        return user_info_matches(user_info, check_option)
 
 
 async def get_wbi_img(ctx: FetcherContext, client: AsyncClient) -> WbiImg:
