@@ -45,13 +45,13 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
+            packages/biliass/rust/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install tools
         run: |
           sudo apt update
-          sudo apt install ffmpeg
+          sudo apt install -y --no-install-recommends ffmpeg
 
       - name: Install just
         uses: extractions/setup-just@v3

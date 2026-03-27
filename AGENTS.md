@@ -52,6 +52,12 @@ cargo test
 
 Use `just run -- ...` or `uv run python -m yutto ...` for local CLI testing. Do not use a globally installed `yutto` binary when you mean to test the local checkout.
 
+## Commit and PR conventions
+
+- Prefer commit titles and PR titles in the `<gitmoji> <type>: <subject>` style described in `CONTRIBUTING.md`.
+- Reuse the type vocabulary implied by `.github/PULL_REQUEST_TEMPLATE.md` and keep the subject focused on the actual repo change.
+- Fill in the PR template sections and check the relevant type boxes instead of replacing the template with free-form text.
+
 ## Validation before submission
 
 - Run the narrowest relevant checks for the files you changed.
