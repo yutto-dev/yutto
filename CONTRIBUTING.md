@@ -109,7 +109,6 @@ uv run yutto -v
 │       │   ├── progressbar.py            # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
 │       │   └── selector.py               # 选集、内容过滤器（本部分可修改成支持交互的）
 │       ├── input_parser.py               # 文件解析器（解析任务列表、alias 文件）
-│       ├── mcp_server.py                 # MCP 服务器
 │       ├── path_templates.py             # 路径处理器（需处理路径变量）
 │       ├── py.typed
 │       ├── utils                         # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、downloader），含部分类型资源的基本封装（弹幕、字幕、描述文件）

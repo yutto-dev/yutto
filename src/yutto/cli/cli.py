@@ -29,7 +29,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "cover",
     "chapter_info",
 ]
-SUBCOMMANDS: list[str] = ["download", "login", "mcp"]
+SUBCOMMANDS: list[str] = ["download", "login"]
 
 
 def handle_default_subcommand(argv: list[str]) -> list[str]:
@@ -70,9 +70,6 @@ def cli() -> argparse.ArgumentParser:
     # 添加其他子命令
     login_parser = subparsers.add_parser("login", help="扫码登录并写入认证信息")
     add_login_arguments(login_parser, settings)
-
-    mcp_parser = subparsers.add_parser("mcp", help="启动 MCP 进程")
-    add_mcp_arguments(mcp_parser, settings)
     return parser
 
 
@@ -383,10 +380,6 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
     group_config = parser.add_argument_group("config", "配置文件参数")
     group_config.add_argument("--config", help="配置文件路径")
-
-
-def add_mcp_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
-    pass
 
 
 def add_login_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):

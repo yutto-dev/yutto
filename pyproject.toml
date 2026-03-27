@@ -33,7 +33,6 @@ dependencies = [
   "returns>=0.26.0",
   "segno>=1.6.6",
 ]
-optional-dependencies.mcp = ["fastmcp>=2.12.3"]
 
 [project.urls]
 Homepage = "https://github.com/yutto-dev/yutto"
@@ -118,7 +117,6 @@ combine-as-imports = true
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]
-runtime-evaluated-decorators = ["fastmcp.FastMCP.tool"]
 
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]
