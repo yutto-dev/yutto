@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import sys
 import time
 from typing import Any, cast
@@ -9,7 +8,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 import httpx
 import segno
 
-from yutto.api.user_info import validate_user_info
+from yutto.api.user_info import USER_INFO_API, parse_user_info, user_info_matches
 from yutto.auth import AuthInfo, resolve_auth_file, save_auth, validate_profile
 from yutto.exceptions import ErrorCode
 from yutto.utils.console.logger import Logger
@@ -195,7 +194,9 @@ def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -
     ctx = FetcherContext(proxy=proxy, trust_env=trust_env)
     ctx.set_auth_info(auth)
     try:
-        return asyncio.run(validate_user_info(ctx, {"vip_status": False, "is_login": True}))
+        with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env) as client:
+            user_info = parse_user_info(request_json(client, USER_INFO_API, params={}))
+        return user_info_matches(user_info, {"vip_status": False, "is_login": True})
     except Exception as e:
         Logger.warning(f"登录状态校验失败，将跳过校验：{e}")
         return False
