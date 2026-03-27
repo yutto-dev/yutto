@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from typing import Any, cast
 from urllib.parse import parse_qs, unquote, urlparse
@@ -7,10 +8,11 @@ from urllib.parse import parse_qs, unquote, urlparse
 import httpx
 import segno
 
-from yutto.api.user_info import get_user_info
-from yutto.auth import AuthInfo, resolve_auth_file, save_auth
+from yutto.api.user_info import USER_INFO_API, parse_user_info, user_info_matches
+from yutto.auth import AuthInfo, resolve_auth_file, save_auth, validate_profile
+from yutto.exceptions import ErrorCode
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import FetcherContext, create_client
+from yutto.utils.fetcher import FetcherContext, create_sync_client
 
 QR_GENERATE_API = "https://passport.bilibili.com/x/passport-login/web/qrcode/generate"
 QR_POLL_API = "https://passport.bilibili.com/x/passport-login/web/qrcode/poll"
@@ -23,55 +25,35 @@ QR_STATUS_CONFIRMED = 0
 
 
 def run_login(args: Any):
-    proxy, trust_env = _resolve_proxy(args.proxy)
-    client = httpx.Client(
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
-            ),
-            "Referer": "https://www.bilibili.com",
-        },
-        trust_env=trust_env,
-        proxy=proxy,
-        follow_redirects=True,
-        timeout=10,
-    )
-
+    ctx = FetcherContext()
     try:
+        ctx.set_proxy(args.proxy)
+        validate_profile(args.auth_profile)
+    except ValueError as e:
+        Logger.error(str(e))
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
+    with create_sync_client(proxy=ctx.proxy, trust_env=ctx.trust_env, timeout=10, verify=True) as client:
         qr_login_url, qr_key = generate_qr_login(client)
         show_qr_code(qr_login_url, args.mode)
         Logger.info("请使用哔哩哔哩 App 扫码并确认登录")
         redirect_url = poll_qr_login(client, qr_key, timeout=args.timeout, poll_interval=args.poll_interval)
         result_url, sessdata, bili_jct = complete_login(client, redirect_url)
-        if sessdata is None:
-            raise ValueError("登录成功但未提取到 SESSDATA")
 
-        auth_file = resolve_auth_file(args)
-        save_auth(auth_file, args.auth_profile, sessdata, bili_jct)
-        auth = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct)
-        if validate_login(auth, proxy=proxy, trust_env=trust_env):
-            Logger.info(
-                f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）"
-            )
-        else:
-            Logger.warning(
-                f"SESSDATA 已写入认证文件，但登录状态校验失败，请稍后重试。文件：{auth_file}（profile: {args.auth_profile}）"
-            )
-    finally:
-        client.close()
+    if sessdata is None:
+        raise ValueError("登录成功但未提取到 SESSDATA")
 
-
-def _resolve_proxy(proxy: str) -> tuple[str | None, bool]:
-    if proxy == "auto":
-        return None, True
-    if proxy == "no":
-        return None, False
-    parsed = urlparse(proxy)
-    allowed_schemes = {"http", "https", "socks5", "socks5h"}
-    if not parsed.scheme or parsed.scheme not in allowed_schemes:
-        raise ValueError(f"proxy 参数值（{proxy}）错误啦！")
-    return proxy, False
+    auth_file = resolve_auth_file(args)
+    save_auth(auth_file, args.auth_profile, sessdata, bili_jct)
+    auth = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct)
+    if validate_saved_auth(auth, proxy=ctx.proxy, trust_env=ctx.trust_env):
+        Logger.info(
+            f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）"
+        )
+    else:
+        Logger.warning(
+            f"SESSDATA 已写入认证文件，但登录状态校验失败，请稍后重试。文件：{auth_file}（profile: {args.auth_profile}）"
+        )
 
 
 def sanitize_url_for_log(url: str) -> str:
@@ -175,7 +157,7 @@ def complete_login(client: httpx.Client, redirect_url: str) -> tuple[str, str | 
     try:
         resp = client.get(redirect_url)
         final_url = str(resp.url)
-    except Exception as e:
+    except httpx.HTTPError as e:
         Logger.warning(f"请求登录确认 URL 失败，将尝试从返回 URL 提取 cookies：{e}")
 
     sessdata = get_cookie_value(client.cookies, "SESSDATA")
@@ -208,17 +190,13 @@ def get_cookie_value(cookies: httpx.Cookies, name: str) -> str | None:
         return None
 
 
-def validate_login(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> bool:
+def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> bool:
     ctx = FetcherContext(proxy=proxy, trust_env=trust_env)
     ctx.set_auth_info(auth)
     try:
-        import asyncio
-
-        async def _validate() -> bool:
-            async with create_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env) as client:
-                user_info = await get_user_info(ctx, client)
-                return user_info["is_login"]
-
-        return asyncio.run(_validate())
-    except Exception:
+        with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env, verify=True) as client:
+            user_info = parse_user_info(request_json(client, USER_INFO_API, params={}))
+        return user_info_matches(user_info, {"vip_status": False, "is_login": True})
+    except Exception as e:
+        Logger.warning(f"登录状态校验失败，将跳过校验：{e}")
         return False

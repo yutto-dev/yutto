@@ -61,12 +61,12 @@ auth = "SESSDATA=xxxxx; bili_jct=yyyyy"
 
 ## 认证文件
 
-- 参数 `--auth-config`
+- 参数 `--auth-file`
 - 配置项 `auth.auth_file`
 
 用于指定 `auth.toml` 的路径，优先级：
 
-1. `--auth-config`
+1. `--auth-file`
 2. `auth.auth_file`
 3. 默认路径（`~/.config/yutto/auth.toml` 或系统等价路径）
 
@@ -85,7 +85,7 @@ auth = "SESSDATA=xxxxx; bili_jct=yyyyy"
 ```bash
 yutto login
 yutto login --auth-profile default
-yutto login --auth-config ~/.config/yutto/auth.toml
+yutto login --auth-file ~/.config/yutto/auth.toml
 ```
 
 ## 已弃用参数

@@ -7,11 +7,11 @@ import re
 import string
 import time
 import urllib.parse
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from yutto.types import UserInfo
 from yutto.utils.asynclib import async_cache
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -27,26 +27,54 @@ class WbiImg(TypedDict):
 wbi_img_cache: WbiImg | None = None  # Simulate the LocalStorage of the browser
 dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(16, 64))).encode())[:-2].decode()  # fmt: skip
 dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
+USER_INFO_API = "https://api.bilibili.com/x/web-interface/nav"
+
+
+def parse_user_info(res_json: dict[str, Any]) -> UserInfo:
+    res_json_data_any = res_json.get("data")
+    if not isinstance(res_json_data_any, dict):
+        raise ValueError(f"获取用户信息失败，返回值异常：{res_json}")
+    res_json_data = cast("dict[str, Any]", res_json_data_any)
+    return UserInfo(
+        vip_status=res_json_data.get("vipStatus") == 1,  # API 返回的是 int，如果未登录就没这个值
+        is_login=bool(res_json_data.get("isLogin")),  # API 返回的是 bool
+    )
 
 
 @async_cache(lambda _: "user_info")
 async def get_user_info(ctx: FetcherContext, client: AsyncClient) -> UserInfo:
-    info_api = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(ctx, client, info_api)
+    res_json = await Fetcher.fetch_json(ctx, client, USER_INFO_API)
     assert res_json is not None
-    res_json_data = res_json.get("data")
-    return UserInfo(
-        vip_status=res_json_data.get("vipStatus") == 1,  # API 返回的是 int，如果未登录就没这个值
-        is_login=res_json_data.get("isLogin"),  # API 返回的是 bool
-    )
+    return parse_user_info(res_json)
+
+
+def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
+    if check_option["is_login"] and not user_info["is_login"]:
+        return False
+    if check_option["vip_status"] and not user_info["vip_status"]:
+        return False
+    return True
+
+
+async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> bool:
+    """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
+    if not check_option["is_login"] and not check_option["vip_status"]:
+        return True
+
+    async with create_client(
+        cookies=ctx.cookies,
+        trust_env=ctx.trust_env,
+        proxy=ctx.proxy,
+    ) as client:
+        user_info = await get_user_info(ctx, client)
+        return user_info_matches(user_info, check_option)
 
 
 async def get_wbi_img(ctx: FetcherContext, client: AsyncClient) -> WbiImg:
     global wbi_img_cache
     if wbi_img_cache is not None:
         return wbi_img_cache
-    url = "https://api.bilibili.com/x/web-interface/nav"
-    res_json = await Fetcher.fetch_json(ctx, client, url)
+    res_json = await Fetcher.fetch_json(ctx, client, USER_INFO_API)
     assert res_json is not None
     wbi_img: WbiImg = {
         "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
