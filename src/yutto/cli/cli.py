@@ -30,11 +30,14 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "chapter_info",
 ]
 SUBCOMMANDS: list[str] = ["download", "login"]
+REMOVED_SUBCOMMANDS: list[str] = ["mcp"]
 
 
 def handle_default_subcommand(argv: list[str]) -> list[str]:
     if len(argv) == 0:
         return ["download", *argv]
+    if argv[0] in REMOVED_SUBCOMMANDS:
+        return argv
     if argv[0] not in SUBCOMMANDS and argv[0] not in ["-v", "--version"]:
         argv.insert(0, "download")
 
