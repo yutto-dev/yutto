@@ -38,10 +38,6 @@ def main():
             except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
                 Logger.info("已终止下载，再次运行即可继续下载～")
                 sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
-        case "mcp":
-            from yutto.mcp_server import run_mcp
-
-            run_mcp()
         case "login":
             run_login(args)
 
