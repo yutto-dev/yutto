@@ -18,6 +18,8 @@ class _HasPool(Protocol):
 
 
 def _transport_ssl_context(transport: Any) -> ssl.SSLContext:
+    # Test helper: inspect httpx's private transport internals to assert TLS policy wiring.
+    # If httpx changes `_pool._ssl_context`, this assertion helper will need to be updated too.
     return cast("_HasPool", transport)._pool._ssl_context
 
 
