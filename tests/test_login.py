@@ -3,15 +3,14 @@ from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
+import pytest
 
 import yutto.login as login_module
 from yutto.api.user_info import USER_INFO_API
-
-if TYPE_CHECKING:
-    import pytest
+from yutto.exceptions import ErrorCode
 
 
 def test_validate_saved_auth_uses_sync_client_with_auth_cookies(monkeypatch: pytest.MonkeyPatch):
@@ -100,3 +99,194 @@ def test_run_login_uses_verified_sync_client(monkeypatch: pytest.MonkeyPatch):
     )
 
     assert calls["verify"] is True
+
+
+def test_run_auth_status_reports_vip_login(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
+        return {"SESSDATA": "sessdata", "bili_jct": "csrf-token"}
+
+    def fake_fetch_authenticated_user_info(
+        auth: dict[str, str | None], *, proxy: str | None, trust_env: bool
+    ) -> dict[str, bool]:
+        calls["proxy"] = proxy
+        calls["trust_env"] = trust_env
+        return {"vip_status": True, "is_login": True}
+
+    def fake_custom(message: str, badge: object, *args: Any, **kwargs: Any) -> None:
+        calls["message"] = message
+        calls["badge"] = str(badge)
+
+    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
+    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fake_fetch_authenticated_user_info)
+    monkeypatch.setattr(login_module.Logger, "custom", fake_custom)
+
+    login_module.run_auth_status(
+        SimpleNamespace(
+            proxy="https://127.0.0.1:7890",
+            auth="",
+            auth_file=Path("/tmp/auth.toml"),
+            auth_profile="default",
+        )
+    )
+
+    assert calls["proxy"] == "https://127.0.0.1:7890"
+    assert calls["trust_env"] is False
+    assert "当前认证信息有效" in calls["message"]
+    assert "大会员" in calls["badge"]
+
+
+def test_run_auth_status_exits_when_auth_missing(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_resolve_auth(args: SimpleNamespace) -> None:
+        return None
+
+    def fake_warning(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
+    monkeypatch.setattr(
+        login_module.Logger,
+        "warning",
+        fake_warning,
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        login_module.run_auth_status(
+            SimpleNamespace(
+                proxy="auto",
+                auth="",
+                auth_file=Path("/tmp/auth.toml"),
+                auth_profile="default",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.NOT_LOGIN_ERROR.value
+    assert "未找到可用认证信息" in calls["message"]
+
+
+def test_run_auth_status_exits_when_not_logged_in(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
+        return {"SESSDATA": "sessdata", "bili_jct": None}
+
+    def fake_fetch_authenticated_user_info(
+        auth: dict[str, str | None], *, proxy: str | None, trust_env: bool
+    ) -> dict[str, bool]:
+        return {"vip_status": False, "is_login": False}
+
+    def fake_warning(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
+    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fake_fetch_authenticated_user_info)
+    monkeypatch.setattr(
+        login_module.Logger,
+        "warning",
+        fake_warning,
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        login_module.run_auth_status(
+            SimpleNamespace(
+                proxy="auto",
+                auth="",
+                auth_file=Path("/tmp/auth.toml"),
+                auth_profile="default",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.NOT_LOGIN_ERROR.value
+    assert "已失效或尚未登录" in calls["message"]
+
+
+def test_run_auth_status_exits_when_status_check_fails(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
+        return {"SESSDATA": "sessdata", "bili_jct": None}
+
+    def fake_fetch_authenticated_user_info(
+        auth: dict[str, str | None], *, proxy: str | None, trust_env: bool
+    ) -> dict[str, bool]:
+        raise RuntimeError("boom")
+
+    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
+    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fake_fetch_authenticated_user_info)
+    monkeypatch.setattr(login_module.Logger, "error", fake_error)
+
+    with pytest.raises(SystemExit) as exc_info:
+        login_module.run_auth_status(
+            SimpleNamespace(
+                proxy="auto",
+                auth="",
+                auth_file=Path("/tmp/auth.toml"),
+                auth_profile="default",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.HTTP_STATUS_ERROR.value
+    assert "登录状态检查失败" in calls["message"]
+
+
+def test_run_auth_logout_removes_auth(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_remove_auth(auth_file: Path, profile: str) -> bool:
+        calls["auth_file"] = auth_file
+        calls["profile"] = profile
+        return True
+
+    def fake_info(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "remove_auth", fake_remove_auth)
+    monkeypatch.setattr(login_module.Logger, "info", fake_info)
+
+    login_module.run_auth_logout(SimpleNamespace(auth_file=Path("/tmp/auth.toml"), auth_profile="default"))
+
+    assert calls["auth_file"] == Path("/tmp/auth.toml")
+    assert calls["profile"] == "default"
+    assert "已退出登录并移除认证信息" in calls["message"]
+
+
+def test_run_auth_logout_is_idempotent(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_remove_auth(auth_file: Path, profile: str) -> bool:
+        return False
+
+    def fake_info(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "remove_auth", fake_remove_auth)
+    monkeypatch.setattr(login_module.Logger, "info", fake_info)
+
+    login_module.run_auth_logout(SimpleNamespace(auth_file=Path("/tmp/auth.toml"), auth_profile="default"))
+
+    assert "无需退出" in calls["message"]
+
+
+def test_run_auth_logout_exits_on_invalid_auth_file(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_remove_auth(auth_file: Path, profile: str) -> bool:
+        raise ValueError("bad auth file")
+
+    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "remove_auth", fake_remove_auth)
+    monkeypatch.setattr(login_module.Logger, "error", fake_error)
+
+    with pytest.raises(SystemExit) as exc_info:
+        login_module.run_auth_logout(SimpleNamespace(auth_file=Path("/tmp/auth.toml"), auth_profile="default"))
+
+    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
+    assert "bad auth file" in calls["message"]

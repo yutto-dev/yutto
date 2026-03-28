@@ -57,9 +57,14 @@ Use `just run -- ...` or `uv run python -m yutto ...` for local CLI testing. Do 
 - Prefer commit titles and PR titles in the `<gitmoji> <type>: <subject>` style described in `CONTRIBUTING.md`.
 - Reuse the type vocabulary implied by `.github/PULL_REQUEST_TEMPLATE.md` and keep the subject focused on the actual repo change.
 - Fill in the PR template sections and check the relevant type boxes instead of replacing the template with free-form text.
+- If a commit is created with help from a coding agent, include the relevant `Co-authored-by` trailer(s) in the commit message. Common examples:
+  - `Co-authored-by: Codex <codex@openai.com>`
+  - `Co-authored-by: Claude <noreply@anthropic.com>`
+  - `Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>`
 
 ## Validation before submission
 
+- After each code change round, run `just fmt` and `just lint` before handing work back, then run the narrowest relevant test target for the files you changed.
 - Run the narrowest relevant checks for the files you changed.
 - For Python source changes, run `just fmt`, `just lint`, and the relevant pytest target(s).
 - For workflow changes, keep action versions, step naming, and structure aligned with the existing workflows in `.github/workflows/`.

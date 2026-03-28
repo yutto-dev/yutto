@@ -29,12 +29,15 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "cover",
     "chapter_info",
 ]
-SUBCOMMANDS: list[str] = ["download", "login"]
+SUBCOMMANDS: list[str] = ["download", "auth"]
+REMOVED_TOP_LEVEL_SUBCOMMANDS: list[str] = ["login"]
 
 
 def handle_default_subcommand(argv: list[str]) -> list[str]:
     if len(argv) == 0:
         return ["download", *argv]
+    if argv[0] in REMOVED_TOP_LEVEL_SUBCOMMANDS:
+        return argv
     if argv[0] not in SUBCOMMANDS and argv[0] not in ["-v", "--version"]:
         argv.insert(0, "download")
 
@@ -67,9 +70,10 @@ def cli() -> argparse.ArgumentParser:
     download_parser = subparsers.add_parser("download", help="下载视频")
     add_download_arguments(download_parser, settings)
 
-    # 添加其他子命令
-    login_parser = subparsers.add_parser("login", help="扫码登录并写入认证信息")
-    add_login_arguments(login_parser, settings)
+    # 添加认证子命令组
+    auth_parser = subparsers.add_parser("auth", help="认证相关命令")
+    add_auth_subcommands(auth_parser, settings)
+
     return parser
 
 
@@ -401,12 +405,52 @@ def add_login_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
         type=int,
         help="扫码登录超时时间，单位：秒",
     )
+    add_auth_resolution_arguments(parser, settings)
+
+
+def add_auth_subcommands(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    parser.add_argument("--config", help="配置文件路径")
+    subparsers = parser.add_subparsers(dest="auth_command", help="auth 子命令")
+    subparsers.required = True
+
+    login_parser = subparsers.add_parser("login", help="扫码登录并写入认证信息")
+    add_login_arguments(login_parser, settings)
+
+    status_parser = subparsers.add_parser("status", help="检查当前认证信息对应的登录状态")
+    add_auth_status_arguments(status_parser, settings)
+
+    logout_parser = subparsers.add_parser("logout", help="删除当前 profile 对应的认证信息")
+    add_auth_logout_arguments(logout_parser, settings)
+
+
+def add_auth_status_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    parser.add_argument(
+        "--auth",
+        default=settings.auth.auth,
+        help="登录 Cookie，格式如 `SESSDATA=xxxxx; bili_jct=yyyyy`",
+    )
+    add_auth_resolution_arguments(parser, settings)
+
+
+def add_auth_logout_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    add_auth_storage_arguments(parser, settings)
+
+
+def add_auth_resolution_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    add_auth_network_arguments(parser, settings)
+    add_auth_storage_arguments(parser, settings)
+
+
+def add_auth_network_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
     parser.add_argument(
         "-x",
         "--proxy",
         default=settings.basic.proxy,
         help="设置代理（auto 为系统代理、no 为不使用代理、当然也可以设置代理值）",
     )
+
+
+def add_auth_storage_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
     parser.add_argument(
         "--auth-file",
         default=map_optional(path_from_cli, settings.auth.auth_file),
@@ -418,7 +462,6 @@ def add_login_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
         default=settings.auth.auth_profile,
         help="认证信息 profile 名称，默认 default",
     )
-    # 配置路径（占位用的，config 已经在 pre parser 里解析过了）
     parser.add_argument("--config", help="配置文件路径")
 
 

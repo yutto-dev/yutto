@@ -12,7 +12,7 @@ from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.download_manager import DownloadManager, DownloadTask
 from yutto.exceptions import ErrorCode
 from yutto.input_parser import file_scheme_parser
-from yutto.login import run_login
+from yutto.login import run_auth_logout, run_auth_status, run_login
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
@@ -38,8 +38,16 @@ def main():
             except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
                 Logger.info("已终止下载，再次运行即可继续下载～")
                 sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
-        case "login":
-            run_login(args)
+        case "auth":
+            match args.auth_command:
+                case "login":
+                    run_login(args)
+                case "logout":
+                    run_auth_logout(args)
+                case "status":
+                    run_auth_status(args)
+                case _:
+                    raise ValueError("Invalid auth command")
 
         case _:
             raise ValueError("Invalid command")
