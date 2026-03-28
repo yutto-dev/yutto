@@ -1,6 +1,6 @@
 [project]
 name = "yutto"
-version = "2.1.1"
+version = "2.2.0"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
 requires-python = ">=3.10"
