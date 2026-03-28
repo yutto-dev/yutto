@@ -11,6 +11,7 @@ import httpx
 from biliass import BlockOptions
 from returns.maybe import Nothing, Some
 
+from yutto.api.user_info import validate_user_info
 from yutto.downloader.downloader import DownloadState, process_download
 from yutto.exceptions import ErrorCode
 from yutto.extractor import (
@@ -34,10 +35,7 @@ from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
 from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.time import TIME_FULL_FMT
-from yutto.validator import (
-    validate_batch_arguments,
-    validate_user_info,
-)
+from yutto.validator import validate_batch_arguments
 
 if TYPE_CHECKING:
     import argparse
