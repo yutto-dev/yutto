@@ -433,6 +433,7 @@ def add_auth_status_arguments(parser: argparse.ArgumentParser, settings: YuttoSe
 
 
 def add_auth_logout_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
+    parser.add_argument("--auth", default=settings.auth.auth, help=argparse.SUPPRESS)
     add_auth_storage_arguments(parser, settings)
 
 

@@ -36,6 +36,20 @@ def test_resolve_auth_prefers_inline_auth(tmp_path: Path):
     assert resolve_auth(args) == {"SESSDATA": "from-inline", "bili_jct": "inline-csrf"}
 
 
+def test_resolve_auth_rejects_invalid_auth_file(tmp_path: Path):
+    auth_file = tmp_path / "auth.toml"
+    auth_file.write_text("[profiles.default]\nsessdata = 123\n", encoding="utf-8")
+
+    args = Namespace(
+        auth="",
+        auth_file=auth_file,
+        auth_profile="default",
+    )
+
+    with pytest.raises(ValueError, match="认证信息文件格式无效"):
+        resolve_auth(args)
+
+
 def test_save_and_load_auth_round_trip(tmp_path: Path):
     auth_file = tmp_path / "auth.toml"
 
