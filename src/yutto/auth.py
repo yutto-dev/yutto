@@ -115,7 +115,6 @@ def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
 
 def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None):
     validate_profile(profile)
-    auth_file.parent.mkdir(parents=True, exist_ok=True)
 
     profiles: dict[str, AuthProfileModel] = {}
     loaded = load_auth_file(auth_file)
@@ -135,6 +134,33 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
     entry_payload["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     profiles[profile] = AuthProfileModel.model_validate(entry_payload)
+    write_auth_file(auth_file, profiles)
+
+
+def remove_auth(auth_file: Path, profile: str) -> bool:
+    validate_profile(profile)
+    loaded = load_auth_file(auth_file)
+    if loaded is None:
+        if auth_file.exists():
+            raise ValueError(f"认证信息文件格式无效：{auth_file}")
+        return False
+
+    profiles = dict(loaded.profiles)
+    if profile not in profiles:
+        return False
+
+    profiles.pop(profile)
+    write_auth_file(auth_file, profiles)
+    return True
+
+
+def write_auth_file(auth_file: Path, profiles: dict[str, AuthProfileModel]) -> None:
+    if not profiles:
+        if auth_file.exists():
+            auth_file.unlink()
+        return
+
+    auth_file.parent.mkdir(parents=True, exist_ok=True)
 
     lines: list[str] = []
     for profile_name in sorted(profiles.keys()):
