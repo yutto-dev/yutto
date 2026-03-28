@@ -167,6 +167,32 @@ def test_run_auth_status_exits_when_auth_missing(monkeypatch: pytest.MonkeyPatch
     assert "未找到可用认证信息" in calls["message"]
 
 
+def test_run_auth_status_exits_on_invalid_auth_file(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
+        raise ValueError("认证信息文件格式无效：/tmp/auth.toml")
+
+    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
+    monkeypatch.setattr(login_module.Logger, "error", fake_error)
+
+    with pytest.raises(SystemExit) as exc_info:
+        login_module.run_auth_status(
+            SimpleNamespace(
+                proxy="auto",
+                auth="",
+                auth_file=Path("/tmp/auth.toml"),
+                auth_profile="default",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
+    assert "认证信息文件格式无效" in calls["message"]
+
+
 def test_run_auth_status_exits_when_not_logged_in(monkeypatch: pytest.MonkeyPatch):
     calls: dict[str, Any] = {}
 
@@ -290,3 +316,24 @@ def test_run_auth_logout_exits_on_invalid_auth_file(monkeypatch: pytest.MonkeyPa
 
     assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
     assert "bad auth file" in calls["message"]
+
+
+def test_run_auth_logout_rejects_inline_auth(monkeypatch: pytest.MonkeyPatch):
+    calls: dict[str, Any] = {}
+
+    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
+        return str(calls.setdefault("message", message))
+
+    monkeypatch.setattr(login_module.Logger, "error", fake_error)
+
+    with pytest.raises(SystemExit) as exc_info:
+        login_module.run_auth_logout(
+            SimpleNamespace(
+                auth="SESSDATA=inline-auth",
+                auth_file=Path("/tmp/auth.toml"),
+                auth_profile="default",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
+    assert "inline auth" in calls["message"]

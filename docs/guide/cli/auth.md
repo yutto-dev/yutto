@@ -112,6 +112,8 @@ yutto auth status --auth "SESSDATA=xxxxx; bili_jct=yyyyy"
 
 `yutto auth logout` 会删除当前 `auth.toml` 中指定 profile 的认证信息。
 
+如果你当前使用的是 `--auth` 参数或配置项 `auth.auth` 提供的 inline cookie，需要手动删除对应配置；`logout` 不会修改它们。
+
 ```bash
 yutto auth logout
 yutto auth logout --auth-profile default

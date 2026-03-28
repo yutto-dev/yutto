@@ -91,6 +91,10 @@ def run_auth_status(args: Any):
 
 
 def run_auth_logout(args: Any):
+    if getattr(args, "auth", ""):
+        Logger.error("当前认证来源于 inline auth，请删除 `--auth` 参数或配置项 `auth.auth` 后再试。")
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
     try:
         auth_file = resolve_auth_file(args)
         removed = remove_auth(auth_file, args.auth_profile)
