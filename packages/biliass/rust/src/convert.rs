@@ -44,7 +44,7 @@ pub fn process_comments(
             | CommentPosition::Bottom
             | CommentPosition::Top
             | CommentPosition::Reversed => {
-                writer::ass::write_normal_comment_to_buf(
+                writer::ass::write_normal_comment(
                     &mut ass_result,
                     rows.as_mut(),
                     comment,
@@ -59,7 +59,7 @@ pub fn process_comments(
                 );
             }
             CommentPosition::Special => {
-                writer::ass::write_special_comment_to_buf(
+                writer::ass::write_special_comment(
                     &mut ass_result,
                     comment,
                     width,

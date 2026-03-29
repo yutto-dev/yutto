@@ -153,7 +153,7 @@ fn write_comment_impl(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_normal_comment_to_buf<'a>(
+pub fn write_normal_comment<'a>(
     buf: &mut String,
     rows: &mut rows::Rows<'a>,
     comment: &'a Comment,
@@ -225,7 +225,7 @@ pub fn write_normal_comment_to_buf<'a>(
 // --- Special (animated) comment writer ---
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_special_comment_to_buf(
+pub fn write_special_comment(
     buf: &mut String,
     comment: &Comment,
     width: u32,
