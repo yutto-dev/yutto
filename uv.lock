@@ -151,11 +151,11 @@ wheels = [
 
 [[package]]
 name = "dict2xml"
-version = "1.7.7"
+version = "1.7.8"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/65/f8/2744b5c94698eacacb29df4037a927cdfe649a3716f6327f6978acb12291/dict2xml-1.7.7.tar.gz", hash = "sha256:ae47873a584921430d3b74f0f63db98b59f6cafc038b14619c65e83cf717608f", size = 15033, upload-time = "2025-07-10T05:12:06.999Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/47/abde6e5c4456f7074ddd2e0dd8bbf111d6de40ff5bb5761a5f6b20ad474b/dict2xml-1.7.8.tar.gz", hash = "sha256:6638da9ad32b0f8be8336d16e0f36a9c3821145e34ed3ef4889822a9b980fb28", size = 15644, upload-time = "2026-01-14T22:28:07.767Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/ec/784796c1c43e35fbfaa7a0025125df4065b33af461f15171da2fb85e9f7a/dict2xml-1.7.7-py3-none-any.whl", hash = "sha256:f7330fbd4cd82cbec0c21f1a1bd283175c2e596f1f9a76716a711426c5da1c94", size = 7865, upload-time = "2025-07-10T05:12:05.851Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/59/99390417ab1c8c118f6dad436aa9e85509b66ce1a80e130c8b61cf3b15bc/dict2xml-1.7.8-py3-none-any.whl", hash = "sha256:0da9213d78496322a9befaa4f934652315973fbf5437f0c0f70f14fc6d16acc5", size = 9460, upload-time = "2026-01-14T22:28:06.542Z" },
 ]
 
 [[package]]
@@ -743,7 +743,7 @@ requires-dist = [
     { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "biliass", editable = "packages/biliass" },
     { name = "colorama", marker = "sys_platform == 'win32'", specifier = ">=0.4.6" },
-    { name = "dict2xml", specifier = ">=1.7.7" },
+    { name = "dict2xml", specifier = ">=1.7.8" },
     { name = "httpx", extras = ["http2", "socks"], specifier = ">=0.28.1" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "returns", specifier = ">=0.26.0" },
