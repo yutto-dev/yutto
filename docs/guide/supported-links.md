@@ -42,7 +42,7 @@ yutto https://www.bilibili.com/video/av371660125/
 yutto "https://www.bilibili.com/video/BV1vZ4y1M7mQ/?p=1"
 ```
 
-另外，我还支持直接直接使用 AV 号和 BV 号作为视频链接的唯一标识符。
+另外，我还支持直接使用 AV 号和 BV 号作为视频链接的唯一标识符。
 
 ```bash
 yutto BV1vZ4y1M7mQ
@@ -67,7 +67,7 @@ yutto -b BV1vZ4y1M7mQ -p 2 # 这样才会只下载第二话
 
 ### 番剧单话
 
-番剧的话，主要有三种入口链接，分别是能够代表单话唯一标识符的 EP 号链接、代表整季番剧的 MD 号和 SS 号。
+番剧的话，我主要支持三种入口链接，分别是能够代表单话唯一标识符的 EP 号链接、代表整季番剧的 MD 号和 SS 号。
 
 对于单话下载来说，MD 号和 SS 号均无法定位到具体某一话，因此单话下载不支持 MD 号和 SS 号，仅支持 EP 号。
 
@@ -105,7 +105,7 @@ yutto -b md28233903 -p 2
 yutto https://www.bilibili.com/cheese/play/ep6902
 ```
 
-注意，课程并不支持直接使用 EP 号作为唯一标识符，因为这会和番剧混淆。
+注意，课程并不支持直接使用 EP 号作为唯一标识符哦，因为这会和番剧混淆。
 
 ### 课程全集 <Badge type="tip" text="批量" /><Badge type="tip" text="支持选集" />
 

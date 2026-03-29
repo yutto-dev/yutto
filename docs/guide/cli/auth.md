@@ -1,8 +1,8 @@
 # 个人信息认证参数
 
-为了能够解锁更高清晰度以及或者大会员专享的剧集，你需要提供自己的登录信息，不过放心，yutto 只会使用这些信息来访问 B 站，并不会上传或者泄露你的信息～
+为了能够解锁更高清晰度以及大会员专享的剧集，你需要提供自己的登录信息，不过放心，我只会使用这些信息来访问 B 站，并不会上传或者泄露你的信息～
 
-yutto 支持通过 `yutto auth login` 命令扫码登录并把认证信息写入 auth 文件，也支持直接通过 `--auth` 选项传入 Cookie 字符串。
+我支持通过 `yutto auth login` 命令扫码登录并把认证信息写入 auth 文件，也支持直接通过 `--auth` 选项传入 Cookie 字符串。
 
 对于第一种方式，执行 `yutto auth login` 后会提示你扫码登录：
 
@@ -89,7 +89,7 @@ auth = "SESSDATA=xxxxx; bili_jct=yyyyy"
 
 ### `auth login`
 
-`yutto auth login` 会扫码登录并把认证信息写入 auth 文件（包含 `SESSDATA` 与 `bili_jct`）。
+通过 `yutto auth login` 你可以扫码登录，我会把认证信息写入 auth 文件（包含 `SESSDATA` 与 `bili_jct`）。
 
 ```bash
 yutto auth login
@@ -99,7 +99,7 @@ yutto auth login --auth-file ~/.config/yutto/auth.toml
 
 ### `auth status`
 
-`yutto auth status` 会读取当前认证信息并检查登录是否有效。
+通过 `yutto auth status` 我会读取当前认证信息并检查登录是否有效。
 
 ```bash
 yutto auth status
@@ -110,7 +110,7 @@ yutto auth status --auth "SESSDATA=xxxxx; bili_jct=yyyyy"
 
 ### `auth logout`
 
-`yutto auth logout` 会删除当前 `auth.toml` 中指定 profile 的认证信息。
+通过 `yutto auth logout` 我会删除当前 `auth.toml` 中指定 profile 的认证信息。
 
 如果你当前使用的是 `--auth` 参数或配置项 `auth.auth` 提供的 inline cookie，需要手动删除对应配置；`logout` 不会修改它们。
 
