@@ -40,23 +40,21 @@ where
                 let size = elem.fontsize;
                 let (comment_content, size, comment_data) =
                     if comment_pos != CommentPosition::Special {
-                        let comment_content =
-                            utils::unescape_newline(&utils::filter_bad_chars(&elem.content));
+                        let filtered = utils::filter_bad_chars(&elem.content);
+                        let comment_content = utils::unescape_newline(&filtered);
                         let size = (size as f32) * fontsize / 25.0;
                         let height =
                             (comment_content.chars().filter(|&c| c == '\n').count() as f32 + 1.0)
                                 * size;
                         let width = utils::calculate_length(&comment_content) * size;
                         (
-                            comment_content,
+                            comment_content.into_owned(),
                             size,
                             CommentData::Normal(NormalCommentData { height, width }),
                         )
                     } else {
-                        let parsed_data = special::parse_special_comment(
-                            &utils::filter_bad_chars(&elem.content),
-                            zoom_factor,
-                        );
+                        let filtered = utils::filter_bad_chars(&elem.content);
+                        let parsed_data = special::parse_special_comment(&filtered, zoom_factor);
                         if parsed_data.is_err() {
                             warn!("Failed to parse special comment: {:?}", parsed_data);
                             continue;

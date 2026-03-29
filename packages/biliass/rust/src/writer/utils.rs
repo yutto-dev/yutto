@@ -68,46 +68,64 @@ pub fn get_zoom_factor(source_size: SourceSize, target_size: TargetSize) -> Zoom
     get_cache().get_or_compute(key, || compute_zoom_factor(source_size, target_size))
 }
 
-fn divmod(a: f64, b: f64) -> (f64, f64) {
-    (a / b, a % b)
+/// Write a timestamp directly to the output buffer, avoiding intermediate String allocation.
+#[inline]
+pub fn write_timestamp(buf: &mut String, timestamp: f64) {
+    let ts = (timestamp * 100.0).round() as u64;
+    let centsecond = ts % 100;
+    let total_seconds = ts / 100;
+    let second = total_seconds % 60;
+    let total_minutes = total_seconds / 60;
+    let minute = total_minutes % 60;
+    let hour = total_minutes / 60;
+    use std::fmt::Write;
+    let _ = write!(buf, "{hour}:{minute:02}:{second:02}.{centsecond:02}");
 }
 
-pub fn convert_timestamp(timestamp: f64) -> String {
-    let timestamp = (timestamp * 100.0).round();
-    let (hour, minute) = divmod(timestamp, 360000.0);
-    let (minute, second) = divmod(minute, 6000.0);
-    let (second, centsecond) = divmod(second, 100.0);
-    let hour = hour as u32;
-    let minute = minute as u32;
-    let second = second as u32;
-    let centsecond = centsecond as u32;
+/// Single-pass ASS escape directly into a buffer, avoiding intermediate String allocation.
+pub fn ass_escape_to_buf(buf: &mut String, text: &str) {
+    // Fast path: check if any escaping is needed at all
+    let needs_escape = text
+        .bytes()
+        .any(|b| matches!(b, b'\\' | b'{' | b'}' | b'\n' | b' '));
+    if !needs_escape {
+        buf.push_str(text);
+        return;
+    }
 
-    format!("{hour}:{minute:02}:{second:02}.{centsecond:02}")
-}
-
-pub fn ass_escape(text: &str) -> String {
-    text.replace("\\", "\\\\")
-        .replace("{", "\\{")
-        .replace("}", "\\}")
-        .split('\n')
-        .map(|line| {
-            let stripped = line.trim_matches(' ');
-            let size = line.len();
-            if stripped.len() == size {
-                line.to_owned()
-            } else {
-                let leading_spaces = line.len() - line.trim_start_matches(' ').len();
-                let trailing_spaces = line.len() - line.trim_end_matches(' ').len();
-                format!(
-                    "{}{}{}",
-                    "\u{2007}".repeat(leading_spaces),
-                    stripped,
-                    "\u{2007}".repeat(trailing_spaces)
-                )
+    let mut first = true;
+    for line in text.split('\n') {
+        if !first {
+            buf.push_str("\\N");
+        }
+        first = false;
+        let trimmed = line.trim_matches(' ');
+        if trimmed.len() == line.len() {
+            escape_line_chars(buf, line);
+        } else {
+            let leading = line.len() - line.trim_start_matches(' ').len();
+            let trailing = line.len() - line.trim_end_matches(' ').len();
+            for _ in 0..leading {
+                buf.push('\u{2007}');
             }
-        })
-        .collect::<Vec<_>>()
-        .join("\\N")
+            escape_line_chars(buf, trimmed);
+            for _ in 0..trailing {
+                buf.push('\u{2007}');
+            }
+        }
+    }
+}
+
+#[inline]
+fn escape_line_chars(buf: &mut String, s: &str) {
+    for c in s.chars() {
+        match c {
+            '\\' => buf.push_str("\\\\"),
+            '{' => buf.push_str("\\{"),
+            '}' => buf.push_str("\\}"),
+            _ => buf.push(c),
+        }
+    }
 }
 
 pub fn convert_color(rgb: u32, width: Option<u32>, height: Option<u32>) -> String {

@@ -22,7 +22,9 @@ pub fn process_comments(
     let styleid = "biliass";
     let bottom_reserved = ((height as f32) * (1. - display_region_ratio)) as u32;
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
-    let mut ass_result = String::new();
+
+    // Pre-allocate output buffer: ~120 bytes per comment is a reasonable estimate
+    let mut ass_result = String::with_capacity(1024 + comments.len() * 120);
 
     ass_result.push_str(&writer::ass::write_head(
         width, height, fontface, fontsize, alpha, styleid,
@@ -34,7 +36,8 @@ pub fn process_comments(
             | CommentPosition::Bottom
             | CommentPosition::Top
             | CommentPosition::Reversed => {
-                ass_result.push_str(&writer::ass::write_normal_comment(
+                writer::ass::write_normal_comment_to_buf(
+                    &mut ass_result,
                     rows.as_mut(),
                     comment,
                     width,
@@ -45,16 +48,17 @@ pub fn process_comments(
                     duration_still,
                     styleid,
                     reduced,
-                ));
+                );
             }
             CommentPosition::Special => {
-                ass_result.push_str(&writer::ass::write_special_comment(
+                writer::ass::write_special_comment_to_buf(
+                    &mut ass_result,
                     comment,
                     width,
                     height,
                     zoom_factor,
                     styleid,
-                ));
+                );
             }
         }
     }

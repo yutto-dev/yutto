@@ -1,6 +1,7 @@
 use crate::comment::{Comment, CommentPosition, SpecialCommentData};
 use crate::writer::rows;
 use crate::writer::utils;
+use std::fmt::Write;
 use tracing::warn;
 
 pub fn write_head(
@@ -41,8 +42,60 @@ fn convert_type2(row: usize, height: u32, bottom_reserved: u32) -> usize {
     height as usize - bottom_reserved as usize - row
 }
 
+// --- Shared style helpers for _to_buf writers ---
+
+/// Write `\fs` override when comment size differs from base fontsize.
+#[inline]
+fn write_fontsize_override(buf: &mut String, comment_size: f32, base_fontsize: f32) {
+    if comment_size - base_fontsize <= -1. || comment_size - base_fontsize >= 1. {
+        let _ = write!(buf, "\\fs{:.0}", comment_size);
+    }
+}
+
+/// Write `\c` color override (and `\3c` outline for black text).
+#[inline]
+fn write_color_override(buf: &mut String, color: u32) {
+    if color != 0xFFFFFF {
+        let _ = write!(buf, "\\c&H{}&", utils::convert_color(color, None, None));
+        if color == 0x000000 {
+            buf.push_str("\\3c&HFFFFFF&");
+        }
+    }
+}
+
+/// Write `\alpha` / `\fad` / `\fade` override.
+#[inline]
+fn write_alpha_override(buf: &mut String, from_alpha: u8, to_alpha: u8, lifetime: f64) {
+    if from_alpha == to_alpha {
+        let _ = write!(buf, "\\alpha&H{from_alpha:02X}");
+    } else if (from_alpha, to_alpha) == (255, 0) {
+        let _ = write!(buf, "\\fad({:.0},0)", lifetime * 1000.);
+    } else if (from_alpha, to_alpha) == (0, 255) {
+        let _ = write!(buf, "\\fad(0, {:.0})", lifetime * 1000.);
+    } else {
+        let lt = lifetime * 1000.;
+        let _ = write!(
+            buf,
+            "\\fade({from_alpha}, {to_alpha}, {to_alpha}, 0, {lt:.0}, {lt:.0}, {lt:.0})"
+        );
+    }
+}
+
+/// Write rotation tags `\frx..\fscy` from a rotation result tuple.
+#[inline]
+fn write_rotation_tags(buf: &mut String, rot: &(f64, f64, f64, f64, f64, f64, f64)) {
+    let _ = write!(
+        buf,
+        "\\frx{:.0}\\fry{:.0}\\frz{:.0}\\fscx{:.0}\\fscy{:.0}",
+        rot.2, rot.3, rot.4, rot.5, rot.6
+    );
+}
+
+// --- Normal comment writer ---
+
 #[allow(clippy::too_many_arguments)]
-pub fn write_comment(
+fn write_comment_impl(
+    buf: &mut String,
     comment: &Comment,
     row: usize,
     width: u32,
@@ -52,8 +105,7 @@ pub fn write_comment(
     duration_marquee: f64,
     duration_still: f64,
     styleid: &str,
-) -> String {
-    let text = utils::ass_escape(&comment.content);
+) {
     let comment_data = comment
         .data
         .as_normal()
@@ -83,27 +135,25 @@ pub fn write_comment(
             )
         }
     };
-    let mut styles = vec![style];
-    if comment.size - fontsize <= -1. || comment.size - fontsize >= 1. {
-        styles.push(format!("\\fs{:.0}", comment.size));
-    }
-    if comment.color != 0xFFFFFF {
-        styles.push(format!(
-            "\\c&H{}&",
-            utils::convert_color(comment.color, None, None)
-        ));
-        if comment.color == 0x000000 {
-            styles.push("\\3c&HFFFFFF&".to_owned());
-        }
-    }
-    let start = utils::convert_timestamp(comment.timeline);
-    let end = utils::convert_timestamp(comment.timeline + duration);
-    let styles = styles.join("");
-    format!("Dialogue: 2,{start},{end},{styleid},,0000,0000,0000,,{{{styles}}}{text}\n")
+
+    buf.push_str("Dialogue: 2,");
+    utils::write_timestamp(buf, comment.timeline);
+    buf.push(',');
+    utils::write_timestamp(buf, comment.timeline + duration);
+    buf.push(',');
+    buf.push_str(styleid);
+    buf.push_str(",,0000,0000,0000,,{");
+    buf.push_str(&style);
+    write_fontsize_override(buf, comment.size, fontsize);
+    write_color_override(buf, comment.color);
+    buf.push('}');
+    utils::ass_escape_to_buf(buf, &comment.content);
+    buf.push('\n');
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_normal_comment<'a>(
+pub fn write_normal_comment_to_buf<'a>(
+    buf: &mut String,
     rows: &mut rows::Rows<'a>,
     comment: &'a Comment,
     width: u32,
@@ -114,7 +164,7 @@ pub fn write_normal_comment<'a>(
     duration_still: f64,
     styleid: &str,
     reduced: bool,
-) -> String {
+) {
     let mut row: usize = 0;
     let comment_data = comment
         .data
@@ -134,7 +184,8 @@ pub fn write_normal_comment<'a>(
         );
         if freerows >= comment_data.height as usize {
             rows::mark_comment_row(rows, comment, row);
-            return write_comment(
+            write_comment_impl(
+                buf,
                 comment,
                 row,
                 width,
@@ -145,6 +196,7 @@ pub fn write_normal_comment<'a>(
                 duration_still,
                 styleid,
             );
+            return;
         } else {
             row += if freerows == 0 { 1 } else { freerows };
         }
@@ -152,7 +204,8 @@ pub fn write_normal_comment<'a>(
     if !reduced {
         row = rows::find_alternative_row(rows, comment, height, bottom_reserved);
         rows::mark_comment_row(rows, comment, row);
-        return write_comment(
+        write_comment_impl(
+            buf,
             comment,
             row,
             width,
@@ -164,11 +217,61 @@ pub fn write_normal_comment<'a>(
             styleid,
         );
     }
-    "".to_owned()
+}
+
+// --- Special (animated) comment writer ---
+
+#[allow(clippy::too_many_arguments)]
+pub fn write_special_comment_to_buf(
+    buf: &mut String,
+    comment: &Comment,
+    width: u32,
+    height: u32,
+    zoom_factor: (f32, f32, f32),
+    styleid: &str,
+) {
+    let SpecialCommentData {
+        rotate_y,
+        rotate_z,
+        from_x,
+        from_y,
+        to_x,
+        to_y,
+        from_alpha,
+        to_alpha,
+        delay,
+        lifetime,
+        duration,
+        fontface,
+        is_border,
+    } = comment.data.as_special().expect("comment is not special");
+    write_comment_with_animation_to_buf(
+        buf,
+        comment,
+        width,
+        height,
+        *rotate_y,
+        *rotate_z,
+        *from_x,
+        *from_y,
+        *to_x,
+        *to_y,
+        *from_alpha,
+        *to_alpha,
+        &comment.content,
+        *delay,
+        *lifetime,
+        *duration,
+        fontface,
+        *is_border,
+        styleid,
+        zoom_factor,
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_comment_with_animation(
+fn write_comment_with_animation_to_buf(
+    buf: &mut String,
     comment: &Comment,
     width: u32,
     height: u32,
@@ -188,7 +291,7 @@ pub fn write_comment_with_animation(
     is_border: bool,
     styleid: &str,
     zoom_factor: (f32, f32, f32),
-) -> String {
+) {
     let from_rotarg = utils::convert_flash_rotation(
         rotate_y as f64,
         rotate_z as f64,
@@ -205,7 +308,7 @@ pub fn write_comment_with_animation(
         width as f64,
         height as f64,
     );
-    if vec![
+    if [
         from_rotarg.0,
         from_rotarg.1,
         from_rotarg.2,
@@ -226,13 +329,25 @@ pub fn write_comment_with_animation(
             "Invalid rotation arguments: {:?}",
             (rotate_y, rotate_z, from_x, from_y)
         );
-        return "".to_owned();
+        return;
     }
-    let mut styles = vec![format!("\\org({}, {})", width / 2, height / 2)];
+
+    // Dialogue header
+    buf.push_str("Dialogue: -1,");
+    utils::write_timestamp(buf, comment.timeline);
+    buf.push(',');
+    utils::write_timestamp(buf, comment.timeline + lifetime);
+    buf.push(',');
+    buf.push_str(styleid);
+    buf.push_str(",,0,0,0,,{");
+
+    // Position / movement
+    let _ = write!(buf, "\\org({}, {})", width / 2, height / 2);
     if (from_rotarg.0, from_rotarg.1) == (to_rotarg.0, to_rotarg.1) {
-        styles.push(format!("\\pos({:.0}, {:.0})", from_rotarg.0, from_rotarg.1));
+        let _ = write!(buf, "\\pos({:.0}, {:.0})", from_rotarg.0, from_rotarg.1);
     } else {
-        styles.push(format!(
+        let _ = write!(
+            buf,
             "\\move({:.0}, {:.0}, {:.0}, {:.0}, {:.0}, {:.0})",
             from_rotarg.0,
             from_rotarg.1,
@@ -240,102 +355,31 @@ pub fn write_comment_with_animation(
             to_rotarg.1,
             delay,
             delay + duration
-        ));
+        );
     }
-    styles.push(format!(
-        "\\frx{:.0}\\fry{:.0}\\frz{:.0}\\fscx{:.0}\\fscy{:.0}",
-        from_rotarg.2, from_rotarg.3, from_rotarg.4, from_rotarg.5, from_rotarg.6
-    ));
-    if (from_x, from_y) != (to_x, to_y) {
-        styles.push(format!(
-            "\\t({}, {}, ",
-            delay as i32,
-            (delay + duration) as i32
-        ));
-        styles.push(format!(
-            "\\frx{:.0}\\fry{:.0}\\frz{:.0}\\fscx{:.0}\\fscy{:.0}",
-            to_rotarg.2, to_rotarg.3, to_rotarg.4, to_rotarg.5, to_rotarg.6
-        ));
-        styles.push(")".to_owned());
-    }
-    if !fontface.is_empty() {
-        styles.push(format!("\\fn{}", utils::ass_escape(fontface)));
-    }
-    styles.push(format!("\\fs{:.0}", comment.size * zoom_factor.0));
-    if comment.color != 0xFFFFFF {
-        styles.push(format!(
-            "\\c&H{}&",
-            utils::convert_color(comment.color, None, None)
-        ));
-        if comment.color == 0x000000 {
-            styles.push("\\3c&HFFFFFF&".to_owned());
-        }
-    }
-    if from_alpha == to_alpha {
-        styles.push(format!("\\alpha&H{from_alpha:02X}"));
-    } else if (from_alpha, to_alpha) == (255, 0) {
-        styles.push(format!("\\fad({:.0},0)", lifetime * 1000.))
-    } else if (from_alpha, to_alpha) == (0, 255) {
-        styles.push(format!("\\fad(0, {:.0})", lifetime * 1000.));
-    } else {
-        let lifetime = lifetime * 1000.;
-        styles.push(
-            format!(
-                "\\fade({from_alpha}, {to_alpha}, {to_alpha}, 0, {lifetime:.0}, {lifetime:.0}, {lifetime:.0})"
-            )
-        )
-    }
-    if !is_border {
-        styles.push("\\bord0".to_owned())
-    }
-    let start = utils::convert_timestamp(comment.timeline);
-    let end = utils::convert_timestamp(comment.timeline + lifetime);
-    let styles = styles.join("");
-    let text = utils::ass_escape(text);
-    format!("Dialogue: -1,{start},{end},{styleid},,0,0,0,,{{{styles}}}{text}\n")
-}
 
-pub fn write_special_comment(
-    comment: &Comment,
-    width: u32,
-    height: u32,
-    zoom_factor: (f32, f32, f32),
-    styleid: &str,
-) -> String {
-    let SpecialCommentData {
-        rotate_y,
-        rotate_z,
-        from_x,
-        from_y,
-        to_x,
-        to_y,
-        from_alpha,
-        to_alpha,
-        delay,
-        lifetime,
-        duration,
-        fontface,
-        is_border,
-    } = comment.data.as_special().expect("comment is not special");
-    write_comment_with_animation(
-        comment,
-        width,
-        height,
-        *rotate_y,
-        *rotate_z,
-        *from_x,
-        *from_y,
-        *to_x,
-        *to_y,
-        *from_alpha,
-        *to_alpha,
-        &comment.content,
-        *delay,
-        *lifetime,
-        *duration,
-        fontface,
-        *is_border,
-        styleid,
-        zoom_factor,
-    )
+    // Rotation
+    write_rotation_tags(buf, &from_rotarg);
+    if (from_x, from_y) != (to_x, to_y) {
+        let _ = write!(buf, "\\t({}, {}, ", delay as i32, (delay + duration) as i32);
+        write_rotation_tags(buf, &to_rotarg);
+        buf.push(')');
+    }
+
+    // Font, size, color, alpha, border
+    if !fontface.is_empty() {
+        buf.push_str("\\fn");
+        utils::ass_escape_to_buf(buf, fontface);
+    }
+    let _ = write!(buf, "\\fs{:.0}", comment.size * zoom_factor.0);
+    write_color_override(buf, comment.color);
+    write_alpha_override(buf, from_alpha, to_alpha, lifetime);
+    if !is_border {
+        buf.push_str("\\bord0");
+    }
+
+    // Close styles, write escaped text
+    buf.push('}');
+    utils::ass_escape_to_buf(buf, text);
+    buf.push('\n');
 }
