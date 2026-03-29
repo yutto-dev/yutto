@@ -84,11 +84,14 @@ pub fn write_timestamp(buf: &mut String, timestamp: f64) {
 
 /// Single-pass ASS escape directly into a buffer, avoiding intermediate String allocation.
 pub fn ass_escape_to_buf(buf: &mut String, text: &str) {
-    // Fast path: check if any escaping is needed at all
-    let needs_escape = text
+    // Fast path: if no transform-triggering chars exist, push as-is.
+    // Only check for actual escape chars and leading/trailing spaces.
+    let has_escape_chars = text
         .bytes()
-        .any(|b| matches!(b, b'\\' | b'{' | b'}' | b'\n' | b' '));
-    if !needs_escape {
+        .any(|b| matches!(b, b'\\' | b'{' | b'}' | b'\n'));
+    let has_boundary_spaces = text.as_bytes().first().is_some_and(|&b| b == b' ')
+        || text.as_bytes().last().is_some_and(|&b| b == b' ');
+    if !has_escape_chars && !has_boundary_spaces {
         buf.push_str(text);
         return;
     }

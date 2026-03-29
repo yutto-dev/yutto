@@ -80,8 +80,10 @@ pub fn find_alternative_row(
         .data
         .as_normal()
         .expect("comment_data is not normal");
-    for row in 0..(height as usize - bottom_reserved as usize - comment_data.height.ceil() as usize)
-    {
+    let upper_bound = (height as usize)
+        .saturating_sub(bottom_reserved as usize)
+        .saturating_sub(comment_data.height.ceil() as usize);
+    for row in 0..upper_bound {
         match &rows[comment_pos_id][row] {
             None => return row,
             Some(comment) => {
@@ -101,7 +103,11 @@ pub fn mark_comment_row<'a>(rows: &mut Rows<'a>, comment: &'a Comment, row: usiz
         .data
         .as_normal()
         .expect("comment_data is not normal");
-    let end = (row + comment_data.height.ceil() as usize).min(rows[comment_pos_id].len());
+    let len = rows[comment_pos_id].len();
+    if row >= len {
+        return;
+    }
+    let end = (row + comment_data.height.ceil() as usize).min(len);
     for slot in &mut rows[comment_pos_id][row..end] {
         *slot = Some(comment);
     }

@@ -23,12 +23,20 @@ pub fn process_comments(
     let bottom_reserved = ((height as f32) * (1. - display_region_ratio)) as u32;
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
 
-    // Pre-allocate output buffer: ~120 bytes per comment is a reasonable estimate
-    let mut ass_result = String::with_capacity(1024 + comments.len() * 120);
+    // Pre-allocate output buffer: ~120 bytes per comment is a reasonable estimate.
+    // Use saturating arithmetic to avoid usize overflow for extremely large inputs.
+    let capacity = 1024usize.saturating_add(comments.len().saturating_mul(120));
+    let mut ass_result = String::with_capacity(capacity);
 
-    ass_result.push_str(&writer::ass::write_head(
-        width, height, fontface, fontsize, alpha, styleid,
-    ));
+    writer::ass::write_head(
+        &mut ass_result,
+        width,
+        height,
+        fontface,
+        fontsize,
+        alpha,
+        styleid,
+    );
 
     for comment in comments {
         match comment.pos {
