@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone, PartialOrd)]
+#[derive(Debug, PartialEq, Copy, Clone, PartialOrd)]
 pub enum CommentPosition {
     /// Regular moving comment
     Scroll,
