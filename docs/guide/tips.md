@@ -2,7 +2,7 @@
 
 ## 通过 Agent 使用
 
-如果你有趁手的 Agent，你也可以通过如下命令来安装 yutto 的 skill：
+如果你有趁手的 Agent，你也可以通过如下命令来安装我的 skill：
 
 ```bash
 npx skills add https://github.com/yutto-dev/yutto --skill bilibili-video-download
@@ -17,7 +17,7 @@ npx skills add https://github.com/yutto-dev/yutto --skill bilibili-video-downloa
 
 ## 作为 log 输出到文件
 
-虽说我不像 bilili 前辈那样会全屏刷新，但进度条还是会一直刷新占据多行，可能影响 log 的阅读，另外颜色码也是难以阅读的，因此我们可以通过选项禁用他们：
+虽说我不像 bilili 前辈那样会全屏刷新，但进度条还是会一直刷新占据多行，可能影响 log 的阅读，另外颜色码也是难以阅读的，因此可以通过选项禁用它们：
 
 ```bash
 yutto --no-color --no-progress <url> > log

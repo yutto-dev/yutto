@@ -56,7 +56,9 @@ async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> s
         Logger.warning(f"用户 {mid} 不存在，疑似注销或被封禁")
         return f"「用户{mid}」"
     elif user_info["code"] != 0:
-        Logger.error(f"获取用户名失败，错误信息：{user_info['message']}，可尝试添加参数 `-c` 登录账号后重试")
+        Logger.error(
+            f"获取用户名失败了呢，错误信息：{user_info['message']}，可尝试检查 `--auth` 参数正确性或者通过 `yutto auth login` 登录账号后重试～"
+        )
     return user_info["data"]["name"]
 
 
