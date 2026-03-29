@@ -68,7 +68,7 @@ fn write_color_override(buf: &mut String, color: u32) {
 #[inline]
 fn write_alpha_override(buf: &mut String, from_alpha: u8, to_alpha: u8, lifetime: f64) {
     if from_alpha == to_alpha {
-        let _ = write!(buf, "\\alpha&H{from_alpha:02X}");
+        let _ = write!(buf, "\\alpha&H{from_alpha:02X}&");
     } else if (from_alpha, to_alpha) == (255, 0) {
         let _ = write!(buf, "\\fad({:.0},0)", lifetime * 1000.);
     } else if (from_alpha, to_alpha) == (0, 255) {
