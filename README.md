@@ -96,7 +96,7 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 
 > [!TIP]
 >
-> 在此之前请确保安装 Python3.10 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
+> 在此之前请确保安装 Python3.10 及以上版本，并配置好 FFmpeg（参照 [yutto 文档的“FFmpeg 下载与配置”](https://yutto.nyakku.moe/guide/quick-start#ffmpeg-下载与配置)）
 
 ```bash
 pip install yutto
