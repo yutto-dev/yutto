@@ -60,7 +60,7 @@ Use `just run -- ...` or `uv run python -m yutto ...` for local CLI testing. Do 
 - If a commit is created with help from a coding agent, include the relevant `Co-authored-by` trailer(s) in the commit message. Common examples:
   - `Co-authored-by: Codex <codex@openai.com>`
   - `Co-authored-by: Claude <noreply@anthropic.com>`
-  - `Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>`
+  - `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`
 
 ## Validation before submission
 
