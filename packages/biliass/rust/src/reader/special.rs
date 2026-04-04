@@ -85,7 +85,7 @@ pub fn parse_special_comment(
     // let is_border = parse_array_item_at_index(special_comment_array, 11, true, parse_bool_value)?;
     let is_border = true;
     Ok((
-        text.to_owned(),
+        text.into_owned(),
         SpecialCommentData {
             rotate_y,
             rotate_z,

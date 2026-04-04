@@ -68,7 +68,7 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
     auth = hydrate_auth(args)
     if not auth:
         Logger.info(
-            "未提供登录认证信息，无法下载高清视频、字幕等资源哦～请通过 `--auth` 参数提供认证信息，或者先使用 `yutto login` 登录存储认证信息后再下载～"
+            "未提供登录认证信息，无法下载高清视频、字幕等资源哦～请通过 `--auth` 参数提供认证信息，或者先使用 `yutto auth login` 登录存储认证信息后再下载～"
         )
     else:
         ctx.set_auth_info(auth)

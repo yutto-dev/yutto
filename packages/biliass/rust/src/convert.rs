@@ -22,11 +22,21 @@ pub fn process_comments(
     let styleid = "biliass";
     let bottom_reserved = ((height as f32) * (1. - display_region_ratio)) as u32;
     let mut rows = rows::init_rows(4, (height - bottom_reserved + 1) as usize);
-    let mut ass_result = String::new();
 
-    ass_result.push_str(&writer::ass::write_head(
-        width, height, fontface, fontsize, alpha, styleid,
-    ));
+    // Pre-allocate output buffer: ~120 bytes per comment is a reasonable estimate.
+    // Use saturating arithmetic to avoid usize overflow for extremely large inputs.
+    let capacity = 1024usize.saturating_add(comments.len().saturating_mul(120));
+    let mut ass_result = String::with_capacity(capacity);
+
+    writer::ass::write_head(
+        &mut ass_result,
+        width,
+        height,
+        fontface,
+        fontsize,
+        alpha,
+        styleid,
+    );
 
     for comment in comments {
         match comment.pos {
@@ -34,7 +44,8 @@ pub fn process_comments(
             | CommentPosition::Bottom
             | CommentPosition::Top
             | CommentPosition::Reversed => {
-                ass_result.push_str(&writer::ass::write_normal_comment(
+                writer::ass::write_normal_comment(
+                    &mut ass_result,
                     rows.as_mut(),
                     comment,
                     width,
@@ -45,16 +56,17 @@ pub fn process_comments(
                     duration_still,
                     styleid,
                     reduced,
-                ));
+                );
             }
             CommentPosition::Special => {
-                ass_result.push_str(&writer::ass::write_special_comment(
+                writer::ass::write_special_comment(
+                    &mut ass_result,
                     comment,
                     width,
                     height,
                     zoom_factor,
                     styleid,
-                ));
+                );
             }
         }
     }

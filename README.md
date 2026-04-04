@@ -96,7 +96,7 @@ docker run --rm -it -v /path/to/download:/app siguremo/yutto <url> [options]
 
 > [!TIP]
 >
-> 在此之前请确保安装 Python3.10 及以上版本，并配置好 FFmpeg（参照 [bilili 文档](https://bilili.nyakku.moe/guide/getting-started.html)）
+> 在此之前请确保安装 Python3.10 及以上版本，并配置好 FFmpeg（参照 [yutto 文档的“FFmpeg 下载与配置”](https://yutto.nyakku.moe/guide/quick-start#ffmpeg-下载与配置)）
 
 ```bash
 pip install yutto
@@ -163,32 +163,40 @@ yutto --batch https://www.bilibili.com/bangumi/play/ep395211
 
 yutto 还支持很多功能，限于篇幅不在 `README` 中展示，你可以前往 [yutto 文档](https://yutto.nyakku.moe/) 查看更多详细内容～
 
+## Agent skill
+
+如果你有趁手的 Agent，你也可以通过如下命令来安装 yutto 的 skill：
+
+```bash
+npx skills add https://github.com/yutto-dev/yutto --skill bilibili-video-download
+```
+
 ## 其他应用
 
 你也可以通过这些应用来使用 yutto
 
--  [KubeSpider](https://github.com/opennaslab/kubespider): 一个多功能全局资源编排下载系统，支持下载、订阅各类资源网站～
+- [KubeSpider](https://github.com/opennaslab/kubespider): 一个多功能全局资源编排下载系统，支持下载、订阅各类资源网站～
 
 ## Roadmap
 
 ### 2.0.0
 
--  [x] feat: 支持弹幕字体、字号、速度等设置
--  [x] feat: 配置文件支持
--  [x] feat: 配置文件功能优化，支持自定义配置路径
--  [x] docs: issue template 添加配置引导
--  [x] docs: 优化 biliass rust 重构后的贡献指南
+- [x] feat: 支持弹幕字体、字号、速度等设置
+- [x] feat: 配置文件支持
+- [x] feat: 配置文件功能优化，支持自定义配置路径
+- [x] docs: issue template 添加配置引导
+- [x] docs: 优化 biliass rust 重构后的贡献指南
 
 ### future
 
--  [x] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
--  [ ] feat: 新的基于 toml 的任务列表
--  [ ] refactor: 配置参数复用 pydantic 验证
--  [ ] refactor: 针对视频合集优化路径变量
--  [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
--  [ ] refactor: 直接使用 rich 替代内置的终端显示模块
--  [ ] feat: 更多批下载支持
--  [ ] feat: 以及更加可爱～
+- [x] docs: 可爱的静态文档（WIP in [#86](https://github.com/yutto-dev/yutto/pull/86)）
+- [ ] feat: 新的基于 toml 的任务列表
+- [ ] refactor: 配置参数复用 pydantic 验证
+- [ ] refactor: 针对视频合集优化路径变量
+- [ ] refactor: 优化杜比视界/音效/全景声选取逻辑（Discussing in [#62](https://github.com/yutto-dev/yutto/discussions/62)）
+- [ ] refactor: 直接使用 rich 替代内置的终端显示模块
+- [ ] feat: 更多批下载支持
+- [ ] feat: 以及更加可爱～
 
 ## 参与贡献
 

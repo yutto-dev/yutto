@@ -1,6 +1,6 @@
 [project]
 name = "yutto"
-version = "2.1.1"
+version = "2.2.0"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,10 +23,10 @@ classifiers = [
 ]
 dependencies = [
   "aiofiles>=25.1.0",
-  "biliass==2.3.1",
+  "biliass==2.4.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
   "typing-extensions>=4.15.0",
-  "dict2xml>=1.7.7",
+  "dict2xml>=1.7.8",
   "httpx[http2,socks]>=0.28.1",
   "tomli>=2.3.0; python_version < '3.11'",
   "pydantic>=2.12.5",

@@ -96,7 +96,18 @@ def resolve_auth(args: Namespace) -> AuthInfo | None:
         return parsed_auth
 
     auth_file = resolve_auth_file(args)
-    return load_auth(auth_file, args.auth_profile)
+    validate_profile(args.auth_profile)
+    if not auth_file.exists():
+        return None
+
+    auth_file_model = load_auth_file(auth_file)
+    if auth_file_model is None:
+        raise ValueError(f"认证信息文件格式无效：{auth_file}")
+
+    entry = auth_file_model.profiles.get(args.auth_profile)
+    if entry is None or not entry.sessdata:
+        return None
+    return AuthInfo(SESSDATA=entry.sessdata, bili_jct=entry.bili_jct or None)
 
 
 def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
@@ -115,7 +126,6 @@ def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
 
 def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None):
     validate_profile(profile)
-    auth_file.parent.mkdir(parents=True, exist_ok=True)
 
     profiles: dict[str, AuthProfileModel] = {}
     loaded = load_auth_file(auth_file)
@@ -135,6 +145,33 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
     entry_payload["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     profiles[profile] = AuthProfileModel.model_validate(entry_payload)
+    write_auth_file(auth_file, profiles)
+
+
+def remove_auth(auth_file: Path, profile: str) -> bool:
+    validate_profile(profile)
+    loaded = load_auth_file(auth_file)
+    if loaded is None:
+        if auth_file.exists():
+            raise ValueError(f"认证信息文件格式无效：{auth_file}")
+        return False
+
+    profiles = dict(loaded.profiles)
+    if profile not in profiles:
+        return False
+
+    profiles.pop(profile)
+    write_auth_file(auth_file, profiles)
+    return True
+
+
+def write_auth_file(auth_file: Path, profiles: dict[str, AuthProfileModel]) -> None:
+    if not profiles:
+        if auth_file.exists():
+            auth_file.unlink()
+        return
+
+    auth_file.parent.mkdir(parents=True, exist_ok=True)
 
     lines: list[str] = []
     for profile_name in sorted(profiles.keys()):

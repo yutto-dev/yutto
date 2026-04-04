@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import sys
 import time
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import parse_qs, unquote, urlparse
 
 import httpx
 import segno
 
 from yutto.api.user_info import USER_INFO_API, parse_user_info, user_info_matches
-from yutto.auth import AuthInfo, resolve_auth_file, save_auth, validate_profile
+from yutto.auth import AuthInfo, remove_auth, resolve_auth, resolve_auth_file, save_auth, validate_profile
 from yutto.exceptions import ErrorCode
-from yutto.utils.console.logger import Logger
+from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import FetcherContext, create_sync_client
+
+if TYPE_CHECKING:
+    from yutto.types import UserInfo
 
 QR_GENERATE_API = "https://passport.bilibili.com/x/passport-login/web/qrcode/generate"
 QR_POLL_API = "https://passport.bilibili.com/x/passport-login/web/qrcode/poll"
@@ -54,6 +57,62 @@ def run_login(args: Any):
         Logger.warning(
             f"SESSDATA 已写入认证文件，但登录状态校验失败，请稍后重试。文件：{auth_file}（profile: {args.auth_profile}）"
         )
+
+
+def run_auth_status(args: Any):
+    ctx = FetcherContext()
+    try:
+        ctx.set_proxy(args.proxy)
+        auth = resolve_auth(args)
+    except ValueError as e:
+        Logger.error(str(e))
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
+    if auth is None:
+        Logger.warning(f"未找到可用认证信息，请先执行 `yutto auth login`。{describe_auth_source(args)}")
+        sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+
+    try:
+        user_info = fetch_authenticated_user_info(auth, proxy=ctx.proxy, trust_env=ctx.trust_env)
+    except Exception as e:
+        Logger.error(f"登录状态检查失败：{e}")
+        sys.exit(ErrorCode.HTTP_STATUS_ERROR.value)
+
+    message = f"当前认证信息有效。{describe_auth_source(args)}"
+    if user_info["is_login"]:
+        if user_info["vip_status"]:
+            Logger.custom(message, badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
+        else:
+            Logger.info(f"{message} 当前账号已登录，但不是大会员。")
+        return
+
+    Logger.warning(f"当前认证信息已失效或尚未登录。{describe_auth_source(args)}")
+    sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+
+
+def run_auth_logout(args: Any):
+    if getattr(args, "auth", ""):
+        Logger.error("当前认证来源于 inline auth，请删除 `--auth` 参数或配置项 `auth.auth` 后再试。")
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
+    try:
+        auth_file = resolve_auth_file(args)
+        removed = remove_auth(auth_file, args.auth_profile)
+    except ValueError as e:
+        Logger.error(str(e))
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
+    if removed:
+        Logger.info(f"已退出登录并移除认证信息：{auth_file}（profile: {args.auth_profile}）")
+        return
+
+    Logger.info(f"未找到可移除的认证信息，无需退出：{auth_file}（profile: {args.auth_profile}）")
+
+
+def describe_auth_source(args: Any) -> str:
+    if getattr(args, "auth", ""):
+        return "来源：inline auth"
+    return f"来源：{resolve_auth_file(args)}（profile: {args.auth_profile}）"
 
 
 def sanitize_url_for_log(url: str) -> str:
@@ -113,7 +172,7 @@ def poll_qr_login(client: httpx.Client, qrcode_key: str, *, timeout: int, poll_i
             elif status == QR_STATUS_SCANNED:
                 Logger.info("已扫码，请在 App 内确认登录")
             elif status == QR_STATUS_EXPIRED:
-                raise TimeoutError("二维码已过期，请重新执行 login")
+                raise TimeoutError("二维码已过期，请重新执行 `yutto auth login`")
             last_status = status
 
         if status == QR_STATUS_CONFIRMED:
@@ -190,12 +249,16 @@ def get_cookie_value(cookies: httpx.Cookies, name: str) -> str | None:
         return None
 
 
-def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> bool:
+def fetch_authenticated_user_info(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> UserInfo:
     ctx = FetcherContext(proxy=proxy, trust_env=trust_env)
     ctx.set_auth_info(auth)
+    with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env, verify=True) as client:
+        return parse_user_info(request_json(client, USER_INFO_API, params={}))
+
+
+def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> bool:
     try:
-        with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env, verify=True) as client:
-            user_info = parse_user_info(request_json(client, USER_INFO_API, params={}))
+        user_info = fetch_authenticated_user_info(auth, proxy=proxy, trust_env=trust_env)
         return user_info_matches(user_info, {"vip_status": False, "is_login": True})
     except Exception as e:
         Logger.warning(f"登录状态校验失败，将跳过校验：{e}")

@@ -6,7 +6,7 @@ use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
 use tracing::warn;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 enum XmlVersion {
     V1,
     V2,
@@ -124,13 +124,13 @@ fn parse_comment_item(
                     (comment_content.chars().filter(|&c| c == '\n').count() as f32 + 1.0) * size;
                 let width = utils::calculate_length(&comment_content) * size;
                 (
-                    comment_content,
+                    comment_content.into_owned(),
                     size,
                     CommentData::Normal(NormalCommentData { height, width }),
                 )
             } else {
-                let parsed_data =
-                    special::parse_special_comment(&utils::filter_bad_chars(content), zoom_factor);
+                let filtered = utils::filter_bad_chars(content);
+                let parsed_data = special::parse_special_comment(&filtered, zoom_factor);
                 if parsed_data.is_err() {
                     warn!("Failed to parse special comment: {:?}", parsed_data);
                     return Ok(None);
@@ -180,7 +180,7 @@ fn parse_comment(
     let parsed_p = parse_comment_item(
         &raw_p,
         &content,
-        version.clone(),
+        version,
         fontsize,
         zoom_factor,
         id,
@@ -235,7 +235,7 @@ where
                     match parse_comment(
                         &mut reader,
                         e,
-                        version.clone().unwrap(),
+                        version.unwrap(),
                         fontsize,
                         zoom_factor,
                         count,

@@ -145,3 +145,6 @@ __test_files__
 
 # config file
 yutto.toml
+
+# agent config
+.claude

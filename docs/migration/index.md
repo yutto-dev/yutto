@@ -18,7 +18,7 @@
 ## 参数名修改
 
 - 「视频清晰度选择」 `-q`/`--quality` 修改为 `-q`/`--video-quality`
-- 「个人信息认证」 `-c`/`--sess-data` 修改为 `-c`/`--sessdata`
+- 「个人信息认证」 `-c`/`--sess-data` 推荐改用 `--auth="SESSDATA=xxxx; bili_jct=yyyy"`
 - 「指定下载弹幕类型」 `--danmaku` 拆分为「弹幕格式选择」 `-df`/`--danmaku-format` 和「不生成弹幕文件」 `--no-danmaku` 两个参数
 - 「绕过系统代理」 `--disable-proxy` 集成到更为灵活的「代理设置」 `-x`/`--proxy` 参数
 
