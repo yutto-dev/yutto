@@ -147,7 +147,7 @@ async def download_video_and_audio(
         buffers[0], sizes[0] = vbuf, vsize
 
     if audio is not None:
-        abuf: AsyncFileBuffer = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
+        abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
         asize = await first_successful_with_check(
             [Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
         )

@@ -52,7 +52,6 @@ def async_cache(
 ) -> Callable[[Callable[P, Coroutine[Any, Any, RetT]]], Callable[P, Coroutine[Any, Any, RetT]]]:
     def decorator(fn: Callable[P, Coroutine[Any, Any, RetT]]) -> Callable[P, Coroutine[Any, Any, RetT]]:
         CACHE: dict[str, RetT] = {}
-        assert isinstance(fn, types.FunctionType)
 
         @wraps(fn)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:

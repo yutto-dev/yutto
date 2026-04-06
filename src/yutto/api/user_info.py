@@ -106,7 +106,7 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg) -> dict[str, Any]:
     mixin_key = _get_mixin_key(img_key + sub_key)
     time_stamp = int(time.time())
     params_with_wts = dict(params, wts=time_stamp)
-    params_with_dm: dict[str, Any] = {
+    params_with_dm = {
         **params_with_wts,
         "dm_img_list": "[]",
         "dm_img_str": dm_img_str_cache,

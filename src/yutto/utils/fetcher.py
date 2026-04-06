@@ -34,8 +34,6 @@ class MaxRetry:
     - max_retry (int): 额外重试次数（如重试次数为 2，则最多尝试 3 次）
     """
 
-    max_retry: int
-
     def __init__(self, max_retry: int = 2):
         self.max_retry = max_retry
 
