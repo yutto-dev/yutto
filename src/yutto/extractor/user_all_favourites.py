@@ -3,10 +3,11 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from yutto.api.space import get_all_favourites, get_favourite_avids, get_user_name
+from yutto.api.space import get_all_favourites, get_favourite_items, get_user_name
 from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
+from yutto.extractor._favourite import normalize_favourite_video_item
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.types import MId
 from yutto.utils.asynclib import CoroutineWrapper
@@ -42,25 +43,36 @@ class UserAllFavouritesExtractor(BatchExtractor):
         username = await get_user_name(ctx, client, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
+        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str, str, str | None]] = []
 
         for fav in await get_all_favourites(ctx, client, self.mid):
             series_title = fav["title"]
             fid = fav["fid"]
-            for avid in await get_favourite_avids(ctx, client, fid):
+            for favourite_video in await get_favourite_items(ctx, client, fid):
+                avid = favourite_video["avid"]
                 try:
                     ugc_video_list = await get_ugc_video_list(ctx, client, avid)
                     if not Filter.verify_timer(ugc_video_list["pubdate"]):
                         Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                         continue
                     await Fetcher.touch_url(ctx, client, avid.to_url())
+                    # 优先使用收藏夹 API 返回的人工标题；失效视频 title 为空时退回到 ugc 接口标题
+                    favourite_title = favourite_video["title"] or ugc_video_list["title"]
+                    is_single_page_video = len(ugc_video_list["pages"]) == 1
                     for ugc_video_item in ugc_video_list["pages"]:
+                        resolved_video_item, auto_subpath_template, display_group = normalize_favourite_video_item(
+                            ugc_video_item,
+                            favourite_title,
+                            is_single_page_video=is_single_page_video,
+                        )
                         ugc_video_info_list.append(
                             (
-                                ugc_video_item,
-                                ugc_video_list["title"],
+                                resolved_video_item,
+                                favourite_title,
                                 ugc_video_list["pubdate"],
                                 series_title,
+                                auto_subpath_template,
+                                display_group,
                             )
                         )
                 except (NotFoundError, NoAccessPermissionError) as e:
@@ -81,8 +93,9 @@ class UserAllFavouritesExtractor(BatchExtractor):
                         "series_title": series_title,
                         "pubdate": pubdate,
                     },
-                    "{username}的收藏夹/{series_title}/{title}/{name}",
+                    auto_subpath_template,
+                    display_group=display_group,
                 )
             )
-            for ugc_video_item, title, pubdate, series_title in ugc_video_info_list
+            for ugc_video_item, title, pubdate, series_title, auto_subpath_template, display_group in ugc_video_info_list
         ]
