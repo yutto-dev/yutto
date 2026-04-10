@@ -247,8 +247,6 @@ class DownloaderOptions(TypedDict):
     require_video: bool
     require_chapter_info: bool
     save_cover: bool
-    skip_download: bool  # 仅列出信息，不实际下载
-    ffmpeg_path: str  # FFmpeg 可执行文件路径
     video_quality: VideoQuality
     video_download_codec: VideoCodec
     video_save_codec: str
