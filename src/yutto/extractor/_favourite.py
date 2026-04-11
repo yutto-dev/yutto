@@ -11,19 +11,6 @@ FAVOURITE_SINGLE_PAGE_TEMPLATE = "{username}的收藏夹/{series_title}/{title}"
 FAVOURITE_MULTI_PAGE_TEMPLATE = "{username}的收藏夹/{series_title}/{title}/{name}"
 
 
-def format_multi_page_favourite_name(page_id: int, page_name: str) -> str:
-    """将多分 p 的分 p 名规范化为 "P{id:02}_{name}" 格式。
-
-    Args:
-        page_id: 分 p 序号（从 1 开始）。
-        page_name: 原始分 p 名称。
-
-    Returns:
-        规范化后的分 p 名，例如 "P01_手机端添加分p"。
-    """
-    return f"P{page_id:02}_{page_name}"
-
-
 def normalize_favourite_video_item(
     ugc_video_item: UgcVideoListItem,
     favourite_title: str,
@@ -33,7 +20,6 @@ def normalize_favourite_video_item(
     """根据视频是否为单分 p，规范化收藏夹条目的文件名和路径模板。
 
     对于多分 p 视频：
-    - 将分 p 名改写为 "P{id:02}_{name}" 格式，避免与机器生成的名称混淆。
     - 返回多分 p 路径模板，并将收藏夹人工标题作为分组名（display_group）。
 
     对于单分 p 视频：
@@ -49,25 +35,8 @@ def normalize_favourite_video_item(
         (规范化后的条目, 路径模板字符串, display_group)
     """
     if not is_single_page_video:
-        # 多分 p：规范化分 p 名，并以收藏夹标题作为分组展示
-        normalized_name = format_multi_page_favourite_name(ugc_video_item["id"], ugc_video_item["name"])
-        metadata = cast(
-            "MetaData",
-            {
-                **ugc_video_item["metadata"],
-                "title": normalized_name,
-                "show_title": normalized_name,
-            },
-        )
-        normalized_item = cast(
-            "UgcVideoListItem",
-            {
-                **ugc_video_item,
-                "name": normalized_name,
-                "metadata": metadata,
-            },
-        )
-        return normalized_item, FAVOURITE_MULTI_PAGE_TEMPLATE, favourite_title
+        # 多分 p：以收藏夹标题作为分组展示，分 p 名保持与普通投稿视频一致
+        return ugc_video_item, FAVOURITE_MULTI_PAGE_TEMPLATE, favourite_title
 
     # 单分 p：用 B 站侧人工标题覆盖 metadata，避免使用机器生成的文件名
     metadata = cast(
