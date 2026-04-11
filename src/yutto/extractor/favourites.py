@@ -9,10 +9,10 @@ from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.extractor.utils.favourite import normalize_favourite_video_item
 from yutto.types import FId, MId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.favourite import normalize_favourite_video_item
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import Filter
 
