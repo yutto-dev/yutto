@@ -62,7 +62,7 @@ def show_batch_episode_title(
     打印分组名，然后以缩进格式打印分 p 名；单集视频直接打印文件名。
 
     Args:
-        episode_data: 当前剧集数据，包含 display_name 和 display_group。
+        episode_data: 当前剧集数据，包含 path 和 display_group。
         index: 当前条目在下载列表中的序号（从 1 开始）。
         total: 下载列表总条目数。
         current_display_group: 上一条目的 display_group，用于检测分组切换。
@@ -78,7 +78,7 @@ def show_batch_episode_title(
     elif display_group is None:
         current_display_group = None
 
-    display_name = episode_data["display_name"]
+    display_name = episode_data["path"].name
     if display_group is not None:
         # 多分 p 条目缩进显示，以区分分组标题行
         display_name = f"  {display_name}"
@@ -304,8 +304,6 @@ def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable
     original_path = episode_data["path"]
     new_path = Path(unique_name_resolver(str(original_path)))
     episode_data["path"] = new_path
-    # display_name 与 path.name 保持同步，确保重命名后日志显示正确
-    episode_data["display_name"] = new_path.name
     if original_path != new_path:
         Logger.warning(f"文件名重复，已重命名为 {new_path.name}")
     return episode_data

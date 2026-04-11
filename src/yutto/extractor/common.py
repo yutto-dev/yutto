@@ -104,7 +104,6 @@ async def extract_bangumi_data(
             cover_data=cover_data,
             chapter_info_data=[],
             path=path_obj,
-            display_name=path_obj.name,
             display_group=None,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
@@ -166,7 +165,6 @@ async def extract_cheese_data(
             cover_data=cover_data,
             chapter_info_data=[],
             path=path_obj,
-            display_name=path_obj.name,
             display_group=None,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
@@ -243,7 +241,6 @@ async def extract_ugc_video_data(
             cover_data=cover_data,
             chapter_info_data=chapter_info_data,
             path=path_obj,
-            display_name=path_obj.name,
             display_group=display_group,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:

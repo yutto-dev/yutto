@@ -237,7 +237,6 @@ class EpisodeData(TypedDict):
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
     path: Path
-    display_name: str  # 日志中展示的文件名
     display_group: str | None  # 多分 p 视频的分组标题，单集为 None
 
 
