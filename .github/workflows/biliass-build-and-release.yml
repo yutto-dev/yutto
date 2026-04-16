@@ -105,7 +105,8 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           architecture: ${{ matrix.platform.target }}
@@ -114,7 +115,9 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
@@ -138,7 +141,8 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14t"
           architecture: ${{ matrix.platform.target }}
@@ -147,7 +151,9 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
