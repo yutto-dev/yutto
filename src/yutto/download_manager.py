@@ -53,6 +53,42 @@ class DownloadTask:
     args: argparse.Namespace
 
 
+def show_batch_episode_title(
+    episode_data: EpisodeData, index: int, total: int, current_display_group: str | None
+) -> str | None:
+    """打印批量下载中的单集标题，多分 p 视频额外输出分组标题行。
+
+    当 display_group 发生变化时（多分 p 视频切换到新标题），先用「列表」徽章
+    打印分组名，然后以缩进格式打印分 p 名；单集视频直接打印文件名。
+
+    Args:
+        episode_data: 当前剧集数据，包含 path 和 display_group。
+        index: 当前条目在下载列表中的序号（从 1 开始）。
+        total: 下载列表总条目数。
+        current_display_group: 上一条目的 display_group，用于检测分组切换。
+
+    Returns:
+        更新后的 current_display_group，供下一次调用使用。
+    """
+    display_group = episode_data["display_group"]
+    # 分组变化时打印分组标题（多分 p 视频新出现或切换到另一个多分 p 视频）
+    if display_group is not None and display_group != current_display_group:
+        Logger.custom(display_group, Badge("列表", fore="black", back="cyan"))
+        current_display_group = display_group
+    elif display_group is None:
+        current_display_group = None
+
+    display_name = episode_data["path"].name
+    if display_group is not None:
+        # 多分 p 条目缩进显示，以区分分组标题行
+        display_name = f"  {display_name}"
+    Logger.custom(
+        display_name,
+        Badge(f"[{index}/{total}]", fore="black", back="cyan"),
+    )
+    return current_display_group
+
+
 class DownloadManager:
     queue: Queue[Maybe[DownloadTask]]
 
@@ -199,6 +235,7 @@ class DownloadManager:
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)
 
         current_download_state = DownloadState.SKIP
+        current_display_group: str | None = None
 
         # 下载～
         for i, episode_data_coro in enumerate(download_list):
@@ -221,9 +258,11 @@ class DownloadManager:
             # 保证路径唯一
             episode_data = ensure_unique_path(episode_data, self.unique_path)
             if args.batch:
-                Logger.custom(
-                    f"{episode_data['path'].name}",
-                    Badge(f"[{i + 1}/{len(download_list)}]", fore="black", back="cyan"),
+                current_display_group = show_batch_episode_title(
+                    episode_data,
+                    i + 1,
+                    len(download_list),
+                    current_display_group,
                 )
 
             current_download_state = await process_download(

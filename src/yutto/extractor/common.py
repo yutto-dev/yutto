@@ -94,6 +94,7 @@ async def extract_bangumi_data(
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+        path_obj = Path(path)
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -102,7 +103,8 @@ async def extract_bangumi_data(
             danmaku=danmaku,
             cover_data=cover_data,
             chapter_info_data=[],
-            path=Path(path),
+            path=path_obj,
+            display_group=None,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -153,6 +155,7 @@ async def extract_cheese_data(
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+        path_obj = Path(path)
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -161,7 +164,8 @@ async def extract_cheese_data(
             danmaku=danmaku,
             cover_data=cover_data,
             chapter_info_data=[],
-            path=Path(path),
+            path=path_obj,
+            display_group=None,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)
@@ -176,6 +180,7 @@ async def extract_ugc_video_data(
     options: ExtractorOptions,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
+    display_group: str | None = None,
 ) -> EpisodeData | None:
     try:
         cid = ugc_video_info["cid"]
@@ -226,6 +231,7 @@ async def extract_ugc_video_data(
         }
         subpath_variables_base.update(subpath_variables)
         path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+        path_obj = Path(path)
         return EpisodeData(
             videos=videos,
             audios=audios,
@@ -234,7 +240,8 @@ async def extract_ugc_video_data(
             danmaku=danmaku,
             cover_data=cover_data,
             chapter_info_data=chapter_info_data,
-            path=Path(path),
+            path=path_obj,
+            display_group=display_group,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
         Logger.error(e.message)

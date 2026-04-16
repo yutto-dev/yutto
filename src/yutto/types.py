@@ -237,6 +237,7 @@ class EpisodeData(TypedDict):
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
     path: Path
+    display_group: str | None  # 多分 p 视频的分组标题，单集为 None
 
 
 class DownloaderOptions(TypedDict):
@@ -266,6 +267,14 @@ class DownloaderOptions(TypedDict):
 class FavouriteMetaData(TypedDict):
     fid: FId
     title: str
+
+
+class FavouriteVideoData(TypedDict):
+    """收藏夹条目的元数据，含完整视频标题与分 p 数量"""
+
+    avid: AvId
+    title: str  # B 站返回的视频标题（人工填写）
+    page: int  # 视频分 p 数量
 
 
 class UserInfo(TypedDict):
