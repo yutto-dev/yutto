@@ -225,37 +225,35 @@ where
                     }
                 }
             }
-            Ok(Event::Start(e)) => {
-                if e.name().as_ref() == b"d" {
-                    if version.is_none() {
-                        return Err(BiliassError::ParseError(ParseError::Xml(
-                            "No version specified".to_string(),
-                        )));
-                    }
-                    match parse_comment(
-                        &mut reader,
-                        e,
-                        version.unwrap(),
-                        fontsize,
-                        zoom_factor,
-                        count,
-                        block_options,
-                    ) {
-                        Ok(comment_option) => {
-                            if let Some(comment) = comment_option {
-                                comments.push(comment);
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!(
-                                "Error parsing comment at {:?}, {}",
-                                reader.buffer_position(),
-                                e
-                            );
-                        }
-                    }
-                    count += 1;
+            Ok(Event::Start(e)) if e.name().as_ref() == b"d" => {
+                if version.is_none() {
+                    return Err(BiliassError::ParseError(ParseError::Xml(
+                        "No version specified".to_string(),
+                    )));
                 }
+                match parse_comment(
+                    &mut reader,
+                    e,
+                    version.unwrap(),
+                    fontsize,
+                    zoom_factor,
+                    count,
+                    block_options,
+                ) {
+                    Ok(comment_option) => {
+                        if let Some(comment) = comment_option {
+                            comments.push(comment);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Error parsing comment at {:?}, {}",
+                            reader.buffer_position(),
+                            e
+                        );
+                    }
+                }
+                count += 1;
             }
             _ => (),
         }
