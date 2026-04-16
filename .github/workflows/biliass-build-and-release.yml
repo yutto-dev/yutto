@@ -23,6 +23,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  MATURIN_ACTION_VERSION: v1.12.6
+
 jobs:
   linux:
     runs-on: ${{ matrix.platform.runner }}
@@ -50,6 +53,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
@@ -83,6 +87,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
@@ -114,6 +119,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: >-
             --release --out dist --interpreter
@@ -150,6 +156,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: >-
             --release --out dist --interpreter
@@ -180,6 +187,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
@@ -197,6 +205,7 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           command: sdist
           args: --out dist
           working-directory: packages/biliass
