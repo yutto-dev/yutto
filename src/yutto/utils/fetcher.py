@@ -229,7 +229,7 @@ class Fetcher:
     @MaxRetry(2)
     # 对于相同 session，同样的页面没必要重复 touch
     @async_cache(lambda args: f"client_id={id(args.arguments['client'])}, url={args.arguments['url']}")
-    async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str):
+    async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str) -> None:
         async with ctx.fetch_guard():
             Logger.debug(f"Touch url: {url}")
             await client.get(url)

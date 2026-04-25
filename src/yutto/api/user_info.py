@@ -98,7 +98,7 @@ def _get_mixin_key(string: str) -> str:
     return "".join([string[idx] for idx in char_indices[:32]])
 
 
-def encode_wbi(params: dict[str, Any], wbi_img: WbiImg):
+def encode_wbi(params: dict[str, Any], wbi_img: WbiImg) -> dict[str, Any]:
     img_key = wbi_img["img_key"]
     sub_key = wbi_img["sub_key"]
     illegal_char_remover = re.compile(r"[!'\(\)*]")
