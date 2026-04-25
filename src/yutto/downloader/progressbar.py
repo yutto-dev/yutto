@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import math
 import time
+from collections import deque
 from typing import TYPE_CHECKING
 
 from yutto.utils.console.attributes import get_terminal_size
@@ -13,6 +14,8 @@ from yutto.utils.console.logger import Logger
 if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
     from yutto.utils.file_buffer import AsyncFileBuffer
+
+SMOOTHING_WINDOW_SIZE = 10
 
 
 class ProgressBar:
@@ -52,8 +55,9 @@ class ProgressBar:
 
 
 async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
-    t = time.time()
-    size = sum([file_buffer.written_size for file_buffer in file_buffers])
+    t: float = time.time()
+    size: int = sum([file_buffer.written_size for file_buffer in file_buffers])
+    time_with_size_window = deque([(t, size)], maxlen=SMOOTHING_WINDOW_SIZE)
     progress_bar = ProgressBar("╸━", "━")
     bar_min_width, bar_max_width = 10, 50
     while True:
@@ -65,7 +69,8 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
 
         t_now = time.time()
         size_now = size_written + size_in_buffer
-        speed = (size_now - size) / (t_now - t + 10**-6)
+        time_with_size_window.append((t_now, size_now))
+        speed = (size_now - time_with_size_window[0][1]) / (t_now - time_with_size_window[0][0] + 10**-6)
 
         # 进度条默认颜色为青色
         # 当速度过快导致 buffer 中的块数过多时（>2048 块，每块 2**15Bytes，缓冲区共 64MiB），使用红色进行警告
