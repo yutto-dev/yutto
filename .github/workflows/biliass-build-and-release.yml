@@ -23,6 +23,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  MATURIN_ACTION_VERSION: v1.12.6
+
 jobs:
   linux:
     runs-on: ${{ matrix.platform.runner }}
@@ -50,6 +53,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
@@ -83,6 +87,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
@@ -105,7 +110,8 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           architecture: ${{ matrix.platform.target }}
@@ -113,8 +119,11 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
@@ -138,7 +147,8 @@ jobs:
             target: x86
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14t"
           architecture: ${{ matrix.platform.target }}
@@ -146,8 +156,11 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
@@ -174,6 +187,7 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
           sccache: "true"
@@ -191,6 +205,7 @@ jobs:
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           command: sdist
           args: --out dist
           working-directory: packages/biliass
@@ -252,7 +267,7 @@ jobs:
       - name: Get tag name
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Publish to GitHub
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           files: dist/*
