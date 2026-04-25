@@ -141,8 +141,7 @@ def show_qr_code(url: str, mode: str):
     qr = segno.make(url)
     if mode == "web":
         try:
-            # segno 的 stubs 会携带 Unknown，这里通过 Any 调用避免 pyright 噪音
-            cast("Any", qr).show()
+            qr.show()
             return
         except Exception as e:
             Logger.warning(f"web 模式显示二维码失败，将回退到终端输出：{e}")
