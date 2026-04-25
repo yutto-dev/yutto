@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import math
 import time
+from collections import deque
 from typing import TYPE_CHECKING
 
 from yutto.utils.console.attributes import get_terminal_size
@@ -54,9 +55,9 @@ class ProgressBar:
 
 
 async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
-    t = time.time()
-    size = sum([file_buffer.written_size for file_buffer in file_buffers])
-    time_with_size_window = [(t, size)]
+    t: float = time.time()
+    size: int = sum([file_buffer.written_size for file_buffer in file_buffers])
+    time_with_size_window = deque([(t, size)], maxlen=SMOOTHING_WINDOW_SIZE)
     progress_bar = ProgressBar("╸━", "━")
     bar_min_width, bar_max_width = 10, 50
     while True:
@@ -69,8 +70,6 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         t_now = time.time()
         size_now = size_written + size_in_buffer
         time_with_size_window.append((t_now, size_now))
-        if len(time_with_size_window) > SMOOTHING_WINDOW_SIZE:
-            time_with_size_window.pop(0)
         speed = (size_now - time_with_size_window[0][1]) / (t_now - time_with_size_window[0][0] + 10**-6)
 
         # 进度条默认颜色为青色
