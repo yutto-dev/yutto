@@ -15,22 +15,22 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0
       vite:
-        specifier: ^8.0.0
+        specifier: ^8.0.10
         version: 8.0.10(esbuild@0.27.4)
       vite-plus:
         specifier: latest
         version: 0.1.19(esbuild@0.27.4)(vite@8.0.10(esbuild@0.27.4))
       vitepress:
-        specifier: ^2.0.0-alpha.16
+        specifier: ^2.0.0-alpha.17
         version: 2.0.0-alpha.17(lightningcss@1.32.0)(postcss@8.5.10)
       vitepress-plugin-group-icons:
-        specifier: ^1.7.1
+        specifier: ^1.7.5
         version: 1.7.5(vite@8.0.10(esbuild@0.27.4))
       vitepress-plugin-llms:
-        specifier: ^1.11.1
+        specifier: ^1.12.1
         version: 1.12.1
       vue:
-        specifier: ^3.5.30
+        specifier: ^3.5.33
         version: 3.5.33
 
 packages:
@@ -1041,9 +1041,6 @@ packages:
     resolution: {integrity: sha512-0xylq/8/h44lVG0pZFknv1XIdEgymq2E9n59uTWJBG+dIgiT0TMCSsxrN7nO16Z0MU0MPjFcguBbZV8Itk52Hw==}
     peerDependencies:
       vue: 3.5.33
-
-  '@vue/shared@3.5.30':
-    resolution: {integrity: sha512-YXgQ7JjaO18NeK2K9VTbDHaFy62WrObMa6XERNfNOkAhD1F1oDSf3ZJ7K6GqabZ0BvSDHajp8qfS5Sa2I9n8uQ==}
 
   '@vue/shared@3.5.33':
     resolution: {integrity: sha512-5vR2QIlmaLG77Ygd4pMP6+SGQ5yox9VhtnbDWTy9DzMzdmeLxZ1QqxrywEZ9sa1AVubfIJyaCG3ytyWU81ufcQ==}
@@ -2537,8 +2534,6 @@ snapshots:
       '@vue/shared': 3.5.33
       vue: 3.5.33
 
-  '@vue/shared@3.5.30': {}
-
   '@vue/shared@3.5.33': {}
 
   '@vueuse/core@14.2.1(vue@3.5.33)':
@@ -3476,7 +3471,7 @@ snapshots:
       '@types/markdown-it': 14.1.2
       '@vitejs/plugin-vue': 6.0.5(vite@7.3.2(lightningcss@1.32.0))(vue@3.5.33)
       '@vue/devtools-api': 8.1.1
-      '@vue/shared': 3.5.30
+      '@vue/shared': 3.5.33
       '@vueuse/core': 14.2.1(vue@3.5.33)
       '@vueuse/integrations': 14.2.1(focus-trap@8.0.1)(vue@3.5.33)
       focus-trap: 8.0.1

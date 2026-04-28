@@ -20,12 +20,12 @@
   "devDependencies": {
     "@moefy-canvas/core": "^0.6.0",
     "@moefy-canvas/theme-sparkler": "^0.6.0",
-    "vite": "^8.0.0",
+    "vite": "^8.0.10",
     "vite-plus": "latest",
-    "vitepress": "^2.0.0-alpha.16",
-    "vitepress-plugin-group-icons": "^1.7.1",
-    "vitepress-plugin-llms": "^1.11.1",
-    "vue": "^3.5.30"
+    "vitepress": "^2.0.0-alpha.17",
+    "vitepress-plugin-group-icons": "^1.7.5",
+    "vitepress-plugin-llms": "^1.12.1",
+    "vue": "^3.5.33"
   },
   "packageManager": "pnpm@10.33.2",
   "pnpm": {
