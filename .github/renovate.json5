@@ -1,33 +1,4 @@
 // https://docs.renovatebot.com/configuration-options/
 {
   extends: ["github>SigureMo/renovate-config"],
-  packageRules: [
-    {
-      description: "Keep npm dev dependencies on latest versions",
-      matchManagers: ["npm"],
-      matchDepTypes: ["devDependencies"],
-      rangeStrategy: "bump",
-    },
-    {
-      description: "Keep Cargo dev dependencies on latest versions",
-      matchManagers: ["cargo"],
-      matchDepTypes: ["dev-dependencies"],
-      rangeStrategy: "bump",
-    },
-    {
-      description: "Keep Cargo build dependencies on latest versions",
-      matchManagers: ["cargo"],
-      matchDepTypes: ["build-dependencies"],
-      rangeStrategy: "bump",
-    },
-    {
-      description: "Keep PEP 735 dev dependency group on latest versions",
-      matchManagers: ["pep621"],
-      matchDepTypes: ["dependency-groups"],
-      matchJsonata: [
-        "depType='dependency-groups' and managerData.depGroup='dev'",
-      ],
-      rangeStrategy: "bump",
-    },
-  ],
 }
