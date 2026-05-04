@@ -25,6 +25,10 @@ jobs:
         uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+            packages/biliass/**/*
 
       - name: Install python
         uses: actions/setup-python@v6
