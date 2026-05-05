@@ -39,6 +39,17 @@ biliass = "biliass.__main__:main"
 features = ["pyo3/extension-module"]
 module-name = "biliass._core"
 
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "rust/Cargo.toml" },
+  { file = "rust/Cargo.lock" },
+  { file = "rust/build.rs" },
+  { file = "rust/src/**/*.rs" },
+  { file = "rust/proto/**/*.proto" },
+  { file = "src/biliass/**/*" },
+]
+
 [build-system]
 requires = ["maturin>=1.4,<2.0"]
 build-backend = "maturin"
