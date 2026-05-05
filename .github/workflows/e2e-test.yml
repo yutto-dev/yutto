@@ -51,9 +51,9 @@ jobs:
 
       - name: e2e without subprocess
         run: |
-          uv run yutto -v
-          uv run yutto -h
-          uv run yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w -d __test_files__
+          uv run --no-sync yutto -v
+          uv run --no-sync yutto -h
+          uv run --no-sync yutto https://www.bilibili.com/video/BV1AZ4y147Yg -w -d __test_files__
           rm -rf __test_files__
 
       - name: e2e test

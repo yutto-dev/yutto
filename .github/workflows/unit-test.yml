@@ -55,4 +55,4 @@ jobs:
         if: ${{ matrix.python-version == '3.14' && github.event_name != 'merge_group' }}
         with:
           mode: simulation
-          run: uv run -p ${{ matrix.python-version }} pytest --codspeed
+          run: uv run --no-sync -p ${{ matrix.python-version }} pytest --codspeed

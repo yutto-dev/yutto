@@ -1,7 +1,7 @@
 set positional-arguments
 
-VERSION := `uv run scripts/get-version.py src/yutto/__version__.py`
-BILIASS_VERSION := `uv run scripts/get-version.py packages/biliass/src/biliass/__version__.py`
+VERSION := `python3 scripts/get-version.py src/yutto/__version__.py`
+BILIASS_VERSION := `python3 scripts/get-version.py packages/biliass/src/biliass/__version__.py`
 DOCKER_NAME := "siguremo/yutto"
 
 run *ARGS:
@@ -75,16 +75,18 @@ ci-install pyversion:
   uv sync --all-extras --dev --no-editable -p {{pyversion}}
 
 ci-fmt-check:
-  uv run ruff format --check --diff .
+  uv run --no-sync ruff format --check --diff .
 
 ci-lint:
-  just lint
+  uv run --no-sync ty check --error-on-warning src/yutto packages/biliass/src/biliass tests
+  uv run --no-sync ruff check .
+  uv run --no-sync typos
 
 ci-test pyversion:
-  uv run -p {{pyversion}} pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
+  uv run --no-sync -p {{pyversion}} pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
 
 ci-e2e-test pyversion:
-  uv run -p {{pyversion}} pytest -m "e2e and not (ci_skip or ignore)"
+  uv run --no-sync -p {{pyversion}} pytest -m "e2e and not (ci_skip or ignore)"
 
 # docker specific
 docker-run *ARGS:
