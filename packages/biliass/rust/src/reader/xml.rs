@@ -18,11 +18,12 @@ fn parse_raw_p(reader: &mut Reader<&[u8]>, element: &BytesStart) -> Result<Strin
         let attr = attr_result.map_err(|e| ParseError::Xml(e.to_string()))?;
         if attr.key.as_ref() == b"p" {
             attr_p = Some(
-                attr.decode_and_unescape_value(reader.decoder())
-                    .map(|s| s.to_string())
-                    .map_err(|e| {
-                        ParseError::Xml(format!("Error decoding version attribute: {e}"))
-                    })?,
+                attr.decoded_and_normalized_value(
+                    quick_xml::XmlVersion::Implicit1_0,
+                    reader.decoder(),
+                )
+                .map(|s| s.to_string())
+                .map_err(|e| ParseError::Xml(format!("Error decoding version attribute: {e}")))?,
             );
         }
     }
