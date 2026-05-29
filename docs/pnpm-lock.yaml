@@ -27,8 +27,8 @@ importers:
         specifier: ^1.7.5
         version: 1.7.5(vite@8.0.14(esbuild@0.27.4))
       vitepress-plugin-llms:
-        specifier: ^1.13.1
-        version: 1.13.1
+        specifier: ^1.12.2
+        version: 1.13.0
       vue:
         specifier: ^3.5.35
         version: 3.5.35
@@ -1865,9 +1865,9 @@ packages:
       vite:
         optional: true
 
-  vitepress-plugin-llms@1.13.1:
-    resolution: {integrity: sha512-m+rxyghF5INi8hBw0huFPx6+VvaX1tDGvw1H7FdXowaZJ3dcRY5ShgbmK1AQlmeOFMdd16H8WarhSHLPXF/2OA==}
-    engines: {node: '>=18'}
+  vitepress-plugin-llms@1.13.0:
+    resolution: {integrity: sha512-nYUC0MBkG9gH5nJCrpbwOVpXYqwBgbzTcMchPVQiZ5jylX1QCvMSYxvN4yWXo+OAEKv80361T61+HNPUXnnPwQ==}
+    engines: {node: '>=18.0.0'}
 
   vitepress@2.0.0-alpha.17:
     resolution: {integrity: sha512-Z3VPUpwk/bHYqt1uMVOOK1/4xFiWQov1GNc2FvMdz6kvje4JRXEOngVI9C+bi5jeedMSHiA4dwKkff1NCvbZ9Q==}
@@ -3559,7 +3559,7 @@ snapshots:
     optionalDependencies:
       vite: 8.0.14(esbuild@0.27.4)
 
-  vitepress-plugin-llms@1.13.1:
+  vitepress-plugin-llms@1.13.0:
     dependencies:
       gray-matter: 4.0.3
       markdown-it: 14.1.1
