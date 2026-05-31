@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from returns.result import Failure, Success
+from returns.result import Failure
 
-from yutto.exceptions import MaxRetryError, NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
     AId,
@@ -53,10 +53,10 @@ async def get_season_id_by_episode_id(ctx: FetcherContext, client: AsyncClient, 
 
 async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: SeasonId) -> CheeseList:
     list_api = "https://api.bilibili.com/pugv/view/web/season?season_id={season_id}"
-    try:
-        resp_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id)))
-    except MaxRetryError as e:
-        raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}）") from e
+    list_result = await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id))
+    if isinstance(list_result, Failure):
+        raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}）") from list_result.failure()
+    resp_json = list_result.unwrap()
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["data"]
@@ -84,12 +84,12 @@ async def get_cheese_playurl(
         "https://api.bilibili.com/pugv/player/web/playurl?avid={aid}&cid={"
         "cid}&qn=80&fnver=0&fnval=16&fourk=1&ep_id={episode_id}&from_client=BROWSER&drm_tech_type=2"
     )
-    try:
-        resp_json = unwrap_fetch_result(
-            await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
-        )
-    except MaxRetryError as e:
-        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from e
+    play_result = await Fetcher.fetch_json(
+        ctx, client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id)
+    )
+    if isinstance(play_result, Failure):
+        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from play_result.failure()
+    resp_json = play_result.unwrap()
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
@@ -129,11 +129,9 @@ async def get_cheese_subtitles(
 ) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
-    match await Fetcher.fetch_json(ctx, client, subtitle_url):
-        case Success(subtitles_json_info):
-            pass
-        case Failure(_):
-            return []
+    subtitles_json_info = (await Fetcher.fetch_json(ctx, client, subtitle_url)).value_or(None)
+    if subtitles_json_info is None:
+        return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
         Logger.warning(f"无法获取该视频的字幕（{format_ids(avid, cid)}），原因：{subtitles_json_info.get('message')}")
         return []
@@ -147,11 +145,9 @@ async def get_cheese_subtitles(
             Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}")
             continue
 
-        match await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url):
-            case Success(subtitle_text):
-                pass
-            case Failure(_):
-                continue
+        subtitle_text = (await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)).value_or(None)
+        if subtitle_text is None:
+            continue
         results.append(
             {
                 "lang": sub_info["lan_doc"],

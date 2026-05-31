@@ -3,10 +3,9 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
-from returns.result import Failure, Success
+from returns.result import Failure
 
 from yutto.exceptions import (
-    MaxRetryError,
     NoAccessPermissionError,
     NotFoundError,
     UnSupportedTypeError,
@@ -87,10 +86,10 @@ async def get_ugc_video_tag(ctx: FetcherContext, client: AsyncClient, avid: AvId
 async def get_ugc_video_info(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
-    try:
-        res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, info_api.format(**avid.to_dict())))
-    except MaxRetryError as e:
-        raise NotFoundError(f"无法获取该视频 {avid} 信息") from e
+    info_result = await Fetcher.fetch_json(ctx, client, info_api.format(**avid.to_dict()))
+    if isinstance(info_result, Failure):
+        raise NotFoundError(f"无法获取该视频 {avid} 信息") from info_result.failure()
+    res_json = info_result.unwrap()
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
@@ -148,12 +147,10 @@ async def get_ugc_video_list(ctx: FetcherContext, client: AsyncClient, avid: AvI
         "pages": [],
     }
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
-    match await Fetcher.fetch_json(ctx, client, list_api.format(**avid.to_dict())):
-        case Success(res_json) if res_json.get("data") is not None:
-            pass
-        case _:
-            Logger.warning(f"啊叻？视频 {avid} 不见了诶")
-            return result
+    res_json = (await Fetcher.fetch_json(ctx, client, list_api.format(**avid.to_dict()))).value_or(None)
+    if res_json is None or res_json.get("data") is None:
+        Logger.warning(f"啊叻？视频 {avid} 不见了诶")
+        return result
 
     # 对无意义的分 p 视频名进行修改
     for i, (item, page_info) in enumerate(zip(cast("list[Any]", res_json["data"]), video_info["pages"], strict=True)):
@@ -219,12 +216,10 @@ async def get_ugc_video_playurl(
     if ai_translation_language:
         play_api += f"&cur_language={ai_translation_language}"
 
-    try:
-        resp_json = unwrap_fetch_result(
-            await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
-        )
-    except MaxRetryError as e:
-        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from e
+    play_result = await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
+    if isinstance(play_result, Failure):
+        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from play_result.failure()
+    resp_json = play_result.unwrap()
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
@@ -297,11 +292,9 @@ async def get_ugc_video_subtitles(
 ) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
-    match await Fetcher.fetch_json(ctx, client, subtitle_url):
-        case Success(res_json):
-            pass
-        case Failure(_):
-            return []
+    res_json = (await Fetcher.fetch_json(ctx, client, subtitle_url)).value_or(None)
+    if res_json is None:
+        return []
     if not data_has_chained_keys(res_json, ["data", "subtitle", "subtitles"]):
         return []
     results: list[MultiLangSubtitle] = []
@@ -313,11 +306,9 @@ async def get_ugc_video_subtitles(
             Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}")
             continue
 
-        match await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url):
-            case Success(subtitle_text):
-                pass
-            case Failure(_):
-                continue
+        subtitle_text = (await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)).value_or(None)
+        if subtitle_text is None:
+            continue
         results.append(
             MultiLangSubtitle(
                 lang=sub_info["lan_doc"],
@@ -332,11 +323,9 @@ async def get_ugc_video_chapters(
 ) -> list[ChapterInfoData]:
     chapter_api = "https://api.bilibili.com/x/player/v2?aid={aid}&bvid={bvid}&cid={cid}"
     chapter_url = chapter_api.format(**avid.to_dict(), cid=cid)
-    match await Fetcher.fetch_json(ctx, client, chapter_url):
-        case Success(chapter_json_info):
-            pass
-        case Failure(_):
-            return []
+    chapter_json_info = (await Fetcher.fetch_json(ctx, client, chapter_url)).value_or(None)
+    if chapter_json_info is None:
+        return []
     if not data_has_chained_keys(chapter_json_info, ["data", "view_points"]):
         Logger.warning(f"无法获取该视频的章节信息（{format_ids(avid, cid)}），原因：{chapter_json_info.get('message')}")
         return []
