@@ -6,16 +6,14 @@ import re
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from returns.result import Failure
-
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
 from yutto.media.quality import audio_quality_map, video_quality_map
-from yutto.utils.asynclib import CoroutineWrapper
+from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import filter_none_values, xmerge
@@ -31,6 +29,10 @@ if TYPE_CHECKING:
     from yutto.types import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
     from yutto.utils.fetcher import FetcherContext
     from yutto.utils.metadata import ChapterInfoData
+
+
+async def _unwrap_size_result(ctx: FetcherContext, client: httpx.AsyncClient, url: str) -> int | None:
+    return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
@@ -128,16 +130,9 @@ async def download_video_and_audio(
     ctx.set_download_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
-        video_size_results = await asyncio.gather(
-            *[Fetcher.get_size(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
+        vsize = await first_successful_with_check(
+            [_unwrap_size_result(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
         )
-        video_sizes = [result.unwrap() for result in video_size_results if not isinstance(result, Failure)]
-        if not video_sizes:
-            first_failure = next(result for result in video_size_results if isinstance(result, Failure))
-            raise first_failure.failure()
-        if len(set(video_sizes)) != 1:
-            raise Exception("Multiple coroutines returned different results")
-        vsize = video_sizes[0]
         video_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
@@ -157,16 +152,9 @@ async def download_video_and_audio(
 
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
-        audio_size_results = await asyncio.gather(
-            *[Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+        asize = await first_successful_with_check(
+            [_unwrap_size_result(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
         )
-        audio_sizes = [result.unwrap() for result in audio_size_results if not isinstance(result, Failure)]
-        if not audio_sizes:
-            first_failure = next(result for result in audio_size_results if isinstance(result, Failure))
-            raise first_failure.failure()
-        if len(set(audio_sizes)) != 1:
-            raise Exception("Multiple coroutines returned different results")
-        asize = audio_sizes[0]
         audio_coroutines = [
             CoroutineWrapper(
                 Fetcher.download_file_with_offset(
