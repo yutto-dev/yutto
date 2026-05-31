@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from returns.result import Failure, Success
 
-from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import MaxRetryError, NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
     AudioUrlMeta,
@@ -17,7 +17,7 @@ from yutto.types import (
     format_ids,
 )
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
@@ -51,31 +51,22 @@ class BangumiList(TypedDict):
 
 async def get_season_id_by_media_id(ctx: FetcherContext, client: AsyncClient, media_id: MediaId) -> SeasonId:
     media_api = f"https://api.bilibili.com/pgc/review/user?media_id={media_id}"
-    match await Fetcher.fetch_json(ctx, client, media_api):
-        case Success(res_json):
-            return SeasonId(str(res_json["result"]["media"]["season_id"]))
-        case Failure(error):
-            raise error
-    raise AssertionError("无法解析响应结果")
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, media_api))
+    return SeasonId(str(res_json["result"]["media"]["season_id"]))
 
 
 async def get_season_id_by_episode_id(ctx: FetcherContext, client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
     episode_api = f"https://api.bilibili.com/pgc/view/web/season?ep_id={episode_id}"
-    match await Fetcher.fetch_json(ctx, client, episode_api):
-        case Success(res_json):
-            return SeasonId(str(res_json["result"]["season_id"]))
-        case Failure(error):
-            raise error
-    raise AssertionError("无法解析响应结果")
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, episode_api))
+    return SeasonId(str(res_json["result"]["season_id"]))
 
 
 async def get_bangumi_list(ctx: FetcherContext, client: AsyncClient, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
-    match await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id)):
-        case Success(resp_json):
-            pass
-        case Failure(_):
-            raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）")
+    try:
+        resp_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id)))
+    except MaxRetryError as e:
+        raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）") from e
     if resp_json.get("result") is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["result"]
@@ -108,11 +99,12 @@ async def get_bangumi_playurl(
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1&support_multi_audio=true&from_client=BROWSER"
 
-    match await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid)):
-        case Success(resp_json):
-            pass
-        case Failure(_):
-            raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
+    try:
+        resp_json = unwrap_fetch_result(
+            await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
+        )
+    except MaxRetryError as e:
+        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from e
     if resp_json.get("result") is None or resp_json["result"].get("video_info") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"

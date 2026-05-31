@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, TypedDict, cast
 from returns.result import Failure, Success
 
 from yutto.exceptions import (
+    MaxRetryError,
     NoAccessPermissionError,
     NotFoundError,
     UnSupportedTypeError,
@@ -23,7 +24,7 @@ from yutto.types import (
 )
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional.data_access import data_has_chained_keys
 from yutto.utils.metadata import Actor, ChapterInfoData, MetaData
 from yutto.utils.time import get_time_stamp_by_now
@@ -75,11 +76,9 @@ class UgcVideoList(TypedDict):
 async def get_ugc_video_tag(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> list[str]:
     tags: list[str] = []
     tag_api = "http://api.bilibili.com/x/tag/archive/tags?aid={aid}&bvid={bvid}"
-    match await Fetcher.fetch_json(ctx, client, tag_api.format(**avid.to_dict())):
-        case Success(res_json) if res_json["code"] == 0:
-            pass
-        case _:
-            raise NotFoundError(f"无法获取视频 {avid} 标签")
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, tag_api.format(**avid.to_dict())))
+    if res_json["code"] != 0:
+        raise NotFoundError(f"无法获取视频 {avid} 标签")
     for tag in res_json["data"]:
         tags.append(tag["tag_name"])
     return tags
@@ -88,11 +87,10 @@ async def get_ugc_video_tag(ctx: FetcherContext, client: AsyncClient, avid: AvId
 async def get_ugc_video_info(ctx: FetcherContext, client: AsyncClient, avid: AvId) -> _UgcVideoInfo:
     regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
     info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
-    match await Fetcher.fetch_json(ctx, client, info_api.format(**avid.to_dict())):
-        case Success(res_json):
-            pass
-        case Failure(_):
-            raise NotFoundError(f"无法获取该视频 {avid} 信息")
+    try:
+        res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, info_api.format(**avid.to_dict())))
+    except MaxRetryError as e:
+        raise NotFoundError(f"无法获取该视频 {avid} 信息") from e
     res_json_data = res_json.get("data")
     if res_json["code"] == 62002:
         raise NotFoundError(f"无法下载该视频 {avid}，原因：{res_json['message']}")
@@ -221,11 +219,12 @@ async def get_ugc_video_playurl(
     if ai_translation_language:
         play_api += f"&cur_language={ai_translation_language}"
 
-    match await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid)):
-        case Success(resp_json):
-            pass
-        case Failure(_):
-            raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
+    try:
+        resp_json = unwrap_fetch_result(
+            await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
+        )
+    except MaxRetryError as e:
+        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from e
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"

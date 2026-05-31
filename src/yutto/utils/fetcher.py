@@ -40,12 +40,12 @@ class MaxRetry:
 
     def __call__(
         self, connect_once: Callable[InputT, Coroutine[Any, Any, RetT]]
-    ) -> Callable[InputT, Coroutine[Any, Any, RetT]]:
-        async def connect_n_times(*args: InputT.args, **kwargs: InputT.kwargs) -> RetT:
+    ) -> Callable[InputT, Coroutine[Any, Any, Result[RetT, MaxRetryError]]]:
+        async def connect_n_times(*args: InputT.args, **kwargs: InputT.kwargs) -> Result[RetT, MaxRetryError]:
             retry = self.max_retry + 1
             while retry:
                 try:
-                    return await connect_once(*args, **kwargs)
+                    return Success(await connect_once(*args, **kwargs))
                 except httpx.TimeoutException:
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
@@ -56,9 +56,18 @@ class MaxRetry:
                     Logger.warning(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次")
                 finally:
                     retry -= 1
-            raise MaxRetryError("超出最大重试次数！")
+            return Failure(MaxRetryError("超出最大重试次数！"))
 
         return connect_n_times
+
+
+def unwrap_fetch_result(result: Result[RetT, MaxRetryError]) -> RetT:
+    match result:
+        case Success(value):
+            return value
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 DEFAULT_PROXY = None
@@ -150,13 +159,13 @@ class Fetcher:
         *,
         params: Mapping[str, Any] | None = None,
         encoding: str | None = None,  # TODO(SigureMo): Support this
-    ) -> str | None:
+    ) -> str:
         async with ctx.fetch_guard():
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
             if not resp.is_success:
-                return None
+                resp.raise_for_status()
             return resp.text
 
     @staticmethod
@@ -167,31 +176,18 @@ class Fetcher:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
-    ) -> bytes | None:
+    ) -> bytes:
         async with ctx.fetch_guard():
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
             if not resp.is_success:
-                return None
+                resp.raise_for_status()
             return resp.read()
 
     @staticmethod
-    async def fetch_json(
-        ctx: FetcherContext,
-        client: AsyncClient,
-        url: str,
-        *,
-        params: Mapping[str, Any] | None = None,
-    ) -> Result[Any, MaxRetryError]:
-        try:
-            return Success(await Fetcher._fetch_json_data(ctx, client, url, params=params))
-        except MaxRetryError as e:
-            return Failure(e)
-
-    @staticmethod
     @MaxRetry(2)
-    async def _fetch_json_data(
+    async def fetch_json(
         ctx: FetcherContext,
         client: AsyncClient,
         url: str,
@@ -214,6 +210,8 @@ class Fetcher:
         # 情况需要在 av、BV 解析一部分信息后才能知道是否是番剧页面，处理起来非常麻烦（bilili 就是这么做的）
         async with ctx.fetch_guard():
             resp = await client.get(url)
+            if not resp.is_success:
+                resp.raise_for_status()
             redirected_url = str(resp.url)
             if redirected_url == url:
                 Logger.debug(f"Get redircted url: {url}")
@@ -246,7 +244,9 @@ class Fetcher:
     async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str) -> None:
         async with ctx.fetch_guard():
             Logger.debug(f"Touch url: {url}")
-            await client.get(url)
+            resp = await client.get(url)
+            if not resp.is_success:
+                resp.raise_for_status()
 
     @staticmethod
     async def download_file_with_offset(

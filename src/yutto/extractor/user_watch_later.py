@@ -10,7 +10,7 @@ from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
@@ -52,7 +52,7 @@ class UserWatchLaterExtractor(BatchExtractor):
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
                     Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                     continue
-                await Fetcher.touch_url(ctx, client, avid.to_url())
+                unwrap_fetch_result(await Fetcher.touch_url(ctx, client, avid.to_url()))
                 for ugc_video_item in ugc_video_list["pages"]:
                     ugc_video_info_list.append(
                         (

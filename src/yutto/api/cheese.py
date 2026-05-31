@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from returns.result import Failure, Success
 
-from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
+from yutto.exceptions import MaxRetryError, NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
     AId,
@@ -16,7 +16,7 @@ from yutto.types import (
     format_ids,
 )
 from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
 from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
@@ -47,21 +47,16 @@ class CheeseList(TypedDict):
 
 async def get_season_id_by_episode_id(ctx: FetcherContext, client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
     home_url = f"https://api.bilibili.com/pugv/view/web/season?ep_id={episode_id}"
-    match await Fetcher.fetch_json(ctx, client, home_url):
-        case Success(res_json):
-            return SeasonId(str(res_json["data"]["season_id"]))
-        case Failure(error):
-            raise error
-    raise AssertionError("无法解析响应结果")
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, home_url))
+    return SeasonId(str(res_json["data"]["season_id"]))
 
 
 async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: SeasonId) -> CheeseList:
     list_api = "https://api.bilibili.com/pugv/view/web/season?season_id={season_id}"
-    match await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id)):
-        case Success(resp_json):
-            pass
-        case Failure(_):
-            raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}）")
+    try:
+        resp_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id)))
+    except MaxRetryError as e:
+        raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}）") from e
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["data"]
@@ -89,11 +84,12 @@ async def get_cheese_playurl(
         "https://api.bilibili.com/pugv/player/web/playurl?avid={aid}&cid={"
         "cid}&qn=80&fnver=0&fnval=16&fourk=1&ep_id={episode_id}&from_client=BROWSER&drm_tech_type=2"
     )
-    match await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id)):
-        case Success(resp_json):
-            pass
-        case Failure(_):
-            raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
+    try:
+        resp_json = unwrap_fetch_result(
+            await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
+        )
+    except MaxRetryError as e:
+        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from e
     if resp_json.get("data") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"

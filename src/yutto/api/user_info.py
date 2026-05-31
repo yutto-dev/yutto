@@ -9,11 +9,9 @@ import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
-from returns.result import Failure, Success
-
 from yutto.types import UserInfo
 from yutto.utils.asynclib import async_cache
-from yutto.utils.fetcher import Fetcher, create_client
+from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
@@ -45,12 +43,8 @@ def parse_user_info(res_json: dict[str, Any]) -> UserInfo:
 
 @async_cache(lambda _: "user_info")
 async def get_user_info(ctx: FetcherContext, client: AsyncClient) -> UserInfo:
-    match await Fetcher.fetch_json(ctx, client, USER_INFO_API):
-        case Success(res_json):
-            return parse_user_info(res_json)
-        case Failure(error):
-            raise error
-    raise AssertionError("无法解析响应结果")
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, USER_INFO_API))
+    return parse_user_info(res_json)
 
 
 def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
@@ -79,11 +73,7 @@ async def get_wbi_img(ctx: FetcherContext, client: AsyncClient) -> WbiImg:
     global wbi_img_cache
     if wbi_img_cache is not None:
         return wbi_img_cache
-    match await Fetcher.fetch_json(ctx, client, USER_INFO_API):
-        case Success(res_json):
-            pass
-        case Failure(error):
-            raise error
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, USER_INFO_API))
     wbi_img: WbiImg = {
         "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
         "sub_key": _get_key_from_url(res_json["data"]["wbi_img"]["sub_url"]),

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+import httpx
 import pytest
 from returns.result import Failure, Success
 
@@ -15,7 +16,6 @@ from yutto.api.space import (
     get_user_name,
     get_user_space_all_videos_avids,
 )
-from yutto.exceptions import MaxRetryError
 from yutto.types import AId, BvId, FId, MId, SeriesId
 from yutto.utils.fetcher import Fetcher, FetcherContext, create_client
 from yutto.utils.functional import as_sync
@@ -119,15 +119,12 @@ async def test_get_user_space_all_videos_avids_stops_on_api_error(monkeypatch: p
 
 @pytest.mark.api
 @as_sync
-async def test_fetch_json_wraps_max_retry_error(monkeypatch: pytest.MonkeyPatch):
-    async def fake_fetch_json_data(
-        ctx: FetcherContextType, client: Any, url: str, *, params: dict[str, str] | None = None
-    ) -> Any:
-        raise MaxRetryError("超出最大重试次数！")
+async def test_fetch_json_wraps_max_retry_error():
+    class TimeoutClient:
+        async def get(self, url: str, *, params: dict[str, str] | None = None) -> None:
+            raise httpx.ReadTimeout("timeout")
 
-    monkeypatch.setattr(Fetcher, "_fetch_json_data", fake_fetch_json_data)
-
-    match await Fetcher.fetch_json(FetcherContext(), cast("Any", object()), "https://example.com"):
+    match await Fetcher.fetch_json(FetcherContext(), cast("Any", TimeoutClient()), "https://example.com"):
         case Failure(error):
             assert error.message == "超出最大重试次数！"
         case result:
@@ -142,8 +139,8 @@ async def test_get_user_name_returns_fallback_on_api_error(monkeypatch: pytest.M
     async def fake_get_wbi_img(ctx: FetcherContextType, client: Any) -> object:
         return object()
 
-    async def fake_touch_url(ctx: FetcherContextType, client: Any, url: str) -> None:
-        return None
+    async def fake_touch_url(ctx: FetcherContextType, client: Any, url: str):
+        return Success(None)
 
     async def fake_fetch_json(ctx: FetcherContextType, client: Any, url: str, *, params: dict[str, Any] | None = None):
         return Success({"code": -352, "message": "风控校验失败", "data": {"v_voucher": "voucher"}})

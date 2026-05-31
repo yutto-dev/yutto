@@ -7,7 +7,7 @@ import pytest
 
 from yutto.downloader.downloader import slice_blocks
 from yutto.utils.asynclib import CoroutineWrapper
-from yutto.utils.fetcher import Fetcher, FetcherContext, create_client
+from yutto.utils.fetcher import Fetcher, FetcherContext, create_client, unwrap_fetch_result
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import as_sync
 
@@ -28,7 +28,7 @@ async def test_150_kB_downloader():
             timeout=httpx.Timeout(7, connect=3),
         ) as client:
             ctx.set_download_semaphore(4)
-            size = await Fetcher.get_size(ctx, client, url)
+            size = unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
             coroutines = [
                 CoroutineWrapper(Fetcher.download_file_with_offset(ctx, client, url, [], buffer, offset, block_size))
                 for offset, block_size in slice_blocks(buffer.written_size, size, 1 * 1024 * 1024)
@@ -53,7 +53,7 @@ async def test_150_kB_no_slice_downloader():
             timeout=httpx.Timeout(7, connect=3),
         ) as client:
             ctx.set_download_semaphore(4)
-            size = await Fetcher.get_size(ctx, client, url)
+            size = unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
             coroutines = [CoroutineWrapper(Fetcher.download_file_with_offset(ctx, client, url, [], buffer, 0, size))]
 
             print("开始下载……")
