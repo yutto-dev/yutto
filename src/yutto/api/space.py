@@ -46,7 +46,7 @@ async def get_user_space_all_videos_avids(
             "order": "pubdate",
         }
         params = encode_wbi(params, wbi_img)
-        match await Fetcher.fetch_json_result(ctx, client, space_videos_api, params=params):
+        match await Fetcher.fetch_json(ctx, client, space_videos_api, params=params):
             case Success(json_data):
                 match _parse_user_space_videos_page(json_data, ps):
                     case Success((total, video_infos)):
@@ -102,7 +102,7 @@ async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> s
     params = encode_wbi(params, wbi_img)
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
     await Fetcher.touch_url(ctx, client, "https://www.bilibili.com")
-    match await Fetcher.fetch_json_result(ctx, client, space_info_api, params=params):
+    match await Fetcher.fetch_json(ctx, client, space_info_api, params=params):
         case Success({"code": 0, "data": {"name": username}}):
             return str(username)
         case Success({"code": -404}):
@@ -121,18 +121,24 @@ async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> s
 # 个人空间·收藏夹·信息
 async def get_favourite_info(ctx: FetcherContext, client: AsyncClient, fid: FId) -> FavouriteMetaData:
     api = "https://api.bilibili.com/x/v3/fav/folder/info?media_id={fid}"
-    json_data = await Fetcher.fetch_json(ctx, client, api.format(fid=fid))
-    assert json_data is not None
-    data = json_data["data"]
-    return FavouriteMetaData(title=data["title"], fid=FId(str(data["id"])))
+    match await Fetcher.fetch_json(ctx, client, api.format(fid=fid)):
+        case Success(json_data):
+            data = json_data["data"]
+            return FavouriteMetaData(title=data["title"], fid=FId(str(data["id"])))
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 # 个人空间·收藏夹·avid
 async def get_favourite_avids(ctx: FetcherContext, client: AsyncClient, fid: FId) -> list[AvId]:
     api = "https://api.bilibili.com/x/v3/fav/resource/ids?media_id={fid}"
-    json_data = await Fetcher.fetch_json(ctx, client, api.format(fid=fid))
-    assert json_data is not None
-    return [BvId(video_info["bvid"]) for video_info in json_data["data"]]
+    match await Fetcher.fetch_json(ctx, client, api.format(fid=fid)):
+        case Success(json_data):
+            return [BvId(video_info["bvid"]) for video_info in json_data["data"]]
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 # 个人空间·收藏夹·条目（含标题和分 p 数量）
@@ -156,8 +162,11 @@ async def get_favourite_items(ctx: FetcherContext, client: AsyncClient, fid: FId
     favourite_items: list[FavouriteVideoData] = []
 
     while True:
-        json_data = await Fetcher.fetch_json(ctx, client, api.format(fid=fid, pn=pn, ps=ps))
-        assert json_data is not None
+        match await Fetcher.fetch_json(ctx, client, api.format(fid=fid, pn=pn, ps=ps)):
+            case Success(json_data):
+                pass
+            case Failure(error):
+                raise error
         data = cast("dict[str, Any]", json_data["data"])
         medias = cast("list[dict[str, Any]]", data["medias"] or [])
         # 仅保留正常视频（type=2），过滤已失效条目（bvid 为空）
@@ -187,11 +196,16 @@ async def get_favourite_items(ctx: FetcherContext, client: AsyncClient, fid: FId
 # 个人空间·收藏夹·全部
 async def get_all_favourites(ctx: FetcherContext, client: AsyncClient, mid: MId) -> list[FavouriteMetaData]:
     api = "https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={mid}"
-    json_data = await Fetcher.fetch_json(ctx, client, api.format(mid=mid))
-    assert json_data is not None
-    if not json_data["data"]:
-        return []
-    return [FavouriteMetaData(title=data["title"], fid=FId(str(data["id"]))) for data in json_data["data"]["list"]]
+    match await Fetcher.fetch_json(ctx, client, api.format(mid=mid)):
+        case Success(json_data):
+            if not json_data["data"]:
+                return []
+            return [
+                FavouriteMetaData(title=data["title"], fid=FId(str(data["id"]))) for data in json_data["data"]["list"]
+            ]
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 # 个人空间·视频列表·avid
@@ -204,8 +218,11 @@ async def get_medialist_avids(ctx: FetcherContext, client: AsyncClient, series_i
 
     while pn <= total:
         url = api.format(series_id=series_id, mid=mid, ps=ps, pn=pn)
-        json_data = await Fetcher.fetch_json(ctx, client, url)
-        assert json_data is not None
+        match await Fetcher.fetch_json(ctx, client, url):
+            case Success(json_data):
+                pass
+            case Failure(error):
+                raise error
         total = math.ceil(json_data["data"]["page"]["total"] / ps)
         pn += 1
         all_avid += [BvId(video_info["bvid"]) for video_info in json_data["data"]["archives"]]
@@ -215,17 +232,23 @@ async def get_medialist_avids(ctx: FetcherContext, client: AsyncClient, series_i
 # 个人空间·视频列表·标题
 async def get_medialist_title(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId) -> str:
     api = "https://api.bilibili.com/x/v1/medialist/info?type=5&biz_id={series_id}"
-    json_data = await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id))
-    assert json_data is not None
-    return json_data["data"]["title"]
+    match await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id)):
+        case Success(json_data):
+            return json_data["data"]["title"]
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 # 个人空间·稍后再看
 async def get_watch_later_avids(ctx: FetcherContext, client: AsyncClient) -> list[AvId]:
     api = "https://api.bilibili.com/x/v2/history/toview/web"
-    json_data = await Fetcher.fetch_json(ctx, client, api)
-    assert json_data is not None
-    if json_data["code"] in [-101, -400]:
-        raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")
-    # TODO: 处理其他code不为0的异常
-    return [BvId(video_info["bvid"]) for video_info in json_data["data"]["list"]]
+    match await Fetcher.fetch_json(ctx, client, api):
+        case Success(json_data):
+            if json_data["code"] in [-101, -400]:
+                raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")
+            # TODO: 处理其他code不为0的异常
+            return [BvId(video_info["bvid"]) for video_info in json_data["data"]["list"]]
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")

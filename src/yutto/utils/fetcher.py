@@ -177,24 +177,7 @@ class Fetcher:
             return resp.read()
 
     @staticmethod
-    @MaxRetry(2)
     async def fetch_json(
-        ctx: FetcherContext,
-        client: AsyncClient,
-        url: str,
-        *,
-        params: Mapping[str, Any] | None = None,
-    ) -> Any | None:
-        async with ctx.fetch_guard():
-            Logger.debug(f"Fetch json: {url}")
-            Logger.status.next_tick()
-            resp = await client.get(url, params=params)
-            if not resp.is_success:
-                resp.raise_for_status()
-            return resp.json()
-
-    @staticmethod
-    async def fetch_json_result(
         ctx: FetcherContext,
         client: AsyncClient,
         url: str,
@@ -202,9 +185,26 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> Result[Any, MaxRetryError]:
         try:
-            return Success(await Fetcher.fetch_json(ctx, client, url, params=params))
+            return Success(await Fetcher._fetch_json_data(ctx, client, url, params=params))
         except MaxRetryError as e:
             return Failure(e)
+
+    @staticmethod
+    @MaxRetry(2)
+    async def _fetch_json_data(
+        ctx: FetcherContext,
+        client: AsyncClient,
+        url: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+    ) -> Any:
+        async with ctx.fetch_guard():
+            Logger.debug(f"Fetch json: {url}")
+            Logger.status.next_tick()
+            resp = await client.get(url, params=params)
+            if not resp.is_success:
+                resp.raise_for_status()
+            return resp.json()
 
     @staticmethod
     @MaxRetry(2)

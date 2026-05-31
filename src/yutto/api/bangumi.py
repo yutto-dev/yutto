@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from returns.result import Failure, Success
+
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
@@ -49,23 +51,31 @@ class BangumiList(TypedDict):
 
 async def get_season_id_by_media_id(ctx: FetcherContext, client: AsyncClient, media_id: MediaId) -> SeasonId:
     media_api = f"https://api.bilibili.com/pgc/review/user?media_id={media_id}"
-    res_json = await Fetcher.fetch_json(ctx, client, media_api)
-    assert res_json is not None
-    return SeasonId(str(res_json["result"]["media"]["season_id"]))
+    match await Fetcher.fetch_json(ctx, client, media_api):
+        case Success(res_json):
+            return SeasonId(str(res_json["result"]["media"]["season_id"]))
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 async def get_season_id_by_episode_id(ctx: FetcherContext, client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
     episode_api = f"https://api.bilibili.com/pgc/view/web/season?ep_id={episode_id}"
-    res_json = await Fetcher.fetch_json(ctx, client, episode_api)
-    assert res_json is not None
-    return SeasonId(str(res_json["result"]["season_id"]))
+    match await Fetcher.fetch_json(ctx, client, episode_api):
+        case Success(res_json):
+            return SeasonId(str(res_json["result"]["season_id"]))
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
 
 
 async def get_bangumi_list(ctx: FetcherContext, client: AsyncClient, season_id: SeasonId) -> BangumiList:
     list_api = "http://api.bilibili.com/pgc/view/web/season?season_id={season_id}"
-    resp_json = await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id))
-    if resp_json is None:
-        raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）")
+    match await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id)):
+        case Success(resp_json):
+            pass
+        case Failure(_):
+            raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}）")
     if resp_json.get("result") is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}），原因：{resp_json.get('message')}")
     result = resp_json["result"]
@@ -98,9 +108,11 @@ async def get_bangumi_playurl(
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = "https://api.bilibili.com/pgc/player/web/v2/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&fnver=0&fnval=4048&fourk=1&support_multi_audio=true&from_client=BROWSER"
 
-    resp_json = await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid))
-    if resp_json is None:
-        raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
+    match await Fetcher.fetch_json(ctx, client, play_api.format(**avid.to_dict(), cid=cid)):
+        case Success(resp_json):
+            pass
+        case Failure(_):
+            raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）")
     if resp_json.get("result") is None or resp_json["result"].get("video_info") is None:
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
@@ -155,9 +167,11 @@ async def get_bangumi_subtitles(
 ) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
-    subtitles_json_info = await Fetcher.fetch_json(ctx, client, subtitle_url)
-    if subtitles_json_info is None:
-        return []
+    match await Fetcher.fetch_json(ctx, client, subtitle_url):
+        case Success(subtitles_json_info):
+            pass
+        case Failure(_):
+            return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
         Logger.warning(f"无法获取该视频的字幕（{format_ids(avid, cid)}），原因：{subtitles_json_info.get('message')}")
         return []
@@ -171,9 +185,11 @@ async def get_bangumi_subtitles(
             Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}")
             continue
 
-        subtitle_text = await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)
-        if subtitle_text is None:
-            continue
+        match await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url):
+            case Success(subtitle_text):
+                pass
+            case Failure(_):
+                continue
         results.append(
             {
                 "lang": sub_info["lan_doc"],

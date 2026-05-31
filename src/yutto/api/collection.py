@@ -4,6 +4,8 @@ import asyncio
 import math
 from typing import TYPE_CHECKING, TypedDict
 
+from returns.result import Failure, Success
+
 from yutto.types import BvId
 from yutto.utils.fetcher import Fetcher
 
@@ -54,8 +56,11 @@ async def _get_collection_avids(ctx: FetcherContext, client: AsyncClient, series
 
     while pn <= total:
         space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn, mid=mid)
-        json_data = await Fetcher.fetch_json(ctx, client, space_videos_url)
-        assert json_data is not None
+        match await Fetcher.fetch_json(ctx, client, space_videos_url):
+            case Success(json_data):
+                pass
+            case Failure(error):
+                raise error
         total = math.ceil(json_data["data"]["page"]["total"] / ps)
         pn += 1
         all_avid += [BvId(archives["bvid"]) for archives in json_data["data"]["archives"]]
@@ -64,6 +69,9 @@ async def _get_collection_avids(ctx: FetcherContext, client: AsyncClient, series
 
 async def _get_collection_title(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId) -> str:
     api = "https://api.bilibili.com/x/v1/medialist/info?type=8&biz_id={series_id}"
-    json_data = await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id))
-    assert json_data is not None
-    return json_data["data"]["title"]
+    match await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id)):
+        case Success(json_data):
+            return json_data["data"]["title"]
+        case Failure(error):
+            raise error
+    raise AssertionError("无法解析响应结果")
