@@ -159,13 +159,13 @@ class Fetcher:
         *,
         params: Mapping[str, Any] | None = None,
         encoding: str | None = None,  # TODO(SigureMo): Support this
-    ) -> str:
+    ) -> str | None:
         async with ctx.fetch_guard():
             Logger.debug(f"Fetch text: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
             if not resp.is_success:
-                resp.raise_for_status()
+                return None
             return resp.text
 
     @staticmethod
@@ -176,13 +176,13 @@ class Fetcher:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
-    ) -> bytes:
+    ) -> bytes | None:
         async with ctx.fetch_guard():
             Logger.debug(f"Fetch bin: {url}")
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
             if not resp.is_success:
-                resp.raise_for_status()
+                return None
             return resp.read()
 
     @staticmethod
@@ -210,8 +210,6 @@ class Fetcher:
         # 情况需要在 av、BV 解析一部分信息后才能知道是否是番剧页面，处理起来非常麻烦（bilili 就是这么做的）
         async with ctx.fetch_guard():
             resp = await client.get(url)
-            if not resp.is_success:
-                resp.raise_for_status()
             redirected_url = str(resp.url)
             if redirected_url == url:
                 Logger.debug(f"Get redircted url: {url}")
@@ -244,9 +242,7 @@ class Fetcher:
     async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str) -> None:
         async with ctx.fetch_guard():
             Logger.debug(f"Touch url: {url}")
-            resp = await client.get(url)
-            if not resp.is_success:
-                resp.raise_for_status()
+            await client.get(url)
 
     @staticmethod
     async def download_file_with_offset(

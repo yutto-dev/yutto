@@ -18,14 +18,20 @@ if TYPE_CHECKING:
 
 async def get_xml_danmaku(ctx: FetcherContext, client: httpx.AsyncClient, cid: CId) -> str:
     danmaku_api = "http://comment.bilibili.com/{cid}.xml"
-    return unwrap_fetch_result(await Fetcher.fetch_text(ctx, client, danmaku_api.format(cid=cid), encoding="utf-8"))
+    results = unwrap_fetch_result(await Fetcher.fetch_text(ctx, client, danmaku_api.format(cid=cid), encoding="utf-8"))
+    assert results is not None
+    return results
 
 
 async def get_protobuf_danmaku_segment(
     ctx: FetcherContext, client: httpx.AsyncClient, cid: CId, segment_id: int = 1
 ) -> bytes:
     danmaku_api = "http://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid={cid}&segment_index={segment_id}"
-    return unwrap_fetch_result(await Fetcher.fetch_bin(ctx, client, danmaku_api.format(cid=cid, segment_id=segment_id)))
+    results = unwrap_fetch_result(
+        await Fetcher.fetch_bin(ctx, client, danmaku_api.format(cid=cid, segment_id=segment_id))
+    )
+    assert results is not None
+    return results
 
 
 async def get_protobuf_danmaku(ctx: FetcherContext, client: httpx.AsyncClient, avid: AvId, cid: CId) -> list[bytes]:
@@ -34,6 +40,7 @@ async def get_protobuf_danmaku(ctx: FetcherContext, client: httpx.AsyncClient, a
     meta_results = unwrap_fetch_result(
         await Fetcher.fetch_bin(ctx, client, danmaku_meta_api.format(cid=cid, aid=aid.value))
     )
+    assert meta_results is not None
     size = get_danmaku_meta_size(meta_results)
 
     results = await asyncio.gather(
