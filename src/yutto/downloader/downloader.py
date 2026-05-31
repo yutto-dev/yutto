@@ -31,10 +31,6 @@ if TYPE_CHECKING:
     from yutto.utils.metadata import ChapterInfoData
 
 
-async def _unwrap_size_result(ctx: FetcherContext, client: httpx.AsyncClient, url: str) -> int | None:
-    return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
-
-
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
     """生成分块后的 (start, size) 序列
 
@@ -130,8 +126,10 @@ async def download_video_and_audio(
     ctx.set_download_semaphore(options["num_workers"])
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
-        vsize = await first_successful_with_check(
-            [_unwrap_size_result(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
+        vsize = unwrap_fetch_result(
+            await first_successful_with_check(
+                [Fetcher.get_size(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
+            )
         )
         video_coroutines = [
             CoroutineWrapper(
@@ -152,8 +150,10 @@ async def download_video_and_audio(
 
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
-        asize = await first_successful_with_check(
-            [_unwrap_size_result(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+        asize = unwrap_fetch_result(
+            await first_successful_with_check(
+                [Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+            )
         )
         audio_coroutines = [
             CoroutineWrapper(
