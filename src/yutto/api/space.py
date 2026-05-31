@@ -3,13 +3,17 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, cast
 
+from returns.result import Failure, Result, Success
+
 from yutto.api.user_info import encode_wbi, get_wbi_img
-from yutto.exceptions import MaxRetryError, NotLoginError
+from yutto.exceptions import NotLoginError
 from yutto.types import BvId, FavouriteMetaData, FavouriteVideoData, FId
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from httpx import AsyncClient
 
     from yutto.types import AvId, MId, SeriesId
@@ -17,7 +21,14 @@ if TYPE_CHECKING:
 
 
 # 个人空间·全部
-async def get_user_space_all_videos_avids(ctx: FetcherContext, client: AsyncClient, mid: MId) -> list[AvId]:
+async def get_user_space_all_videos_avids(
+    ctx: FetcherContext,
+    client: AsyncClient,
+    mid: MId,
+    *,
+    pubdate_filter: Callable[[int], bool] | None = None,
+    stop_before_timestamp: int | None = None,
+) -> list[AvId]:
     space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search"
     # ps 随机设置有时会出现错误，因此暂时固定在 30
     # ps: int = random.randint(3, 6) * 10
@@ -35,16 +46,53 @@ async def get_user_space_all_videos_avids(ctx: FetcherContext, client: AsyncClie
             "order": "pubdate",
         }
         params = encode_wbi(params, wbi_img)
-        try:
-            json_data = await Fetcher.fetch_json(ctx, client, space_videos_api, params=params)
-        except MaxRetryError as e:
-            Logger.error(f"获取用户空间视频列表第 {pn} 页失败：{e}")
-            break
-        assert json_data is not None
-        total = math.ceil(json_data["data"]["page"]["count"] / ps)
+        match await Fetcher.fetch_json_result(ctx, client, space_videos_api, params=params):
+            case Success(json_data):
+                match _parse_user_space_videos_page(json_data, ps):
+                    case Success((total, video_infos)):
+                        all_avid += _filter_user_space_video_avids(video_infos, pubdate_filter)
+                        if _should_stop_user_space_pagination(video_infos, stop_before_timestamp):
+                            break
+                    case Failure(error):
+                        Logger.error(f"获取用户空间视频列表第 {pn} 页失败：{error}")
+                        break
+            case Failure(error):
+                Logger.error(f"获取用户空间视频列表第 {pn} 页失败：{error}")
+                break
         pn += 1
-        all_avid += [BvId(video_info["bvid"]) for video_info in json_data["data"]["list"]["vlist"]]
     return all_avid
+
+
+def _parse_user_space_videos_page(json_data: Any, page_size: int) -> Result[tuple[int, list[dict[str, Any]]], str]:
+    if not isinstance(json_data, dict):
+        return Failure(f"响应数据格式异常：{json_data}")
+
+    if json_data.get("code") != 0:
+        return Failure(f"{json_data.get('message', '未知错误')}（code: {json_data.get('code')}）")
+
+    try:
+        data = cast("dict[str, Any]", json_data["data"])
+        page = cast("dict[str, Any]", data["page"])
+        video_infos = cast("list[dict[str, Any]]", data["list"]["vlist"])
+        return Success((math.ceil(page["count"] / page_size), video_infos))
+    except (KeyError, TypeError) as e:
+        return Failure(f"响应数据格式异常：{e}")
+
+
+def _filter_user_space_video_avids(
+    video_infos: list[dict[str, Any]], pubdate_filter: Callable[[int], bool] | None
+) -> list[AvId]:
+    return [
+        BvId(video_info["bvid"])
+        for video_info in video_infos
+        if pubdate_filter is None or pubdate_filter(int(video_info["created"]))
+    ]
+
+
+def _should_stop_user_space_pagination(video_infos: list[dict[str, Any]], stop_before_timestamp: int | None) -> bool:
+    return stop_before_timestamp is not None and any(
+        int(video_info["created"]) < stop_before_timestamp for video_info in video_infos
+    )
 
 
 # 个人空间·用户名
@@ -54,16 +102,20 @@ async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> s
     params = encode_wbi(params, wbi_img)
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
     await Fetcher.touch_url(ctx, client, "https://www.bilibili.com")
-    user_info = await Fetcher.fetch_json(ctx, client, space_info_api, params=params)
-    assert user_info is not None
-    if user_info["code"] == -404:
-        Logger.warning(f"用户 {mid} 不存在，疑似注销或被封禁")
-        return f"「用户{mid}」"
-    elif user_info["code"] != 0:
-        Logger.error(
-            f"获取用户名失败了呢，错误信息：{user_info['message']}，可尝试检查 `--auth` 参数正确性或者通过 `yutto auth login` 登录账号后重试～"
-        )
-    return user_info["data"]["name"]
+    match await Fetcher.fetch_json_result(ctx, client, space_info_api, params=params):
+        case Success({"code": 0, "data": {"name": username}}):
+            return str(username)
+        case Success({"code": -404}):
+            Logger.warning(f"用户 {mid} 不存在，疑似注销或被封禁")
+        case Success({"message": message}):
+            Logger.error(
+                f"获取用户名失败了呢，错误信息：{message}，可尝试检查 `--auth` 参数正确性或者通过 `yutto auth login` 登录账号后重试～"
+            )
+        case Success(user_info):
+            Logger.error(f"获取用户名失败了呢，返回值异常：{user_info}")
+        case Failure(error):
+            Logger.error(f"获取用户名失败：{error}")
+    return f"「用户{mid}」"
 
 
 # 个人空间·收藏夹·信息

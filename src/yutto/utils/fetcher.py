@@ -8,6 +8,7 @@ from urllib.parse import quote, unquote, urlparse
 
 import h2.exceptions
 import httpx
+from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
@@ -147,7 +148,7 @@ class Fetcher:
         client: AsyncClient,
         url: str,
         *,
-        params: Mapping[str, str] | None = None,
+        params: Mapping[str, Any] | None = None,
         encoding: str | None = None,  # TODO(SigureMo): Support this
     ) -> str | None:
         async with ctx.fetch_guard():
@@ -165,7 +166,7 @@ class Fetcher:
         client: AsyncClient,
         url: str,
         *,
-        params: Mapping[str, str] | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> bytes | None:
         async with ctx.fetch_guard():
             Logger.debug(f"Fetch bin: {url}")
@@ -182,7 +183,7 @@ class Fetcher:
         client: AsyncClient,
         url: str,
         *,
-        params: Mapping[str, str] | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> Any | None:
         async with ctx.fetch_guard():
             Logger.debug(f"Fetch json: {url}")
@@ -191,6 +192,19 @@ class Fetcher:
             if not resp.is_success:
                 resp.raise_for_status()
             return resp.json()
+
+    @staticmethod
+    async def fetch_json_result(
+        ctx: FetcherContext,
+        client: AsyncClient,
+        url: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+    ) -> Result[Any, MaxRetryError]:
+        try:
+            return Success(await Fetcher.fetch_json(ctx, client, url, params=params))
+        except MaxRetryError as e:
+            return Failure(e)
 
     @staticmethod
     @MaxRetry(2)

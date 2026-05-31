@@ -43,7 +43,13 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
-        for avid in await get_user_space_all_videos_avids(ctx, client, self.mid):
+        for avid in await get_user_space_all_videos_avids(
+            ctx,
+            client,
+            self.mid,
+            pubdate_filter=Filter.verify_timer,
+            stop_before_timestamp=int(Filter.batch_filter_start_time.timestamp()),
+        ):
             try:
                 ugc_video_list = await get_ugc_video_list(ctx, client, avid)
                 if not Filter.verify_timer(ugc_video_list["pubdate"]):
