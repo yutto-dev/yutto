@@ -33,7 +33,7 @@ from yutto.types import EpisodeData, ExtractorOptions
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
-from yutto.utils.fetcher import Fetcher, create_client
+from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
 from yutto.utils.time import TIME_FULL_FMT
 from yutto.validator import validate_batch_arguments
 
@@ -191,7 +191,7 @@ class DownloadManager:
             sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
         # 重定向到可识别的 url
         try:
-            url = await Fetcher.get_redirected_url(ctx, client, url)
+            url = unwrap_fetch_result(await Fetcher.get_redirected_url(ctx, client, url))
         except httpx.InvalidURL:
             Logger.error(f"无效的 url({url})～请检查一下链接是否正确～")
             sys.exit(ErrorCode.WRONG_URL_ERROR.value)

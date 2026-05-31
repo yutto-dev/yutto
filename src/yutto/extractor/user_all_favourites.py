@@ -12,7 +12,7 @@ from yutto.extractor.utils.favourite import normalize_favourite_video_item
 from yutto.types import MId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ class UserAllFavouritesExtractor(BatchExtractor):
                     if not Filter.verify_timer(ugc_video_list["pubdate"]):
                         Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                         continue
-                    await Fetcher.touch_url(ctx, client, avid.to_url())
+                    unwrap_fetch_result(await Fetcher.touch_url(ctx, client, avid.to_url()))
                     # 优先使用收藏夹 API 返回的人工标题；失效视频 title 为空时退回到 ugc 接口标题
                     favourite_title = favourite_video["title"] or ugc_video_list["title"]
                     is_single_page_video = len(ugc_video_list["pages"]) == 1

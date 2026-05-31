@@ -13,7 +13,7 @@ from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import filter_none_values, xmerge
@@ -124,10 +124,14 @@ async def download_video_and_audio(
     coroutines_list: list[list[CoroutineWrapper[None]]] = []
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     ctx.set_download_semaphore(options["num_workers"])
+
+    async def get_size(url: str) -> int | None:
+        return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
+
     if video is not None:
         vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
         vsize = await first_successful_with_check(
-            [Fetcher.get_size(ctx, client, url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
+            [get_size(url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
         )
         video_coroutines = [
             CoroutineWrapper(
@@ -149,7 +153,7 @@ async def download_video_and_audio(
     if audio is not None:
         abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
         asize = await first_successful_with_check(
-            [Fetcher.get_size(ctx, client, url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+            [get_size(url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
         )
         audio_coroutines = [
             CoroutineWrapper(

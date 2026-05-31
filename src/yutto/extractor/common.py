@@ -75,7 +75,7 @@ async def extract_bangumi_data(
         )
         metadata = bangumi_info["metadata"] if options["require_metadata"] else None
         cover_data = (
-            await Fetcher.fetch_bin(ctx, client, bangumi_info["metadata"]["thumb"])
+            (await Fetcher.fetch_bin(ctx, client, bangumi_info["metadata"]["thumb"])).value_or(None)
             if options["require_cover"]
             else None
         )
@@ -138,7 +138,9 @@ async def extract_cheese_data(
         )
         metadata = cheese_info["metadata"] if options["require_metadata"] else None
         cover_data = (
-            await Fetcher.fetch_bin(ctx, client, cheese_info["metadata"]["thumb"]) if options["require_cover"] else None
+            (await Fetcher.fetch_bin(ctx, client, cheese_info["metadata"]["thumb"])).value_or(None)
+            if options["require_cover"]
+            else None
         )
         subpath_variables_base: PathTemplateVariableDict = {
             "id": id,
@@ -204,7 +206,7 @@ async def extract_ugc_video_data(
         if metadata and chapter_info_data:
             attach_chapter_info(metadata, chapter_info_data)
         cover_data = (
-            await Fetcher.fetch_bin(ctx, client, ugc_video_info["metadata"]["thumb"])
+            (await Fetcher.fetch_bin(ctx, client, ugc_video_info["metadata"]["thumb"])).value_or(None)
             if options["require_cover"]
             else None
         )
