@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING, Any, cast
 
 from yutto.api.user_info import encode_wbi, get_wbi_img
-from yutto.exceptions import NotLoginError
+from yutto.exceptions import MaxRetryError, NotLoginError
 from yutto.types import BvId, FavouriteMetaData, FavouriteVideoData, FId
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher
@@ -35,7 +35,11 @@ async def get_user_space_all_videos_avids(ctx: FetcherContext, client: AsyncClie
             "order": "pubdate",
         }
         params = encode_wbi(params, wbi_img)
-        json_data = await Fetcher.fetch_json(ctx, client, space_videos_api, params=params)
+        try:
+            json_data = await Fetcher.fetch_json(ctx, client, space_videos_api, params=params)
+        except MaxRetryError as e:
+            Logger.error(f"获取用户空间视频列表第 {pn} 页失败：{e}")
+            break
         assert json_data is not None
         total = math.ceil(json_data["data"]["page"]["count"] / ps)
         pn += 1

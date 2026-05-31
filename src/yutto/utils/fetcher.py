@@ -189,7 +189,7 @@ class Fetcher:
             Logger.status.next_tick()
             resp = await client.get(url, params=params)
             if not resp.is_success:
-                return None
+                resp.raise_for_status()
             return resp.json()
 
     @staticmethod
