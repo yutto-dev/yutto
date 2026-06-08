@@ -20,7 +20,7 @@
   "devDependencies": {
     "@moefy-canvas/core": "^0.6.0",
     "@moefy-canvas/theme-sparkler": "^0.6.0",
-    "vite": "^8.0.14",
+    "vite": "^8.0.16",
     "vite-plus": "latest",
     "vitepress": "^2.0.0-alpha.17",
     "vitepress-plugin-group-icons": "^1.7.5",
