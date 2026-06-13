@@ -1,4 +1,4 @@
-FROM alpine:3.23
+FROM alpine:3.24
 LABEL maintainer="siguremo" \
       version="2.2.0" \
       description="light-weight container based on alpine for yutto"
