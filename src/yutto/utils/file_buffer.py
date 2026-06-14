@@ -12,8 +12,7 @@ from yutto.utils.functional import aobject
 
 if TYPE_CHECKING:
     from types import TracebackType
-
-    from typing_extensions import Protocol, Self
+    from typing import Protocol, Self
 
     class AsyncWritableBinaryFile(Protocol):
         async def write(self, data: bytes) -> int: ...

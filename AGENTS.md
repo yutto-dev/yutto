@@ -20,7 +20,7 @@ Repository instructions for automated agents contributing to `yutto`.
 
 ## Bootstrap
 
-- Baseline tools: `uv`, `just`, Python 3.10, and FFmpeg.
+- Baseline tools: `uv`, `just`, Python 3.11, and FFmpeg.
 - If you touch `packages/biliass` or run a full workspace install from source, also install stable Rust with `clippy` and `rustfmt`.
 - If you touch docs, use the Node/pnpm setup shown in `.github/workflows/vitepress-deploy.yml`.
 - In GitHub Copilot environments, start from `.github/workflows/copilot-setup-steps.yml`.
@@ -33,9 +33,9 @@ just run -- -h
 just fmt
 just lint
 just test
-just ci-install 3.10
-just ci-test 3.10
-just ci-e2e-test 3.10
+just ci-install 3.11
+just ci-test 3.11
+just ci-e2e-test 3.11
 just build
 just docs-setup
 just docs-build
