@@ -2,18 +2,13 @@ from __future__ import annotations
 
 import os
 import re
-import sys
-from datetime import datetime, timezone
+import tomllib
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 
 from yutto.cli.settings import xdg_config_home
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -142,7 +137,7 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
         entry_payload["bili_jct"] = bili_jct
     else:
         entry_payload.pop("bili_jct", None)
-    entry_payload["updated_at"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    entry_payload["updated_at"] = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     profiles[profile] = AuthProfileModel.model_validate(entry_payload)
     write_auth_file(auth_file, profiles)

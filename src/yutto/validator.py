@@ -12,7 +12,6 @@ from yutto.auth import format_auth_inline, resolve_auth
 from yutto.exceptions import ErrorCode
 from yutto.input_parser import validate_episodes_selection
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
-from yutto.utils.asynclib import initial_async_policy
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.ffmpeg import FFmpeg
@@ -53,9 +52,6 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
     if args.debug:
         set_logger_debug()
         biliass.enable_tracing()
-
-    # 初始化异步策略，消除平台差异
-    initial_async_policy()
 
     # proxy 校验
     try:

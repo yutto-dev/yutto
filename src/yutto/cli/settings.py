@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import platform
-import sys
+import tomllib
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -14,11 +14,6 @@ from yutto.media.quality import (
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.time import TIME_DATE_FMT
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 
 def xdg_config_home() -> Path:

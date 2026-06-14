@@ -60,4 +60,4 @@ jobs:
 
       - name: Install dependencies
         run: |
-          just ci-install 3.10
+          just ci-install 3.11

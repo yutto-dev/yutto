@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-import platform
-import sys
 import time
 import types
 from functools import wraps
@@ -18,12 +16,6 @@ if TYPE_CHECKING:
 
 RetT = TypeVar("RetT")
 P = ParamSpec("P")
-
-
-def initial_async_policy():
-    if sys.version_info < (3, 11) and platform.system() == "Windows":
-        Logger.debug("Windows 平台（Python < 3.11），单独设置 EventLoopPolicy")
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # ty: ignore[deprecated, unresolved-attribute]
 
 
 class CoroutineWrapper(Generic[RetT]):

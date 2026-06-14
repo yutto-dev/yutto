@@ -3,7 +3,7 @@ name = "yutto"
 version = "2.2.0"
 description = "🧊 一个可爱且任性的 B 站视频下载器"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Nyakku Shigure", email = "sigure.qaq@gmail.com" }]
 keywords = ["python", "bilibili", "video", "downloader", "danmaku"]
 license = "GPL-3.0-only"
@@ -14,7 +14,6 @@ classifiers = [
   "Typing :: Typed",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -28,7 +27,6 @@ dependencies = [
   "typing-extensions>=4.15.0",
   "dict2xml>=1.7.8",
   "httpx[http2,socks]>=0.28.1",
-  "tomli>=2.3.0; python_version < '3.11'",
   "pydantic>=2.12.5",
   "returns>=0.26.0",
   "segno>=1.6.6",
@@ -65,7 +63,7 @@ markers = ["api", "e2e", "processor", "biliass", "ignore", "ci_skip", "ci_only"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
