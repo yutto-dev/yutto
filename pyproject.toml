@@ -43,7 +43,7 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "ty>=0.0.49",
+  "ty>=0.0.50",
   "ruff>=0.15.17",
   "typos>=1.47.2",
   "pytest>=9.1.0",
