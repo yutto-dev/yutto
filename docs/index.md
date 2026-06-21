@@ -9,9 +9,6 @@ hero:
       text: 召唤 yutto
       link: /guide/quick-start.html
     - theme: alt
-      text: 搬家到 yutto
-      link: /migration/
-    - theme: alt
       text: GitHub
       link: https://github.com/yutto-dev/yutto
   image:
