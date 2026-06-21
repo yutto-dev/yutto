@@ -26,7 +26,6 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '指南', link: '/guide/quick-start' },
-      { text: '迁移', link: '/migration/' },
       {
         text: '支持我',
         items: [

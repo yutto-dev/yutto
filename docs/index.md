@@ -6,11 +6,8 @@ hero:
   text: 🧊 一个可爱且任性的 B 站视频下载器
   actions:
     - theme: brand
-      text: 从零开始
+      text: 召唤 yutto
       link: /guide/quick-start.html
-    - theme: alt
-      text: 从 bilili 迁移
-      link: /migration/
     - theme: alt
       text: GitHub
       link: https://github.com/yutto-dev/yutto
