@@ -342,8 +342,10 @@ async def process_download(
     if not will_download_video:
         if options["output_format_audio_only"] != "infer":
             output_format = "." + options["output_format_audio_only"]
-        elif will_download_audio and audio["codec"] == "flac":
+        elif will_download_audio and audio["codec"] == "flac" and options["audio_save_codec"] in {"copy", "flac"}:
             output_format = ".flac"
+        elif will_download_audio and audio["codec"] == "eac3" and options["audio_save_codec"] in {"copy", "eac3"}:
+            output_format = ".mkv"  # m4a/ipod does not support EAC3 passthrough
         else:
             output_format = ".m4a"
     else:
