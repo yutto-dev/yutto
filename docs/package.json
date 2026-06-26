@@ -27,7 +27,7 @@
     "vitepress-plugin-llms": "^1.13.1",
     "vue": "^3.5.38"
   },
-  "packageManager": "pnpm@11.8.0",
+  "packageManager": "pnpm@11.9.0",
   "pnpm": {
     "peerDependencyRules": {
       "ignoreMissing": [
