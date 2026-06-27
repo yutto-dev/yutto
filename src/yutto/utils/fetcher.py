@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import random
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from urllib.parse import quote, unquote, urlparse
 
 import h2.exceptions
@@ -64,9 +64,9 @@ class MaxRetry:
 def unwrap_fetch_result(result: Result[RetT, MaxRetryError]) -> RetT:
     match result:
         case Success(value):
-            return value
+            return cast("RetT", value)
         case Failure(error):
-            raise error
+            raise cast("MaxRetryError", error)
     raise AssertionError("无法解析响应结果")
 
 
