@@ -30,23 +30,28 @@ jobs:
           sudo apt update
           sudo apt install ffmpeg
 
-      - name: Test yutto from source
-        run: |
-          uv cache clean
-          uvx --no-binary-package=yutto yutto@latest -v
-          uvx --no-binary-package=yutto yutto@latest -h
-          uvx --no-binary-package=yutto yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+      - parallel:
+          - name: Test yutto from source
+            env:
+              UV_CACHE_DIR: ${{ runner.temp }}/uv-cache-yutto-source
+            run: |
+              uv cache clean
+              uvx --no-binary-package=yutto yutto@latest -v
+              uvx --no-binary-package=yutto yutto@latest -h
+              uvx --no-binary-package=yutto yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
 
-      - name: Test yutto from wheel
-        run: |
-          uv cache clean
-          uvx yutto@latest -v
-          uvx yutto@latest -h
-          uvx yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+          - name: Test yutto from wheel
+            env:
+              UV_CACHE_DIR: ${{ runner.temp }}/uv-cache-yutto-wheel
+            run: |
+              uv cache clean
+              uvx yutto@latest -v
+              uvx yutto@latest -h
+              uvx yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
 
-      - name: Prepare data for biliass
-        run: |
-          git clone https://github.com/yutto-dev/biliass-corpus.git --depth 1
+          - name: Prepare data for biliass
+            run: |
+              git clone https://github.com/yutto-dev/biliass-corpus.git --depth 1
 
       - name: Test biliass from source
         run: |
