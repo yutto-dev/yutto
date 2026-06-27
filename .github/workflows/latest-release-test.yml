@@ -34,20 +34,30 @@ jobs:
           - name: Test yutto from source
             env:
               UV_CACHE_DIR: ${{ runner.temp }}/uv-cache-yutto-source
+              TMPDIR: ${{ runner.temp }}/tmp-yutto-source
+              TEMP: ${{ runner.temp }}/tmp-yutto-source
+              TMP: ${{ runner.temp }}/tmp-yutto-source
+              YUTTO_OUTPUT_DIR: ${{ runner.temp }}/output-yutto-source
             run: |
+              mkdir -p "$TMPDIR" "$YUTTO_OUTPUT_DIR"
               uv cache clean
               uvx --no-binary-package=yutto yutto@latest -v
               uvx --no-binary-package=yutto yutto@latest -h
-              uvx --no-binary-package=yutto yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+              uvx --no-binary-package=yutto yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress --dir "$YUTTO_OUTPUT_DIR" --tmp-dir "$TMPDIR"
 
           - name: Test yutto from wheel
             env:
               UV_CACHE_DIR: ${{ runner.temp }}/uv-cache-yutto-wheel
+              TMPDIR: ${{ runner.temp }}/tmp-yutto-wheel
+              TEMP: ${{ runner.temp }}/tmp-yutto-wheel
+              TMP: ${{ runner.temp }}/tmp-yutto-wheel
+              YUTTO_OUTPUT_DIR: ${{ runner.temp }}/output-yutto-wheel
             run: |
+              mkdir -p "$TMPDIR" "$YUTTO_OUTPUT_DIR"
               uv cache clean
               uvx yutto@latest -v
               uvx yutto@latest -h
-              uvx yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress
+              uvx yutto@latest https://www.bilibili.com/video/BV1AZ4y147Yg -w --no-progress --dir "$YUTTO_OUTPUT_DIR" --tmp-dir "$TMPDIR"
 
           - name: Prepare data for biliass
             run: |
