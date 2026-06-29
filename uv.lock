@@ -587,6 +587,6 @@ dev = [
     { name = "pytest-rerunfailures", specifier = ">=16.3" },
     { name = "ruff", specifier = ">=0.15.20" },
     { name = "syrupy", specifier = ">=5.3.4" },
-    { name = "ty", specifier = ">=0.0.54" },
+    { name = "ty", specifier = ">=0.0.55" },
     { name = "typos", specifier = ">=1.47.2" },
 ]
