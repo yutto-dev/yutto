@@ -43,12 +43,12 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
-  "ty>=0.0.55",
+  "ty>=0.0.56",
   "ruff>=0.15.20",
-  "typos>=1.47.2",
+  "typos>=1.48.0",
   "pytest>=9.1.1",
-  "pytest-rerunfailures>=16.3",
-  "syrupy>=5.3.4",
+  "pytest-rerunfailures>=16.4",
+  "syrupy>=5.4.0",
   "pytest-codspeed>=5.0.3",
 ]
 
