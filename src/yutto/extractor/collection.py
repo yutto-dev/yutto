@@ -6,16 +6,13 @@ from typing import TYPE_CHECKING
 
 from yutto.api.collection import get_collection_details
 from yutto.api.space import get_user_name
-from yutto.api.ugc_video import get_ugc_video_list
-from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import extract_ugc_video_data
+from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import MId, SeriesId
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
-from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
     import httpx
@@ -65,27 +62,22 @@ class CollectionExtractor(BatchExtractor):
         episodes = parse_episodes_selection(options["episodes"], len(collection_details["pages"]))
         collection_details["pages"] = list(filter(lambda item: item["id"] in episodes, collection_details["pages"]))
 
-        for item in collection_details["pages"]:
-            try:
-                avid = item["avid"]
-                ugc_video_list = await get_ugc_video_list(ctx, client, avid)
-                if not Filter.verify_timer(ugc_video_list["pubdate"]):
-                    Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
-                    continue
-                unwrap_fetch_result(await Fetcher.touch_url(ctx, client, avid.to_url()))
-                if len(ugc_video_list["pages"]) != 1:
-                    Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")
-                for ugc_video_item in ugc_video_list["pages"]:
-                    ugc_video_info_list.append(
-                        (
-                            ugc_video_item,
-                            ugc_video_list["title"],
-                            ugc_video_list["pubdate"],
-                        )
-                    )
-            except (NotFoundError, NoAccessPermissionError) as e:
-                Logger.error(e.message)
+        items = collection_details["pages"]
+        avids = [item["avid"] for item in items]
+        ugc_video_lists = await resolve_ugc_video_lists(ctx, client, avids)
+        for item, ugc_video_list in zip(items, ugc_video_lists, strict=True):
+            if ugc_video_list is None:
                 continue
+            if len(ugc_video_list["pages"]) != 1:
+                Logger.error(f"视频合集 {collection_title} 中的视频 {item['avid']} 包含多个视频！")
+            for ugc_video_item in ugc_video_list["pages"]:
+                ugc_video_info_list.append(
+                    (
+                        ugc_video_item,
+                        ugc_video_list["title"],
+                        ugc_video_list["pubdate"],
+                    )
+                )
 
         return [
             CoroutineWrapper(
