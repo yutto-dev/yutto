@@ -132,7 +132,7 @@ class DownloadManager:
         await self.queue.put(Nothing)
 
     async def loop(self, ctx: FetcherContext):
-        ctx.set_fetch_semaphore(fetch_workers=8)
+        ctx.set_fetch_semaphore(fetch_workers=ctx.fetch_workers)
         async with create_client(
             cookies=ctx.cookies,
             trust_env=ctx.trust_env,

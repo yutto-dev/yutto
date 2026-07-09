@@ -72,6 +72,7 @@ def unwrap_fetch_result(result: Result[RetT, MaxRetryError]) -> RetT:
 
 DEFAULT_PROXY = None
 DEFAULT_TRUST_ENV = True
+DEFAULT_FETCH_WORKERS = 8
 DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
     "Referer": "https://www.bilibili.com",
@@ -97,6 +98,7 @@ class FetcherContext:
     trust_env: bool
     headers: dict[str, str]
     cookies: httpx.Cookies
+    fetch_workers: int
     fetch_semaphore: asyncio.Semaphore | None
     download_semaphore: asyncio.Semaphore | None
 
@@ -112,8 +114,13 @@ class FetcherContext:
         self.trust_env = trust_env
         self.headers = headers
         self.cookies = cookies
+        self.fetch_workers = DEFAULT_FETCH_WORKERS
         self.fetch_semaphore = None
         self.download_semaphore = None
+
+    def set_fetch_workers(self, fetch_workers: int):
+        # 仅记录并发数，semaphore 需要在事件循环内创建（见 DownloadManager.loop）
+        self.fetch_workers = fetch_workers
 
     def set_fetch_semaphore(self, fetch_workers: int):
         self.fetch_semaphore = asyncio.Semaphore(fetch_workers)

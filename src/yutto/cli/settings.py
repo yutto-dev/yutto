@@ -27,6 +27,7 @@ def xdg_config_home() -> Path:
 
 class YuttoBasicSettings(BaseModel):
     num_workers: Annotated[int, Field(8, gt=0)]
+    fetch_workers: Annotated[int, Field(8, gt=0)]
     video_quality: Annotated[VideoQuality, Field(127)]
     audio_quality: Annotated[AudioQuality, Field(30251)]
     vcodec: Annotated[str, Field("avc:copy")]
