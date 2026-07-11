@@ -84,6 +84,12 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         "-n", "--num-workers", type=int, default=settings.basic.num_workers, help="同时用于下载的最大 Worker 数"
     )
     group_basic.add_argument(
+        "--fetch-workers",
+        type=int,
+        default=settings.basic.fetch_workers,
+        help="批量解析时同时请求的最大 Worker 数",
+    )
+    group_basic.add_argument(
         "-q",
         "--video-quality",
         default=settings.basic.video_quality,

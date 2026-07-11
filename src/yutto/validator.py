@@ -60,6 +60,9 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
         Logger.error(str(e))
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
+    # 批量解析并发数设置
+    ctx.set_fetch_workers(args.fetch_workers)
+
     # 大会员身份校验
     auth = hydrate_auth(args)
     if not auth:
@@ -96,6 +99,11 @@ def validate_basic_arguments(args: argparse.Namespace):
     """检查 argparse 无法检查的选项，并设置某些全局的状态"""
 
     ffmpeg = FFmpeg()
+
+    # fetch_workers 检查
+    if args.fetch_workers < 1:
+        Logger.error(f"fetch_workers 参数值（{args.fetch_workers}）不满足要求哦（应为不小于 1 的整数）")
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
     download_vcodec_priority: list[VideoCodec] = video_codec_priority_default
     if args.download_vcodec_priority is not None:

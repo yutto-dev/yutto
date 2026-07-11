@@ -33,6 +33,7 @@ yutto --no-color --no-progress <url> > log
 [basic]
 dir = "~/Movies/yutto"
 num_workers = 16
+fetch_workers = 16
 vcodec = "av1:copy"
 
 [auth]

@@ -36,6 +36,12 @@
           "title": "Num Workers",
           "type": "integer"
         },
+        "fetch_workers": {
+          "default": 8,
+          "exclusiveMinimum": 0,
+          "title": "Fetch Workers",
+          "type": "integer"
+        },
         "video_quality": {
           "default": 127,
           "enum": [
@@ -410,6 +416,7 @@
       "$ref": "#/$defs/YuttoBasicSettings",
       "default": {
         "num_workers": 8,
+        "fetch_workers": 8,
         "video_quality": 127,
         "audio_quality": 30251,
         "vcodec": "avc:copy",
