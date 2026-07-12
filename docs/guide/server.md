@@ -88,12 +88,12 @@ yutto serve \
 
 除 runtime 自己产生的 `state` 外，下载事件的 `kind` 包括：
 
-| `kind`             | `data`                                                                 | 含义                                       |
-| ------------------ | ---------------------------------------------------------------------- | ------------------------------------------ |
-| `stage`            | `{ name, item? }`                                                      | 进入解析、资源写入、下载或后处理阶段       |
-| `progress`         | `{ phase, current, total, speed_per_second, unit }`                    | 音视频字节下载进度                         |
-| `item_skipped`     | `{ item, reason }`                                                     | 条目因媒体已存在或没有请求到可用媒体流跳过 |
-| `artifact_created` | `{ item, path }`                                                       | 本次任务生成了最终媒体文件                 |
+| `kind`             | `data`                                              | 含义                                       |
+| ------------------ | --------------------------------------------------- | ------------------------------------------ |
+| `stage`            | `{ name, item? }`                                   | 进入解析、资源写入、下载或后处理阶段       |
+| `progress`         | `{ phase, current, total, speed_per_second, unit }` | 音视频字节下载进度                         |
+| `item_skipped`     | `{ item, reason }`                                  | 条目因媒体已存在或没有请求到可用媒体流跳过 |
+| `artifact_created` | `{ item, path }`                                    | 本次任务生成了最终媒体文件                 |
 
 `stage.name` 目前可能为 `resolving`、`preparing`、`writing_resources`、`downloading` 或 `postprocessing`。`artifact_created` 只在本次新生成最终媒体文件时发送；其他 sidecar 产物通过完成结果获取。
 
