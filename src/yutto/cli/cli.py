@@ -29,7 +29,7 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "cover",
     "chapter_info",
 ]
-SUBCOMMANDS: list[str] = ["download", "auth"]
+SUBCOMMANDS: list[str] = ["download", "auth", "serve"]
 REMOVED_TOP_LEVEL_SUBCOMMANDS: list[str] = ["login"]
 
 
@@ -74,7 +74,65 @@ def cli() -> argparse.ArgumentParser:
     auth_parser = subparsers.add_parser("auth", help="认证相关命令")
     add_auth_subcommands(auth_parser, settings)
 
+    # 添加本地 server 子命令；下载参数仍由 JSON-RPC 请求逐任务提供。
+    serve_parser = subparsers.add_parser("serve", help="启动本地 JSON-RPC server")
+    add_serve_arguments(serve_parser, settings)
+
     return parser
+
+
+def add_serve_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings) -> None:
+    parser.set_defaults(server_settings=settings)
+    parser.add_argument("--config", help="配置文件路径")
+    parser.add_argument("--host", default="127.0.0.1", help="监听地址（仅允许本机回环地址）")
+    parser.add_argument("--port", type=int, default=11223, help="监听端口，默认为 11223")
+    parser.add_argument(
+        "--allow-origin",
+        action="append",
+        default=[],
+        help="允许访问的浏览器 Origin；可重复指定，默认拒绝所有浏览器 Origin",
+    )
+    parser.add_argument(
+        "--token-file",
+        type=path_from_cli,
+        help="server token 文件；也可通过 YUTTO_SERVER_TOKEN 环境变量提供",
+    )
+    parser.add_argument(
+        "--download-root",
+        type=path_from_cli,
+        default=path_from_cli(settings.basic.dir),
+        help="RPC 下载目录的根目录，默认为配置中的下载目录",
+    )
+    parser.add_argument(
+        "--tmp-root",
+        type=path_from_cli,
+        default=map_optional(path_from_cli, settings.basic.tmp_dir),
+        help="RPC 临时目录的根目录，默认与下载目录相同",
+    )
+    parser.add_argument(
+        "--auth-file",
+        type=path_from_cli,
+        default=map_optional(path_from_cli, settings.auth.auth_file),
+        help="server 可读取的认证信息文件",
+    )
+    parser.add_argument(
+        "--max-fetch-workers",
+        type=int,
+        default=max(16, settings.basic.fetch_workers),
+        help="单任务允许的最大解析并发数",
+    )
+    parser.add_argument(
+        "--max-download-workers",
+        type=int,
+        default=max(16, settings.basic.num_workers),
+        help="单任务允许的最大下载并发数",
+    )
+    parser.add_argument(
+        "--task-limit",
+        type=int,
+        default=256,
+        help="保留的任务及排队任务总数上限",
+    )
 
 
 def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):

@@ -9,12 +9,15 @@ import sys
 from typing import TYPE_CHECKING
 
 from yutto.cli.cli import cli, handle_default_subcommand
-from yutto.download_manager import DownloadManager, DownloadTask
-from yutto.exceptions import ErrorCode
+from yutto.cli.event_renderer import CliApplicationEventRenderer
+from yutto.cli.request_adapter import download_request_from_namespace
+from yutto.core.application import YuttoApplication
+from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
 from yutto.login import run_auth_logout, run_auth_status, run_login
-from yutto.utils.console.logger import Badge, Logger
+from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import FetcherContext
+from yutto.utils.ffmpeg import FFmpegNotFoundError
 from yutto.utils.functional import as_sync
 from yutto.validator import (
     initial_validation,
@@ -24,18 +27,24 @@ from yutto.validator import (
 if TYPE_CHECKING:
     import argparse
 
+    from yutto.core.request import DownloadRequest
+
 
 def main():
     parser = cli()
     args = parser.parse_args(handle_default_subcommand(sys.argv[1:]))
     match args.command:
         case "download":
-            ctx = FetcherContext()
-            initial_validation(ctx, args)
-            args_list = flatten_args(args, parser)
             try:
-                run_download(ctx, args_list)
-            except (SystemExit, KeyboardInterrupt, asyncio.exceptions.CancelledError):
+                ctx = FetcherContext()
+                initial_validation(ctx, args)
+                args_list = flatten_args(args, parser)
+                requests = [download_request_from_namespace(item) for item in args_list]
+                run_download(ctx, requests)
+            except YuttoBaseException as e:
+                Logger.error(e.message)
+                sys.exit(e.code.value)
+            except (KeyboardInterrupt, asyncio.exceptions.CancelledError):
                 Logger.info("已终止下载，再次运行即可继续下载～")
                 sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
         case "auth":
@@ -49,23 +58,25 @@ def main():
                 case _:
                     raise ValueError("Invalid auth command")
 
+        case "serve":
+            from yutto.server.command import run_server_command
+
+            try:
+                run_server_command(args)
+            except KeyboardInterrupt:
+                Logger.info("yutto server 已停止")
+            except (FFmpegNotFoundError, OSError, ValueError) as e:
+                Logger.error(str(e))
+                sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
         case _:
             raise ValueError("Invalid command")
 
 
 @as_sync
-async def run_download(ctx: FetcherContext, args_list: list[argparse.Namespace]):
-    manager = DownloadManager()
-    manager.start(ctx)
-    if len(args_list) > 1:
-        Logger.info(f"列表里共检测到 {len(args_list)} 项")
-
-    for i, args in enumerate(args_list):
-        if len(args_list) > 1:
-            Logger.custom(f"列表项 {args.url}", Badge(f"[{i + 1}/{len(args_list)}]", fore="black", back="cyan"))
-        await manager.add_task(DownloadTask(args=args))
-    await manager.add_stop_task()
-    await manager.wait_for_completion()
+async def run_download(ctx: FetcherContext, requests: list[DownloadRequest]):
+    application = YuttoApplication(ctx, event_sink=CliApplicationEventRenderer())
+    await application.download_all(requests)
 
 
 def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[argparse.Namespace]:

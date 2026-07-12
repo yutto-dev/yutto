@@ -52,6 +52,10 @@ export default defineConfig({
               link: '/guide/supported-links',
             },
             {
+              text: 'server 模式',
+              link: '/guide/server',
+            },
+            {
               text: '命令行参数',
               collapsed: false,
               items: [

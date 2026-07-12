@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import re
-import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from yutto.exceptions import ErrorCode
+from yutto.exceptions import WrongArgumentError
 from yutto.utils.console.logger import Logger
 
 
@@ -66,8 +65,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
 
     def resolve_negative(value: int) -> int:
         if value == 0:
-            Logger.error("不可使用 0 作为剧集号（剧集号从 1 开始计算）")
-            sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+            raise WrongArgumentError("不可使用 0 作为剧集号（剧集号从 1 开始计算）")
         return value if value > 0 else value + total + 1
 
     # 解析字符串为列表
@@ -79,15 +77,13 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
             if "~" in episode_item:
                 split_range = episode_item.split("~")
                 if len(split_range) != 2:
-                    Logger.error(f"{episode_item} 选集参数每部分至多包含一个 ~")
-                    sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+                    raise WrongArgumentError(f"{episode_item} 选集参数每部分至多包含一个 ~")
                 start, end = split_range
                 start, end = "1" if not start else start, "-1" if not end else end
                 start, end = int(start), int(end)
                 start, end = resolve_negative(start), resolve_negative(end)
                 if not (end >= start):
-                    Logger.error(f"终点值（{end}）应不小于起点值（{start}）")
-                    sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+                    raise WrongArgumentError(f"终点值（{end}）应不小于起点值（{start}）")
                 episode_list.extend(list(range(start, end + 1)))
             else:
                 episode_item = int(episode_item)

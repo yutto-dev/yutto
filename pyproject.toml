@@ -30,6 +30,7 @@ dependencies = [
   "pydantic>=2.12.5",
   "returns>=0.26.0",
   "segno>=1.6.6",
+  "websockets>=16.0,<17",
 ]
 
 [project.urls]

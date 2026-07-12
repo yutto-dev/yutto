@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import operator
 import os
 import re
@@ -9,6 +10,8 @@ from pathlib import Path
 
 from yutto.utils.console.logger import Logger
 from yutto.utils.functional import Singleton
+
+_TERMINATE_TIMEOUT_SECONDS = 3.0
 
 
 class FFmpegNotFoundError(Exception):
@@ -33,6 +36,25 @@ class FFmpeg(metaclass=Singleton):
         # NOTE(aheadlead): FFmpeg 会谜之从 stdin 读取一个字节，这会让调用 yutto 的 shell 脚本踩到坑
         # 这个行为在目前最新的 FFmpeg 6.0 仍然存在
         return subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True)
+
+    async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+        """Run FFmpeg without blocking the event loop and reap it on cancellation."""
+        cmd = [self.path, *args]
+        Logger.debug(" ".join(cmd))
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        try:
+            stdout, stderr = await process.communicate()
+        except asyncio.CancelledError:
+            await _terminate_process(process)
+            raise
+
+        assert process.returncode is not None
+        return subprocess.CompletedProcess(cmd, process.returncode, stdout, stderr)
 
     @cached_property
     def version(self) -> str:
@@ -66,6 +88,25 @@ class FFmpeg(metaclass=Singleton):
             if match_obj := re.match(r"^\s*A[F\.][S\.][X\.][B\.][D\.] (?P<encoder>\S+)", line):
                 results.append(match_obj.group("encoder"))
         return results
+
+
+async def _terminate_process(process: asyncio.subprocess.Process) -> None:
+    if process.returncode is not None:
+        return
+    try:
+        process.terminate()
+    except ProcessLookupError:
+        await process.wait()
+        return
+
+    try:
+        await asyncio.wait_for(process.wait(), timeout=_TERMINATE_TIMEOUT_SECONDS)
+    except TimeoutError:
+        try:
+            process.kill()
+        except ProcessLookupError:
+            pass
+        await process.wait()
 
 
 def concat_commands(commands: list[list[str]]) -> list[str]:

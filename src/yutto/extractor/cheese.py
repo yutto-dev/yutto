@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import re
-import sys
 from typing import TYPE_CHECKING
 
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.exceptions import (
-    ErrorCode,
+    EpisodeNotFoundError,
     HttpStatusError,
     NoAccessPermissionError,
     NotFoundError,
@@ -62,8 +61,7 @@ class CheeseExtractor(SingleExtractor):
                     cheese_list_item = cheese_item
                     break
             else:
-                Logger.error("在列表中未找到该剧集")
-                sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
+                raise EpisodeNotFoundError("在列表中未找到该剧集")
 
             return CoroutineWrapper(
                 extract_cheese_data(

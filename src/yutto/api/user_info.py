@@ -10,7 +10,6 @@ import urllib.parse
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from yutto.types import UserInfo
-from yutto.utils.asynclib import async_cache
 from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
 
 if TYPE_CHECKING:
@@ -41,10 +40,12 @@ def parse_user_info(res_json: dict[str, Any]) -> UserInfo:
     )
 
 
-@async_cache(lambda _: "user_info")
 async def get_user_info(ctx: FetcherContext, client: AsyncClient) -> UserInfo:
+    if ctx.user_info_cache is not None:
+        return ctx.user_info_cache
     res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, USER_INFO_API))
-    return parse_user_info(res_json)
+    ctx.user_info_cache = parse_user_info(res_json)
+    return ctx.user_info_cache
 
 
 def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
@@ -71,6 +72,7 @@ async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> boo
 
 async def get_wbi_img(ctx: FetcherContext, client: AsyncClient) -> WbiImg:
     global wbi_img_cache
+
     if wbi_img_cache is not None:
         return wbi_img_cache
     res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, USER_INFO_API))

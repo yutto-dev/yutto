@@ -74,8 +74,8 @@ class AsyncFileBuffer(aobject):
             await self.file_obj.write(ready_to_write_chunk.data)
             self.written_size += len(ready_to_write_chunk.data)
 
-    async def close(self):
-        if self.buffer:
+    async def close(self, *, warn_unflushed: bool = True):
+        if self.buffer and warn_unflushed:
             Logger.error("buffer 尚未清空")
         if self.file_obj is not None:
             await self.file_obj.close()

@@ -123,3 +123,32 @@ async def test_touch_url_keeps_non_success_status_as_success_none():
             pass
         case result:
             pytest.fail(f"expected Success(None), got {result}")
+
+
+@pytest.mark.processor
+@as_sync
+async def test_touch_url_cache_is_scoped_to_context_and_client():
+    class CountingClient(_StatusClient):
+        def __init__(self):
+            super().__init__(204)
+            self.calls = 0
+
+        async def get(self, url: str, **kwargs: Any) -> httpx.Response:
+            self.calls += 1
+            return await super().get(url, **kwargs)
+
+    first_client = CountingClient()
+    second_client = CountingClient()
+    first_context = FetcherContext()
+    second_context = FetcherContext()
+
+    assert isinstance(await Fetcher.touch_url(first_context, cast("Any", first_client), "https://example.com"), Success)
+    assert isinstance(await Fetcher.touch_url(first_context, cast("Any", first_client), "https://example.com"), Success)
+    assert isinstance(
+        await Fetcher.touch_url(second_context, cast("Any", first_client), "https://example.com"), Success
+    )
+    assert isinstance(
+        await Fetcher.touch_url(second_context, cast("Any", second_client), "https://example.com"), Success
+    )
+    assert first_client.calls == 2
+    assert second_client.calls == 1

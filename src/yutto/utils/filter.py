@@ -12,6 +12,16 @@ class Filter:
     batch_filter_end_time: datetime.datetime = datetime.datetime.now() + datetime.timedelta(days=1)
 
     @staticmethod
+    def configure(start_time: str | None = None, end_time: str | None = None) -> None:
+        """Reset and apply one request's batch filter window."""
+        Filter.batch_filter_start_time = datetime.datetime(1971, 1, 1)
+        Filter.batch_filter_end_time = datetime.datetime.now() + datetime.timedelta(days=1)
+        if start_time:
+            Filter.set_timer("batch_filter_start_time", start_time)
+        if end_time:
+            Filter.set_timer("batch_filter_end_time", end_time)
+
+    @staticmethod
     def set_timer(key: str, user_input: str):
         """设置过滤器的时间"""
         timer: datetime.datetime | None = None

@@ -6,6 +6,7 @@ import time
 from collections import deque
 from typing import TYPE_CHECKING
 
+from yutto.core.operation import emit_operation_event
 from yutto.utils.console.attributes import get_terminal_size
 from yutto.utils.console.colorful import RGBColor, colored_string
 from yutto.utils.console.formatter import size_format
@@ -71,6 +72,16 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         size_now = size_written + size_in_buffer
         time_with_size_window.append((t_now, size_now))
         speed = (size_now - time_with_size_window[0][1]) / (t_now - time_with_size_window[0][0] + 10**-6)
+        emit_operation_event(
+            "progress",
+            {
+                "phase": "downloading",
+                "current": size_now,
+                "total": total_size,
+                "speed_per_second": speed,
+                "unit": "bytes",
+            },
+        )
 
         # 进度条默认颜色为青色
         # 当速度过快导致 buffer 中的块数过多时（>2048 块，每块 2**15Bytes，缓冲区共 64MiB），使用红色进行警告

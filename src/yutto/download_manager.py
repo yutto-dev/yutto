@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 from asyncio import Queue
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,7 +12,7 @@ from returns.maybe import Nothing, Some
 
 from yutto.api.user_info import validate_user_info
 from yutto.downloader.downloader import DownloadState, process_download
-from yutto.exceptions import ErrorCode
+from yutto.exceptions import NotLoginError, WrongArgumentError, WrongUrlError
 from yutto.extractor import (
     BangumiBatchExtractor,
     BangumiExtractor,
@@ -34,23 +33,24 @@ from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
 from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
+from yutto.utils.filter import Filter
 from yutto.utils.time import TIME_FULL_FMT
-from yutto.validator import validate_batch_arguments
+from yutto.validator import validate_batch_selection
 
 if TYPE_CHECKING:
-    import argparse
     from collections.abc import Callable
 
     from httpx import AsyncClient
     from returns.maybe import Maybe
 
+    from yutto.core.request import DanmakuRequestOptions, DownloadRequest
     from yutto.types import EpisodeData
     from yutto.utils.fetcher import FetcherContext
 
 
 @dataclass
 class DownloadTask:
-    args: argparse.Namespace
+    request: DownloadRequest
 
 
 def show_batch_episode_title(
@@ -104,8 +104,6 @@ class DownloadManager:
         if self.loop_task == Nothing:
             raise RuntimeError("Task manager is not started.")
         loop_task = self.loop_task.unwrap()
-        if loop_task.done():
-            return
         await loop_task
         await self.queue.join()
 
@@ -153,10 +151,11 @@ class DownloadManager:
                     self.queue.task_done()
 
     async def process_task(self, client: AsyncClient, ctx: FetcherContext, task: DownloadTask):
-        args = task.args
+        request = task.request
+        Filter.configure(request.selection.start_time, request.selection.end_time)
         # 验证批量参数
-        if args.batch:
-            validate_batch_arguments(args)
+        if request.scope.batch:
+            validate_batch_selection(request.selection.episodes)
 
         # 初始化各种提取器
         extractors = (
@@ -171,14 +170,14 @@ class DownloadManager:
                 UserAllUgcVideosExtractor(),  # 个人空间，由于个人空间的正则包含了收藏夹，所以需要放在收藏夹之后
                 UserWatchLaterExtractor(),  # 用户稍后再看
             ]
-            if args.batch
+            if request.scope.batch
             else [
                 UgcVideoExtractor(),  # 投稿单集
                 BangumiExtractor(),  # 番剧单话
                 CheeseExtractor(),  # 课程单集
             ]
         )
-        url: str = args.url
+        url = request.source.url
         # 将 shortcut 转为完整 url
         for extractor in extractors:
             matched, url = extractor.resolve_shortcut(url)
@@ -186,23 +185,23 @@ class DownloadManager:
                 break
 
         # 在开始前校验，减少对第一个视频的请求
-        if not await validate_user_info(ctx, {"is_login": args.login_strict, "vip_status": args.vip_strict}):
-            Logger.error("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
-            sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+        if not await validate_user_info(
+            ctx,
+            {"is_login": request.access.login_strict, "vip_status": request.access.vip_strict},
+        ):
+            raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
         # 重定向到可识别的 url
         try:
             url = unwrap_fetch_result(await Fetcher.get_redirected_url(ctx, client, url))
         except httpx.InvalidURL:
-            Logger.error(f"无效的 url({url})～请检查一下链接是否正确～")
-            sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+            raise WrongUrlError(f"无效的 url({url})～请检查一下链接是否正确～") from None
         except httpx.UnsupportedProtocol:
             error_text = f"无效的 url 协议（{url}）～请检查一下链接协议是否正确"
-            if not args.batch:
+            if not request.scope.batch:
                 error_text += (
                     "，如使用裸 id 功能，请确认该类型 id 是否支持当前单话模式，如不支持需要添加 `-b` 以使用批量模式"
                 )
-            Logger.error(error_text)
-            sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+            raise WrongUrlError(error_text) from None
 
         # 提取信息，构造解析任务～
         for extractor in extractors:
@@ -211,28 +210,28 @@ class DownloadManager:
                     ctx,
                     client,
                     ExtractorOptions(
-                        episodes=args.episodes,
-                        with_section=args.with_section,
-                        require_video=args.require_video,
-                        require_audio=args.require_audio,
-                        require_danmaku=args.require_danmaku,
-                        require_subtitle=args.require_subtitle,
-                        require_metadata=args.require_metadata,
-                        require_cover=args.require_cover,
-                        require_chapter_info=args.require_chapter_info,
-                        danmaku_format=args.danmaku_format,
-                        subpath_template=args.subpath_template,
-                        ai_translation_language=args.ai_translation_language,
+                        episodes=request.selection.episodes,
+                        with_section=request.scope.with_section,
+                        require_video=request.resources.video,
+                        require_audio=request.resources.audio,
+                        require_danmaku=request.resources.danmaku,
+                        require_subtitle=request.resources.subtitle,
+                        require_metadata=request.resources.metadata,
+                        require_cover=request.resources.cover,
+                        require_chapter_info=request.resources.chapter_info,
+                        danmaku_format=request.danmaku.format,
+                        subpath_template=request.output.subpath_template,
+                        ai_translation_language=request.resources.ai_translation_language,
                     ),
                 )
                 break
         else:
-            if args.batch:
+            if request.scope.batch:
                 # TODO: 指向文档中受支持的列表部分
-                Logger.error("url 不正确呦～")
+                error_text = "url 不正确呦～"
             else:
-                Logger.error("url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～")
-            sys.exit(ErrorCode.WRONG_URL_ERROR.value)
+                error_text = "url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～"
+            raise WrongUrlError(error_text)
 
         current_download_state = DownloadState.SKIP
         current_display_group: str | None = None
@@ -243,13 +242,15 @@ class DownloadManager:
                 continue
 
             # 中途校验，因为批量下载时可能会失效
-            if not await validate_user_info(ctx, {"is_login": args.login_strict, "vip_status": args.vip_strict}):
-                Logger.error("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
-                sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
+            if not await validate_user_info(
+                ctx,
+                {"is_login": request.access.login_strict, "vip_status": request.access.vip_strict},
+            ):
+                raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
 
-            if current_download_state != DownloadState.SKIP and args.download_interval > 0:
-                Logger.info(f"下载间隔 {args.download_interval} 秒")
-                await sleep_with_status_bar_refresh(args.download_interval)
+            if current_download_state != DownloadState.SKIP and request.network.download_interval > 0:
+                Logger.info(f"下载间隔 {request.network.download_interval} 秒")
+                await sleep_with_status_bar_refresh(request.network.download_interval)
 
             # 这时候才真正开始解析链接
             episode_data = await episode_data_coro
@@ -257,7 +258,13 @@ class DownloadManager:
                 continue
             # 保证路径唯一
             episode_data = ensure_unique_path(episode_data, self.unique_path)
-            if args.batch:
+            if request.output.enforce_directory_boundary:
+                ensure_output_path_is_scoped(
+                    episode_data["path"],
+                    request.output.directory,
+                    request.output.temporary_directory or request.output.directory,
+                )
+            if request.scope.batch:
                 current_display_group = show_batch_episode_title(
                     episode_data,
                     i + 1,
@@ -270,30 +277,30 @@ class DownloadManager:
                 client,
                 episode_data,
                 {
-                    "output_dir": args.dir,
-                    "tmp_dir": args.tmp_dir or args.dir,
-                    "require_video": args.require_video,
-                    "require_chapter_info": args.require_chapter_info,
-                    "video_quality": args.video_quality,
-                    "video_download_codec": args.vcodec.split(":")[0],
-                    "video_save_codec": args.vcodec.split(":")[1],
-                    "video_download_codec_priority": args.download_vcodec_priority,
-                    "require_audio": args.require_audio,
-                    "audio_quality": args.audio_quality,
-                    "audio_download_codec": args.acodec.split(":")[0],
-                    "audio_save_codec": args.acodec.split(":")[1],
-                    "output_format": args.output_format,
-                    "output_format_audio_only": args.output_format_audio_only,
-                    "overwrite": args.overwrite,
-                    "block_size": int(args.block_size * 1024 * 1024),
-                    "num_workers": args.num_workers,
-                    "save_cover": args.save_cover,
+                    "output_dir": request.output.directory,
+                    "tmp_dir": request.output.temporary_directory or request.output.directory,
+                    "require_video": request.resources.video,
+                    "require_chapter_info": request.resources.chapter_info,
+                    "video_quality": request.stream.video_quality,
+                    "video_download_codec": request.stream.video_download_codec,
+                    "video_save_codec": request.stream.video_save_codec,
+                    "video_download_codec_priority": request.stream.video_download_codec_priority,
+                    "require_audio": request.resources.audio,
+                    "audio_quality": request.stream.audio_quality,
+                    "audio_download_codec": request.stream.audio_download_codec,
+                    "audio_save_codec": request.stream.audio_save_codec,
+                    "output_format": request.output.format,
+                    "output_format_audio_only": request.output.audio_only_format,
+                    "overwrite": request.output.overwrite,
+                    "block_size": request.network.block_size_bytes,
+                    "num_workers": request.network.download_workers,
+                    "save_cover": request.resources.save_cover,
                     "metadata_format": {
-                        "premiered": args.metadata_format_premiered,
+                        "premiered": request.output.metadata_format_premiered,
                         "dateadded": TIME_FULL_FMT,
                     },
-                    "banned_mirrors_pattern": args.banned_mirrors_pattern,
-                    "danmaku_options": parse_danmaku_options(args),
+                    "banned_mirrors_pattern": request.network.banned_mirrors_pattern,
+                    "danmaku_options": create_danmaku_options(request.danmaku),
                 },
             )
             Logger.new_line()
@@ -309,21 +316,29 @@ def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable
     return episode_data
 
 
-def parse_danmaku_options(args: argparse.Namespace) -> DanmakuOptions:
+def ensure_output_path_is_scoped(path: Path, output_root: Path, temporary_root: Path) -> None:
+    if path.is_absolute() or ".." in path.parts:
+        raise WrongArgumentError("解析后的输出路径超出了 server 配置的根目录")
+    for root in (output_root.resolve(), temporary_root.resolve()):
+        if not (root / path).resolve().is_relative_to(root):
+            raise WrongArgumentError("解析后的输出路径超出了 server 配置的根目录")
+
+
+def create_danmaku_options(options: DanmakuRequestOptions) -> DanmakuOptions:
     block_options = BlockOptions(
-        block_top=args.danmaku_block_top or args.danmaku_block_fixed,
-        block_bottom=args.danmaku_block_bottom or args.danmaku_block_fixed,
-        block_scroll=args.danmaku_block_scroll,
-        block_reverse=args.danmaku_block_reverse,
-        block_special=args.danmaku_block_special,
-        block_colorful=args.danmaku_block_colorful,
-        block_keyword_patterns=(args.danmaku_block_keyword_patterns or []),
+        block_top=options.block_top,
+        block_bottom=options.block_bottom,
+        block_scroll=options.block_scroll,
+        block_reverse=options.block_reverse,
+        block_special=options.block_special,
+        block_colorful=options.block_colorful,
+        block_keyword_patterns=options.block_keyword_patterns,
     )
     return DanmakuOptions(
-        font_size=args.danmaku_font_size,
-        font=args.danmaku_font,
-        opacity=args.danmaku_opacity,
-        display_region_ratio=args.danmaku_display_region_ratio,
-        speed=args.danmaku_speed,
+        font_size=options.font_size,
+        font=options.font,
+        opacity=options.opacity,
+        display_region_ratio=options.display_region_ratio,
+        speed=options.speed,
         block_options=block_options,
     )
