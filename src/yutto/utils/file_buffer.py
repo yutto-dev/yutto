@@ -41,6 +41,7 @@ class AsyncFileBuffer(aobject):
         buffer = await AsyncFileBuffer("/path/to/file", True)
         for i, chunk in enumerate([b'0', b'1', b'2', b'3', b'4']):
             await buffer.write(chunk, i)
+        buffer.ensure_flushed()
         await buffer.close()
 
         # 或者使用 async with（注意后面要有 await，因为 AsyncFileBuffer 的初始化是异步的）
@@ -74,9 +75,11 @@ class AsyncFileBuffer(aobject):
             await self.file_obj.write(ready_to_write_chunk.data)
             self.written_size += len(ready_to_write_chunk.data)
 
-    async def close(self, *, warn_unflushed: bool = True):
-        if self.buffer and warn_unflushed:
-            Logger.error("buffer 尚未清空")
+    def ensure_flushed(self) -> None:
+        if self.buffer:
+            raise RuntimeError(f"buffer 尚未清空，仍有 {len(self.buffer)} 个分块")
+
+    async def close(self) -> None:
         if self.file_obj is not None:
             await self.file_obj.close()
         else:
@@ -103,4 +106,8 @@ class AsyncFileBuffer(aobject):
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
-        await self.close()
+        try:
+            if exc_type is None:
+                self.ensure_flushed()
+        finally:
+            await self.close()

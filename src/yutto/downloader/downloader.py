@@ -40,7 +40,9 @@ if TYPE_CHECKING:
     from yutto.utils.metadata import ChapterInfoData
 
     class _DownloadBuffer(Protocol):
-        async def close(self, *, warn_unflushed: bool = True) -> None: ...
+        def ensure_flushed(self) -> None: ...
+
+        async def close(self) -> None: ...
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
@@ -126,17 +128,18 @@ async def _run_download_lifecycle(
 ) -> None:
     """运行一次下载所需的协程，并统一回收任务与文件缓冲区。"""
     tasks = [asyncio.ensure_future(coroutine) for coroutine in coroutines]
-    completed = False
+    buffer_list = list(buffers)
     try:
         await asyncio.gather(*tasks)
-        completed = True
+        for buffer in buffer_list:
+            buffer.ensure_flushed()
     finally:
         for task in tasks:
             if not task.done():
                 task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
-        for buffer in buffers:
-            await buffer.close(warn_unflushed=completed)
+        for buffer in buffer_list:
+            await buffer.close()
 
 
 async def download_video_and_audio(
@@ -222,7 +225,7 @@ async def download_video_and_audio(
                 for coroutine in coroutine_group:
                     coroutine.coro.close()
             for buffer in filter_none_values(buffers):
-                await buffer.close(warn_unflushed=False)
+                await buffer.close()
 
 
 async def merge_video_and_audio(
