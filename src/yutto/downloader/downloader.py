@@ -358,7 +358,9 @@ async def process_download(
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
     chapter_info_data = episode_data["chapter_info_data"]
-    output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
+    output_dir, tmp_dir, filename = resolve_path(
+        options["output_dir"], options["tmp_dir"], episode_data["info"]["path"]
+    )
     require_video = options["require_video"]
     require_audio = options["require_audio"]
     metadata_format = options["metadata_format"]

@@ -42,12 +42,12 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
     from yutto.core.request import DanmakuRequestOptions, DownloadRequest
-    from yutto.types import EpisodeData
+    from yutto.types import EpisodeData, EpisodeInfo
     from yutto.utils.fetcher import FetcherContext
 
 
 def show_batch_episode_title(
-    episode_data: EpisodeData, index: int, total: int, current_display_group: str | None
+    episode_info: EpisodeInfo, index: int, total: int, current_display_group: str | None
 ) -> str | None:
     """打印批量下载中的单集标题，多分 p 视频额外输出分组标题行。
 
@@ -55,7 +55,7 @@ def show_batch_episode_title(
     打印分组名，然后以缩进格式打印分 p 名；单集视频直接打印文件名。
 
     Args:
-        episode_data: 当前剧集数据，包含 path 和 display_group。
+        episode_info: 当前条目的稳定信息，包含 path 和 display_group。
         index: 当前条目在下载列表中的序号（从 1 开始）。
         total: 下载列表总条目数。
         current_display_group: 上一条目的 display_group，用于检测分组切换。
@@ -63,7 +63,7 @@ def show_batch_episode_title(
     Returns:
         更新后的 current_display_group，供下一次调用使用。
     """
-    display_group = episode_data["display_group"]
+    display_group = episode_info["display_group"]
     # 分组变化时打印分组标题（多分 p 视频新出现或切换到另一个多分 p 视频）
     if display_group is not None and display_group != current_display_group:
         Logger.custom(display_group, Badge("列表", fore="black", back="cyan"))
@@ -71,7 +71,7 @@ def show_batch_episode_title(
     elif display_group is None:
         current_display_group = None
 
-    display_name = episode_data["path"].name
+    display_name = episode_info["path"].name
     if display_group is not None:
         # 多分 p 条目缩进显示，以区分分组标题行
         display_name = f"  {display_name}"
@@ -198,8 +198,8 @@ class DownloadManager:
         current_display_group: str | None = None
 
         # 下载～
-        for i, episode_data_coro in enumerate(download_list):
-            if episode_data_coro is None:
+        for i, episode in enumerate(download_list):
+            if episode is None:
                 continue
 
             # 中途校验，因为批量下载时可能会失效
@@ -218,20 +218,20 @@ class DownloadManager:
                 await sleep_with_status_bar_refresh(request.network.download_interval)
 
             # 这时候才真正开始解析链接
-            episode_data = await episode_data_coro
+            episode_data = await episode.data_coro
             if episode_data is None:
                 continue
             # 保证路径唯一
             episode_data = ensure_unique_path(episode_data, self.unique_path)
             if request.output.enforce_directory_boundary:
                 ensure_output_path_is_scoped(
-                    episode_data["path"],
+                    episode_data["info"]["path"],
                     request.output.directory,
                     request.output.temporary_directory or request.output.directory,
                 )
             if request.scope.batch:
                 current_display_group = show_batch_episode_title(
-                    episode_data,
+                    episode_data["info"],
                     i + 1,
                     len(download_list),
                     current_display_group,
@@ -275,9 +275,9 @@ class DownloadManager:
 
 
 def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable[[str], str]) -> EpisodeData:
-    original_path = episode_data["path"]
+    original_path = episode_data["info"]["path"]
     new_path = Path(unique_name_resolver(str(original_path)))
-    episode_data["path"] = new_path
+    episode_data["info"]["path"] = new_path
     if original_path != new_path:
         Logger.warning(f"文件名重复，已重命名为 {new_path.name}")
     return episode_data

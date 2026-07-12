@@ -18,6 +18,8 @@ from yutto.download_manager import (
     show_batch_episode_title,
 )
 from yutto.exceptions import WrongArgumentError
+from yutto.types import AId, CId, ResolvableEpisode
+from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import PublicationTimeFilter
@@ -34,6 +36,14 @@ pytestmark = pytest.mark.processor
 
 def make_episode(path: str, display_group: str | None = None) -> EpisodeData:
     return {
+        "info": {
+            "avid": AId("1"),
+            "cid": CId("1"),
+            "name": Path(path).name,
+            "cover_url": "",
+            "path": Path(path),
+            "display_group": display_group,
+        },
         "videos": [],
         "audios": [],
         "subtitles": [],
@@ -41,8 +51,6 @@ def make_episode(path: str, display_group: str | None = None) -> EpisodeData:
         "danmaku": {"source_type": None, "save_type": None, "data": []},
         "cover_data": None,
         "chapter_info_data": [],
-        "path": Path(path),
-        "display_group": display_group,
     }
 
 
@@ -135,10 +143,10 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
         ):
             captured_extractor_options.update(options)
 
-            async def resolve_episode() -> EpisodeData:
+            async def resolve_episode() -> EpisodeData | None:
                 return episode
 
-            return [resolve_episode()]
+            return [ResolvableEpisode(info=episode["info"], data_coro=CoroutineWrapper(resolve_episode()))]
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         validation_requirements.append(requirements)
@@ -353,7 +361,7 @@ def test_ensure_unique_path_updates_episode_and_only_warns_on_rename(monkeypatch
     result = ensure_unique_path(renamed_episode, resolve_unique_path)
 
     assert result is renamed_episode
-    assert result["path"] == Path("group/video (1).mp4")
+    assert result["info"]["path"] == Path("group/video (1).mp4")
     assert resolved_paths == ["group/video.mp4"]
     assert warnings == ["文件名重复，已重命名为 video (1).mp4"]
 
@@ -380,7 +388,7 @@ def test_show_batch_episode_title_preserves_order_and_group_state(monkeypatch: p
         make_episode("投稿 B/P1", "投稿 B"),
     ]
     for index, episode in enumerate(episodes, start=1):
-        current_group = show_batch_episode_title(episode, index, len(episodes), current_group)
+        current_group = show_batch_episode_title(episode["info"], index, len(episodes), current_group)
         group_states.append(current_group)
 
     assert group_states == ["投稿 A", "投稿 A", None, "投稿 B"]

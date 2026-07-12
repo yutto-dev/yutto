@@ -12,15 +12,14 @@ from yutto.exceptions import (
     UnSupportedTypeError,
 )
 from yutto.extractor._abc import SingleExtractor
-from yutto.extractor.common import extract_bangumi_data
+from yutto.extractor.common import make_bangumi_episode
 from yutto.types import EpisodeId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import EpisodeData, ExtractorOptions
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -50,7 +49,7 @@ class BangumiExtractor(SingleExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> CoroutineWrapper[EpisodeData | None] | None:
+    ) -> ResolvableEpisode | None:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         bangumi_list = await get_bangumi_list(ctx, client, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
@@ -62,17 +61,15 @@ class BangumiExtractor(SingleExtractor):
             else:
                 raise EpisodeNotFoundError("在列表中未找到该剧集")
 
-            return CoroutineWrapper(
-                extract_bangumi_data(
-                    ctx,
-                    client,
-                    bangumi_list_item,
-                    options,
-                    {
-                        "title": bangumi_list["title"],
-                    },
-                    "{name}",
-                )
+            return make_bangumi_episode(
+                ctx,
+                client,
+                bangumi_list_item,
+                options,
+                {
+                    "title": bangumi_list["title"],
+                },
+                "{name}",
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)

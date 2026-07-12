@@ -5,17 +5,16 @@ from typing import TYPE_CHECKING
 
 from yutto.api.space import get_user_name, get_user_space_all_videos_avids
 from yutto.extractor._abc import BatchExtractor
-from yutto.extractor.common import extract_ugc_video_data
+from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import MId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoListItem
-    from yutto.types import EpisodeData, ExtractorOptions
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -35,7 +34,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         username = await get_user_name(ctx, client, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
@@ -66,20 +65,18 @@ class UserAllUgcVideosExtractor(BatchExtractor):
                 )
 
         return [
-            CoroutineWrapper(
-                extract_ugc_video_data(
-                    ctx,
-                    client,
-                    ugc_video_item["avid"],
-                    ugc_video_item,
-                    options,
-                    {
-                        "title": title,
-                        "username": username,
-                        "pubdate": pubdate,
-                    },
-                    "{username}的全部投稿视频/{title}/{name}",
-                )
+            make_ugc_video_episode(
+                ctx,
+                client,
+                ugc_video_item["avid"],
+                ugc_video_item,
+                options,
+                {
+                    "title": title,
+                    "username": username,
+                    "pubdate": pubdate,
+                },
+                "{username}的全部投稿视频/{title}/{name}",
             )
             for ugc_video_item, title, pubdate in ugc_video_info_list
         ]

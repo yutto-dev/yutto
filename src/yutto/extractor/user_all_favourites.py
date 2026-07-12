@@ -5,18 +5,17 @@ from typing import TYPE_CHECKING
 
 from yutto.api.space import get_all_favourites, get_favourite_items, get_user_name
 from yutto.extractor._abc import BatchExtractor
-from yutto.extractor.common import extract_ugc_video_data
+from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.extractor.utils.favourite import normalize_favourite_video_item
 from yutto.types import MId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoListItem
-    from yutto.types import EpisodeData, ExtractorOptions
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -36,7 +35,7 @@ class UserAllFavouritesExtractor(BatchExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         username = await get_user_name(ctx, client, self.mid)
         Logger.custom(username, Badge("用户收藏夹", fore="black", back="cyan"))
 
@@ -77,22 +76,20 @@ class UserAllFavouritesExtractor(BatchExtractor):
                     )
 
         return [
-            CoroutineWrapper(
-                extract_ugc_video_data(
-                    ctx,
-                    client,
-                    ugc_video_item["avid"],
-                    ugc_video_item,
-                    options,
-                    {
-                        "title": title,
-                        "username": username,
-                        "series_title": series_title,
-                        "pubdate": pubdate,
-                    },
-                    auto_subpath_template,
-                    display_group=display_group,
-                )
+            make_ugc_video_episode(
+                ctx,
+                client,
+                ugc_video_item["avid"],
+                ugc_video_item,
+                options,
+                {
+                    "title": title,
+                    "username": username,
+                    "series_title": series_title,
+                    "pubdate": pubdate,
+                },
+                auto_subpath_template,
+                display_group=display_group,
             )
             for ugc_video_item, title, pubdate, series_title, auto_subpath_template, display_group in ugc_video_info_list
         ]

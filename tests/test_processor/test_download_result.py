@@ -7,6 +7,7 @@ import pytest
 
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.downloader import process_download
+from yutto.types import AId, CId
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
@@ -48,6 +49,14 @@ def make_options(tmp_path: Path) -> DownloaderOptions:
 
 def make_resource_only_episode() -> EpisodeData:
     return {
+        "info": {
+            "avid": AId("1"),
+            "cid": CId("1"),
+            "name": "episode",
+            "cover_url": "",
+            "path": Path("series/episode"),
+            "display_group": None,
+        },
         "videos": [],
         "audios": [],
         "subtitles": [
@@ -74,8 +83,6 @@ def make_resource_only_episode() -> EpisodeData:
         "danmaku": {"source_type": "xml", "save_type": "xml", "data": ["<i />"]},
         "cover_data": b"cover",
         "chapter_info_data": [],
-        "path": Path("series/episode"),
-        "display_group": None,
     }
 
 
