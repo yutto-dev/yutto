@@ -189,5 +189,5 @@ def test_multi_part_protobuf_danmaku_returns_every_output_path(tmp_path: Path):
 
     paths = write_danmaku(danmaku, tmp_path / "video.mp4", 1080, 1920, cast("DanmakuOptions", {}))
 
-    assert paths == (tmp_path / "video_00.pb", tmp_path / "video_01.pb")
+    assert paths == [tmp_path / "video_00.pb", tmp_path / "video_01.pb"]
     assert [path.read_bytes() for path in paths] == [b"first", b"second"]
