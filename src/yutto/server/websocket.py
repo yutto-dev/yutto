@@ -49,6 +49,35 @@ class DownloadTaskApi(Protocol):
     def add_event_listener(self, listener: Callable[[TaskEvent], None]) -> Callable[[], None]: ...
 
 
+class _SlowConsumerCloser:
+    def __init__(self) -> None:
+        self._task: asyncio.Task[None] | None = None
+
+    @property
+    def scheduled(self) -> bool:
+        return self._task is not None
+
+    def schedule(self, connection: ServerConnection) -> None:
+        if self._task is not None:
+            return
+        self._task = asyncio.create_task(
+            connection.close(code=1013, reason="event consumer is too slow"),
+            name="yutto-rpc-slow-consumer-close",
+        )
+
+    async def wait(self) -> None:
+        if self._task is not None:
+            await asyncio.gather(self._task, return_exceptions=True)
+
+
+def _download_snapshot_summary_to_json(
+    snapshot: TaskSnapshot[DownloadRequest, DownloadResult],
+) -> dict[str, object]:
+    summary = snapshot_summary_to_json(snapshot)
+    summary["url"] = snapshot.payload.source.url
+    return summary
+
+
 @dataclass(frozen=True, slots=True)
 class WebSocketServerOptions:
     token: str
@@ -166,16 +195,17 @@ class YuttoWebSocketServer:
 
         outgoing: asyncio.Queue[str] = asyncio.Queue(maxsize=self.options.event_queue_size)
         subscriptions: set[str] = set()
+        slow_consumer_closer = _SlowConsumerCloser()
         sender = asyncio.create_task(self._send_messages(connection, outgoing), name="yutto-rpc-sender")
         dispatcher = self._create_dispatcher(subscriptions)
 
         def on_event(event: TaskEvent) -> None:
-            if event.task_id not in subscriptions:
+            if event.task_id not in subscriptions or slow_consumer_closer.scheduled:
                 return
             try:
                 outgoing.put_nowait(encode_notification("task.event", event_to_json(event)))
             except asyncio.QueueFull:
-                asyncio.create_task(connection.close(code=1013, reason="event consumer is too slow"))
+                slow_consumer_closer.schedule(connection)
 
         unsubscribe = self._task_service.add_event_listener(on_event)
         try:
@@ -194,6 +224,7 @@ class YuttoWebSocketServer:
             unsubscribe()
             sender.cancel()
             await asyncio.gather(sender, return_exceptions=True)
+            await slow_consumer_closer.wait()
 
     def _create_dispatcher(self, subscriptions: set[str]) -> JsonRpcDispatcher:
         dispatcher = JsonRpcDispatcher()
@@ -253,7 +284,7 @@ class YuttoWebSocketServer:
             selected = snapshots[offset : offset + limit]
             next_offset = offset + len(selected)
             return {
-                "tasks": [snapshot_summary_to_json(snapshot) for snapshot in selected],
+                "tasks": [_download_snapshot_summary_to_json(snapshot) for snapshot in selected],
                 "offset": offset,
                 "next_offset": next_offset if next_offset < len(snapshots) else None,
                 "total": len(snapshots),

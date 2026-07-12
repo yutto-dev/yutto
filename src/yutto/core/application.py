@@ -37,9 +37,7 @@ class YuttoApplication:
             total = len(requests)
             if total > 1:
                 emit_download_event(DownloadBatchStarted(total=total))
-
-            for index, request in enumerate(requests, start=1):
-                if total > 1:
+                for index, request in enumerate(requests, start=1):
                     emit_download_event(
                         DownloadRequestQueued(
                             url=request.source.url,

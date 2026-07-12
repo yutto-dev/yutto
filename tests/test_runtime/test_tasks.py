@@ -77,7 +77,7 @@ async def test_event_sequence_is_global_and_replay_is_bounded():
 
     async def handler(payload: int, context: TaskContext) -> int:
         for current in range(4):
-            context.emit("progress", {"current": current})
+            context.emit("checkpoint", {"current": current})
         return payload * 2
 
     async with TaskRuntime(handler, replay_limit=3, task_id_factory=lambda: next(ids)) as runtime:
@@ -107,15 +107,72 @@ async def test_event_sequence_is_global_and_replay_is_bounded():
 
 @pytest.mark.processor
 @as_sync
+async def test_progress_events_are_coalesced_in_replay_but_not_for_live_listeners():
+    live_events = []
+
+    async def handler(payload: str, context: TaskContext) -> str:
+        context.emit("stage", {"name": "download"})
+        for current in range(20):
+            context.emit("progress", {"current": current})
+        context.emit("item_skipped", {"reason": "already_exists"})
+        return payload
+
+    async with TaskRuntime(handler, replay_limit=6) as runtime:
+        runtime.add_event_listener(live_events.append)
+        submitted = await runtime.submit("video")
+        completed = await runtime.wait(submitted.task_id)
+
+        assert completed is not None
+        replay = runtime.replay(submitted.task_id)
+        assert replay is not None
+        assert replay.truncated is False
+        assert [event.kind for event in replay.events] == [
+            "state",
+            "state",
+            "stage",
+            "progress",
+            "item_skipped",
+            "state",
+        ]
+        assert [event.data["current"] for event in replay.events if event.kind == "progress"] == [19]
+        assert len([event for event in live_events if event.kind == "progress"]) == 20
+
+
+@pytest.mark.processor
+@as_sync
+async def test_close_reports_a_worker_failure_instead_of_waiting_forever():
+    async def handler(payload: str, context: TaskContext) -> str:
+        await asyncio.sleep(0)
+        return payload
+
+    class BrokenWorkerRuntime(TaskRuntime[str, str]):
+        async def _worker_loop(self) -> None:
+            await asyncio.sleep(0)
+            raise RuntimeError("worker broke")
+
+    runtime = BrokenWorkerRuntime(handler)
+    await runtime.start()
+    await runtime.submit("video")
+
+    with pytest.raises(RuntimeError, match="worker exited unexpectedly") as error:
+        await asyncio.wait_for(runtime.close(), timeout=1)
+
+    assert isinstance(error.value.__cause__, RuntimeError)
+    assert str(error.value.__cause__) == "worker broke"
+    assert runtime.state is RuntimeState.CLOSED
+
+
+@pytest.mark.processor
+@as_sync
 async def test_register_then_replay_handoff_does_not_lose_live_events():
     ready = asyncio.Event()
     release = asyncio.Event()
 
     async def handler(payload: str, context: TaskContext) -> str:
-        context.emit("progress", {"step": "before-listener"})
+        context.emit("checkpoint", {"step": "before-listener"})
         ready.set()
         await release.wait()
-        context.emit("progress", {"step": "after-listener"})
+        context.emit("checkpoint", {"step": "after-listener"})
         return payload
 
     async with TaskRuntime(handler) as runtime:
@@ -138,7 +195,7 @@ async def test_register_then_replay_handoff_does_not_lose_live_events():
         merged = {event.seq: event for event in (*replay.events, *live_events)}
         ordered = [merged[seq] for seq in sorted(merged)]
         assert [event.seq for event in ordered] == list(range(1, completed.last_event_seq + 1))
-        assert [event.data.get("step") for event in ordered if event.kind == "progress"] == [
+        assert [event.data.get("step") for event in ordered if event.kind == "checkpoint"] == [
             "before-listener",
             "after-listener",
         ]

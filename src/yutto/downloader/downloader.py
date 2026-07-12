@@ -245,34 +245,36 @@ async def merge_video_and_audio(
     ffmpeg = FFmpeg()
     command_builder = FFmpegCommandBuilder()
     Logger.info("开始合并……")
+    video_save_codec = options["video_save_codec"]
+    audio_save_codec = options["audio_save_codec"]
 
     # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
     # https://aaron.cc/ffmpeg-hevc-apple-devices/
     # see also: https://github.com/yutto-dev/yutto/issues/85
     vtag: str | None = None
     if (
-        options["video_save_codec"] == "hevc"
-        or (options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc")
+        video_save_codec == "hevc"
+        or (video_save_codec == "copy" and video is not None and video["codec"] == "hevc")
         and video["quality"] != 126  # skip for Dolby Vision
     ):
         vtag = "hvc1"
 
-    if video is not None and video["codec"] == options["video_save_codec"]:
-        options["video_save_codec"] = "copy"
-    if audio is not None and audio["codec"] == options["audio_save_codec"]:
-        options["audio_save_codec"] = "copy"
+    if video is not None and video["codec"] == video_save_codec:
+        video_save_codec = "copy"
+    if audio is not None and audio["codec"] == audio_save_codec:
+        audio_save_codec = "copy"
 
     output = command_builder.add_output(output_path)
     if video is not None:
         video_input = command_builder.add_video_input(video_path)
         output.use(video_input)
-        output.set_vcodec(options["video_save_codec"])
+        output.set_vcodec(video_save_codec)
         if vtag is not None:
             output.with_extra_options([f"-tag:v:{video_input.stream_id}", vtag])
     if audio is not None:
         audio_input = command_builder.add_audio_input(audio_path)
         output.use(audio_input)
-        output.set_acodec(options["audio_save_codec"])
+        output.set_acodec(audio_save_codec)
     if video is not None and cover_data is not None:
         cover_input = command_builder.add_video_input(cover_path)
         output.use(cover_input)

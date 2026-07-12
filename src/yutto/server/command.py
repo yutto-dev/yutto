@@ -136,10 +136,10 @@ async def run_server_command(args: argparse.Namespace) -> None:
     token = resolve_server_token(args.token_file)
     server = build_server(args, token.value, ffmpeg=ffmpeg)
     await server.start()
-    socket = server.sockets[0]
-    address = socket.getsockname()
-    display_host = f"[{address[0]}]" if ":" in address[0] else address[0]
-    Logger.info(f"yutto server 正在监听 ws://{display_host}:{address[1]}")
+    for socket in server.sockets:
+        address = socket.getsockname()
+        display_host = f"[{address[0]}]" if ":" in address[0] else address[0]
+        Logger.info(f"yutto server 正在监听 ws://{display_host}:{address[1]}")
     if token.persisted_to is not None:
         Logger.info(f"server token 文件：{token.persisted_to}")
     elif token.generated:

@@ -106,6 +106,7 @@ _ALLOWED_TRANSITIONS: dict[TaskState, frozenset[TaskState]] = {
     TaskState.CANCELLED: frozenset(),
 }
 _STOP = object()
+_COALESCED_EVENT_KINDS = frozenset({"progress"})
 
 
 class _TaskContextRuntime(Protocol):
@@ -228,17 +229,45 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
             return
 
         self._state = RuntimeState.CLOSING
-        if cancel_pending:
-            for task_id in tuple(self._records):
-                await self.cancel(task_id)
+        try:
+            if cancel_pending:
+                for task_id in tuple(self._records):
+                    await self.cancel(task_id)
 
-        await self._queue.join()
-        for _ in self._workers:
-            self._queue.put_nowait(_STOP)
-        await asyncio.gather(*self._workers)
-        self._workers.clear()
-        self._state = RuntimeState.CLOSED
-        self._closed.set()
+            await self._wait_for_queue_or_worker_failure()
+            for _ in self._workers:
+                self._queue.put_nowait(_STOP)
+            await asyncio.gather(*self._workers)
+        except BaseException:
+            for worker in self._workers:
+                worker.cancel()
+            await asyncio.gather(*self._workers, return_exceptions=True)
+            raise
+        finally:
+            self._workers.clear()
+            self._state = RuntimeState.CLOSED
+            self._closed.set()
+
+    async def _wait_for_queue_or_worker_failure(self) -> None:
+        queue_join = asyncio.create_task(self._queue.join(), name="yutto-task-queue-join")
+        try:
+            await asyncio.wait([queue_join, *self._workers], return_when=asyncio.FIRST_COMPLETED)
+            failed_worker = next((worker for worker in self._workers if worker.done()), None)
+            if failed_worker is None:
+                await queue_join
+                return
+
+            error = RuntimeError(f"task runtime worker exited unexpectedly: {failed_worker.get_name()}")
+            if failed_worker.cancelled():
+                raise error from asyncio.CancelledError()
+            failure = failed_worker.exception()
+            if failure is not None:
+                raise error from failure
+            raise error
+        finally:
+            if not queue_join.done():
+                queue_join.cancel()
+            await asyncio.gather(queue_join, return_exceptions=True)
 
     async def submit(self, payload: PayloadT) -> TaskSnapshot[PayloadT, ResultT]:
         if self._state is not RuntimeState.RUNNING:
@@ -397,6 +426,10 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
         kind: str,
         data: dict[str, object],
     ) -> TaskEvent:
+        if kind in _COALESCED_EVENT_KINDS:
+            for retained_event in tuple(record.events):
+                if retained_event.kind == kind:
+                    record.events.remove(retained_event)
         if len(record.events) == self._replay_limit:
             record.dropped_through_seq = record.events[0].seq
         event = TaskEvent(

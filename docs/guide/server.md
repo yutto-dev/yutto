@@ -57,7 +57,7 @@ yutto serve \
 | `server.info`      | 查询版本、协议版本和能力列表                       |
 | `download.start`   | 提交下载任务，返回任务快照                         |
 | `task.get`         | 查询一个任务                                       |
-| `task.list`        | 分页查询当前进程中的任务摘要（不展开请求 payload） |
+| `task.list`        | 分页查询当前进程中的任务摘要（包含 URL，不展开请求 payload） |
 | `task.cancel`      | 取消排队中或运行中的任务                           |
 | `task.subscribe`   | 获取事件回放并订阅后续事件                         |
 | `task.unsubscribe` | 取消当前连接上的任务订阅                           |

@@ -351,10 +351,14 @@ async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch
     monkeypatch.setattr(downloader_module.Logger, "debug", lambda message: debugs.append(str(message)))
 
     output_path = tmp_path / "output.m4a"
-    await merge_audio(output_path)
+    options = make_merge_options()
+    options["audio_save_codec"] = "mp4a"
+    await merge_audio(output_path, options)
 
     assert len(commands) == 1
     assert commands[0][-1] == str(output_path)
+    assert commands[0][commands[0].index("-acodec") + 1] == "copy"
+    assert options["audio_save_codec"] == "mp4a"
     assert infos == ["开始合并……", "合并完成！"]
     assert errors == []
     assert debugs == ["ffmpeg detail"]

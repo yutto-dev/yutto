@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from websockets.asyncio.client import connect
@@ -12,7 +12,7 @@ from websockets.typing import Origin
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult
 from yutto.runtime import TaskContext, TaskRuntime
-from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer
+from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer, _SlowConsumerCloser
 from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor
@@ -94,6 +94,35 @@ async def start_server(
     await server.start()
     port = server.sockets[0].getsockname()[1]
     return server, service, f"ws://127.0.0.1:{port}"
+
+
+@pytest.mark.processor
+@as_sync
+async def test_slow_consumer_close_is_scheduled_only_once():
+    close_started = asyncio.Event()
+    release_close = asyncio.Event()
+
+    class SlowConnection:
+        close_calls = 0
+
+        async def close(self, *, code: int, reason: str) -> None:
+            self.close_calls += 1
+            assert code == 1013
+            assert reason == "event consumer is too slow"
+            close_started.set()
+            await release_close.wait()
+
+    connection = SlowConnection()
+    closer = _SlowConsumerCloser()
+    closer.schedule(cast("Any", connection))
+    closer.schedule(cast("Any", connection))
+    await close_started.wait()
+
+    assert closer.scheduled is True
+    assert connection.close_calls == 1
+
+    release_close.set()
+    await closer.wait()
 
 
 @pytest.mark.processor
@@ -211,6 +240,7 @@ async def test_download_task_lifecycle_replay_and_live_notifications():
             await connection.send(rpc_request(5, "task.list"))
             listed = (await receive_json(connection))["result"]
             assert [task["task_id"] for task in listed["tasks"]] == ["task-1"]
+            assert listed["tasks"][0]["url"].endswith("BV1xx")
             assert "payload" not in listed["tasks"][0]
             assert listed["next_offset"] is None
     finally:
