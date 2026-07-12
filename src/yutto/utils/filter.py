@@ -14,6 +14,7 @@ class PublicationTimeFilter:
 
     @classmethod
     def from_strings(cls, start_time: str | None = None, end_time: str | None = None) -> PublicationTimeFilter:
+        # NOTE(FrankHB): A workaround to https://bugs.python.org/issue31212.
         start = datetime.datetime(1971, 1, 1)
         end = datetime.datetime.now() + datetime.timedelta(days=1)
         if start_time:
