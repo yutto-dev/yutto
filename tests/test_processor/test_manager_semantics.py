@@ -269,7 +269,11 @@ async def test_execute_reuses_session_and_path_resolver_in_request_order():
     result = await manager.execute(ctx, requests)
 
     assert [url for _, _, url, _ in manager.calls] == ["BV1first", "BV1second"]
-    assert [path for _, _, _, path in manager.calls] == ["same/video.mp4", "same/video (1).mp4"]
+    # unique_path 返回的字符串使用平台原生分隔符，按 Path 比较
+    assert [Path(path) for _, _, _, path in manager.calls] == [
+        Path("same/video.mp4"),
+        Path("same/video (1).mp4"),
+    ]
     assert manager.calls[0][0] is manager.calls[1][0]
     assert manager.calls[0][1] is ctx and manager.calls[1][1] is ctx
     assert manager.calls[0][0].is_closed
@@ -362,7 +366,7 @@ def test_ensure_unique_path_updates_episode_and_only_warns_on_rename(monkeypatch
 
     assert result is renamed_episode
     assert result["info"]["path"] == Path("group/video (1).mp4")
-    assert resolved_paths == ["group/video.mp4"]
+    assert resolved_paths == [str(Path("group/video.mp4"))]
     assert warnings == ["文件名重复，已重命名为 video (1).mp4"]
 
     unchanged_episode = make_episode("group/another.mp4")

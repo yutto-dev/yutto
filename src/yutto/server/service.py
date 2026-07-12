@@ -162,7 +162,8 @@ class ServerPolicy:
 
     @staticmethod
     def _resolve_request_path(path: Path, *, root: Path, field: str) -> Path:
-        if path.is_absolute():
+        # anchor 检查覆盖 Windows 上 is_absolute() 为 False 的盘符相对/根路径（如 "/x"、"C:x"）
+        if path.is_absolute() or path.anchor:
             raise ServerPolicyError(f"{field} must be relative to its configured root")
         if ".." in path.parts:
             raise ServerPolicyError(f"{field} must not contain '..'")
@@ -290,9 +291,11 @@ def _to_json_value(value: object) -> JsonValue:
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     if isinstance(value, Path):
-        return str(value)
+        # wire 上的路径统一使用正斜杠，避免协议输出随 server 所在平台变化
+        return value.as_posix()
     if isinstance(value, BaseModel):
-        return _to_json_value(value.model_dump(mode="json"))
+        # python mode 保留 Path 等原生类型，统一交由本函数的分支序列化
+        return _to_json_value(value.model_dump(mode="python"))
     if isinstance(value, Mapping):
         result: dict[str, JsonValue] = {}
         for key, item in value.items():

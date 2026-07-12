@@ -61,6 +61,10 @@ async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> boo
     if not check_option["is_login"] and not check_option["vip_status"]:
         return True
 
+    # 命中缓存时无需建立网络客户端
+    if ctx.user_info_cache is not None:
+        return user_info_matches(ctx.user_info_cache, check_option)
+
     async with create_client(
         cookies=ctx.cookies,
         trust_env=ctx.trust_env,

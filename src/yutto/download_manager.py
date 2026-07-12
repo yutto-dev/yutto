@@ -202,7 +202,8 @@ class DownloadManager:
             if episode is None:
                 continue
 
-            # 中途校验，因为批量下载时可能会失效
+            # 中途校验基于请求级缓存的用户信息（见 get_user_info），不会重复请求；
+            # 凭据若在过程中失效，需等缓存所在的 FetcherContext 重建后才能被发现
             if not await validate_user_info(
                 ctx,
                 {"is_login": request.access.login_strict, "vip_status": request.access.vip_strict},
@@ -284,7 +285,8 @@ def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable
 
 
 def ensure_output_path_is_scoped(path: Path, output_root: Path, temporary_root: Path) -> None:
-    if path.is_absolute() or ".." in path.parts:
+    # anchor 检查覆盖 Windows 上 is_absolute() 为 False 的盘符相对/根路径（如 "/x"、"C:x"）
+    if path.is_absolute() or path.anchor or ".." in path.parts:
         raise WrongArgumentError("解析后的输出路径超出了 server 配置的根目录")
     for root in (output_root.resolve(), temporary_root.resolve()):
         if not (root / path).resolve().is_relative_to(root):

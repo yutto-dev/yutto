@@ -117,6 +117,6 @@ def _encode_runtime_event(event: DownloadEvent) -> tuple[str, dict[str, object]]
         case DownloadItemSkipped(item=item, reason=reason):
             return "item_skipped", {"item": item, "reason": reason.value}
         case DownloadArtifactCreated(item=item, path=path):
-            return "artifact_created", {"path": str(path), "item": item}
+            return "artifact_created", {"path": path.as_posix(), "item": item}
         case _ as unreachable:
             assert_never(unreachable)

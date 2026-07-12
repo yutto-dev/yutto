@@ -14,7 +14,7 @@ yutto serve --token-file ~/.config/yutto/server.token
 2. `--token-file` 指定的文件；
 3. 都未提供时，生成仅本次运行有效的随机 Token 并显示在终端。
 
-在 POSIX 系统上，已有 Token 文件必须是权限不高于 `0600` 的普通文件，符号链接会被拒绝。
+若 `--token-file` 指向的文件尚不存在，yutto 会在首次启动时生成随机 Token 并以 `0600` 权限创建该文件，后续启动直接复用。在 POSIX 系统上，已有 Token 文件必须是权限不高于 `0600` 的普通文件，符号链接会被拒绝。
 
 server 只接受回环地址。浏览器连接还需要用 `--allow-origin` 显式允许完整 Origin：
 
