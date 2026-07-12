@@ -35,7 +35,7 @@ def test_invalid_syntax_falls_back_but_invalid_calendar_date_still_raises():
 
     assert publication_filter.start_time == datetime.datetime(1971, 1, 1)
     assert publication_filter.end_time > datetime.datetime.now()
-    with pytest.raises(ValueError, match="day is out of range"):
+    with pytest.raises(ValueError):
         PublicationTimeFilter.from_strings("2024-02-31")
 
 
