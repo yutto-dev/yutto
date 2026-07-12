@@ -228,6 +228,15 @@ async def download_video_and_audio(
                 await buffer.close()
 
 
+def should_attach_hvc1_tag(video: VideoUrlMeta | None, video_save_codec: str) -> bool:
+    """是否为合并后的视频添加 Apple 设备兼容的 hvc1 tag。"""
+    return (
+        video is not None
+        and video["quality"] != 126  # Dolby Vision
+        and (video_save_codec == "hevc" or (video_save_codec == "copy" and video["codec"] == "hevc"))
+    )
+
+
 async def merge_video_and_audio(
     video: VideoUrlMeta | None,
     video_path: Path,
@@ -251,13 +260,7 @@ async def merge_video_and_audio(
     # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
     # https://aaron.cc/ffmpeg-hevc-apple-devices/
     # see also: https://github.com/yutto-dev/yutto/issues/85
-    vtag: str | None = None
-    if (
-        video_save_codec == "hevc"
-        or (video_save_codec == "copy" and video is not None and video["codec"] == "hevc")
-        and video["quality"] != 126  # skip for Dolby Vision
-    ):
-        vtag = "hvc1"
+    vtag = "hvc1" if should_attach_hvc1_tag(video, video_save_codec) else None
 
     if video is not None and video["codec"] == video_save_codec:
         video_save_codec = "copy"
@@ -287,7 +290,7 @@ async def merge_video_and_audio(
     # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
     output.with_extra_options(["-strict", "unofficial"])
 
-    command_builder.with_extra_options(["-threads", str(os.cpu_count())])
+    command_builder.with_extra_options(["-threads", str(os.cpu_count() or 1)])
     command_builder.with_extra_options(["-y"])
 
     try:

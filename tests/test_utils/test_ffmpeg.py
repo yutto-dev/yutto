@@ -10,13 +10,14 @@ import pytest
 
 import yutto.downloader.downloader as downloader_module
 import yutto.utils.ffmpeg as ffmpeg_module
-from yutto.downloader.downloader import merge_video_and_audio
+from yutto.downloader.downloader import merge_video_and_audio, should_attach_hvc1_tag
 from yutto.exceptions import PostprocessingError
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    from yutto.types import AudioUrlMeta, DownloaderOptions
+    from yutto.media.codec import VideoCodec
+    from yutto.types import AudioUrlMeta, DownloaderOptions, VideoUrlMeta
 
 
 def make_ffmpeg(path: str) -> FFmpeg:
@@ -34,6 +35,20 @@ def make_audio() -> AudioUrlMeta:
         "height": 0,
         "quality": 30280,
     }
+
+
+def make_video(*, codec: VideoCodec = "hevc", quality: int = 80) -> VideoUrlMeta:
+    return cast(
+        "VideoUrlMeta",
+        {
+            "url": "https://example.com/video",
+            "mirrors": [],
+            "codec": codec,
+            "width": 1920,
+            "height": 1080,
+            "quality": quality,
+        },
+    )
 
 
 def make_merge_options() -> DownloaderOptions:
@@ -59,6 +74,21 @@ async def merge_audio(output_path: Path, options: DownloaderOptions | None = Non
         output_path=output_path,
         options=options or make_merge_options(),
     )
+
+
+@pytest.mark.parametrize(
+    ("video", "video_save_codec", "expected"),
+    [
+        (None, "hevc", False),
+        (make_video(quality=126), "hevc", False),
+        (make_video(quality=126), "copy", False),
+        (make_video(codec="avc"), "hevc", True),
+        (make_video(codec="hevc"), "copy", True),
+        (make_video(codec="avc"), "copy", False),
+    ],
+)
+def test_should_attach_hvc1_tag(video: VideoUrlMeta | None, video_save_codec: str, expected: bool):
+    assert should_attach_hvc1_tag(video, video_save_codec) is expected
 
 
 def test_video_input_only():
