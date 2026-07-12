@@ -1,6 +1,6 @@
-# server 模式 <Badge text="Experimental" type="warning" />
+# Server 模式 <Badge text="Experimental" type="warning" />
 
-`yutto serve` 会启动一个只监听本机回环地址的 WebSocket server，供 WebUI、桌面应用或其他本地前端通过 JSON-RPC 2.0 调用。原有下载命令及终端输出不受影响；server 模式也不内置 WebUI。
+`yutto serve` 会启动一个只监听本机回环地址的 WebSocket server，供 WebUI、桌面应用或其他本地前端通过 JSON-RPC 2.0 调用。
 
 ## 启动
 
