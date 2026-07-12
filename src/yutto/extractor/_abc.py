@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING, TypeVar
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import EpisodeData, ExtractorOptions
-    from yutto.utils.asynclib import CoroutineWrapper
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 T = TypeVar("T")
@@ -26,31 +25,31 @@ class Extractor(metaclass=ABCMeta):
     @abstractmethod
     async def __call__(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         raise NotImplementedError
 
 
 class SingleExtractor(Extractor):
     async def __call__(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         return [await self.extract(ctx, client, options)]
 
     @abstractmethod
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> CoroutineWrapper[EpisodeData | None] | None:
+    ) -> ResolvableEpisode | None:
         raise NotImplementedError
 
 
 class BatchExtractor(Extractor):
     async def __call__(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         return await self.extract(ctx, client, options)
 
     @abstractmethod
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         raise NotImplementedError

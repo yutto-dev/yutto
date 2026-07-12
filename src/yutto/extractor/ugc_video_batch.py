@@ -6,16 +6,15 @@ from typing import TYPE_CHECKING
 from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
-from yutto.extractor.common import extract_ugc_video_data
+from yutto.extractor.common import make_ugc_video_episode
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import AId, BvId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import AvId, EpisodeData, ExtractorOptions
+    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -65,7 +64,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
@@ -79,19 +78,17 @@ class UgcVideoBatchExtractor(BatchExtractor):
         ugc_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, ugc_video_list["pages"]))
 
         return [
-            CoroutineWrapper(
-                extract_ugc_video_data(
-                    ctx,
-                    client,
-                    ugc_video_item["avid"],
-                    ugc_video_item,
-                    options,
-                    {
-                        "title": ugc_video_list["title"],
-                        "pubdate": ugc_video_list["pubdate"],
-                    },
-                    "{title}/{name}",
-                )
+            make_ugc_video_episode(
+                ctx,
+                client,
+                ugc_video_item["avid"],
+                ugc_video_item,
+                options,
+                {
+                    "title": ugc_video_list["title"],
+                    "pubdate": ugc_video_list["pubdate"],
+                },
+                "{title}/{name}",
             )
             for ugc_video_item in ugc_video_list["pages"]
         ]

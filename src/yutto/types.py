@@ -7,7 +7,9 @@ if TYPE_CHECKING:
 
     from yutto.media.codec import AudioCodec, VideoCodec
     from yutto.media.quality import AudioQuality, VideoQuality
+    from yutto.utils.asynclib import CoroutineWrapper
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
+    from yutto.utils.filter import PublicationTimeFilter
     from yutto.utils.metadata import ChapterInfoData, MetaData
     from yutto.utils.subtitle import SubtitleData
 
@@ -224,11 +226,24 @@ class ExtractorOptions(TypedDict):
     danmaku_format: DanmakuSaveType
     subpath_template: str
     ai_translation_language: str | None
+    publication_time_filter: PublicationTimeFilter
+
+
+class EpisodeInfo(TypedDict):
+    """条目在 listing 阶段即可得的稳定信息，不含 playurl 等易失数据"""
+
+    avid: AvId
+    cid: CId
+    name: str
+    cover_url: str
+    path: Path  # 模板解析出的计划路径，下载时可能因去重而调整
+    display_group: str | None  # 多分 p 视频的分组标题，单集为 None
 
 
 class EpisodeData(TypedDict):
-    """剧集数据，包含了一个视频资源的基本信息以及相关资源"""
+    """剧集数据 = 稳定的条目信息（info）+ 下载所需的资源数据"""
 
+    info: EpisodeInfo
     videos: list[VideoUrlMeta]
     audios: list[AudioUrlMeta]
     subtitles: list[MultiLangSubtitle]
@@ -236,8 +251,13 @@ class EpisodeData(TypedDict):
     danmaku: DanmakuData
     cover_data: bytes | None
     chapter_info_data: list[ChapterInfoData]
-    path: Path
-    display_group: str | None  # 多分 p 视频的分组标题，单集为 None
+
+
+class ResolvableEpisode(NamedTuple):
+    """listing 阶段产出的条目：info 立即可用，data 经由懒协程在下载前按需解析"""
+
+    info: EpisodeInfo
+    data_coro: CoroutineWrapper[EpisodeData | None]
 
 
 class DownloaderOptions(TypedDict):

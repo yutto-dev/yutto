@@ -6,12 +6,11 @@
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
-  "rust-analyzer.linkedProjects": [
-    "${workspaceFolder}/packages/biliass/rust/Cargo.toml"
-  ],
+  "rust-analyzer.linkedProjects": ["${workspaceFolder}/packages/biliass/rust/Cargo.toml"],
   "search.exclude": {
     "**/*.ambr": true,
     "**/*.xml": true,
     "**/*.pb": true
-  }
+  },
+  "oxc.fmt.configPath": "./docs/vite.config.ts"
 }

@@ -50,7 +50,7 @@ def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str]) -
     return formatted_metadata
 
 
-def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[str, str]):
+def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[str, str]) -> Path:
     metadata_path = video_path.with_suffix(".nfo")
     custom_root = "episodedetails"  # TODO: 不同视频类型使用不同的 root name
     # 增加字段格式化内容，后续如果需要调整可以继续调整
@@ -58,6 +58,7 @@ def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[s
     xml_content = dict2xml(user_formatted_metadata, wrap=custom_root, indent="  ")
     with metadata_path.open("w", encoding="utf-8") as f:
         f.write(xml_content)
+    return metadata_path
 
 
 def attach_chapter_info(metadata: MetaData, chapter_info_data: list[ChapterInfoData]):

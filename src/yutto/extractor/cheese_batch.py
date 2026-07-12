@@ -5,16 +5,15 @@ from typing import TYPE_CHECKING, Any
 
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.extractor._abc import BatchExtractor
-from yutto.extractor.common import extract_cheese_data
+from yutto.extractor.common import make_cheese_episode
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import EpisodeId, SeasonId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import EpisodeData, ExtractorOptions
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -58,7 +57,7 @@ class CheeseBatchExtractor(BatchExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[CoroutineWrapper[EpisodeData | None] | None]:
+    ) -> list[ResolvableEpisode | None]:
         await self._parse_ids(ctx, client)
 
         cheese_list = await get_cheese_list(ctx, client, self.season_id)
@@ -67,18 +66,16 @@ class CheeseBatchExtractor(BatchExtractor):
         episodes = parse_episodes_selection(options["episodes"], len(cheese_list["pages"]))
         cheese_list["pages"] = list(filter(lambda item: item["id"] in episodes, cheese_list["pages"]))
         return [
-            CoroutineWrapper(
-                extract_cheese_data(
-                    ctx,
-                    client,
-                    cheese_item["episode_id"],
-                    cheese_item,
-                    options,
-                    {
-                        "title": cheese_list["title"],
-                    },
-                    "{title}/{name}",
-                )
+            make_cheese_episode(
+                ctx,
+                client,
+                cheese_item["episode_id"],
+                cheese_item,
+                options,
+                {
+                    "title": cheese_list["title"],
+                },
+                "{title}/{name}",
             )
             for cheese_item in cheese_list["pages"]
         ]

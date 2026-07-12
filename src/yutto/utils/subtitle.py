@@ -45,7 +45,7 @@ class Subtitle:
         return self._text
 
 
-def write_subtitle(subtitle_data: SubtitleData, video_path: Path, lang: str):
+def write_subtitle(subtitle_data: SubtitleData, video_path: Path, lang: str) -> Path:
     video_path = Path(video_path)
     video_name = video_path.stem
     sub = Subtitle()
@@ -54,3 +54,4 @@ def write_subtitle(subtitle_data: SubtitleData, video_path: Path, lang: str):
         sub.write_subtitle(subline)
     with subtitle_path.open("w", encoding="utf-8") as f:
         f.write(str(sub))
+    return subtitle_path

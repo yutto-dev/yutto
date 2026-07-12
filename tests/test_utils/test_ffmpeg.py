@@ -1,7 +1,94 @@
 from __future__ import annotations
 
-# import pytest
-from yutto.utils.ffmpeg import FFmpegCommandBuilder
+import asyncio
+import subprocess
+import sys
+from pathlib import Path
+from typing import TYPE_CHECKING, cast
+
+import pytest
+
+import yutto.downloader.downloader as downloader_module
+import yutto.utils.ffmpeg as ffmpeg_module
+from yutto.downloader.downloader import merge_video_and_audio, should_attach_hvc1_tag
+from yutto.exceptions import PostprocessingError
+from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
+from yutto.utils.functional import as_sync
+
+if TYPE_CHECKING:
+    from yutto.media.codec import VideoCodec
+    from yutto.types import AudioUrlMeta, DownloaderOptions, VideoUrlMeta
+
+
+def make_ffmpeg(path: str) -> FFmpeg:
+    ffmpeg = object.__new__(FFmpeg)
+    ffmpeg.path = path
+    return ffmpeg
+
+
+def make_audio() -> AudioUrlMeta:
+    return {
+        "url": "https://example.com/audio",
+        "mirrors": [],
+        "codec": "mp4a",
+        "width": 0,
+        "height": 0,
+        "quality": 30280,
+    }
+
+
+def make_video(*, codec: VideoCodec = "hevc", quality: int = 80) -> VideoUrlMeta:
+    return cast(
+        "VideoUrlMeta",
+        {
+            "url": "https://example.com/video",
+            "mirrors": [],
+            "codec": codec,
+            "width": 1920,
+            "height": 1080,
+            "quality": quality,
+        },
+    )
+
+
+def make_merge_options() -> DownloaderOptions:
+    return cast(
+        "DownloaderOptions",
+        {
+            "video_save_codec": "copy",
+            "audio_save_codec": "copy",
+        },
+    )
+
+
+async def merge_audio(output_path: Path, options: DownloaderOptions | None = None) -> None:
+    await merge_video_and_audio(
+        video=None,
+        video_path=output_path.with_name("video.m4s"),
+        audio=make_audio(),
+        audio_path=output_path.with_name("audio.m4s"),
+        cover_data=None,
+        cover_path=output_path.with_name("cover.jpg"),
+        chapter_info_data=[],
+        chapter_info_path=output_path.with_name("chapter.ini"),
+        output_path=output_path,
+        options=options or make_merge_options(),
+    )
+
+
+@pytest.mark.parametrize(
+    ("video", "video_save_codec", "expected"),
+    [
+        (None, "hevc", False),
+        (make_video(quality=126), "hevc", False),
+        (make_video(quality=126), "copy", False),
+        (make_video(codec="avc"), "hevc", True),
+        (make_video(codec="hevc"), "copy", True),
+        (make_video(codec="avc"), "copy", False),
+    ],
+)
+def test_should_attach_hvc1_tag(video: VideoUrlMeta | None, video_save_codec: str, expected: bool):
+    assert should_attach_hvc1_tag(video, video_save_codec) is expected
 
 
 def test_video_input_only():
@@ -158,3 +245,213 @@ def test_merge_video_audio_with_extra_options():
         "output.mp4",
     ]
     assert command_builder.build() == excepted_command
+
+
+@pytest.mark.processor
+@as_sync
+async def test_ffmpeg_exec_async_preserves_completed_process_output():
+    ffmpeg = make_ffmpeg(sys.executable)
+    script = "import sys; sys.stdout.buffer.write(b'out'); sys.stderr.buffer.write(b'err'); raise SystemExit(7)"
+
+    result = await ffmpeg.exec_async(["-c", script])
+
+    assert result.args == [sys.executable, "-c", script]
+    assert result.returncode == 7
+    assert result.stdout == b"out"
+    assert result.stderr == b"err"
+
+
+@pytest.mark.processor
+@as_sync
+async def test_ffmpeg_exec_async_terminates_and_reaps_on_cancellation(monkeypatch: pytest.MonkeyPatch):
+    class FakeProcess:
+        def __init__(self):
+            self.returncode: int | None = None
+            self.communicate_started = asyncio.Event()
+            self.terminated = False
+            self.waited = False
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            self.communicate_started.set()
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+        def terminate(self) -> None:
+            self.terminated = True
+            self.returncode = -15
+
+        async def wait(self) -> int:
+            self.waited = True
+            assert self.returncode is not None
+            return self.returncode
+
+    process = FakeProcess()
+    invocation: tuple[tuple[str, ...], dict[str, object]] | None = None
+
+    async def create_subprocess_exec(*cmd: str, **options: object) -> FakeProcess:
+        nonlocal invocation
+        invocation = cmd, options
+        return process
+
+    monkeypatch.setattr(ffmpeg_module.asyncio, "create_subprocess_exec", create_subprocess_exec)
+    ffmpeg = make_ffmpeg("ffmpeg-test")
+    execution = asyncio.create_task(ffmpeg.exec_async(["-i", "video.m4s"]))
+    await process.communicate_started.wait()
+
+    execution.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await execution
+
+    assert invocation == (
+        ("ffmpeg-test", "-i", "video.m4s"),
+        {
+            "stdin": subprocess.DEVNULL,
+            "stdout": asyncio.subprocess.PIPE,
+            "stderr": asyncio.subprocess.PIPE,
+        },
+    )
+    assert process.terminated is True
+    assert process.waited is True
+
+
+@pytest.mark.processor
+@as_sync
+async def test_ffmpeg_exec_async_kills_after_terminate_timeout(monkeypatch: pytest.MonkeyPatch):
+    class StubbornProcess:
+        def __init__(self):
+            self.returncode: int | None = None
+            self.communicate_started = asyncio.Event()
+            self.terminated = False
+            self.killed = False
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            self.communicate_started.set()
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+        def terminate(self) -> None:
+            self.terminated = True
+
+        def kill(self) -> None:
+            self.killed = True
+            self.returncode = -9
+
+        async def wait(self) -> int:
+            if self.returncode is None:
+                await asyncio.Event().wait()
+            assert self.returncode is not None
+            return self.returncode
+
+    process = StubbornProcess()
+
+    async def create_subprocess_exec(*cmd: str, **options: object) -> StubbornProcess:
+        return process
+
+    monkeypatch.setattr(ffmpeg_module.asyncio, "create_subprocess_exec", create_subprocess_exec)
+    monkeypatch.setattr(ffmpeg_module, "_TERMINATE_TIMEOUT_SECONDS", 0)
+    execution = asyncio.create_task(make_ffmpeg("ffmpeg-test").exec_async([]))
+    await process.communicate_started.wait()
+
+    execution.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await execution
+
+    assert process.terminated is True
+    assert process.killed is True
+
+
+@pytest.mark.processor
+@as_sync
+async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    commands: list[list[str]] = []
+    infos: list[str] = []
+    errors: list[str] = []
+    debugs: list[str] = []
+
+    class FakeFFmpeg:
+        async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+            commands.append(args)
+            await asyncio.sleep(0)
+            Path(args[-1]).write_bytes(b"merged output")
+            return subprocess.CompletedProcess(args, 0, b"", b"ffmpeg detail")
+
+    monkeypatch.setattr(downloader_module, "FFmpeg", FakeFFmpeg)
+    monkeypatch.setattr(downloader_module.Logger, "info", lambda message: infos.append(str(message)))
+    monkeypatch.setattr(downloader_module.Logger, "error", lambda message: errors.append(str(message)))
+    monkeypatch.setattr(downloader_module.Logger, "debug", lambda message: debugs.append(str(message)))
+
+    output_path = tmp_path / "output.m4a"
+    options = make_merge_options()
+    options["audio_save_codec"] = "mp4a"
+    await merge_audio(output_path, options)
+
+    assert len(commands) == 1
+    assert commands[0][-1] == str(output_path)
+    assert commands[0][commands[0].index("-acodec") + 1] == "copy"
+    assert options["audio_save_codec"] == "mp4a"
+    assert infos == ["开始合并……", "合并完成！"]
+    assert errors == []
+    assert debugs == ["ffmpeg detail"]
+
+
+@pytest.mark.processor
+@as_sync
+async def test_merge_success_code_without_output_is_structured_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    class MissingOutputFFmpeg:
+        async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+            return subprocess.CompletedProcess(args, 0, b"", b"")
+
+    monkeypatch.setattr(downloader_module, "FFmpeg", MissingOutputFFmpeg)
+
+    with pytest.raises(PostprocessingError, match="未生成目标文件") as error:
+        await merge_audio(tmp_path / "output.m4a")
+
+    assert error.value.code.value == 20
+
+
+@pytest.mark.processor
+@as_sync
+async def test_merge_failure_removes_partial_output_and_is_structured(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    class FailingFFmpeg:
+        async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+            Path(args[-1]).write_bytes(b"partial output")
+            return subprocess.CompletedProcess(args, 1, b"", b"ffmpeg detail")
+
+    monkeypatch.setattr(downloader_module, "FFmpeg", FailingFFmpeg)
+    output_path = tmp_path / "output.m4a"
+
+    with pytest.raises(PostprocessingError, match="ffmpeg detail") as error:
+        await merge_audio(output_path)
+
+    assert error.value.code.value == 20
+    assert output_path.exists() is False
+
+
+@pytest.mark.processor
+@as_sync
+async def test_merge_cancellation_removes_partial_output(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    started = asyncio.Event()
+
+    class BlockingFFmpeg:
+        async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+            Path(args[-1]).write_bytes(b"partial output")
+            started.set()
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+    infos: list[str] = []
+    monkeypatch.setattr(downloader_module, "FFmpeg", BlockingFFmpeg)
+    monkeypatch.setattr(downloader_module.Logger, "info", lambda message: infos.append(str(message)))
+    output_path = tmp_path / "output.m4a"
+    merging = asyncio.create_task(merge_audio(output_path))
+    await started.wait()
+
+    merging.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await merging
+
+    assert output_path.exists() is False
+    assert infos == ["开始合并……"]

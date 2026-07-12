@@ -5,6 +5,7 @@ import random
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from urllib.parse import quote, unquote, urlparse
+from weakref import WeakKeyDictionary
 
 import h2.exceptions
 import httpx
@@ -12,7 +13,6 @@ from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
 
 from yutto.exceptions import MaxRetryError
-from yutto.utils.asynclib import async_cache
 from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
     from yutto.auth import AuthInfo
+    from yutto.types import UserInfo
     from yutto.utils.file_buffer import AsyncFileBuffer
 
 RetT = TypeVar("RetT")
@@ -101,6 +102,8 @@ class FetcherContext:
     fetch_workers: int
     fetch_semaphore: asyncio.Semaphore | None
     download_semaphore: asyncio.Semaphore | None
+    user_info_cache: UserInfo | None
+    touched_urls: WeakKeyDictionary[AsyncClient, set[str]]
 
     def __init__(
         self,
@@ -117,9 +120,11 @@ class FetcherContext:
         self.fetch_workers = DEFAULT_FETCH_WORKERS
         self.fetch_semaphore = None
         self.download_semaphore = None
+        self.user_info_cache = None
+        self.touched_urls = WeakKeyDictionary()
 
     def set_fetch_workers(self, fetch_workers: int):
-        # 仅记录并发数，semaphore 需要在事件循环内创建（见 DownloadManager.loop）
+        # 仅记录并发数，semaphore 需要在事件循环内创建（见 DownloadManager.execute）
         self.fetch_workers = fetch_workers
 
     def set_fetch_semaphore(self, fetch_workers: int):
@@ -129,6 +134,7 @@ class FetcherContext:
         self.download_semaphore = asyncio.Semaphore(download_workers)
 
     def set_auth_info(self, auth_info: AuthInfo):
+        self.user_info_cache = None
         self.cookies = httpx.Cookies()
         # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
         # 而番剧无法使用解码后的 SESSDATA
@@ -244,12 +250,16 @@ class Fetcher:
 
     @staticmethod
     @MaxRetry(2)
-    # 对于相同 session，同样的页面没必要重复 touch
-    @async_cache(lambda args: f"client_id={id(args.arguments['client'])}, url={args.arguments['url']}")
     async def touch_url(ctx: FetcherContext, client: AsyncClient, url: str) -> None:
+        # 对于同一 context 中的同一 client，同样的页面没必要重复 touch。
+        touched_urls = ctx.touched_urls.setdefault(client, set())
+        if url in touched_urls:
+            Logger.debug(f"touch_url cache hit: {url}")
+            return
         async with ctx.fetch_guard():
             Logger.debug(f"Touch url: {url}")
             await client.get(url)
+            touched_urls.add(url)
 
     @staticmethod
     async def download_file_with_offset(

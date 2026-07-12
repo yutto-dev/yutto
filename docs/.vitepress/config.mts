@@ -81,6 +81,10 @@ export default defineConfig({
                 },
               ],
             },
+            {
+              text: 'Server 模式',
+              link: '/guide/server',
+            },
           ],
         },
         {

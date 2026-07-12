@@ -12,15 +12,14 @@ from yutto.exceptions import (
     UnSupportedTypeError,
 )
 from yutto.extractor._abc import SingleExtractor
-from yutto.extractor.common import extract_ugc_video_data
+from yutto.extractor.common import make_ugc_video_episode
 from yutto.types import AId, BvId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import AvId, EpisodeData, ExtractorOptions
+    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -80,24 +79,22 @@ class UgcVideoExtractor(SingleExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> CoroutineWrapper[EpisodeData | None] | None:
+    ) -> ResolvableEpisode | None:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             self.avid = ugc_video_list["avid"]  # 当视频撞车时，使用新的 avid 替代原有 avid，见 #96
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
-            return CoroutineWrapper(
-                extract_ugc_video_data(
-                    ctx,
-                    client,
-                    self.avid,
-                    ugc_video_list["pages"][self.page - 1],
-                    options,
-                    {
-                        "title": ugc_video_list["title"],
-                        "pubdate": ugc_video_list["pubdate"],
-                    },
-                    "{title}",
-                )
+            return make_ugc_video_episode(
+                ctx,
+                client,
+                self.avid,
+                ugc_video_list["pages"][self.page - 1],
+                options,
+                {
+                    "title": ugc_video_list["title"],
+                    "pubdate": ugc_video_list["pubdate"],
+                },
+                "{title}",
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)

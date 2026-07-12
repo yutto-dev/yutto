@@ -10,6 +10,7 @@ from yutto.exceptions import MaxRetryError, NotFoundError
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId
 from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
@@ -47,14 +48,19 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
         # 让完成顺序与传入顺序相反，验证结果顺序不受完成顺序影响
         await asyncio.sleep(0.01 * (len(avids) - avids.index(avid)))
         if avid == filtered_avid:
-            # 早于默认过滤窗口起点（1971 年），会被 Filter.verify_timer 过滤
+            # 早于默认过滤窗口起点（1971 年），会被发布时间过滤器过滤
             return make_ugc_video_list(avid, pubdate=0)
         return make_ugc_video_list(avid)
 
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", touch_url_ok)
 
-    results = await resolve_ugc_video_lists(FetcherContext(), make_fake_client(), avids)
+    results = await resolve_ugc_video_lists(
+        FetcherContext(),
+        make_fake_client(),
+        avids,
+        publication_time_filter=PublicationTimeFilter.from_strings(),
+    )
 
     assert [result["title"] if result is not None else None for result in results] == [
         "video-1",
@@ -86,7 +92,12 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
-    results = await resolve_ugc_video_lists(FetcherContext(), make_fake_client(), avids)
+    results = await resolve_ugc_video_lists(
+        FetcherContext(),
+        make_fake_client(),
+        avids,
+        publication_time_filter=PublicationTimeFilter.from_strings(),
+    )
 
     assert results[0] is not None
     assert results[1] is None
@@ -126,7 +137,12 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
     avids: list[AvId] = [AId(str(i)) for i in range(10)]
-    results = await resolve_ugc_video_lists(ctx, make_fake_client(), avids)
+    results = await resolve_ugc_video_lists(
+        ctx,
+        make_fake_client(),
+        avids,
+        publication_time_filter=PublicationTimeFilter.from_strings(),
+    )
 
     assert all(result is not None for result in results)
     assert max_running == fetch_workers

@@ -3,11 +3,19 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-from enum import Enum
 from typing import TYPE_CHECKING
 
+from yutto.core.events import (
+    DownloadArtifactCreated,
+    DownloadItemSkipped,
+    DownloadStage,
+    DownloadStageChanged,
+)
+from yutto.core.operation import emit_download_event
+from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
+from yutto.exceptions import PostprocessingError
 from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
 from yutto.utils.console.colorful import colored_string
@@ -21,14 +29,20 @@ from yutto.utils.metadata import write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable, Iterable
     from pathlib import Path
+    from typing import Protocol
 
     import httpx
 
     from yutto.types import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
     from yutto.utils.fetcher import FetcherContext
     from yutto.utils.metadata import ChapterInfoData
+
+    class _DownloadBuffer(Protocol):
+        def ensure_flushed(self) -> None: ...
+
+        async def close(self) -> None: ...
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
@@ -108,6 +122,26 @@ def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[
     return mirrors_filter
 
 
+async def _run_download_lifecycle(
+    coroutines: Iterable[Awaitable[None]],
+    buffers: Iterable[_DownloadBuffer],
+) -> None:
+    """运行一次下载所需的协程，并统一回收任务与文件缓冲区。"""
+    tasks = [asyncio.ensure_future(coroutine) for coroutine in coroutines]
+    buffer_list = list(buffers)
+    try:
+        await asyncio.gather(*tasks)
+        for buffer in buffer_list:
+            buffer.ensure_flushed()
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        for buffer in buffer_list:
+            await buffer.close()
+
+
 async def download_video_and_audio(
     ctx: FetcherContext,
     client: httpx.AsyncClient,
@@ -122,71 +156,88 @@ async def download_video_and_audio(
     buffers: list[AsyncFileBuffer | None] = [None, None]
     sizes: list[int | None] = [None, None]
     coroutines_list: list[list[CoroutineWrapper[None]]] = []
+    scheduled = False
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     ctx.set_download_semaphore(options["num_workers"])
 
     async def get_size(url: str) -> int | None:
         return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
 
-    if video is not None:
-        vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
-        vsize = await first_successful_with_check(
-            [get_size(url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
-        )
-        video_coroutines = [
-            CoroutineWrapper(
-                Fetcher.download_file_with_offset(
-                    ctx,
-                    client,
-                    video["url"],
-                    mirrors_filter(video["mirrors"]),
-                    vbuf,
-                    offset,
-                    block_size,
-                )
+    try:
+        if video is not None:
+            vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
+            buffers[0] = vbuf
+            vsize = await first_successful_with_check(
+                [get_size(url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
             )
-            for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
-        ]
-        coroutines_list.append(video_coroutines)
-        buffers[0], sizes[0] = vbuf, vsize
-
-    if audio is not None:
-        abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
-        asize = await first_successful_with_check(
-            [get_size(url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
-        )
-        audio_coroutines = [
-            CoroutineWrapper(
-                Fetcher.download_file_with_offset(
-                    ctx,
-                    client,
-                    audio["url"],
-                    mirrors_filter(audio["mirrors"]),
-                    abuf,
-                    offset,
-                    block_size,
+            sizes[0] = vsize
+            video_coroutines = [
+                CoroutineWrapper(
+                    Fetcher.download_file_with_offset(
+                        ctx,
+                        client,
+                        video["url"],
+                        mirrors_filter(video["mirrors"]),
+                        vbuf,
+                        offset,
+                        block_size,
+                    )
                 )
-            )
-            for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
-        ]
-        coroutines_list.append(audio_coroutines)
-        buffers[1], sizes[1] = abuf, asize
+                for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
+            ]
+            coroutines_list.append(video_coroutines)
 
-    # 为保证音频流和视频流尽可能并行，因此将两者混合一下～
-    coroutines = list(xmerge(*coroutines_list))
-    coroutines.insert(
-        0, CoroutineWrapper(show_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))))
+        if audio is not None:
+            abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
+            buffers[1] = abuf
+            asize = await first_successful_with_check(
+                [get_size(url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
+            )
+            sizes[1] = asize
+            audio_coroutines = [
+                CoroutineWrapper(
+                    Fetcher.download_file_with_offset(
+                        ctx,
+                        client,
+                        audio["url"],
+                        mirrors_filter(audio["mirrors"]),
+                        abuf,
+                        offset,
+                        block_size,
+                    )
+                )
+                for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
+            ]
+            coroutines_list.append(audio_coroutines)
+
+        # 为保证音频流和视频流尽可能并行，因此将两者混合一下～
+        coroutines = list(xmerge(*coroutines_list))
+        coroutines.insert(
+            0, CoroutineWrapper(show_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))))
+        )
+        scheduled = True
+        Logger.info("开始下载……")
+        await _run_download_lifecycle(coroutines, filter_none_values(buffers))
+        Logger.info("下载完成！")
+    finally:
+        if not scheduled:
+            for coroutine_group in coroutines_list:
+                for coroutine in coroutine_group:
+                    coroutine.coro.close()
+            for buffer in filter_none_values(buffers):
+                await buffer.close()
+
+
+def should_attach_hvc1_tag(video: VideoUrlMeta | None, video_save_codec: str) -> bool:
+    """是否为合并后的视频添加 Apple 设备兼容的 hvc1 tag。"""
+    return (
+        video is not None
+        and video["quality"] != 126  # Dolby Vision
+        and (video_save_codec == "hevc" or (video_save_codec == "copy" and video["codec"] == "hevc"))
     )
-    Logger.info("开始下载……")
-    await asyncio.gather(*coroutines)
-    Logger.info("下载完成！")
-
-    for buffer in buffers:
-        if buffer is not None:
-            await buffer.close()
 
 
-def merge_video_and_audio(
+async def merge_video_and_audio(
     video: VideoUrlMeta | None,
     video_path: Path,
     audio: AudioUrlMeta | None,
@@ -203,34 +254,30 @@ def merge_video_and_audio(
     ffmpeg = FFmpeg()
     command_builder = FFmpegCommandBuilder()
     Logger.info("开始合并……")
+    video_save_codec = options["video_save_codec"]
+    audio_save_codec = options["audio_save_codec"]
 
     # Using FFmpeg to Create HEVC Videos That Work on Apple Devices：
     # https://aaron.cc/ffmpeg-hevc-apple-devices/
     # see also: https://github.com/yutto-dev/yutto/issues/85
-    vtag: str | None = None
-    if (
-        options["video_save_codec"] == "hevc"
-        or (options["video_save_codec"] == "copy" and video is not None and video["codec"] == "hevc")
-        and video["quality"] != 126  # skip for Dolby Vision
-    ):
-        vtag = "hvc1"
+    vtag = "hvc1" if should_attach_hvc1_tag(video, video_save_codec) else None
 
-    if video is not None and video["codec"] == options["video_save_codec"]:
-        options["video_save_codec"] = "copy"
-    if audio is not None and audio["codec"] == options["audio_save_codec"]:
-        options["audio_save_codec"] = "copy"
+    if video is not None and video["codec"] == video_save_codec:
+        video_save_codec = "copy"
+    if audio is not None and audio["codec"] == audio_save_codec:
+        audio_save_codec = "copy"
 
     output = command_builder.add_output(output_path)
     if video is not None:
         video_input = command_builder.add_video_input(video_path)
         output.use(video_input)
-        output.set_vcodec(options["video_save_codec"])
+        output.set_vcodec(video_save_codec)
         if vtag is not None:
             output.with_extra_options([f"-tag:v:{video_input.stream_id}", vtag])
     if audio is not None:
         audio_input = command_builder.add_audio_input(audio_path)
         output.use(audio_input)
-        output.set_acodec(options["audio_save_codec"])
+        output.set_acodec(audio_save_codec)
     if video is not None and cover_data is not None:
         cover_input = command_builder.add_video_input(cover_path)
         output.use(cover_input)
@@ -243,17 +290,28 @@ def merge_video_and_audio(
     # see also: https://www.reddit.com/r/ffmpeg/comments/qe7oq1/comment/hi0bmic/?utm_source=share&utm_medium=web2x&context=3
     output.with_extra_options(["-strict", "unofficial"])
 
-    command_builder.with_extra_options(["-threads", str(os.cpu_count())])
+    command_builder.with_extra_options(["-threads", str(os.cpu_count() or 1)])
     command_builder.with_extra_options(["-y"])
 
-    result = ffmpeg.exec(command_builder.build())
+    try:
+        result = await ffmpeg.exec_async(command_builder.build())
+    except asyncio.CancelledError:
+        # 目标文件在进入本函数前已经完成存在性检查；这里的文件只可能是
+        # 本次 FFmpeg 产生的半成品，保留它会导致下次运行误判为已完成。
+        output_path.unlink(missing_ok=True)
+        raise
     if result.returncode != 0:
-        Logger.error("合并失败！")
-        Logger.error(result.stderr.decode())
-        return
+        output_path.unlink(missing_ok=True)
+        detail = result.stderr.decode()
+        message = "合并失败！"
+        if detail:
+            message += f"\n{detail}"
+        raise PostprocessingError(message)
     else:
         Logger.debug(result.stderr.decode())
 
+    if not output_path.exists():
+        raise PostprocessingError("合并失败：FFmpeg 未生成目标文件！")
     Logger.info("合并完成！")
 
 
@@ -288,17 +346,12 @@ def resolve_path(base_output_dir: Path, base_tmp_dir: Path, path: Path) -> tuple
     return output_dir, tmp_dir, filename
 
 
-class DownloadState(Enum):
-    DONE = 0
-    SKIP = 1
-
-
 async def process_download(
     ctx: FetcherContext,
     client: httpx.AsyncClient,
     episode_data: EpisodeData,
     options: DownloaderOptions,
-) -> DownloadState:
+) -> ItemResult:
     """处理单个视频下载任务，包含弹幕、字幕的存储"""
 
     videos = episode_data["videos"]
@@ -308,12 +361,15 @@ async def process_download(
     metadata = episode_data["metadata"]
     cover_data = episode_data["cover_data"]
     chapter_info_data = episode_data["chapter_info_data"]
-    output_dir, tmp_dir, filename = resolve_path(options["output_dir"], options["tmp_dir"], episode_data["path"])
+    output_dir, tmp_dir, filename = resolve_path(
+        options["output_dir"], options["tmp_dir"], episode_data["info"]["path"]
+    )
     require_video = options["require_video"]
     require_audio = options["require_audio"]
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
     Logger.info(f"开始处理视频 {filename}")
+    emit_download_event(DownloadStageChanged(name=DownloadStage.PREPARING, item=filename))
     output_dir.mkdir(parents=True, exist_ok=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(f"{filename}_video.m4s")
@@ -355,11 +411,14 @@ async def process_download(
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
+    artifacts: list[Artifact] = []
 
     # 保存字幕
+    emit_download_event(DownloadStageChanged(name=DownloadStage.WRITING_RESOURCES, item=filename))
     if subtitles:
         for subtitle in subtitles:
-            write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+            subtitle_path = write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+            artifacts.append(Artifact(kind=ArtifactKind.SUBTITLE, path=subtitle_path))
         Logger.custom(
             "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
             badge=Badge("字幕", fore="black", back="cyan"),
@@ -367,20 +426,22 @@ async def process_download(
 
     # 保存弹幕
     if danmaku["data"]:
-        write_danmaku(
+        danmaku_paths = write_danmaku(
             danmaku,
             str(output_path),
             video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
             video["width"] if video is not None else 1920,
             danmaku_options,
         )
+        artifacts.extend(Artifact(kind=ArtifactKind.DANMAKU, path=path) for path in danmaku_paths)
         Logger.custom(
             "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
         )
 
     # 保存媒体描述文件
     if metadata is not None:
-        write_metadata(metadata, output_path, metadata_format)
+        metadata_path = write_metadata(metadata, output_path, metadata_format)
+        artifacts.append(Artifact(kind=ArtifactKind.METADATA, path=metadata_path))
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     # 保存封面
@@ -389,25 +450,18 @@ async def process_download(
         if options["save_cover"]:
             cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
             cover_save_path.write_bytes(cover_data)
+            artifacts.append(Artifact(kind=ArtifactKind.COVER, path=cover_save_path))
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
 
     # 保存章节信息
     if chapter_info_data:
         write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
-    if output_path.exists():
-        if not options["overwrite"]:
-            Logger.info(f"文件 {filename} 已存在")
-            return DownloadState.SKIP
-        else:
-            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
-            output_path.unlink()
-
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
         cleanup_tmp_files(
-            video,
-            audio,
+            None,
+            None,
             chapter_info_data,
             cover_data,
             video_path,
@@ -415,16 +469,65 @@ async def process_download(
             chapter_info_path,
             cover_path,
         )
-        return DownloadState.SKIP
+        if not (require_audio or require_video):
+            return ItemResult(
+                state=ItemState.DONE,
+                output_path=output_path,
+                artifacts=tuple(artifacts),
+            )
+        emit_download_event(
+            DownloadItemSkipped(
+                item=filename,
+                reason=ItemSkipReason.NO_MEDIA_STREAM,
+            )
+        )
+        return ItemResult(
+            state=ItemState.SKIPPED,
+            output_path=output_path,
+            skip_reason=ItemSkipReason.NO_MEDIA_STREAM,
+            artifacts=tuple(artifacts),
+        )
+
+    if output_path.exists():
+        if not options["overwrite"]:
+            Logger.info(f"文件 {filename} 已存在")
+            emit_download_event(
+                DownloadItemSkipped(
+                    item=filename,
+                    reason=ItemSkipReason.ALREADY_EXISTS,
+                )
+            )
+            artifacts.append(Artifact(kind=ArtifactKind.MEDIA, path=output_path))
+            cleanup_tmp_files(
+                None,
+                None,
+                chapter_info_data,
+                cover_data,
+                video_path,
+                audio_path,
+                chapter_info_path,
+                cover_path,
+            )
+            return ItemResult(
+                state=ItemState.SKIPPED,
+                output_path=output_path,
+                skip_reason=ItemSkipReason.ALREADY_EXISTS,
+                artifacts=tuple(artifacts),
+            )
+        else:
+            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
+            output_path.unlink()
 
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
 
     # 下载视频 / 音频
+    emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=filename))
     await download_video_and_audio(ctx, client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    merge_video_and_audio(
+    emit_download_event(DownloadStageChanged(name=DownloadStage.POSTPROCESSING, item=filename))
+    await merge_video_and_audio(
         video,
         video_path,
         audio,
@@ -446,4 +549,11 @@ async def process_download(
         chapter_info_path,
         cover_path,
     )
-    return DownloadState.DONE
+    if output_path.exists():
+        artifacts.append(Artifact(kind=ArtifactKind.MEDIA, path=output_path))
+        emit_download_event(DownloadArtifactCreated(item=filename, path=output_path))
+    return ItemResult(
+        state=ItemState.DONE,
+        output_path=output_path,
+        artifacts=tuple(artifacts),
+    )

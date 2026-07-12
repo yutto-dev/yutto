@@ -1,27 +1,25 @@
 from __future__ import annotations
 
 import re
-import sys
 from typing import TYPE_CHECKING
 
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
 from yutto.exceptions import (
-    ErrorCode,
+    EpisodeNotFoundError,
     HttpStatusError,
     NoAccessPermissionError,
     NotFoundError,
     UnSupportedTypeError,
 )
 from yutto.extractor._abc import SingleExtractor
-from yutto.extractor.common import extract_cheese_data
+from yutto.extractor.common import make_cheese_episode
 from yutto.types import EpisodeId
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import EpisodeData, ExtractorOptions
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -52,7 +50,7 @@ class CheeseExtractor(SingleExtractor):
 
     async def extract(
         self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> CoroutineWrapper[EpisodeData | None] | None:
+    ) -> ResolvableEpisode | None:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         cheese_list = await get_cheese_list(ctx, client, season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
@@ -62,21 +60,18 @@ class CheeseExtractor(SingleExtractor):
                     cheese_list_item = cheese_item
                     break
             else:
-                Logger.error("在列表中未找到该剧集")
-                sys.exit(ErrorCode.EPISODE_NOT_FOUND_ERROR.value)
+                raise EpisodeNotFoundError("在列表中未找到该剧集")
 
-            return CoroutineWrapper(
-                extract_cheese_data(
-                    ctx,
-                    client,
-                    self.episode_id,
-                    cheese_list_item,
-                    options,
-                    {
-                        "title": cheese_list["title"],
-                    },
-                    "{name}",
-                )
+            return make_cheese_episode(
+                ctx,
+                client,
+                self.episode_id,
+                cheese_list_item,
+                options,
+                {
+                    "title": cheese_list["title"],
+                },
+                "{name}",
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)

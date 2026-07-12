@@ -9,13 +9,12 @@ import biliass
 
 from yutto.api.user_info import validate_user_info
 from yutto.auth import format_auth_inline, resolve_auth
-from yutto.exceptions import ErrorCode
+from yutto.exceptions import ErrorCode, WrongArgumentError
 from yutto.input_parser import validate_episodes_selection
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Badge, Logger, set_logger_debug
 from yutto.utils.ffmpeg import FFmpeg
-from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
     import argparse
@@ -75,12 +74,6 @@ def initial_validation(ctx: FetcherContext, args: argparse.Namespace):
             Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
         else:
             Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
-
-    # 批量下载时的过滤器设置
-    if args.batch_filter_start_time:
-        Filter.set_timer("batch_filter_start_time", args.batch_filter_start_time)
-    if args.batch_filter_end_time:
-        Filter.set_timer("batch_filter_end_time", args.batch_filter_end_time)
 
     # cover_only 时自动设置 save_cover
     if (
@@ -181,8 +174,12 @@ def validate_basic_arguments(args: argparse.Namespace):
 
 def validate_batch_arguments(args: argparse.Namespace):
     """检查批量下载相关选项"""
+    validate_batch_selection(args.episodes)
+
+
+def validate_batch_selection(episodes: str):
+    """检查 Core 请求中的批量选集格式。"""
     # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
-    if not validate_episodes_selection(args.episodes):
+    if not validate_episodes_selection(episodes):
         # TODO: 错误信息链接到相应文档，当然需要先写文档……
-        Logger.error(f"选集参数（{args.episodes}）格式不正确呀～重新检查一下下～")
-        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+        raise WrongArgumentError(f"选集参数（{episodes}）格式不正确呀～重新检查一下下～")
