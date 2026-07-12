@@ -29,28 +29,38 @@ yutto serve \
 连接建立后，第一条消息必须调用 `server.authenticate`。Token 不放在 URL 中。
 
 ```json
-{"jsonrpc":"2.0","id":1,"method":"server.authenticate","params":{"token":"YOUR_TOKEN"}}
+{ "jsonrpc": "2.0", "id": 1, "method": "server.authenticate", "params": { "token": "YOUR_TOKEN" } }
 ```
 
 认证成功后，可以提交下载任务：
 
 ```json
-{"jsonrpc":"2.0","id":2,"method":"download.start","params":{"request":{"source":{"url":"https://www.bilibili.com/video/BV..."},"output":{"directory":"番剧"}}}}
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "download.start",
+  "params": {
+    "request": {
+      "source": { "url": "https://www.bilibili.com/video/BV..." },
+      "output": { "directory": "番剧" }
+    }
+  }
+}
 ```
 
 `request` 使用与 yutto Core 相同的强类型请求模型。未提供的设置继承 server 启动时加载的 yutto 配置；认证 Cookie 不会放入请求，而是由 server 按 `access.auth_profile` 从 `--auth-file` 读取。配置里的 inline Cookie 与旧 `sessdata` 字段不会进入 server 请求边界。
 
 可用方法如下：
 
-| 方法 | 用途 |
-| --- | --- |
-| `server.info` | 查询版本、协议版本和能力列表 |
-| `download.start` | 提交下载任务，返回任务快照 |
-| `task.get` | 查询一个任务 |
-| `task.list` | 分页查询当前进程中的任务摘要（不展开请求 payload） |
-| `task.cancel` | 取消排队中或运行中的任务 |
-| `task.subscribe` | 获取事件回放并订阅后续事件 |
-| `task.unsubscribe` | 取消当前连接上的任务订阅 |
+| 方法               | 用途                                               |
+| ------------------ | -------------------------------------------------- |
+| `server.info`      | 查询版本、协议版本和能力列表                       |
+| `download.start`   | 提交下载任务，返回任务快照                         |
+| `task.get`         | 查询一个任务                                       |
+| `task.list`        | 分页查询当前进程中的任务摘要（不展开请求 payload） |
+| `task.cancel`      | 取消排队中或运行中的任务                           |
+| `task.subscribe`   | 获取事件回放并订阅后续事件                         |
+| `task.unsubscribe` | 取消当前连接上的任务订阅                           |
 
 订阅后的实时事件以 `task.event` notification 推送。事件包含全局递增的 `seq`；从回放切换到实时流时，应按 `seq` 去重。断开客户端不会自动取消任务。
 
