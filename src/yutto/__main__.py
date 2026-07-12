@@ -12,6 +12,7 @@ from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.cli.event_renderer import CliApplicationEventRenderer
 from yutto.cli.request_adapter import download_request_from_namespace
 from yutto.core.application import YuttoApplication
+from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
 from yutto.login import run_auth_logout, run_auth_status, run_login
@@ -75,7 +76,11 @@ def main():
 
 @as_sync
 async def run_download(ctx: FetcherContext, requests: list[DownloadRequest]):
-    application = YuttoApplication(ctx, event_sink=CliApplicationEventRenderer())
+    application = YuttoApplication(
+        ctx,
+        workflow=DownloadManager(),
+        event_sink=CliApplicationEventRenderer(),
+    )
     await application.download_all(requests)
 
 

@@ -124,7 +124,7 @@ class FetcherContext:
         self.touched_urls = WeakKeyDictionary()
 
     def set_fetch_workers(self, fetch_workers: int):
-        # 仅记录并发数，semaphore 需要在事件循环内创建（见 DownloadManager.loop）
+        # 仅记录并发数，semaphore 需要在事件循环内创建（见 DownloadManager.execute）
         self.fetch_workers = fetch_workers
 
     def set_fetch_semaphore(self, fetch_workers: int):

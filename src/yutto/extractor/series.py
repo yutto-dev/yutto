@@ -47,7 +47,12 @@ class SeriesExtractor(BatchExtractor):
 
         ugc_video_info_list: list[tuple[UgcVideoListItem, str, int]] = []
         avids = await get_medialist_avids(ctx, client, self.series_id, self.mid)
-        for ugc_video_list in await resolve_ugc_video_lists(ctx, client, avids):
+        for ugc_video_list in await resolve_ugc_video_lists(
+            ctx,
+            client,
+            avids,
+            publication_time_filter=options["publication_time_filter"],
+        ):
             if ugc_video_list is None:
                 continue
             for ugc_video_item in ugc_video_list["pages"]:

@@ -2,26 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from yutto.core.events import DownloadBatchStarted, DownloadRequestQueued, NullApplicationEventSink
-from yutto.core.operation import emit_operation_event
-from yutto.download_manager import DownloadManager, DownloadTask
+from yutto.core.events import DownloadBatchStarted, DownloadRequestQueued, NullDownloadEventSink
+from yutto.core.operation import bind_download_event_sink, emit_download_event
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from yutto.core.events import ApplicationEventSink
+    from yutto.core.events import DownloadEventSink
     from yutto.core.request import DownloadRequest
+    from yutto.core.result import DownloadResult
     from yutto.utils.fetcher import FetcherContext
 
 
-class DownloadQueue(Protocol):
-    def start(self, ctx: FetcherContext) -> None: ...
-
-    async def add_task(self, task: DownloadTask) -> None: ...
-
-    async def add_stop_task(self) -> None: ...
-
-    async def wait_for_completion(self) -> None: ...
+class DownloadWorkflow(Protocol):
+    async def execute(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> DownloadResult: ...
 
 
 class YuttoApplication:
@@ -31,37 +25,29 @@ class YuttoApplication:
         self,
         ctx: FetcherContext,
         *,
-        event_sink: ApplicationEventSink | None = None,
-        manager: DownloadQueue | None = None,
+        workflow: DownloadWorkflow,
+        event_sink: DownloadEventSink | None = None,
     ):
         self.ctx = ctx
-        self.event_sink = event_sink if event_sink is not None else NullApplicationEventSink()
-        self.manager = manager if manager is not None else DownloadManager()
+        self.workflow = workflow
+        self.event_sink = event_sink if event_sink is not None else NullDownloadEventSink()
 
-    async def download_all(self, requests: Sequence[DownloadRequest]) -> None:
-        self.manager.start(self.ctx)
-        total = len(requests)
-        if total > 1:
-            event = DownloadBatchStarted(total=total)
-            self.event_sink.emit(event)
-            emit_operation_event("batch_started", {"total": total})
-
-        for index, request in enumerate(requests, start=1):
+    async def download_all(self, requests: Sequence[DownloadRequest]) -> DownloadResult:
+        with bind_download_event_sink(self.event_sink):
+            total = len(requests)
             if total > 1:
-                event = DownloadRequestQueued(
-                    url=request.source.url,
-                    index=index,
-                    total=total,
-                )
-                self.event_sink.emit(event)
-                emit_operation_event(
-                    "request_queued",
-                    {"url": request.source.url, "index": index, "total": total},
-                )
-            await self.manager.add_task(DownloadTask(request=request))
+                emit_download_event(DownloadBatchStarted(total=total))
 
-        await self.manager.add_stop_task()
-        await self.manager.wait_for_completion()
+            for index, request in enumerate(requests, start=1):
+                if total > 1:
+                    emit_download_event(
+                        DownloadRequestQueued(
+                            url=request.source.url,
+                            index=index,
+                            total=total,
+                        )
+                    )
+            return await self.workflow.execute(self.ctx, requests)
 
-    async def download(self, request: DownloadRequest) -> None:
-        await self.download_all([request])
+    async def download(self, request: DownloadRequest) -> DownloadResult:
+        return await self.download_all([request])

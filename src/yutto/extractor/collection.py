@@ -64,7 +64,12 @@ class CollectionExtractor(BatchExtractor):
 
         items = collection_details["pages"]
         avids = [item["avid"] for item in items]
-        ugc_video_lists = await resolve_ugc_video_lists(ctx, client, avids)
+        ugc_video_lists = await resolve_ugc_video_lists(
+            ctx,
+            client,
+            avids,
+            publication_time_filter=options["publication_time_filter"],
+        )
         for item, ugc_video_list in zip(items, ugc_video_lists, strict=True):
             if ugc_video_list is None:
                 continue

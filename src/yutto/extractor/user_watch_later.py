@@ -44,7 +44,12 @@ class UserWatchLaterExtractor(BatchExtractor):
             Logger.error(e.message)
             return []
 
-        for ugc_video_list in await resolve_ugc_video_lists(ctx, client, avid_list):
+        for ugc_video_list in await resolve_ugc_video_lists(
+            ctx,
+            client,
+            avid_list,
+            publication_time_filter=options["publication_time_filter"],
+        ):
             if ugc_video_list is None:
                 continue
             for ugc_video_item in ugc_video_list["pages"]:

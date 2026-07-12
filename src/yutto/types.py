@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from yutto.media.codec import AudioCodec, VideoCodec
     from yutto.media.quality import AudioQuality, VideoQuality
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
+    from yutto.utils.filter import PublicationTimeFilter
     from yutto.utils.metadata import ChapterInfoData, MetaData
     from yutto.utils.subtitle import SubtitleData
 
@@ -224,6 +225,7 @@ class ExtractorOptions(TypedDict):
     danmaku_format: DanmakuSaveType
     subpath_template: str
     ai_translation_language: str | None
+    publication_time_filter: PublicationTimeFilter
 
 
 class EpisodeData(TypedDict):

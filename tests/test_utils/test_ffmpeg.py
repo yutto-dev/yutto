@@ -342,6 +342,7 @@ async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch
         async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
             commands.append(args)
             await asyncio.sleep(0)
+            Path(args[-1]).write_bytes(b"merged output")
             return subprocess.CompletedProcess(args, 0, b"", b"ffmpeg detail")
 
     monkeypatch.setattr(downloader_module, "FFmpeg", FakeFFmpeg)
@@ -357,6 +358,24 @@ async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch
     assert infos == ["开始合并……", "合并完成！"]
     assert errors == []
     assert debugs == ["ffmpeg detail"]
+
+
+@pytest.mark.processor
+@as_sync
+async def test_merge_success_code_without_output_is_structured_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    class MissingOutputFFmpeg:
+        async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+            return subprocess.CompletedProcess(args, 0, b"", b"")
+
+    monkeypatch.setattr(downloader_module, "FFmpeg", MissingOutputFFmpeg)
+
+    with pytest.raises(PostprocessingError, match="未生成目标文件") as error:
+        await merge_audio(tmp_path / "output.m4a")
+
+    assert error.value.code.value == 20
 
 
 @pytest.mark.processor

@@ -10,6 +10,7 @@ from websockets.exceptions import ConnectionClosedError, InvalidStatus
 from websockets.typing import Origin
 
 from yutto.core.request import DownloadRequest
+from yutto.core.result import DownloadResult
 from yutto.runtime import TaskContext, TaskRuntime
 from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer
 from yutto.utils.functional import as_sync
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 class FakeDownloadTaskApi:
     def __init__(self) -> None:
         self.release = asyncio.Event()
-        self.runtime = TaskRuntime[DownloadRequest, None](
+        self.runtime = TaskRuntime[DownloadRequest, DownloadResult](
             self._run,
             task_id_factory=lambda: "task-1",
         )
@@ -36,16 +37,16 @@ class FakeDownloadTaskApi:
     async def close(self, *, cancel_pending: bool = False) -> None:
         await self.runtime.close(cancel_pending=cancel_pending)
 
-    async def submit(self, request: DownloadRequest) -> TaskSnapshot[DownloadRequest, None]:
+    async def submit(self, request: DownloadRequest) -> TaskSnapshot[DownloadRequest, DownloadResult]:
         return await self.runtime.submit(request)
 
-    def get(self, task_id: str) -> TaskSnapshot[DownloadRequest, None] | None:
+    def get(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult] | None:
         return self.runtime.get(task_id)
 
-    def list(self) -> tuple[TaskSnapshot[DownloadRequest, None], ...]:
+    def list(self) -> tuple[TaskSnapshot[DownloadRequest, DownloadResult], ...]:
         return self.runtime.list()
 
-    async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, None] | None:
+    async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult] | None:
         return await self.runtime.cancel(task_id)
 
     def replay(self, task_id: str, *, after_seq: int = 0) -> EventReplay | None:
@@ -54,9 +55,10 @@ class FakeDownloadTaskApi:
     def add_event_listener(self, listener: Callable[[TaskEvent], None]) -> Callable[[], None]:
         return self.runtime.add_event_listener(listener)
 
-    async def _run(self, request: DownloadRequest, context: TaskContext) -> None:
+    async def _run(self, request: DownloadRequest, context: TaskContext) -> DownloadResult:
         await self.release.wait()
         context.emit("progress", {"current": 1, "total": 1})
+        return DownloadResult()
 
 
 def rpc_request(request_id: int, method: str, params: object | None = None) -> str:
@@ -204,6 +206,7 @@ async def test_download_task_lifecycle_replay_and_live_notifications():
             completed = (await receive_json(connection))["result"]
             assert completed["state"] == "completed"
             assert completed["payload"]["source"]["url"].endswith("BV1xx")
+            assert completed["result"] == {"items": []}
 
             await connection.send(rpc_request(5, "task.list"))
             listed = (await receive_json(connection))["result"]

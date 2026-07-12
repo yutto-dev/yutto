@@ -64,6 +64,39 @@ yutto serve \
 
 订阅后的实时事件以 `task.event` notification 推送。事件包含全局递增的 `seq`；从回放切换到实时流时，应按 `seq` 去重。断开客户端不会自动取消任务。
 
+下载完成后，`task.get` 的 `result` 会列出每个条目的目标路径和最终产物：
+
+```json
+{
+  "items": [
+    {
+      "state": "done",
+      "output_path": "/downloads/番剧/第 1 话.mp4",
+      "skip_reason": null,
+      "artifacts": [
+        { "kind": "subtitle", "path": "/downloads/番剧/第 1 话.zh-CN.srt" },
+        { "kind": "media", "path": "/downloads/番剧/第 1 话.mp4" }
+      ]
+    }
+  ]
+}
+```
+
+`state` 为 `done` 或 `skipped`；跳过原因目前包括 `already_exists` 和 `no_media_stream`。仅请求字幕、弹幕、描述文件或封面时，只要资源处理完成，条目同样为 `done`。`output_path` 是推导出的媒体目标路径，在未请求媒体或没有可用媒体流时不一定存在。
+
+`artifacts` 包含本次生成或确认已存在的最终文件，不包含下载分片、临时封面或 FFmpeg 章节文件。`kind` 可能为 `media`、`subtitle`、`danmaku`、`metadata` 或 `cover`；客户端应按 `kind` 识别产物，不依赖数组顺序。一个 `skipped` 条目仍可能包含已经写入的 sidecar 产物。
+
+除 runtime 自己产生的 `state` 外，下载事件的 `kind` 包括：
+
+| `kind`             | `data`                                                                 | 含义                                       |
+| ------------------ | ---------------------------------------------------------------------- | ------------------------------------------ |
+| `stage`            | `{ name, item? }`                                                      | 进入解析、资源写入、下载或后处理阶段       |
+| `progress`         | `{ phase, current, total, speed_per_second, unit }`                    | 音视频字节下载进度                         |
+| `item_skipped`     | `{ item, reason }`                                                     | 条目因媒体已存在或没有请求到可用媒体流跳过 |
+| `artifact_created` | `{ item, path }`                                                       | 本次任务生成了最终媒体文件                 |
+
+`stage.name` 目前可能为 `resolving`、`preparing`、`writing_resources`、`downloading` 或 `postprocessing`。`artifact_created` 只在本次新生成最终媒体文件时发送；其他 sidecar 产物通过完成结果获取。
+
 ## 本地资源边界
 
 - 同一 server 进程默认一次只运行一个下载任务，其余任务排队。

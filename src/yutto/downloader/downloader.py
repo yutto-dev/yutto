@@ -3,10 +3,16 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-from enum import Enum
 from typing import TYPE_CHECKING
 
-from yutto.core.operation import emit_operation_event
+from yutto.core.events import (
+    DownloadArtifactCreated,
+    DownloadItemSkipped,
+    DownloadStage,
+    DownloadStageChanged,
+)
+from yutto.core.operation import emit_download_event
+from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
 from yutto.exceptions import PostprocessingError
@@ -296,6 +302,8 @@ async def merge_video_and_audio(
     else:
         Logger.debug(result.stderr.decode())
 
+    if not output_path.exists():
+        raise PostprocessingError("合并失败：FFmpeg 未生成目标文件！")
     Logger.info("合并完成！")
 
 
@@ -330,17 +338,12 @@ def resolve_path(base_output_dir: Path, base_tmp_dir: Path, path: Path) -> tuple
     return output_dir, tmp_dir, filename
 
 
-class DownloadState(Enum):
-    DONE = 0
-    SKIP = 1
-
-
 async def process_download(
     ctx: FetcherContext,
     client: httpx.AsyncClient,
     episode_data: EpisodeData,
     options: DownloaderOptions,
-) -> DownloadState:
+) -> ItemResult:
     """处理单个视频下载任务，包含弹幕、字幕的存储"""
 
     videos = episode_data["videos"]
@@ -356,7 +359,7 @@ async def process_download(
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
     Logger.info(f"开始处理视频 {filename}")
-    emit_operation_event("stage", {"name": "preparing", "item": filename})
+    emit_download_event(DownloadStageChanged(name=DownloadStage.PREPARING, item=filename))
     output_dir.mkdir(parents=True, exist_ok=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
     video_path = tmp_dir.joinpath(f"{filename}_video.m4s")
@@ -398,12 +401,14 @@ async def process_download(
             output_format = ".mkv"  # MP4 does not support FLAC audio
 
     output_path = output_dir.joinpath(filename + output_format)
+    artifacts: list[Artifact] = []
 
     # 保存字幕
-    emit_operation_event("stage", {"name": "writing_resources", "item": filename})
+    emit_download_event(DownloadStageChanged(name=DownloadStage.WRITING_RESOURCES, item=filename))
     if subtitles:
         for subtitle in subtitles:
-            write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+            subtitle_path = write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
+            artifacts.append(Artifact(kind=ArtifactKind.SUBTITLE, path=subtitle_path))
         Logger.custom(
             "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
             badge=Badge("字幕", fore="black", back="cyan"),
@@ -411,20 +416,22 @@ async def process_download(
 
     # 保存弹幕
     if danmaku["data"]:
-        write_danmaku(
+        danmaku_paths = write_danmaku(
             danmaku,
             str(output_path),
             video["height"] if video is not None else 1080,  # 未下载视频时自动按照 1920x1080 处理
             video["width"] if video is not None else 1920,
             danmaku_options,
         )
+        artifacts.extend(Artifact(kind=ArtifactKind.DANMAKU, path=path) for path in danmaku_paths)
         Logger.custom(
             "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
         )
 
     # 保存媒体描述文件
     if metadata is not None:
-        write_metadata(metadata, output_path, metadata_format)
+        metadata_path = write_metadata(metadata, output_path, metadata_format)
+        artifacts.append(Artifact(kind=ArtifactKind.METADATA, path=metadata_path))
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 
     # 保存封面
@@ -433,27 +440,18 @@ async def process_download(
         if options["save_cover"]:
             cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
             cover_save_path.write_bytes(cover_data)
+            artifacts.append(Artifact(kind=ArtifactKind.COVER, path=cover_save_path))
             Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
 
     # 保存章节信息
     if chapter_info_data:
         write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
-    if output_path.exists():
-        if not options["overwrite"]:
-            Logger.info(f"文件 {filename} 已存在")
-            emit_operation_event("item_skipped", {"item": filename, "reason": "already_exists"})
-            return DownloadState.SKIP
-        else:
-            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
-            output_path.unlink()
-
     if not (will_download_audio or will_download_video):
         Logger.warning("没有音视频需要下载")
-        emit_operation_event("item_skipped", {"item": filename, "reason": "no_media_stream"})
         cleanup_tmp_files(
-            video,
-            audio,
+            None,
+            None,
             chapter_info_data,
             cover_data,
             video_path,
@@ -461,17 +459,64 @@ async def process_download(
             chapter_info_path,
             cover_path,
         )
-        return DownloadState.SKIP
+        if not (require_audio or require_video):
+            return ItemResult(
+                state=ItemState.DONE,
+                output_path=output_path,
+                artifacts=tuple(artifacts),
+            )
+        emit_download_event(
+            DownloadItemSkipped(
+                item=filename,
+                reason=ItemSkipReason.NO_MEDIA_STREAM,
+            )
+        )
+        return ItemResult(
+            state=ItemState.SKIPPED,
+            output_path=output_path,
+            skip_reason=ItemSkipReason.NO_MEDIA_STREAM,
+            artifacts=tuple(artifacts),
+        )
+
+    if output_path.exists():
+        if not options["overwrite"]:
+            Logger.info(f"文件 {filename} 已存在")
+            emit_download_event(
+                DownloadItemSkipped(
+                    item=filename,
+                    reason=ItemSkipReason.ALREADY_EXISTS,
+                )
+            )
+            artifacts.append(Artifact(kind=ArtifactKind.MEDIA, path=output_path))
+            cleanup_tmp_files(
+                None,
+                None,
+                chapter_info_data,
+                cover_data,
+                video_path,
+                audio_path,
+                chapter_info_path,
+                cover_path,
+            )
+            return ItemResult(
+                state=ItemState.SKIPPED,
+                output_path=output_path,
+                skip_reason=ItemSkipReason.ALREADY_EXISTS,
+                artifacts=tuple(artifacts),
+            )
+        else:
+            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
+            output_path.unlink()
 
     video = video if will_download_video else None
     audio = audio if will_download_audio else None
 
     # 下载视频 / 音频
-    emit_operation_event("stage", {"name": "downloading", "item": filename})
+    emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=filename))
     await download_video_and_audio(ctx, client, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
-    emit_operation_event("stage", {"name": "postprocessing", "item": filename})
+    emit_download_event(DownloadStageChanged(name=DownloadStage.POSTPROCESSING, item=filename))
     await merge_video_and_audio(
         video,
         video_path,
@@ -495,5 +540,10 @@ async def process_download(
         cover_path,
     )
     if output_path.exists():
-        emit_operation_event("artifact_created", {"path": str(output_path), "item": filename})
-    return DownloadState.DONE
+        artifacts.append(Artifact(kind=ArtifactKind.MEDIA, path=output_path))
+        emit_download_event(DownloadArtifactCreated(item=filename, path=output_path))
+    return ItemResult(
+        state=ItemState.DONE,
+        output_path=output_path,
+        artifacts=tuple(artifacts),
+    )

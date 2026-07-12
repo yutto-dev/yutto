@@ -6,7 +6,8 @@ import time
 from collections import deque
 from typing import TYPE_CHECKING
 
-from yutto.core.operation import emit_operation_event
+from yutto.core.events import DownloadProgress
+from yutto.core.operation import emit_download_event
 from yutto.utils.console.attributes import get_terminal_size
 from yutto.utils.console.colorful import RGBColor, colored_string
 from yutto.utils.console.formatter import size_format
@@ -72,15 +73,12 @@ async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
         size_now = size_written + size_in_buffer
         time_with_size_window.append((t_now, size_now))
         speed = (size_now - time_with_size_window[0][1]) / (t_now - time_with_size_window[0][0] + 10**-6)
-        emit_operation_event(
-            "progress",
-            {
-                "phase": "downloading",
-                "current": size_now,
-                "total": total_size,
-                "speed_per_second": speed,
-                "unit": "bytes",
-            },
+        emit_download_event(
+            DownloadProgress(
+                current=size_now,
+                total=total_size,
+                speed_per_second=speed,
+            )
         )
 
         # 进度条默认颜色为青色

@@ -9,6 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from yutto.core.request import DownloadRequest
+from yutto.core.result import Artifact, ArtifactKind, DownloadResult, ItemResult, ItemState
 from yutto.runtime import EventReplay, TaskError, TaskEvent, TaskSnapshot, TaskState
 from yutto.server.service import (
     ServerPolicy,
@@ -284,6 +285,43 @@ def test_request_snapshot_removes_proxy_userinfo():
 
     assert network["proxy"] == "http://example.test:8080"
     assert "proxy-password" not in json.dumps(serialized)
+
+
+def test_download_result_serializes_paths_enums_and_tuples():
+    created_at = datetime(2026, 7, 12, 10, 11, 12, tzinfo=UTC)
+    result = DownloadResult(
+        items=(
+            ItemResult(
+                state=ItemState.DONE,
+                output_path=Path("series/video.mp4"),
+                artifacts=(Artifact(kind=ArtifactKind.MEDIA, path=Path("series/video.mp4")),),
+            ),
+        )
+    )
+    snapshot = TaskSnapshot[DownloadRequest, DownloadResult](
+        task_id="task-result",
+        state=TaskState.COMPLETED,
+        payload=make_request(),
+        result=result,
+        error=None,
+        created_at=created_at,
+        started_at=created_at,
+        finished_at=created_at,
+        last_event_seq=3,
+    )
+
+    serialized = snapshot_to_json(snapshot)
+
+    assert serialized["result"] == {
+        "items": [
+            {
+                "state": "done",
+                "output_path": "series/video.mp4",
+                "skip_reason": None,
+                "artifacts": [{"kind": "media", "path": "series/video.mp4"}],
+            }
+        ]
+    }
 
 
 def test_event_and_replay_serialization_use_enum_values_iso_dates_and_redaction():

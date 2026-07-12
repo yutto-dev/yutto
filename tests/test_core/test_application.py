@@ -1,45 +1,44 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
 from yutto.core.application import YuttoApplication
-from yutto.core.events import DownloadBatchStarted, DownloadRequestQueued
+from yutto.core.events import DownloadBatchStarted, DownloadRequestQueued, DownloadStage, DownloadStageChanged
+from yutto.core.operation import emit_download_event
 from yutto.core.request import DownloadRequest
+from yutto.core.result import DownloadResult
 from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    from yutto.core.events import ApplicationEvent
-    from yutto.download_manager import DownloadTask
+    from collections.abc import Sequence
+
+    from yutto.core.events import DownloadEvent
 
 pytestmark = pytest.mark.processor
 
 
 class RecordingEventSink:
-    def __init__(self):
-        self.events: list[ApplicationEvent] = []
+    def __init__(self, trace: list[tuple[str, object]]):
+        self.events: list[DownloadEvent] = []
+        self.trace = trace
 
-    def emit(self, event: ApplicationEvent) -> None:
+    def emit(self, event: DownloadEvent) -> None:
         self.events.append(event)
+        self.trace.append(("event", event))
 
 
-class RecordingManager:
-    def __init__(self):
-        self.actions: list[tuple[str, Any]] = []
+class RecordingWorkflow:
+    def __init__(self, trace: list[tuple[str, object]]):
+        self.trace = trace
+        self.result = DownloadResult()
 
-    def start(self, ctx: FetcherContext) -> None:
-        self.actions.append(("start", ctx))
-
-    async def add_task(self, task: DownloadTask) -> None:
-        self.actions.append(("task", task.request.source.url))
-
-    async def add_stop_task(self) -> None:
-        self.actions.append(("stop", None))
-
-    async def wait_for_completion(self) -> None:
-        self.actions.append(("wait", None))
+    async def execute(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> DownloadResult:
+        self.trace.append(("execute", (ctx, tuple(requests))))
+        emit_download_event(DownloadStageChanged(name=DownloadStage.RESOLVING))
+        return self.result
 
 
 def make_request(url: str) -> DownloadRequest:
@@ -49,38 +48,48 @@ def make_request(url: str) -> DownloadRequest:
 @as_sync
 async def test_application_preserves_queue_order_and_emits_batch_events():
     ctx = FetcherContext()
-    manager = RecordingManager()
-    sink = RecordingEventSink()
+    trace: list[tuple[str, object]] = []
+    workflow = RecordingWorkflow(trace)
+    sink = RecordingEventSink(trace)
     requests = [make_request("BV1first"), make_request("BV1second")]
 
-    application = YuttoApplication(ctx, event_sink=sink, manager=manager)
-    await application.download_all(requests)
+    application = YuttoApplication(ctx, workflow=workflow, event_sink=sink)
+    result = await application.download_all(requests)
 
-    assert manager.actions == [
-        ("start", ctx),
-        ("task", "BV1first"),
-        ("task", "BV1second"),
-        ("stop", None),
-        ("wait", None),
+    assert trace == [
+        ("event", DownloadBatchStarted(total=2)),
+        ("event", DownloadRequestQueued(url="BV1first", index=1, total=2)),
+        ("event", DownloadRequestQueued(url="BV1second", index=2, total=2)),
+        ("execute", (ctx, tuple(requests))),
+        ("event", DownloadStageChanged(name=DownloadStage.RESOLVING)),
     ]
     assert sink.events == [
         DownloadBatchStarted(total=2),
         DownloadRequestQueued(url="BV1first", index=1, total=2),
         DownloadRequestQueued(url="BV1second", index=2, total=2),
+        DownloadStageChanged(name=DownloadStage.RESOLVING),
     ]
+    assert result is workflow.result
 
 
 @as_sync
 async def test_single_download_does_not_emit_batch_presentation_events():
-    manager = RecordingManager()
-    sink = RecordingEventSink()
+    trace: list[tuple[str, object]] = []
+    workflow = RecordingWorkflow(trace)
+    sink = RecordingEventSink(trace)
+    ctx = FetcherContext()
+    request = make_request("BV1single")
     application = YuttoApplication(
-        FetcherContext(),
+        ctx,
+        workflow=workflow,
         event_sink=sink,
-        manager=manager,
     )
 
-    await application.download(make_request("BV1single"))
+    result = await application.download(request)
 
-    assert sink.events == []
-    assert [action[0] for action in manager.actions] == ["start", "task", "stop", "wait"]
+    assert sink.events == [DownloadStageChanged(name=DownloadStage.RESOLVING)]
+    assert trace == [
+        ("execute", (ctx, (request,))),
+        ("event", DownloadStageChanged(name=DownloadStage.RESOLVING)),
+    ]
+    assert result is workflow.result

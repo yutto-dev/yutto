@@ -2,38 +2,38 @@ from __future__ import annotations
 
 import datetime
 import re
+from dataclasses import dataclass
 
 from yutto.utils.console.logger import Logger
 
 
-class Filter:
-    # NOTE(FrankHB): A workaround to https://bugs.python.org/issue31212.
-    batch_filter_start_time: datetime.datetime = datetime.datetime(1971, 1, 1)
-    batch_filter_end_time: datetime.datetime = datetime.datetime.now() + datetime.timedelta(days=1)
+@dataclass(frozen=True, slots=True)
+class PublicationTimeFilter:
+    start_time: datetime.datetime
+    end_time: datetime.datetime
 
-    @staticmethod
-    def configure(start_time: str | None = None, end_time: str | None = None) -> None:
-        """Reset and apply one request's batch filter window."""
-        Filter.batch_filter_start_time = datetime.datetime(1971, 1, 1)
-        Filter.batch_filter_end_time = datetime.datetime.now() + datetime.timedelta(days=1)
+    @classmethod
+    def from_strings(cls, start_time: str | None = None, end_time: str | None = None) -> PublicationTimeFilter:
+        start = datetime.datetime(1971, 1, 1)
+        end = datetime.datetime.now() + datetime.timedelta(days=1)
         if start_time:
-            Filter.set_timer("batch_filter_start_time", start_time)
+            start = cls._parse(start_time) or start
         if end_time:
-            Filter.set_timer("batch_filter_end_time", end_time)
+            end = cls._parse(end_time) or end
+        return cls(start_time=start, end_time=end)
 
     @staticmethod
-    def set_timer(key: str, user_input: str):
-        """设置过滤器的时间"""
-        timer: datetime.datetime | None = None
+    def _parse(user_input: str) -> datetime.datetime | None:
         if re.match(r"^\d{4}-\d{2}-\d{2}$", user_input):
-            timer = datetime.datetime.strptime(user_input, "%Y-%m-%d")
+            return datetime.datetime.strptime(user_input, "%Y-%m-%d")
         elif re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$", user_input):
-            timer = datetime.datetime.strptime(user_input, "%Y-%m-%d %H:%M:%S")
-        else:
-            Logger.error(f"稿件过滤参数: {user_input} 看不懂呢┭┮﹏┭┮，不会生效哦")
-            return
-        setattr(Filter, key, timer)
+            return datetime.datetime.strptime(user_input, "%Y-%m-%d %H:%M:%S")
+        Logger.error(f"稿件过滤参数: {user_input} 看不懂呢┭┮﹏┭┮，不会生效哦")
+        return None
 
-    @staticmethod
-    def verify_timer(timestamp: int) -> bool:
-        return Filter.batch_filter_start_time.timestamp() <= timestamp < Filter.batch_filter_end_time.timestamp()
+    def matches(self, timestamp: int) -> bool:
+        return self.start_time.timestamp() <= timestamp < self.end_time.timestamp()
+
+    @property
+    def start_timestamp(self) -> int:
+        return int(self.start_time.timestamp())

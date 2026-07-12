@@ -47,7 +47,12 @@ class UserAllFavouritesExtractor(BatchExtractor):
             fid = fav["fid"]
             favourite_videos = await get_favourite_items(ctx, client, fid)
             avids = [favourite_video["avid"] for favourite_video in favourite_videos]
-            ugc_video_lists = await resolve_ugc_video_lists(ctx, client, avids)
+            ugc_video_lists = await resolve_ugc_video_lists(
+                ctx,
+                client,
+                avids,
+                publication_time_filter=options["publication_time_filter"],
+            )
             for favourite_video, ugc_video_list in zip(favourite_videos, ugc_video_lists, strict=True):
                 if ugc_video_list is None:
                     continue

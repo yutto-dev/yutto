@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 import httpx
 import pytest
-from returns.maybe import Some
 from returns.result import Success
 
 import yutto.__main__ as main_module
@@ -14,7 +13,7 @@ import yutto.download_manager as download_manager_module
 import yutto.extractor.bangumi as bangumi_module
 import yutto.extractor.cheese as cheese_module
 from yutto.core.request import DownloadRequest
-from yutto.download_manager import DownloadManager, DownloadTask
+from yutto.download_manager import DownloadManager
 from yutto.exceptions import (
     EpisodeNotFoundError,
     ErrorCode,
@@ -28,6 +27,7 @@ from yutto.extractor.cheese import CheeseExtractor
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import SeasonId
 from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 from yutto.validator import validate_batch_selection
 
@@ -86,10 +86,10 @@ async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.
     monkeypatch.setattr(download_manager_module.Logger, "error", lambda message: rendered_errors.append(str(message)))
 
     with pytest.raises(NotLoginError) as exc_info:
-        await DownloadManager().process_task(
+        await DownloadManager().process_request(
             cast("httpx.AsyncClient", object()),
             FetcherContext(),
-            DownloadTask(request=make_request()),
+            make_request(),
         )
 
     assert_error(
@@ -98,26 +98,6 @@ async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.
         ErrorCode.NOT_LOGIN_ERROR,
     )
     assert rendered_errors == []
-
-
-@pytest.mark.processor
-@as_sync
-async def test_manager_propagates_failure_from_completed_worker():
-    message = "worker 已失败"
-
-    async def fail() -> None:
-        raise WrongUrlError(message)
-
-    manager = DownloadManager()
-    worker = asyncio.create_task(fail())
-    await asyncio.sleep(0)
-    assert worker.done()
-    manager.loop_task = Some(worker)
-
-    with pytest.raises(WrongUrlError) as exc_info:
-        await manager.wait_for_completion()
-
-    assert_error(exc_info.value, message, ErrorCode.WRONG_URL_ERROR)
 
 
 @pytest.mark.processor
@@ -136,10 +116,10 @@ async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatc
     monkeypatch.setattr(download_manager_module.Logger, "error", lambda message: rendered_errors.append(str(message)))
 
     with pytest.raises(WrongUrlError) as exc_info:
-        await DownloadManager().process_task(
+        await DownloadManager().process_request(
             cast("httpx.AsyncClient", object()),
             FetcherContext(),
-            DownloadTask(request=make_request("not-a-url")),
+            make_request("not-a-url"),
         )
 
     assert_error(
@@ -163,10 +143,10 @@ async def test_manager_reports_unmatched_url_as_structured_error(monkeypatch: py
     monkeypatch.setattr(Fetcher, "get_redirected_url", keep_url)
 
     with pytest.raises(WrongUrlError) as exc_info:
-        await DownloadManager().process_task(
+        await DownloadManager().process_request(
             cast("httpx.AsyncClient", object()),
             FetcherContext(),
-            DownloadTask(request=make_request("https://example.com/unsupported")),
+            make_request("https://example.com/unsupported"),
         )
 
     assert_error(
@@ -189,6 +169,7 @@ EMPTY_EXTRACTOR_OPTIONS: ExtractorOptions = {
     "danmaku_format": "ass",
     "subpath_template": "{auto}",
     "ai_translation_language": None,
+    "publication_time_filter": PublicationTimeFilter.from_strings(),
 }
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -9,18 +10,17 @@ from returns.result import Success
 
 import yutto.download_manager as download_manager_module
 from yutto.core.request import DownloadRequest
+from yutto.core.result import DownloadResult, ItemResult, ItemState
 from yutto.download_manager import (
     DownloadManager,
-    DownloadTask,
     ensure_output_path_is_scoped,
     ensure_unique_path,
     show_batch_episode_title,
 )
-from yutto.downloader.downloader import DownloadState
 from yutto.exceptions import WrongArgumentError
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
-from yutto.utils.filter import Filter
+from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 from yutto.utils.time import TIME_FULL_FMT
 
@@ -112,11 +112,9 @@ def make_request(tmp_dir: Path | None) -> DownloadRequest:
 @pytest.mark.processor
 @pytest.mark.parametrize("tmp_dir", [None, Path("temporary")])
 @as_sync
-async def test_process_task_preserves_extractor_and_downloader_option_mapping(
+async def test_process_request_preserves_extractor_and_downloader_option_mapping(
     monkeypatch: pytest.MonkeyPatch, tmp_dir: Path | None
 ):
-    monkeypatch.setattr(Filter, "batch_filter_start_time", Filter.batch_filter_start_time)
-    monkeypatch.setattr(Filter, "batch_filter_end_time", Filter.batch_filter_end_time)
     captured_extractor_options: dict[str, Any] = {}
     captured_downloader_options: dict[str, Any] = {}
     validation_requirements: list[dict[str, bool]] = []
@@ -154,10 +152,10 @@ async def test_process_task_preserves_extractor_and_downloader_option_mapping(
         client: httpx.AsyncClient,
         episode_data: EpisodeData,
         options: DownloaderOptions,
-    ) -> DownloadState:
+    ) -> ItemResult:
         assert episode_data is episode
         captured_downloader_options.update(options)
-        return DownloadState.DONE
+        return ItemResult(state=ItemState.DONE, output_path=Path("downloads/series/episode.mkv"))
 
     def fake_block_options(**options: Any) -> dict[str, Any]:
         return options
@@ -171,14 +169,12 @@ async def test_process_task_preserves_extractor_and_downloader_option_mapping(
 
     manager = DownloadManager()
     client = cast("httpx.AsyncClient", object())
-    await manager.process_task(client, FetcherContext(), DownloadTask(request=make_request(tmp_dir)))
+    result = await manager.process_request(client, FetcherContext(), make_request(tmp_dir))
 
     assert validation_requirements == [
         {"is_login": False, "vip_status": False},
         {"is_login": False, "vip_status": False},
     ]
-    assert Filter.batch_filter_start_time == datetime(2024, 1, 2, 3, 4, 5)
-    assert Filter.batch_filter_end_time == datetime(2025, 6, 7)
     assert captured_extractor_options == {
         "episodes": "2,4",
         "with_section": True,
@@ -192,6 +188,10 @@ async def test_process_task_preserves_extractor_and_downloader_option_mapping(
         "danmaku_format": "protobuf",
         "subpath_template": "{title}/{name}",
         "ai_translation_language": "ja",
+        "publication_time_filter": PublicationTimeFilter(
+            start_time=datetime(2024, 1, 2, 3, 4, 5),
+            end_time=datetime(2025, 6, 7),
+        ),
     }
     assert captured_downloader_options == {
         "output_dir": Path("downloads"),
@@ -231,6 +231,111 @@ async def test_process_task_preserves_extractor_and_downloader_option_mapping(
             },
         },
     }
+    assert result == (ItemResult(state=ItemState.DONE, output_path=Path("downloads/series/episode.mkv")),)
+
+
+@as_sync
+async def test_execute_reuses_session_and_path_resolver_in_request_order():
+    ctx = FetcherContext()
+    requests = [
+        DownloadRequest.model_validate({"source": {"url": "BV1first"}}),
+        DownloadRequest.model_validate({"source": {"url": "BV1second"}}),
+    ]
+
+    class RecordingManager(DownloadManager):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls: list[tuple[httpx.AsyncClient, FetcherContext, str, str]] = []
+
+        async def process_request(
+            self,
+            client: httpx.AsyncClient,
+            ctx: FetcherContext,
+            request: DownloadRequest,
+        ) -> tuple[ItemResult, ...]:
+            path = self.unique_path("same/video.mp4")
+            self.calls.append((client, ctx, request.source.url, path))
+            return (ItemResult(state=ItemState.DONE, output_path=Path(path)),)
+
+    manager = RecordingManager()
+    result = await manager.execute(ctx, requests)
+
+    assert [url for _, _, url, _ in manager.calls] == ["BV1first", "BV1second"]
+    assert [path for _, _, _, path in manager.calls] == ["same/video.mp4", "same/video (1).mp4"]
+    assert manager.calls[0][0] is manager.calls[1][0]
+    assert manager.calls[0][1] is ctx and manager.calls[1][1] is ctx
+    assert manager.calls[0][0].is_closed
+    assert ctx.fetch_semaphore is not None
+    assert result == DownloadResult(
+        items=(
+            ItemResult(state=ItemState.DONE, output_path=Path("same/video.mp4")),
+            ItemResult(state=ItemState.DONE, output_path=Path("same/video (1).mp4")),
+        )
+    )
+
+
+@as_sync
+async def test_execute_stops_on_failure_and_closes_client():
+    requests = [
+        DownloadRequest.model_validate({"source": {"url": "BV1first"}}),
+        DownloadRequest.model_validate({"source": {"url": "BV1second"}}),
+    ]
+
+    class FailingManager(DownloadManager):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls: list[str] = []
+            self.client: httpx.AsyncClient | None = None
+
+        async def process_request(
+            self,
+            client: httpx.AsyncClient,
+            ctx: FetcherContext,
+            request: DownloadRequest,
+        ) -> tuple[ItemResult, ...]:
+            self.client = client
+            self.calls.append(request.source.url)
+            raise WrongArgumentError("request failed")
+
+    manager = FailingManager()
+    with pytest.raises(WrongArgumentError, match="request failed"):
+        await manager.execute(FetcherContext(), requests)
+
+    assert manager.calls == ["BV1first"]
+    assert manager.client is not None and manager.client.is_closed
+
+
+@as_sync
+async def test_execute_cancellation_closes_client():
+    started = asyncio.Event()
+    release = asyncio.Event()
+    request = DownloadRequest.model_validate({"source": {"url": "BV1cancel"}})
+
+    class BlockingManager(DownloadManager):
+        def __init__(self) -> None:
+            super().__init__()
+            self.client: httpx.AsyncClient | None = None
+
+        async def process_request(
+            self,
+            client: httpx.AsyncClient,
+            ctx: FetcherContext,
+            request: DownloadRequest,
+        ) -> tuple[ItemResult, ...]:
+            self.client = client
+            started.set()
+            await release.wait()
+            return ()
+
+    manager = BlockingManager()
+    execution = asyncio.create_task(manager.execute(FetcherContext(), [request]))
+    await started.wait()
+    execution.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await execution
+
+    assert manager.client is not None and manager.client.is_closed
 
 
 @pytest.mark.processor

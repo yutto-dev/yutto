@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from socket import socket
 
+    from yutto.core.result import DownloadResult
     from yutto.runtime import EventReplay, TaskEvent, TaskSnapshot
 
 
@@ -35,13 +36,13 @@ class DownloadTaskApi(Protocol):
 
     async def close(self, *, cancel_pending: bool = False) -> None: ...
 
-    async def submit(self, request: DownloadRequest) -> TaskSnapshot[DownloadRequest, None]: ...
+    async def submit(self, request: DownloadRequest) -> TaskSnapshot[DownloadRequest, DownloadResult]: ...
 
-    def get(self, task_id: str) -> TaskSnapshot[DownloadRequest, None] | None: ...
+    def get(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult] | None: ...
 
-    def list(self) -> tuple[TaskSnapshot[DownloadRequest, None], ...]: ...
+    def list(self) -> tuple[TaskSnapshot[DownloadRequest, DownloadResult], ...]: ...
 
-    async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, None] | None: ...
+    async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult] | None: ...
 
     def replay(self, task_id: str, *, after_seq: int = 0) -> EventReplay | None: ...
 
@@ -291,7 +292,7 @@ class YuttoWebSocketServer:
 
         return dispatcher
 
-    def _require_task(self, task_id: str) -> TaskSnapshot[DownloadRequest, None]:
+    def _require_task(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult]:
         snapshot = self._task_service.get(task_id)
         if snapshot is None:
             raise JsonRpcError(TASK_NOT_FOUND_ERROR, "Task not found")

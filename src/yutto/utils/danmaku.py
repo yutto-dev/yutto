@@ -81,7 +81,7 @@ def write_danmaku(
     height: int,
     width: int,
     options: DanmakuOptions,
-) -> str | None:
+) -> tuple[Path, ...]:
     video_path = Path(video_path)
     video_name = video_path.stem
     if danmaku["source_type"] == "xml":
@@ -94,7 +94,8 @@ def write_danmaku(
             file_path = video_path.with_suffix(".ass")
             write_ass_danmaku(xml_danmaku, "xml", file_path, height, width, options)
         else:
-            return None
+            return ()
+        return (file_path,)
     elif danmaku["source_type"] == "protobuf":
         protobuf_danmaku = danmaku["data"]
         assert isinstance(protobuf_danmaku[0], bytes)
@@ -105,13 +106,18 @@ def write_danmaku(
             if len(protobuf_danmaku) == 1:
                 file_path = video_path.with_suffix(".pb")
                 write_protobuf_danmaku(protobuf_danmaku[0], file_path)
+                return (file_path,)
             else:
+                file_paths: list[Path] = []
                 for i in range(len(protobuf_danmaku)):
                     file_path = video_path.with_name(f"{video_name}_{i:02}.pb")
                     protobuf_danmaku_item = protobuf_danmaku[i]
                     assert isinstance(protobuf_danmaku_item, bytes)
                     write_protobuf_danmaku(protobuf_danmaku_item, file_path)
+                    file_paths.append(file_path)
+                return tuple(file_paths)
         else:
-            return None
+            return ()
+        return (file_path,)
     else:
-        return None
+        return ()

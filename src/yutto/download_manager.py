@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import asyncio
-from asyncio import Queue
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import httpx
 from biliass import BlockOptions
-from returns.maybe import Nothing, Some
 
 from yutto.api.user_info import validate_user_info
-from yutto.downloader.downloader import DownloadState, process_download
+from yutto.core.events import DownloadStage, DownloadStageChanged
+from yutto.core.operation import emit_download_event
+from yutto.core.result import DownloadResult, ItemResult
+from yutto.downloader.downloader import process_download
 from yutto.exceptions import NotLoginError, WrongArgumentError, WrongUrlError
 from yutto.extractor import (
     BangumiBatchExtractor,
@@ -33,24 +32,18 @@ from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
 from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
-from yutto.utils.filter import Filter
+from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.time import TIME_FULL_FMT
 from yutto.validator import validate_batch_selection
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from httpx import AsyncClient
-    from returns.maybe import Maybe
 
     from yutto.core.request import DanmakuRequestOptions, DownloadRequest
     from yutto.types import EpisodeData
     from yutto.utils.fetcher import FetcherContext
-
-
-@dataclass
-class DownloadTask:
-    request: DownloadRequest
 
 
 def show_batch_episode_title(
@@ -90,72 +83,38 @@ def show_batch_episode_title(
 
 
 class DownloadManager:
-    queue: Queue[Maybe[DownloadTask]]
+    """Execute download requests sequentially in one shared network session."""
 
     def __init__(self):
-        self.queue = Queue()
         self.unique_path = create_unique_path_resolver()
-        self.loop_task: Maybe[asyncio.Task[None]] = Nothing
 
-    def start(self, ctx: FetcherContext):
-        self.loop_task = Some(asyncio.create_task(self.loop(ctx)))
-
-    async def wait_for_completion(self):
-        if self.loop_task == Nothing:
-            raise RuntimeError("Task manager is not started.")
-        loop_task = self.loop_task.unwrap()
-        await loop_task
-        await self.queue.join()
-
-    async def stop(self):
-        if self.loop_task == Nothing:
-            raise RuntimeError("Task manager is not started.")
-        loop_task = self.loop_task.unwrap()
-        if loop_task.done():
-            return
-        while not self.queue.empty():
-            await self.queue.get()
-            self.queue.task_done()
-        await self.queue.join()
-        loop_task.cancel()
-        try:
-            await loop_task
-        except asyncio.CancelledError:
-            pass
-
-    async def add_task(self, task: DownloadTask):
-        await self.queue.put(Some(task))
-
-    async def add_stop_task(self):
-        await self.queue.put(Nothing)
-
-    async def loop(self, ctx: FetcherContext):
+    async def execute(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> DownloadResult:
+        """Run requests in order while sharing the client and path allocator."""
+        items: list[ItemResult] = []
         ctx.set_fetch_semaphore(fetch_workers=ctx.fetch_workers)
         async with create_client(
             cookies=ctx.cookies,
             trust_env=ctx.trust_env,
             proxy=ctx.proxy,
         ) as client:
-            while True:
-                maybe_task = await self.queue.get()
-                try:
-                    if maybe_task == Nothing:
-                        break
-                    task = maybe_task.unwrap()
-                    await self.process_task(
-                        client,
-                        ctx,
-                        task,
-                    )
-                finally:
-                    self.queue.task_done()
+            for request in requests:
+                items.extend(await self.process_request(client, ctx, request))
+        return DownloadResult(items=tuple(items))
 
-    async def process_task(self, client: AsyncClient, ctx: FetcherContext, task: DownloadTask):
-        request = task.request
-        Filter.configure(request.selection.start_time, request.selection.end_time)
+    async def process_request(
+        self,
+        client: AsyncClient,
+        ctx: FetcherContext,
+        request: DownloadRequest,
+    ) -> tuple[ItemResult, ...]:
+        publication_time_filter = PublicationTimeFilter.from_strings(
+            request.selection.start_time,
+            request.selection.end_time,
+        )
         # 验证批量参数
         if request.scope.batch:
             validate_batch_selection(request.selection.episodes)
+        emit_download_event(DownloadStageChanged(name=DownloadStage.RESOLVING))
 
         # 初始化各种提取器
         extractors = (
@@ -222,6 +181,7 @@ class DownloadManager:
                         danmaku_format=request.danmaku.format,
                         subpath_template=request.output.subpath_template,
                         ai_translation_language=request.resources.ai_translation_language,
+                        publication_time_filter=publication_time_filter,
                     ),
                 )
                 break
@@ -233,7 +193,8 @@ class DownloadManager:
                 error_text = "url 不正确，也许该 url 仅支持批量下载，如果是这样，请使用参数 -b～"
             raise WrongUrlError(error_text)
 
-        current_download_state = DownloadState.SKIP
+        item_results: list[ItemResult] = []
+        previous_result: ItemResult | None = None
         current_display_group: str | None = None
 
         # 下载～
@@ -248,7 +209,11 @@ class DownloadManager:
             ):
                 raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
 
-            if current_download_state != DownloadState.SKIP and request.network.download_interval > 0:
+            if (
+                previous_result is not None
+                and previous_result.has_downloaded_media
+                and request.network.download_interval > 0
+            ):
                 Logger.info(f"下载间隔 {request.network.download_interval} 秒")
                 await sleep_with_status_bar_refresh(request.network.download_interval)
 
@@ -272,7 +237,7 @@ class DownloadManager:
                     current_display_group,
                 )
 
-            current_download_state = await process_download(
+            previous_result = await process_download(
                 ctx,
                 client,
                 episode_data,
@@ -303,8 +268,10 @@ class DownloadManager:
                     "danmaku_options": create_danmaku_options(request.danmaku),
                 },
             )
+            item_results.append(previous_result)
             Logger.new_line()
         Logger.new_line()
+        return tuple(item_results)
 
 
 def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable[[str], str]) -> EpisodeData:

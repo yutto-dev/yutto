@@ -7,7 +7,6 @@ from yutto.api.ugc_video import get_ugc_video_list
 from yutto.exceptions import MaxRetryError, NoAccessPermissionError, NotFoundError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
-from yutto.utils.filter import Filter
 
 if TYPE_CHECKING:
     import httpx
@@ -15,10 +14,15 @@ if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
     from yutto.types import AvId
     from yutto.utils.fetcher import FetcherContext
+    from yutto.utils.filter import PublicationTimeFilter
 
 
 async def resolve_ugc_video_lists(
-    ctx: FetcherContext, client: httpx.AsyncClient, avids: list[AvId]
+    ctx: FetcherContext,
+    client: httpx.AsyncClient,
+    avids: list[AvId],
+    *,
+    publication_time_filter: PublicationTimeFilter,
 ) -> list[UgcVideoList | None]:
     """并发解析一批视频的分 P 列表，结果顺序与 avids 一致
 
@@ -30,7 +34,7 @@ async def resolve_ugc_video_lists(
     async def resolve_one(avid: AvId) -> UgcVideoList | None:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, avid)
-            if not Filter.verify_timer(ugc_video_list["pubdate"]):
+            if not publication_time_filter.matches(ugc_video_list["pubdate"]):
                 Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                 return None
             # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
