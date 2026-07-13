@@ -687,7 +687,7 @@ dev = [
     { name = "pytest-codspeed", specifier = ">=5.0.3" },
     { name = "pytest-rerunfailures", specifier = ">=16.4" },
     { name = "ruff", specifier = ">=0.15.21" },
-    { name = "syrupy", specifier = ">=5.5.2" },
+    { name = "syrupy", specifier = ">=5.5.3" },
     { name = "ty", specifier = ">=0.0.58" },
     { name = "typos", specifier = ">=1.48.0" },
 ]
