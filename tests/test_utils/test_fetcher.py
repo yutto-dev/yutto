@@ -8,7 +8,15 @@ import httpx
 import pytest
 from returns.result import Failure, Success
 
-from yutto.utils.fetcher import Fetcher, FetcherContext, create_client, create_sync_client, resolve_proxy
+from yutto.utils.fetcher import (
+    Fetcher,
+    FetcherContext,
+    MaxRetry,
+    create_client,
+    create_sync_client,
+    describe_effective_proxy,
+    resolve_proxy,
+)
 from yutto.utils.functional import as_sync
 
 
@@ -102,7 +110,7 @@ async def test_fetch_bin_keeps_non_success_status_as_success_none():
 async def test_fetch_json_retries_non_success_status():
     match await Fetcher.fetch_json(FetcherContext(), cast("Any", _StatusClient(404)), "https://example.com"):
         case Failure(error):
-            assert error.message == "超出最大重试次数！"
+            assert error.message == "超出最大重试次数！（最后错误：HTTPStatusError）"
         case result:
             pytest.fail(f"expected Failure, got {result}")
 
@@ -152,3 +160,49 @@ async def test_touch_url_cache_is_scoped_to_context_and_client():
     )
     assert first_client.calls == 2
     assert second_client.calls == 1
+
+
+_PROXY_ENV_NAMES = ("ALL_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "all_proxy", "https_proxy", "http_proxy")
+
+
+def _clear_proxy_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in _PROXY_ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_describe_effective_proxy_prefers_explicit_proxy(monkeypatch: pytest.MonkeyPatch):
+    _clear_proxy_env(monkeypatch)
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:1080")
+    assert describe_effective_proxy("http://10.0.0.1:8080", True) == "http://10.0.0.1:8080"
+
+
+def test_describe_effective_proxy_names_the_env_variable(monkeypatch: pytest.MonkeyPatch):
+    _clear_proxy_env(monkeypatch)
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:3067")
+    assert describe_effective_proxy(None, True) == "http://127.0.0.1:3067（来自环境变量 HTTPS_PROXY）"
+
+
+def test_describe_effective_proxy_ignores_env_without_trust_env(monkeypatch: pytest.MonkeyPatch):
+    _clear_proxy_env(monkeypatch)
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:3067")
+    assert describe_effective_proxy(None, False) is None
+    assert describe_effective_proxy(None, True) is not None
+
+
+def test_describe_effective_proxy_without_any_proxy(monkeypatch: pytest.MonkeyPatch):
+    _clear_proxy_env(monkeypatch)
+    assert describe_effective_proxy(None, True) is None
+
+
+@as_sync
+async def test_max_retry_failure_carries_last_error_type():
+    @MaxRetry(max_retry=0)
+    async def always_connect_error() -> None:
+        raise httpx.ConnectError("")
+
+    result = await always_connect_error()
+    match result:
+        case Failure(error):
+            assert "ConnectError" in str(error)
+        case _:
+            pytest.fail(f"expected Failure, got {result}")

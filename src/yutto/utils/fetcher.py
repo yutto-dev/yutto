@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
@@ -44,20 +45,24 @@ class MaxRetry:
     ) -> Callable[InputT, Coroutine[Any, Any, Result[RetT, MaxRetryError]]]:
         async def connect_n_times(*args: InputT.args, **kwargs: InputT.kwargs) -> Result[RetT, MaxRetryError]:
             retry = self.max_retry + 1
+            last_error: str | None = None
             while retry:
                 try:
                     return Success(await connect_once(*args, **kwargs))
                 except httpx.TimeoutException:
+                    last_error = "抓取超时"
                     Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
                 except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
                     raise e
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
+                    last_error = error_type
                     Logger.warning(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次")
                 finally:
                     retry -= 1
-            return Failure(MaxRetryError("超出最大重试次数！"))
+            message = "超出最大重试次数！" if last_error is None else f"超出最大重试次数！（最后错误：{last_error}）"
+            return Failure(MaxRetryError(message))
 
         return connect_n_times
 
@@ -92,6 +97,39 @@ def resolve_proxy(proxy: str) -> tuple[str | None, bool]:
     if not parsed.scheme or parsed.scheme not in SUPPORTED_PROXY_SCHEMES:
         raise ValueError(f"proxy 参数值（{proxy}）错误啦！")
     return proxy, False
+
+
+_ENV_PROXY_NAMES = ("ALL_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "all_proxy", "https_proxy", "http_proxy")
+
+
+def describe_effective_proxy(proxy: str | None, trust_env: bool) -> str | None:
+    """请求实际经由的代理描述，用于日志与错误提示。
+
+    显式代理直接返回；trust_env 下 httpx 会静默使用环境变量代理，
+    此时把变量名一并带上，便于用户定位到底是谁配置了代理。
+    """
+    if proxy is not None:
+        return proxy
+    if not trust_env:
+        return None
+    for name in _ENV_PROXY_NAMES:
+        value = os.environ.get(name)
+        if value:
+            return f"{value}（来自环境变量 {name}）"
+    return None
+
+
+_logged_proxy_descriptions: set[str] = set()
+
+
+def _log_effective_proxy_once(proxy: str | None, trust_env: bool) -> None:
+    # 环境变量代理不可用时用户只能看到裸的 ConnectError，
+    # 因此在创建 client 时把实际代理来源说清楚（每种来源只提示一次）。
+    description = describe_effective_proxy(proxy, trust_env)
+    if description is None or description in _logged_proxy_descriptions:
+        return
+    _logged_proxy_descriptions.add(description)
+    Logger.info(f"网络请求将经由代理：{description}（如需直连可使用 --proxy no）")
 
 
 class FetcherContext:
@@ -346,6 +384,7 @@ def create_client(
     http2: bool = True,
     verify: bool = False,
 ) -> AsyncClient:
+    _log_effective_proxy_once(proxy, trust_env)
     client = httpx.AsyncClient(
         **_client_kwargs(
             headers=headers,
@@ -370,6 +409,7 @@ def create_sync_client(
     http2: bool = True,
     verify: bool = False,
 ) -> httpx.Client:
+    _log_effective_proxy_once(proxy, trust_env)
     client = httpx.Client(
         **_client_kwargs(
             headers=headers,
