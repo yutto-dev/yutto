@@ -97,11 +97,11 @@ class YuttoAuthSettings(BaseModel):
 
 
 class YuttoSettings(BaseModel):
-    basic: Annotated[YuttoBasicSettings, Field(YuttoBasicSettings())]  # ty: ignore[missing-argument]
-    resource: Annotated[YuttoResourceSettings, Field(YuttoResourceSettings())]  # ty: ignore[missing-argument]
-    danmaku: Annotated[YuttoDanmakuSettings, Field(YuttoDanmakuSettings())]  # ty: ignore[missing-argument]
-    batch: Annotated[YuttoBatchSettings, Field(YuttoBatchSettings())]  # ty: ignore[missing-argument]
-    auth: Annotated[YuttoAuthSettings, Field(YuttoAuthSettings())]  # ty: ignore[missing-argument]
+    basic: Annotated[YuttoBasicSettings, Field(YuttoBasicSettings())]
+    resource: Annotated[YuttoResourceSettings, Field(YuttoResourceSettings())]
+    danmaku: Annotated[YuttoDanmakuSettings, Field(YuttoDanmakuSettings())]
+    batch: Annotated[YuttoBatchSettings, Field(YuttoBatchSettings())]
+    auth: Annotated[YuttoAuthSettings, Field(YuttoAuthSettings())]
 
 
 def search_for_settings_file() -> Path | None:

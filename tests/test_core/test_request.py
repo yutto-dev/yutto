@@ -20,7 +20,7 @@ pytestmark = pytest.mark.processor
 
 def parse_download_args(arguments: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    add_download_arguments(parser, YuttoSettings())  # ty: ignore[missing-argument]
+    add_download_arguments(parser, YuttoSettings())
     return parser.parse_args(arguments)
 
 
