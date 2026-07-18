@@ -9,6 +9,7 @@ from yutto.core.events import (
     DownloadArtifactCreated,
     DownloadBatchStarted,
     DownloadEventSink,
+    DownloadItemListed,
     DownloadItemSkipped,
     DownloadProgress,
     DownloadRequestQueued,
@@ -140,3 +141,36 @@ def test_runtime_event_encoding_preserves_protocol(event, expected):
 def test_download_event_annotations_are_available_at_runtime():
     assert get_type_hints(DownloadArtifactCreated)["path"] is Path
     assert get_type_hints(DownloadItemSkipped)["reason"] is ItemSkipReason
+
+
+def test_encode_runtime_event_item_listed_carries_full_wire_fields():
+    kind, data = _encode_runtime_event(
+        DownloadItemListed(
+            avid="1",
+            cid="10",
+            url="https://www.bilibili.com/video/av1?p=1",
+            name="P1",
+            title="标题",
+            cover_url="https://example.com/cover.jpg",
+            planned_path=Path("标题/P1"),
+            display_group="标题",
+            uploader="某UP主",
+            description="视频简介",
+            tags=("标签A", "标签B"),
+        )
+    )
+    assert kind == "item_listed"
+    # 逐字段钉死 wire 编码：planned_path 必须是 POSIX 风格字符串，tags 必须是 list
+    assert data == {
+        "avid": "1",
+        "cid": "10",
+        "url": "https://www.bilibili.com/video/av1?p=1",
+        "name": "P1",
+        "title": "标题",
+        "cover_url": "https://example.com/cover.jpg",
+        "planned_path": "标题/P1",
+        "display_group": "标题",
+        "uploader": "某UP主",
+        "description": "视频简介",
+        "tags": ["标签A", "标签B"],
+    }

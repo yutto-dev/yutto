@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING
 from yutto.auth import default_auth_file
 from yutto.cli.request_adapter import download_request_parser_from_settings
 from yutto.core.application import YuttoApplication
-from yutto.core.task_service import DownloadTaskService
+from yutto.core.task_service import DownloadTaskService, ResolveTaskService
 from yutto.download_manager import DownloadManager
+from yutto.runtime import TaskCapacityPool, monotonic_seq_allocator
 from yutto.server.service import ServerPolicy, ServerPolicyOptions
 from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer
 from yutto.utils.console.logger import Logger
@@ -107,10 +108,23 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
     default_request = parse_request({"source": {"url": "yutto-server-default-validation"}})
     policy.prepare_request(default_request)
     policy.build_context(default_request)
+    # download 与 resolve 两个 runtime 共享同一事件序号空间与全局任务容量，
+    # 维持 v1 契约：`seq` 全局递增可去重、`--task-limit` 是两类任务的总量
+    event_seq_allocator = monotonic_seq_allocator()
+    task_capacity = TaskCapacityPool(args.task_limit)
     task_service = DownloadTaskService(
         policy.build_context,
         _build_download_application,
         task_limit=args.task_limit,
+        seq_allocator=event_seq_allocator,
+        capacity_pool=task_capacity,
+    )
+    resolve_service = ResolveTaskService(
+        policy.build_context,
+        _build_download_application,
+        task_limit=args.task_limit,
+        seq_allocator=event_seq_allocator,
+        capacity_pool=task_capacity,
     )
     return YuttoWebSocketServer(
         task_service,
@@ -122,11 +136,13 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
         ),
         prepare_request=policy.prepare_request,
         parse_request=parse_request,
+        resolve_service=resolve_service,
     )
 
 
 def _build_download_application(ctx: FetcherContext, event_sink: DownloadEventSink) -> YuttoApplication:
-    return YuttoApplication(ctx, workflow=DownloadManager(), event_sink=event_sink)
+    manager = DownloadManager()
+    return YuttoApplication(ctx, workflow=manager, event_sink=event_sink, resolve_workflow=manager)
 
 
 @as_sync

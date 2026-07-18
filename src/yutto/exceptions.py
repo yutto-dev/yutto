@@ -21,6 +21,7 @@ class ErrorCode(Enum):
     NOT_LOGIN_ERROR = 18
     CRYPTO_ERROR = 19
     POSTPROCESSING_ERROR = 20
+    RESOLVE_FAILED_ERROR = 21
 
     # 异常状况，但并不算错误
     PAUSED_DOWNLOAD = 101
@@ -84,6 +85,12 @@ class CryptoError(YuttoBaseException):
 
 class PostprocessingError(YuttoBaseException):
     code = ErrorCode.POSTPROCESSING_ERROR
+
+
+class ResolveFailedError(YuttoBaseException):
+    """解析任务未得到任何条目，且存在预期内的失败（多个失败聚合时使用；单一失败直接抛原始异常）"""
+
+    code = ErrorCode.RESOLVE_FAILED_ERROR
 
 
 def handle_uncaught_exception(

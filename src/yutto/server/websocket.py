@@ -4,7 +4,7 @@ import asyncio
 import hmac
 import ipaddress
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, TypeAlias
 
 from pydantic import ValidationError
 from websockets.asyncio.server import Server, ServerConnection, serve
@@ -19,10 +19,15 @@ from yutto.server.service import event_to_json, replay_to_json, snapshot_summary
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import datetime
     from socket import socket
 
-    from yutto.core.result import DownloadResult
+    from yutto.core.result import DownloadResult, ResolveResult
     from yutto.runtime import EventReplay, TaskEvent, TaskSnapshot
+
+    _AnyTaskSnapshot: TypeAlias = (
+        TaskSnapshot[DownloadRequest, DownloadResult] | TaskSnapshot[DownloadRequest, ResolveResult]
+    )
 
 
 AUTHENTICATION_ERROR = -32001
@@ -43,6 +48,24 @@ class DownloadTaskApi(Protocol):
     def list(self) -> tuple[TaskSnapshot[DownloadRequest, DownloadResult], ...]: ...
 
     async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult] | None: ...
+
+    def replay(self, task_id: str, *, after_seq: int = 0) -> EventReplay | None: ...
+
+    def add_event_listener(self, listener: Callable[[TaskEvent], None]) -> Callable[[], None]: ...
+
+
+class ResolveTaskApi(Protocol):
+    async def start(self) -> None: ...
+
+    async def close(self, *, cancel_pending: bool = False) -> None: ...
+
+    async def submit(self, request: DownloadRequest) -> TaskSnapshot[DownloadRequest, ResolveResult]: ...
+
+    def get(self, task_id: str) -> TaskSnapshot[DownloadRequest, ResolveResult] | None: ...
+
+    def list(self) -> tuple[TaskSnapshot[DownloadRequest, ResolveResult], ...]: ...
+
+    async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, ResolveResult] | None: ...
 
     def replay(self, task_id: str, *, after_seq: int = 0) -> EventReplay | None: ...
 
@@ -70,12 +93,29 @@ class _SlowConsumerCloser:
             await asyncio.gather(self._task, return_exceptions=True)
 
 
-def _download_snapshot_summary_to_json(
-    snapshot: TaskSnapshot[DownloadRequest, DownloadResult],
+def _task_snapshot_order(snapshot: _AnyTaskSnapshot) -> tuple[datetime, str]:
+    """task.list 的全局顺序：按提交时间升序、并列时按 task_id 稳定。
+
+    download / resolve 两个 runtime 的快照如按分块拼接，新任务会插入合并序列中段，
+    offset 分页就会跨页漏掉或重复条目。
+    """
+    return (snapshot.created_at, snapshot.task_id)
+
+
+def _task_snapshot_summary_to_json(
+    snapshot: _AnyTaskSnapshot,
 ) -> dict[str, object]:
     summary = snapshot_summary_to_json(snapshot)
     summary["url"] = snapshot.payload.source.url
     return summary
+
+
+def _snapshot_to_json_with_kind(snapshot: _AnyTaskSnapshot, kind: str) -> dict[str, object]:
+    # download 与 resolve 任务共用 task.* 接口且 queued/running 快照结构相同，
+    # 客户端（尤其重连后）需要稳定的 kind 字段区分任务类别
+    data = snapshot_to_json(snapshot)
+    data["kind"] = kind
+    return data
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,8 +150,10 @@ class YuttoWebSocketServer:
         *,
         prepare_request: Callable[[DownloadRequest], DownloadRequest] | None = None,
         parse_request: Callable[[object], DownloadRequest] | None = None,
+        resolve_service: ResolveTaskApi | None = None,
     ):
         self._task_service = task_service
+        self._resolve_service = resolve_service
         self.options = options
         self._token_bytes = options.token.encode("utf-8")
         self._prepare_request = prepare_request or (lambda request: request)
@@ -129,6 +171,8 @@ class YuttoWebSocketServer:
             return
         await self._task_service.start()
         try:
+            if self._resolve_service is not None:
+                await self._resolve_service.start()
             self._server = await serve(
                 self._handle_connection,
                 self.options.host,
@@ -140,6 +184,8 @@ class YuttoWebSocketServer:
                 server_header="yutto",
             )
         except BaseException:
+            if self._resolve_service is not None:
+                await self._resolve_service.close(cancel_pending=True)
             await self._task_service.close(cancel_pending=True)
             raise
 
@@ -155,6 +201,8 @@ class YuttoWebSocketServer:
         if server is not None:
             server.close()
             await server.wait_closed()
+        if self._resolve_service is not None:
+            await self._resolve_service.close(cancel_pending=cancel_pending)
         await self._task_service.close(cancel_pending=cancel_pending)
 
     async def _handle_connection(self, connection: ServerConnection) -> None:
@@ -207,7 +255,9 @@ class YuttoWebSocketServer:
             except asyncio.QueueFull:
                 slow_consumer_closer.schedule(connection)
 
-        unsubscribe = self._task_service.add_event_listener(on_event)
+        unsubscribers = [self._task_service.add_event_listener(on_event)]
+        if self._resolve_service is not None:
+            unsubscribers.append(self._resolve_service.add_event_listener(on_event))
         try:
             async for message in connection:
                 if not isinstance(message, str):
@@ -221,7 +271,8 @@ class YuttoWebSocketServer:
                         await connection.close(code=1013, reason="event consumer is too slow")
                         break
         finally:
-            unsubscribe()
+            for unsubscribe in unsubscribers:
+                unsubscribe()
             sender.cancel()
             await asyncio.gather(sender, return_exceptions=True)
             await slow_consumer_closer.wait()
@@ -229,45 +280,52 @@ class YuttoWebSocketServer:
     def _create_dispatcher(self, subscriptions: set[str]) -> JsonRpcDispatcher:
         dispatcher = JsonRpcDispatcher()
 
+        capabilities = [
+            "download.start",
+            "task.get",
+            "task.list",
+            "task.cancel",
+            "task.subscribe",
+            "task.unsubscribe",
+        ]
+        if self._resolve_service is not None:
+            capabilities.insert(1, "resolve.start")
+
         @dispatcher.method("server.info")
         async def server_info() -> dict[str, object]:
             return {
                 "name": "yutto",
                 "version": VERSION,
                 "protocol_version": 1,
-                "capabilities": [
-                    "download.start",
-                    "task.get",
-                    "task.list",
-                    "task.cancel",
-                    "task.subscribe",
-                    "task.unsubscribe",
-                ],
+                "capabilities": list(capabilities),
             }
 
         @dispatcher.method("download.start")
         async def download_start(request: dict[str, object]) -> dict[str, object]:
-            validated = self._parse_request(request)
-            try:
-                prepared = self._prepare_request(validated)
-            except ValidationError:
-                raise
-            except ValueError as error:
-                raise JsonRpcError(
-                    REQUEST_REJECTED_ERROR,
-                    "Request rejected",
-                    {"reason": str(error)},
-                ) from error
+            prepared = self._parse_and_prepare(request)
             try:
                 snapshot = await self._task_service.submit(prepared)
             except TaskCapacityError as error:
                 raise JsonRpcError(SERVER_BUSY_ERROR, "server task capacity reached") from error
-            return snapshot_to_json(snapshot)
+            return _snapshot_to_json_with_kind(snapshot, "download")
+
+        if self._resolve_service is not None:
+            resolve_service = self._resolve_service
+
+            @dispatcher.method("resolve.start")
+            async def resolve_start(request: dict[str, object]) -> dict[str, object]:
+                prepared = self._parse_and_prepare(request)
+                try:
+                    snapshot = await resolve_service.submit(prepared)
+                except TaskCapacityError as error:
+                    raise JsonRpcError(SERVER_BUSY_ERROR, "server task capacity reached") from error
+                return _snapshot_to_json_with_kind(snapshot, "resolve")
 
         @dispatcher.method("task.get")
         async def task_get(task_id: str) -> dict[str, object]:
             self._validate_task_id(task_id)
-            return snapshot_to_json(self._require_task(task_id))
+            kind, snapshot = self._require_task(task_id)
+            return _snapshot_to_json_with_kind(snapshot, kind)
 
         @dispatcher.method("task.list")
         async def task_list(offset: int = 0, limit: int = 50) -> dict[str, object]:
@@ -280,23 +338,32 @@ class YuttoWebSocketServer:
                 or not 1 <= limit <= 100
             ):
                 raise JsonRpcError(-32602, "Invalid params")
-            snapshots = self._task_service.list()
-            selected = snapshots[offset : offset + limit]
+            entries: list[tuple[str, _AnyTaskSnapshot]] = [
+                ("download", snapshot) for snapshot in self._task_service.list()
+            ]
+            if self._resolve_service is not None:
+                entries.extend(("resolve", snapshot) for snapshot in self._resolve_service.list())
+            entries.sort(key=lambda entry: _task_snapshot_order(entry[1]))
+            selected = entries[offset : offset + limit]
             next_offset = offset + len(selected)
             return {
-                "tasks": [_download_snapshot_summary_to_json(snapshot) for snapshot in selected],
+                "tasks": [{**_task_snapshot_summary_to_json(snapshot), "kind": kind} for kind, snapshot in selected],
                 "offset": offset,
-                "next_offset": next_offset if next_offset < len(snapshots) else None,
-                "total": len(snapshots),
+                "next_offset": next_offset if next_offset < len(entries) else None,
+                "total": len(entries),
             }
 
         @dispatcher.method("task.cancel")
         async def task_cancel(task_id: str) -> dict[str, object]:
             self._validate_task_id(task_id)
-            snapshot = await self._task_service.cancel(task_id)
+            kind = "download"
+            snapshot: _AnyTaskSnapshot | None = await self._task_service.cancel(task_id)
+            if snapshot is None and self._resolve_service is not None:
+                snapshot = await self._resolve_service.cancel(task_id)
+                kind = "resolve"
             if snapshot is None:
                 raise JsonRpcError(TASK_NOT_FOUND_ERROR, "Task not found")
-            return snapshot_to_json(snapshot)
+            return _snapshot_to_json_with_kind(snapshot, kind)
 
         @dispatcher.method("task.subscribe")
         async def task_subscribe(task_id: str, after_seq: int = 0) -> dict[str, object]:
@@ -306,6 +373,8 @@ class YuttoWebSocketServer:
             subscriptions.add(task_id)
             try:
                 replay = self._task_service.replay(task_id, after_seq=after_seq)
+                if replay is None and self._resolve_service is not None:
+                    replay = self._resolve_service.replay(task_id, after_seq=after_seq)
             except ValueError as error:
                 subscriptions.discard(task_id)
                 raise JsonRpcError(-32602, "Invalid params", {"reason": str(error)}) from error
@@ -323,11 +392,28 @@ class YuttoWebSocketServer:
 
         return dispatcher
 
-    def _require_task(self, task_id: str) -> TaskSnapshot[DownloadRequest, DownloadResult]:
-        snapshot = self._task_service.get(task_id)
+    def _parse_and_prepare(self, request: dict[str, object]) -> DownloadRequest:
+        validated = self._parse_request(request)
+        try:
+            return self._prepare_request(validated)
+        except ValidationError:
+            raise
+        except ValueError as error:
+            raise JsonRpcError(
+                REQUEST_REJECTED_ERROR,
+                "Request rejected",
+                {"reason": str(error)},
+            ) from error
+
+    def _require_task(self, task_id: str) -> tuple[str, _AnyTaskSnapshot]:
+        kind = "download"
+        snapshot: _AnyTaskSnapshot | None = self._task_service.get(task_id)
+        if snapshot is None and self._resolve_service is not None:
+            snapshot = self._resolve_service.get(task_id)
+            kind = "resolve"
         if snapshot is None:
             raise JsonRpcError(TASK_NOT_FOUND_ERROR, "Task not found")
-        return snapshot
+        return kind, snapshot
 
     @staticmethod
     def _validate_task_id(task_id: object) -> None:

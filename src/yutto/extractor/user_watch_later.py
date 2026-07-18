@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_watch_later_avids
+from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import NotLoginError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
@@ -41,6 +42,7 @@ class UserWatchLaterExtractor(BatchExtractor):
             avid_list = await get_watch_later_avids(ctx, client)
         except NotLoginError as e:
             Logger.error(e.message)
+            report_resolve_failure(e)
             return []
 
         for ugc_video_list in await resolve_ugc_video_lists(

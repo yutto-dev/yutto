@@ -8,7 +8,7 @@ from yutto.core.application import YuttoApplication
 from yutto.core.events import DownloadBatchStarted, DownloadRequestQueued, DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event
 from yutto.core.request import DownloadRequest
-from yutto.core.result import DownloadResult
+from yutto.core.result import DownloadResult, ResolveResult
 from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
 
@@ -37,6 +37,17 @@ class RecordingWorkflow:
 
     async def execute(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> DownloadResult:
         self.trace.append(("execute", (ctx, tuple(requests))))
+        emit_download_event(DownloadStageChanged(name=DownloadStage.RESOLVING))
+        return self.result
+
+
+class RecordingResolveWorkflow:
+    def __init__(self, trace: list[tuple[str, object]]):
+        self.trace = trace
+        self.result = ResolveResult()
+
+    async def execute_resolve(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> ResolveResult:
+        self.trace.append(("execute_resolve", (ctx, tuple(requests))))
         emit_download_event(DownloadStageChanged(name=DownloadStage.RESOLVING))
         return self.result
 
@@ -93,3 +104,30 @@ async def test_single_download_does_not_emit_batch_presentation_events():
         ("event", DownloadStageChanged(name=DownloadStage.RESOLVING)),
     ]
     assert result is workflow.result
+
+
+@as_sync
+async def test_application_resolve_uses_resolve_workflow_and_event_sink():
+    ctx = FetcherContext()
+    trace: list[tuple[str, object]] = []
+    workflow = RecordingWorkflow(trace)
+    resolve_workflow = RecordingResolveWorkflow(trace)
+    sink = RecordingEventSink(trace)
+    request = make_request("BV1resolve")
+    application = YuttoApplication(ctx, workflow=workflow, event_sink=sink, resolve_workflow=resolve_workflow)
+
+    result = await application.resolve(request)
+
+    assert result is resolve_workflow.result
+    assert trace == [
+        ("execute_resolve", (ctx, (request,))),
+        ("event", DownloadStageChanged(name=DownloadStage.RESOLVING)),
+    ]
+
+
+@as_sync
+async def test_application_resolve_requires_resolve_workflow():
+    application = YuttoApplication(FetcherContext(), workflow=RecordingWorkflow([]))
+
+    with pytest.raises(RuntimeError, match="resolve workflow"):
+        await application.resolve(make_request("BV1resolve"))

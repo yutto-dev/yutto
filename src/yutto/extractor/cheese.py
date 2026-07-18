@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
+from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import (
     EpisodeNotFoundError,
     HttpStatusError,
@@ -75,4 +76,5 @@ class CheeseExtractor(SingleExtractor):
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
+            report_resolve_failure(e)
             return None

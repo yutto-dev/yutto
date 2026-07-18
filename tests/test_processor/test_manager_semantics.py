@@ -39,8 +39,13 @@ def make_episode(path: str, display_group: str | None = None) -> EpisodeData:
         "info": {
             "avid": AId("1"),
             "cid": CId("1"),
+            "url": "https://www.bilibili.com/video/av1?p=1",
             "name": Path(path).name,
+            "title": Path(path).name,
             "cover_url": "",
+            "uploader": "",
+            "description": "",
+            "tags": [],
             "path": Path(path),
             "display_group": display_group,
         },

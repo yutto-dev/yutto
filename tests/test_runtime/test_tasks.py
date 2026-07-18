@@ -6,7 +6,15 @@ from typing import TYPE_CHECKING, cast
 import pytest
 
 from yutto.exceptions import WrongUrlError
-from yutto.runtime import RuntimeState, TaskCapacityError, TaskContext, TaskRuntime, TaskState
+from yutto.runtime import (
+    RuntimeState,
+    TaskCapacityError,
+    TaskCapacityPool,
+    TaskContext,
+    TaskRuntime,
+    TaskState,
+    monotonic_seq_allocator,
+)
 from yutto.utils.asynclib import first_successful
 from yutto.utils.functional import as_sync
 
@@ -519,3 +527,76 @@ async def test_evicted_cancelled_queue_entry_does_not_stop_worker():
         assert completed is not None
         assert completed.state is TaskState.COMPLETED
         assert completed.result == "replacement"
+
+
+@pytest.mark.processor
+@as_sync
+async def test_shared_seq_allocator_spans_runtimes():
+    allocator = monotonic_seq_allocator()
+
+    async def handler(payload: str, context: TaskContext) -> str:
+        context.emit("checkpoint", {"payload": payload})
+        return payload
+
+    download_runtime = TaskRuntime(handler, task_id_factory=lambda: "download-1", seq_allocator=allocator)
+    resolve_runtime = TaskRuntime(handler, task_id_factory=lambda: "resolve-1", seq_allocator=allocator)
+    await download_runtime.start()
+    await resolve_runtime.start()
+    try:
+        first = await download_runtime.submit("a")
+        second = await resolve_runtime.submit("b")
+        await download_runtime.wait(first.task_id)
+        await resolve_runtime.wait(second.task_id)
+
+        download_replay = download_runtime.replay(first.task_id)
+        resolve_replay = resolve_runtime.replay(second.task_id)
+        assert download_replay is not None and resolve_replay is not None
+        all_sequences = [event.seq for event in (*download_replay.events, *resolve_replay.events)]
+        # 两个 runtime 的事件共享同一序号空间：跨 runtime 全局唯一且无空洞，客户端可按 seq 去重
+        assert len(all_sequences) == len(set(all_sequences))
+        assert sorted(all_sequences) == list(range(min(all_sequences), min(all_sequences) + len(all_sequences)))
+    finally:
+        await download_runtime.close()
+        await resolve_runtime.close()
+
+
+@pytest.mark.processor
+@as_sync
+async def test_capacity_pool_is_shared_across_runtimes():
+    pool = TaskCapacityPool(2)
+    block = asyncio.Event()
+
+    async def handler(payload: str, context: TaskContext) -> str:
+        if payload != "instant":
+            await block.wait()
+        return payload
+
+    ids_a = iter(["a-1", "a-2"])
+    ids_b = iter(["b-1", "b-2"])
+    runtime_a = TaskRuntime(handler, task_id_factory=lambda: next(ids_a), capacity_pool=pool)
+    runtime_b = TaskRuntime(handler, task_id_factory=lambda: next(ids_b), capacity_pool=pool)
+    await runtime_a.start()
+    await runtime_b.start()
+    try:
+        instant = await runtime_a.submit("instant")
+        completed = await runtime_a.wait(instant.task_id)
+        assert completed is not None and completed.state is TaskState.COMPLETED
+
+        blocked = await runtime_b.submit("block")
+        # 全局容量（2）已满：向 runtime_b 提交会淘汰全局最早的已终止任务，
+        # 哪怕它属于另一个 runtime_a
+        queued = await runtime_b.submit("block")
+        assert runtime_a.get(instant.task_id) is None
+        assert runtime_b.get(queued.task_id) is not None
+
+        # 两个非终态任务占满全局容量，无可淘汰 → 任何 runtime 都无法再提交
+        with pytest.raises(TaskCapacityError):
+            await runtime_a.submit("block")
+
+        block.set()
+        await runtime_b.wait(blocked.task_id)
+        await runtime_b.wait(queued.task_id)
+    finally:
+        block.set()
+        await runtime_a.close()
+        await runtime_b.close()

@@ -5,7 +5,8 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
+from itertools import count
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 from uuid import uuid4
 
 if TYPE_CHECKING:
@@ -40,6 +41,43 @@ class RuntimeState(StrEnum):
 
 class TaskCapacityError(RuntimeError):
     """The bounded runtime cannot retain another non-terminal task."""
+
+
+def monotonic_seq_allocator(start: int = 1) -> Callable[[], int]:
+    """构造一个单调递增的事件序号分配器；传给多个 runtime 即可共享同一序号空间"""
+    counter = count(start)
+    return lambda: next(counter)
+
+
+class TaskCapacityPool:
+    """跨多个 TaskRuntime 共享的全局任务容量。
+
+    「排队 + 运行 + 保留的已终止任务」的全局总量不超过 limit：申请新槽位时
+    优先淘汰全局最早创建的已终止任务（无论它属于哪个 runtime），
+    无可淘汰时抛出 TaskCapacityError。
+    """
+
+    def __init__(self, limit: int):
+        if limit < 1:
+            raise ValueError("capacity pool limit must be at least 1")
+        self._limit = limit
+        self._runtimes: list[TaskRuntime[Any, Any]] = []
+
+    def _register(self, runtime: TaskRuntime[Any, Any]) -> None:
+        self._runtimes.append(runtime)
+
+    def make_slot(self) -> None:
+        while sum(runtime._record_count() for runtime in self._runtimes) >= self._limit:
+            oldest_runtime: TaskRuntime[Any, Any] | None = None
+            oldest: tuple[datetime, str] | None = None
+            for runtime in self._runtimes:
+                candidate = runtime._oldest_terminal_record()
+                if candidate is not None and (oldest is None or candidate[0] < oldest[0]):
+                    oldest = candidate
+                    oldest_runtime = runtime
+            if oldest_runtime is None or oldest is None:
+                raise TaskCapacityError("task runtime capacity reached")
+            oldest_runtime._evict_record(oldest[1])
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +186,8 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
         replay_limit: int = 100,
         task_limit: int = 256,
         task_id_factory: Callable[[], str] | None = None,
+        seq_allocator: Callable[[], int] | None = None,
+        capacity_pool: TaskCapacityPool | None = None,
     ):
         if worker_count < 1:
             raise ValueError("worker_count must be at least 1")
@@ -161,11 +201,14 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
         self._replay_limit = replay_limit
         self._task_limit = task_limit
         self._task_id_factory = task_id_factory or (lambda: uuid4().hex)
+        self._allocate_seq = seq_allocator or monotonic_seq_allocator()
+        self._capacity_pool = capacity_pool
+        if capacity_pool is not None:
+            capacity_pool._register(self)
         self._state = RuntimeState.NEW
         self._queue: asyncio.Queue[_TaskRecord[PayloadT, ResultT] | object] = asyncio.Queue()
         self._records: dict[str, _TaskRecord[PayloadT, ResultT]] = {}
         self._workers: list[asyncio.Task[None]] = []
-        self._next_seq = 1
         self._closed = asyncio.Event()
         self._event_listeners: dict[int, Callable[[TaskEvent], None]] = {}
         self._next_listener_id = 1
@@ -279,7 +322,10 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
         if task_id in self._records:
             raise ValueError(f"duplicate task id: {task_id}")
 
-        self._make_task_slot()
+        if self._capacity_pool is not None:
+            self._capacity_pool.make_slot()
+        else:
+            self._make_task_slot()
 
         created_at = datetime.now(UTC)
         record = _TaskRecord[PayloadT, ResultT](
@@ -308,6 +354,19 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
             if terminal_task_id is None:
                 raise TaskCapacityError("task runtime capacity reached")
             del self._records[terminal_task_id]
+
+    def _record_count(self) -> int:
+        return len(self._records)
+
+    def _oldest_terminal_record(self) -> tuple[datetime, str] | None:
+        oldest: tuple[datetime, str] | None = None
+        for task_id, record in self._records.items():
+            if record.state.is_terminal and (oldest is None or record.created_at < oldest[0]):
+                oldest = (record.created_at, task_id)
+        return oldest
+
+    def _evict_record(self, task_id: str) -> None:
+        del self._records[task_id]
 
     def get(self, task_id: str) -> TaskSnapshot[PayloadT, ResultT] | None:
         record = self._records.get(task_id)
@@ -434,13 +493,12 @@ class TaskRuntime(Generic[PayloadT, ResultT]):
             record.dropped_through_seq = record.events[0].seq
         event = TaskEvent(
             task_id=record.task_id,
-            seq=self._next_seq,
+            seq=self._allocate_seq(),
             kind=kind,
             state=record.state,
             created_at=datetime.now(UTC),
             data=data,
         )
-        self._next_seq += 1
         record.events.append(event)
         for listener in tuple(self._event_listeners.values()):
             try:
