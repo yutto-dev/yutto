@@ -34,7 +34,7 @@ async def resolve_ugc_video_lists(
     这里无需额外限流；被时间过滤或解析失败（NotFoundError / NoAccessPermissionError /
     MaxRetryError）的视频以 None 占位，不会中断整批解析，其余未预期的异常仍会向外抛出。
 
-    on_resolved 在**每个视频解析完成时**按完成顺序被 await（参数为 (index, avid, result)，
+    on_resolved 在每个视频解析完成时按完成顺序被 await（参数为 (index, avid, result)，
     index 是该 avid 在入参列表中的位置）——提取器用它把已就绪的条目立即推流给前端，
     不必等整批 gather 结束。回调约定在每推送一个分集后让出一次控制权（内置提取器均如此），
     事件生产对消费者（如 server 每连接的 sender）始终可调度，单个超多分 P 的视频
