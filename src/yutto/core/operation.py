@@ -61,6 +61,7 @@ def report_resolve_failure(error: YuttoBaseException) -> None:
 
 @contextmanager
 def bind_episode_listed_hook(hook: Callable[[ResolvableEpisode], None]) -> Iterator[None]:
+    """在解析期间绑定逐条列举钩子；仅 resolve 路径绑定，下载路径不绑定、行为不变"""
     token = _episode_listed_hook.set(hook)
     try:
         yield
@@ -69,6 +70,11 @@ def bind_episode_listed_hook(hook: Callable[[ResolvableEpisode], None]) -> Itera
 
 
 def notify_episode_listed(episode: ResolvableEpisode) -> None:
+    """流式提取器在单个视频解析完成时立即逐条交出分集。
+
+    钩子未绑定时（下载路径、未流式化的提取器）为 no-op；resolve_items 收尾补发时
+    会跳过已经推送过的条目，每个条目恰好对外产生一次 item_listed。
+    """
     hook = _episode_listed_hook.get()
     if hook is not None:
         hook(episode)
