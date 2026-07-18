@@ -93,7 +93,7 @@ class _SlowConsumerCloser:
             await asyncio.gather(self._task, return_exceptions=True)
 
 
-def _download_snapshot_summary_to_json(
+def _task_snapshot_summary_to_json(
     snapshot: _AnyTaskSnapshot,
 ) -> dict[str, object]:
     summary = snapshot_summary_to_json(snapshot)
@@ -326,7 +326,7 @@ class YuttoWebSocketServer:
             selected = snapshots[offset : offset + limit]
             next_offset = offset + len(selected)
             return {
-                "tasks": [_download_snapshot_summary_to_json(snapshot) for snapshot in selected],
+                "tasks": [_task_snapshot_summary_to_json(snapshot) for snapshot in selected],
                 "offset": offset,
                 "next_offset": next_offset if next_offset < len(snapshots) else None,
                 "total": len(snapshots),
