@@ -4,7 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_watch_later_avids
-from yutto.core.operation import report_resolve_failure
+from yutto.core.operation import notify_episode_listed, report_resolve_failure
 from yutto.exceptions import NotLoginError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
@@ -14,8 +14,8 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.api.ugc_video import UgcVideoListItem
-    from yutto.types import ExtractorOptions, ResolvableEpisode
+    from yutto.api.ugc_video import UgcVideoList
+    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -36,8 +36,6 @@ class UserWatchLaterExtractor(BatchExtractor):
     ) -> list[ResolvableEpisode | None]:
         Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
 
-        ugc_video_info_list: list[tuple[UgcVideoListItem, str, int, str]] = []
-
         try:
             avid_list = await get_watch_later_avids(ctx, client)
         except NotLoginError as e:
@@ -45,38 +43,37 @@ class UserWatchLaterExtractor(BatchExtractor):
             report_resolve_failure(e)
             return []
 
-        for ugc_video_list in await resolve_ugc_video_lists(
+        # 逐视频解析完成即构建分集并推流（notify_episode_listed），最终按 index 重排。
+        episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
+
+        def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
+            if ugc_video_list is None:
+                return
+            built: list[ResolvableEpisode] = []
+            for ugc_video_item in ugc_video_list["pages"]:
+                episode = make_ugc_video_episode(
+                    ctx,
+                    client,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    options,
+                    {
+                        "title": ugc_video_list["title"],
+                        "username": "",
+                        "series_title": "稍后再看",
+                        "pubdate": ugc_video_list["pubdate"],
+                    },
+                    "稍后再看/{title}/{name}",
+                )
+                notify_episode_listed(episode)
+                built.append(episode)
+            episodes_by_index[index] = built
+
+        await resolve_ugc_video_lists(
             ctx,
             client,
             avid_list,
             publication_time_filter=options["publication_time_filter"],
-        ):
-            if ugc_video_list is None:
-                continue
-            for ugc_video_item in ugc_video_list["pages"]:
-                ugc_video_info_list.append(
-                    (
-                        ugc_video_item,
-                        ugc_video_list["title"],
-                        ugc_video_list["pubdate"],
-                        "稍后再看",
-                    )
-                )
-
-        return [
-            make_ugc_video_episode(
-                ctx,
-                client,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                options,
-                {
-                    "title": title,
-                    "username": "",
-                    "series_title": series_title,
-                    "pubdate": pubdate,
-                },
-                "稍后再看/{title}/{name}",
-            )
-            for ugc_video_item, title, pubdate, series_title in ugc_video_info_list
-        ]
+            on_resolved=build_episodes,
+        )
+        return [episode for index in range(len(avid_list)) for episode in episodes_by_index.get(index, [])]
