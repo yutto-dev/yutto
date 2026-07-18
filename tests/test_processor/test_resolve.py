@@ -409,6 +409,81 @@ async def test_resolve_ugc_video_lists_awaits_async_on_resolved(monkeypatch: pyt
 
 
 @as_sync
+async def test_resolve_ugc_video_lists_cancels_siblings_on_fatal_error(monkeypatch: pytest.MonkeyPatch):
+    first_started = asyncio.Event()
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        if str(avid) == "1":
+            first_started.set()
+            await asyncio.sleep(0.05)
+            return {"title": "视频 1", "pubdate": 1700000000, "avid": AId("1"), "pages": []}
+        raise RuntimeError("boom")
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    calls: list[int] = []
+
+    async def on_resolved(index: int, avid: object, result: object) -> None:
+        calls.append(index)
+
+    client = cast("httpx.AsyncClient", object())
+    # 单个未预期异常直接抛原始异常（而非 ExceptionGroup），wire 错误类型保持稳定
+    with pytest.raises(RuntimeError, match="boom"):
+        await resolve_ugc_video_lists(
+            FetcherContext(),
+            client,
+            [AId("1"), AId("2")],
+            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+            on_resolved=on_resolved,
+        )
+
+    # fatal error 会取消并等待兄弟协程：函数抛错后不会再有任何回调发生
+    assert first_started.is_set()
+    assert calls == []
+    await asyncio.sleep(0.1)
+    assert calls == []
+
+
+@as_sync
+async def test_resolve_ugc_video_lists_cancels_workers_when_callback_fails(monkeypatch: pytest.MonkeyPatch):
+    resolved: list[str] = []
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        if str(avid) == "2":
+            await asyncio.sleep(0.05)
+        resolved.append(str(avid))
+        return {"title": str(avid), "pubdate": 1700000000, "avid": avid, "pages": []}
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    async def on_resolved(index: int, avid: object, result: object) -> None:
+        raise RuntimeError("callback boom")
+
+    client = cast("httpx.AsyncClient", object())
+    with pytest.raises(RuntimeError, match="callback boom"):
+        await resolve_ugc_video_lists(
+            FetcherContext(),
+            client,
+            [AId("1"), AId("2")],
+            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+            on_resolved=on_resolved,
+        )
+
+    # 回调自身失败同样取消其余 worker：慢的 avid 2 不会再完成解析
+    assert resolved == ["1"]
+    await asyncio.sleep(0.1)
+    assert resolved == ["1"]
+
+
+@as_sync
 async def test_execute_resolve_keeps_genuinely_empty_source_as_success(monkeypatch: pytest.MonkeyPatch):
     class EmptySourceExtractor(_ShortcutExtractorBase):
         async def __call__(

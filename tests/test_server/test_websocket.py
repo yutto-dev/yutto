@@ -7,12 +7,14 @@ from itertools import count
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
+from returns.result import Success
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError, InvalidStatus
 from websockets.typing import Origin
 
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ResolveResult
+from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.runtime import TaskContext, TaskRuntime, TaskSnapshot, TaskState, monotonic_seq_allocator
 from yutto.server.websocket import (
     WebSocketServerOptions,
@@ -20,6 +22,9 @@ from yutto.server.websocket import (
     _SlowConsumerCloser,
     _task_snapshot_order,
 )
+from yutto.types import AId
+from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor
@@ -111,6 +116,45 @@ class FakeResolveTaskApi:
             # 与修复后的 DownloadManager.resolve_items 一致：事件生产逐条让出控制权
             await asyncio.sleep(0)
         return ResolveResult(items=())
+
+
+class BatchStreamingResolveApi(FakeResolveTaskApi):
+    """经真实 resolve_ugc_video_lists 推流的 resolve 服务，复现生产端的完整事件路径"""
+
+    def __init__(self, *, video_count: int, pages_per_video: int) -> None:
+        super().__init__()
+        self.video_count = video_count
+        self.pages_per_video = pages_per_video
+
+    async def _run(self, request: DownloadRequest, context: TaskContext) -> ResolveResult:
+        await self.release.wait()
+
+        async def on_resolved(index: int, avid: object, result: object) -> None:
+            # 模拟内置提取器的回调：逐分集 emit 并让出控制权
+            for page in range(self.pages_per_video):
+                context.emit("item_listed", {"avid": str(avid), "page": page})
+                await asyncio.sleep(0)
+
+        await resolve_ugc_video_lists(
+            FetcherContext(),
+            cast("Any", object()),
+            [AId(str(index + 1)) for index in range(self.video_count)],
+            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+            on_resolved=on_resolved,
+        )
+        return ResolveResult(items=())
+
+
+def _patch_batch_listing(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: Any, avid: Any):
+        # 立即返回：所有视频几乎同时就绪，复现并发完成的最坏情况
+        return {"title": str(avid), "pubdate": 1700000000, "avid": avid, "pages": []}
+
+    async def fake_touch_url(ctx: FetcherContext, client: Any, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
 
 def rpc_request(request_id: int, method: str, params: object | None = None) -> str:
@@ -449,6 +493,76 @@ async def test_item_listed_burst_beyond_event_queue_is_fully_delivered():
                         break
             # 事件生产逐条让出控制权后，超过每连接发送队列（event_queue_size=128）的
             # 列表也能完整送达，而不是在第 129 条触发 slow-consumer 断连
+            assert delivered == 200
+    finally:
+        await server.close()
+
+
+@pytest.mark.processor
+@as_sync
+async def test_simultaneously_completed_videos_stream_fully_over_websocket(monkeypatch: pytest.MonkeyPatch):
+    _patch_batch_listing(monkeypatch)
+    resolve = BatchStreamingResolveApi(video_count=200, pages_per_video=1)
+    server, _, uri = await start_server(resolve_service=resolve)
+    try:
+        async with connect(uri, proxy=None) as connection:
+            await connection.send(rpc_request(1, "server.authenticate", {"token": "test-token"}))
+            await receive_json(connection)
+            await connection.send(
+                rpc_request(2, "resolve.start", {"request": {"source": {"url": "https://www.bilibili.com/video/BV1s"}}})
+            )
+            await receive_json(connection)
+            await connection.send(rpc_request(3, "task.subscribe", {"task_id": "resolve-1", "after_seq": 0}))
+            await receive_json(connection)
+
+            resolve.release.set()
+            delivered = 0
+            async with asyncio.timeout(30):
+                while True:
+                    notification = await receive_json(connection)
+                    if notification.get("method") != "task.event":
+                        continue
+                    params = notification["params"]
+                    if params["kind"] == "item_listed":
+                        delivered += 1
+                    elif params["kind"] == "state" and params["state"] == "completed":
+                        break
+            # 200 个视频同时就绪：单一 publisher 串行发布，事件不再在 sender 运行前灌满队列
+            assert delivered == 200
+    finally:
+        await server.close()
+
+
+@pytest.mark.processor
+@as_sync
+async def test_single_video_with_more_pages_than_queue_streams_fully(monkeypatch: pytest.MonkeyPatch):
+    _patch_batch_listing(monkeypatch)
+    resolve = BatchStreamingResolveApi(video_count=1, pages_per_video=200)
+    server, _, uri = await start_server(resolve_service=resolve)
+    try:
+        async with connect(uri, proxy=None) as connection:
+            await connection.send(rpc_request(1, "server.authenticate", {"token": "test-token"}))
+            await receive_json(connection)
+            await connection.send(
+                rpc_request(2, "resolve.start", {"request": {"source": {"url": "https://www.bilibili.com/video/BV1p"}}})
+            )
+            await receive_json(connection)
+            await connection.send(rpc_request(3, "task.subscribe", {"task_id": "resolve-1", "after_seq": 0}))
+            await receive_json(connection)
+
+            resolve.release.set()
+            delivered = 0
+            async with asyncio.timeout(30):
+                while True:
+                    notification = await receive_json(connection)
+                    if notification.get("method") != "task.event":
+                        continue
+                    params = notification["params"]
+                    if params["kind"] == "item_listed":
+                        delivered += 1
+                    elif params["kind"] == "state" and params["state"] == "completed":
+                        break
+            # 单视频 200 分 P（> event_queue_size=128）：逐分集让出使事件全部送达
             assert delivered == 200
     finally:
         await server.close()
