@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -82,6 +83,15 @@ def show_batch_episode_title(
     return current_display_group
 
 
+class ResolveFailedError(RuntimeError):
+    """来源存在条目，但没有任何条目解析成功。
+
+    extractor 目前用 ``None`` 同时表达「解析失败」与「被过滤」，逐项原因暂无法
+    区分（见 issue #749 的 failed/filtered 语义讨论）；本异常至少保证「全部
+    未解析成功」不会伪装成一次成功的空结果。
+    """
+
+
 class DownloadManager:
     """Execute download requests sequentially in one shared network session."""
 
@@ -104,6 +114,7 @@ class DownloadManager:
     async def execute_resolve(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> ResolveResult:
         """Enumerate episodes for requests in order without downloading anything."""
         items: list[ResolvedItem] = []
+        total_entries = 0
         ctx.set_fetch_semaphore(fetch_workers=ctx.fetch_workers)
         async with create_client(
             cookies=ctx.cookies,
@@ -111,7 +122,15 @@ class DownloadManager:
             proxy=ctx.proxy,
         ) as client:
             for request in requests:
-                items.extend(await self.resolve_items(client, ctx, request))
+                episode_list = await self.resolve_request(client, ctx, request)
+                total_entries += len(episode_list)
+                items.extend(await self._resolved_items_from_episodes(episode_list))
+        if total_entries > 0 and not items:
+            # 真正的空来源（total_entries == 0，如空收藏夹）仍是成功的空结果
+            raise ResolveFailedError(
+                "解析未得到任何条目：来源存在条目但全部解析失败或被过滤"
+                "（可能视频不存在 / 无访问权限 / 网络请求失败，详见 server 日志）"
+            )
         return ResolveResult(items=tuple(items))
 
     async def resolve_items(
@@ -125,6 +144,12 @@ class DownloadManager:
         返回的 planned_path 是模板解析出的计划路径；实际下载时可能因去重而调整。
         """
         episode_list = await self.resolve_request(client, ctx, request)
+        return await self._resolved_items_from_episodes(episode_list)
+
+    async def _resolved_items_from_episodes(
+        self,
+        episode_list: list[ResolvableEpisode | None],
+    ) -> list[ResolvedItem]:
         items: list[ResolvedItem] = []
         for episode in episode_list:
             if episode is None:
@@ -161,6 +186,10 @@ class DownloadManager:
                 )
             )
             items.append(item)
+            # 大列表会在无 await 的循环里同步产生大量 item_listed；让出控制权给
+            # 事件消费者（如 server 每连接的 sender），否则超出其发送队列容量的
+            # 部分会触发 slow-consumer 断连
+            await asyncio.sleep(0)
         return items
 
     async def process_request(
