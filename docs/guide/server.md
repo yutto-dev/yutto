@@ -56,13 +56,14 @@ yutto serve \
 | ------------------ | ------------------------------------------------------------ |
 | `server.info`      | 查询版本、协议版本和能力列表                                 |
 | `download.start`   | 提交下载任务，返回任务快照                                   |
+| `resolve.start`    | 提交解析任务，仅列出条目不下载（见「解析任务」一节）         |
 | `task.get`         | 查询一个任务                                                 |
 | `task.list`        | 分页查询当前进程中的任务摘要（包含 URL，不展开请求 payload） |
 | `task.cancel`      | 取消排队中或运行中的任务                                     |
 | `task.subscribe`   | 获取事件回放并订阅后续事件                                   |
 | `task.unsubscribe` | 取消当前连接上的任务订阅                                     |
 
-订阅后的实时事件以 `task.event` notification 推送。事件包含全局递增的 `seq`；从回放切换到实时流时，应按 `seq` 去重。断开客户端不会自动取消任务。
+订阅后的实时事件以 `task.event` notification 推送。事件包含全局递增的 `seq`（download 与 resolve 任务共享同一序号空间）；从回放切换到实时流时，应按 `seq` 去重。任务快照（`download.start` / `resolve.start` / `task.get` / `task.list` 的返回值）均携带 `kind` 字段（`download` 或 `resolve`）标识任务类别。断开客户端不会自动取消任务。
 
 下载完成后，`task.get` 的 `result` 会列出每个条目的目标路径和最终产物：
 
@@ -97,14 +98,47 @@ yutto serve \
 
 `stage.name` 目前可能为 `resolving`、`preparing`、`writing_resources`、`downloading` 或 `postprocessing`。`artifact_created` 只在本次新生成最终媒体文件时发送；其他 sidecar 产物通过完成结果获取。
 
+## 解析任务
+
+`resolve.start` 把「解析」作为独立任务提交（仅当 `server.info` 能力列表包含它时可用）：在不触发任何下载的前提下列出条目的稳定信息，供前端渲染选择器，选中后再逐条 `download.start`。
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "resolve.start",
+  "params": {
+    "request": {
+      "source": { "url": "https://www.bilibili.com/video/BV..." },
+      "selection": { "batch": true }
+    }
+  }
+}
+```
+
+`request` 与 `download.start` 使用完全相同的请求模型。解析任务运行在独立的单 worker runtime 中，轻量的列表解析不会排在长下载任务之后；`task.get` / `task.list` / `task.cancel` / `task.subscribe` 对两类任务统一路由。
+
+解析过程中每列出一个条目会推送一条 `item_listed` 事件，任务完成后 `result.items` 包含全部条目。条目与 `item_listed` 事件的 `data` 携带相同字段：
+
+- `avid` / `cid`：条目标识；
+- `url`：单集原子 URL，可直接用于后续 `download.start`；
+- `name` / `title`：分集名与视频标题；
+- `uploader` / `description` / `tags`：UP 主、简介与标签，listing 元数据缺失时为空；
+- `cover_url`：封面 URL；
+- `planned_path`：按模板推导的计划路径（POSIX 风格），实际下载时可能因去重而调整；
+- `display_group`：批量解析时的分组名，无分组时为 `null`。
+
+错误语义：来源存在条目但全部解析失败或被过滤时，任务以 `failed` 结束，不会伪装成一次成功的空结果；真正的空来源（如空收藏夹）以 `completed` 返回空 `items`；部分条目失败时任务仍为 `completed` 并返回成功条目，逐项失败原因的结构化上报将在后续版本补充。
+
 ## 本地资源边界
 
 - 同一 server 进程默认一次只运行一个下载任务，其余任务排队。
+- 解析任务运行在独立的单 worker runtime 中，一次只运行一个解析，但不会排在下载任务之后。
 - 请求中的 `output.directory` 和 `output.temporary_directory` 必须是相对路径，并分别限制在 `--download-root` 与 `--tmp-root` 内。
 - `output.subpath_template` 不能使用绝对路径或 `..` 逃逸根目录。
 - `--max-fetch-workers` 与 `--max-download-workers` 限制单任务并发数。
 - 分块大小限制在 64 KiB 至 64 MiB，避免单任务创建过量分块。
-- `--task-limit` 限制排队任务与近期任务记录的总量；达到上限时优先淘汰最早的已结束任务。
+- `--task-limit` 限制排队任务与近期任务记录的总量（download 与 resolve 任务合并计算）；达到上限时优先淘汰全局最早的已结束任务。
 - 任务事件仅保留有界的近期回放；`truncated: true` 表示更早的事件已经被丢弃。
 
 完整启动选项可通过 `yutto serve -h` 查看。
