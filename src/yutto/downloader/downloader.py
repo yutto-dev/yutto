@@ -237,6 +237,32 @@ def should_attach_hvc1_tag(video: VideoUrlMeta | None, video_save_codec: str) ->
     )
 
 
+# 单编码音频容器：流编码必须属于容器对应编码族，否则 FFmpeg 会在写头阶段直接失败
+# （如以 copy 将 AAC 装入 .mp3 容器时的 "Invalid audio stream. Exactly one MP3 audio stream is required"）
+SINGLE_CODEC_AUDIO_CONTAINERS: dict[str, tuple[frozenset[str], str]] = {
+    ".mp3": (frozenset({"mp3"}), "mp3"),
+    ".flac": (frozenset({"flac"}), "flac"),
+    ".aac": (frozenset({"mp4a", "aac"}), "aac"),
+}
+
+
+def resolve_audio_save_codec(audio_codec: str, audio_save_codec: str, container_suffix: str) -> str:
+    """根据实际输出容器决定音频保存编码
+
+    - 源编码与保存编码一致时退化为 copy，避免无谓转码
+    - copy 的语义是「尽量直接拷贝」：单编码容器（.mp3/.flac/.aac）无法封装源编码时
+      自动转码为容器对应编码（该组合直接 copy 必然在 FFmpeg 写头阶段失败）
+    - 非 copy 的保存编码不受容器影响
+    """
+    if audio_codec == audio_save_codec:
+        return "copy"
+    if audio_save_codec == "copy" and (rule := SINGLE_CODEC_AUDIO_CONTAINERS.get(container_suffix)) is not None:
+        compatible_codecs, transcode_codec = rule
+        if audio_codec not in compatible_codecs:
+            return transcode_codec
+    return audio_save_codec
+
+
 async def merge_video_and_audio(
     video: VideoUrlMeta | None,
     video_path: Path,
@@ -264,8 +290,13 @@ async def merge_video_and_audio(
 
     if video is not None and video["codec"] == video_save_codec:
         video_save_codec = "copy"
-    if audio is not None and audio["codec"] == audio_save_codec:
-        audio_save_codec = "copy"
+    if audio is not None:
+        resolved_audio_save_codec = resolve_audio_save_codec(audio["codec"], audio_save_codec, output_path.suffix)
+        if resolved_audio_save_codec not in {audio_save_codec, "copy"}:
+            Logger.info(
+                f"输出容器 {output_path.suffix} 无法直接封装 {audio['codec']} 音频，将自动转码为 {resolved_audio_save_codec}"
+            )
+        audio_save_codec = resolved_audio_save_codec
 
     output = command_builder.add_output(output_path)
     if video is not None:
