@@ -36,3 +36,11 @@ pytestmark = pytest.mark.processor
 )
 def test_resolve_audio_save_codec(audio_codec: str, audio_save_codec: str, container_suffix: str, expected: str):
     assert resolve_audio_save_codec(audio_codec, audio_save_codec, container_suffix) == expected
+
+
+def test_explicit_copy_follows_the_same_contract():
+    # 契约：copy 无法（也无需）区分来自默认值还是显式 --acodec mp4a:copy —— CLI/配置/server
+    # request 到达 downloader 时是同一个字符串。两者行为一致：单编码容器装不下源编码时
+    # 自动转码（此组合此前必然合并失败，无 passthrough 可保留），能装下则保持直拷。
+    assert resolve_audio_save_codec("mp4a", "copy", ".mp3") == "mp3"
+    assert resolve_audio_save_codec("mp4a", "copy", ".m4a") == "copy"
