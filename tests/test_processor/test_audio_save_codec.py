@@ -10,7 +10,7 @@ pytestmark = pytest.mark.processor
 @pytest.mark.parametrize(
     ("audio_codec", "audio_save_codec", "container_suffix", "expected"),
     [
-        # 单编码容器 + 默认 copy：自动转码（此前会在 FFmpeg 写头阶段失败）
+        # 单编码容器 + copy（无论默认还是显式）：自动转码（此前必然在 FFmpeg 写头阶段失败）
         ("mp4a", "copy", ".mp3", "mp3"),
         ("flac", "copy", ".mp3", "mp3"),
         ("eac3", "copy", ".mp3", "mp3"),
@@ -28,7 +28,7 @@ pytestmark = pytest.mark.processor
         # 源编码与保存编码一致：退化为 copy（原有行为）
         ("mp4a", "mp4a", ".m4a", "copy"),
         ("flac", "flac", ".flac", "copy"),
-        # 用户显式指定的保存编码不受容器干预
+        # 非 copy 的显式保存编码不受容器干预
         ("mp4a", "mp3", ".mp3", "mp3"),
         ("mp4a", "flac", ".flac", "flac"),
         ("mp4a", "aac", ".mp3", "aac"),

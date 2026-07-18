@@ -250,8 +250,9 @@ def resolve_audio_save_codec(audio_codec: str, audio_save_codec: str, container_
     """根据实际输出容器决定音频保存编码
 
     - 源编码与保存编码一致时退化为 copy，避免无谓转码
-    - 保存编码为默认的 copy、而单编码容器无法直接封装源编码时，自动转码为容器对应编码；
-      用户显式指定过保存编码则不做干预
+    - copy 的语义是「尽量直接拷贝」：单编码容器（.mp3/.flac/.aac）无法封装源编码时
+      自动转码为容器对应编码（该组合直接 copy 必然在 FFmpeg 写头阶段失败）
+    - 非 copy 的保存编码不受容器影响
     """
     if audio_codec == audio_save_codec:
         return "copy"
