@@ -111,6 +111,14 @@ def _task_snapshot_summary_to_json(
     return summary
 
 
+def _snapshot_to_json_with_kind(snapshot: _AnyTaskSnapshot, kind: str) -> dict[str, object]:
+    # download 与 resolve 任务共用 task.* 接口且 queued/running 快照结构相同，
+    # 客户端（尤其重连后）需要稳定的 kind 字段区分任务类别
+    data = snapshot_to_json(snapshot)
+    data["kind"] = kind
+    return data
+
+
 @dataclass(frozen=True, slots=True)
 class WebSocketServerOptions:
     token: str
@@ -300,7 +308,7 @@ class YuttoWebSocketServer:
                 snapshot = await self._task_service.submit(prepared)
             except TaskCapacityError as error:
                 raise JsonRpcError(SERVER_BUSY_ERROR, "server task capacity reached") from error
-            return snapshot_to_json(snapshot)
+            return _snapshot_to_json_with_kind(snapshot, "download")
 
         if self._resolve_service is not None:
             resolve_service = self._resolve_service
@@ -312,12 +320,13 @@ class YuttoWebSocketServer:
                     snapshot = await resolve_service.submit(prepared)
                 except TaskCapacityError as error:
                     raise JsonRpcError(SERVER_BUSY_ERROR, "server task capacity reached") from error
-                return snapshot_to_json(snapshot)
+                return _snapshot_to_json_with_kind(snapshot, "resolve")
 
         @dispatcher.method("task.get")
         async def task_get(task_id: str) -> dict[str, object]:
             self._validate_task_id(task_id)
-            return snapshot_to_json(self._require_task(task_id))
+            kind, snapshot = self._require_task(task_id)
+            return _snapshot_to_json_with_kind(snapshot, kind)
 
         @dispatcher.method("task.list")
         async def task_list(offset: int = 0, limit: int = 50) -> dict[str, object]:
@@ -330,28 +339,32 @@ class YuttoWebSocketServer:
                 or not 1 <= limit <= 100
             ):
                 raise JsonRpcError(-32602, "Invalid params")
-            snapshots: list[_AnyTaskSnapshot] = list(self._task_service.list())
+            entries: list[tuple[str, _AnyTaskSnapshot]] = [
+                ("download", snapshot) for snapshot in self._task_service.list()
+            ]
             if self._resolve_service is not None:
-                snapshots.extend(self._resolve_service.list())
-            snapshots.sort(key=_task_snapshot_order)
-            selected = snapshots[offset : offset + limit]
+                entries.extend(("resolve", snapshot) for snapshot in self._resolve_service.list())
+            entries.sort(key=lambda entry: _task_snapshot_order(entry[1]))
+            selected = entries[offset : offset + limit]
             next_offset = offset + len(selected)
             return {
-                "tasks": [_task_snapshot_summary_to_json(snapshot) for snapshot in selected],
+                "tasks": [{**_task_snapshot_summary_to_json(snapshot), "kind": kind} for kind, snapshot in selected],
                 "offset": offset,
-                "next_offset": next_offset if next_offset < len(snapshots) else None,
-                "total": len(snapshots),
+                "next_offset": next_offset if next_offset < len(entries) else None,
+                "total": len(entries),
             }
 
         @dispatcher.method("task.cancel")
         async def task_cancel(task_id: str) -> dict[str, object]:
             self._validate_task_id(task_id)
+            kind = "download"
             snapshot: _AnyTaskSnapshot | None = await self._task_service.cancel(task_id)
             if snapshot is None and self._resolve_service is not None:
                 snapshot = await self._resolve_service.cancel(task_id)
+                kind = "resolve"
             if snapshot is None:
                 raise JsonRpcError(TASK_NOT_FOUND_ERROR, "Task not found")
-            return snapshot_to_json(snapshot)
+            return _snapshot_to_json_with_kind(snapshot, kind)
 
         @dispatcher.method("task.subscribe")
         async def task_subscribe(task_id: str, after_seq: int = 0) -> dict[str, object]:
@@ -393,13 +406,15 @@ class YuttoWebSocketServer:
                 {"reason": str(error)},
             ) from error
 
-    def _require_task(self, task_id: str) -> _AnyTaskSnapshot:
+    def _require_task(self, task_id: str) -> tuple[str, _AnyTaskSnapshot]:
+        kind = "download"
         snapshot: _AnyTaskSnapshot | None = self._task_service.get(task_id)
         if snapshot is None and self._resolve_service is not None:
             snapshot = self._resolve_service.get(task_id)
+            kind = "resolve"
         if snapshot is None:
             raise JsonRpcError(TASK_NOT_FOUND_ERROR, "Task not found")
-        return snapshot
+        return kind, snapshot
 
     @staticmethod
     def _validate_task_id(task_id: object) -> None:
