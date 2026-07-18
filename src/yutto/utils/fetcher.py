@@ -99,24 +99,85 @@ def resolve_proxy(proxy: str) -> tuple[str | None, bool]:
     return proxy, False
 
 
-_ENV_PROXY_NAMES = ("ALL_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "all_proxy", "https_proxy", "http_proxy")
+def sanitize_proxy_url(proxy: str) -> str:
+    """移除代理 URL 中的 userinfo（用户名/密码），避免凭据进入日志等对外输出"""
+    scheme_separator = proxy.find("://")
+    if scheme_separator < 0:
+        return proxy
+
+    authority_start = scheme_separator + 3
+    authority_end = len(proxy)
+    for separator in "/?#":
+        if (index := proxy.find(separator, authority_start)) >= 0:
+            authority_end = min(authority_end, index)
+    credential_separator = proxy.rfind("@", authority_start, authority_end)
+    if credential_separator < 0:
+        return proxy
+    return f"{proxy[: scheme_separator + 3]}{proxy[credential_separator + 1 :]}"
 
 
-def describe_effective_proxy(proxy: str | None, trust_env: bool) -> str | None:
-    """请求实际经由的代理描述，用于日志与错误提示。
+def _collect_environment_proxies(environ: Mapping[str, str]) -> dict[str, tuple[str, str]]:
+    """收集环境变量代理，返回 scheme -> (代理 URL, 来源变量名)
 
-    显式代理直接返回；trust_env 下 httpx 会静默使用环境变量代理，
-    此时把变量名一并带上，便于用户定位到底是谁配置了代理。
+    对齐 urllib `getproxies_environment` 的两遍扫描语义：第一遍不区分大小写，
+    第二遍仅字面小写后缀的变量参与覆盖，因此同名时小写变量优先，
+    且空值的小写变量会移除对应代理。
+    """
+    collected: dict[str, tuple[str, str]] = {}
+    for name, value in environ.items():
+        lowered = name.lower()
+        if value and lowered.endswith("_proxy"):
+            collected[lowered[:-6]] = (value, name)
+    for name, value in environ.items():
+        if name.endswith("_proxy"):
+            scheme = name[:-6].lower()
+            if value:
+                collected[scheme] = (value, name)
+            else:
+                collected.pop(scheme, None)
+    return collected
+
+
+def describe_effective_proxy(
+    proxy: str | None, trust_env: bool, environ: Mapping[str, str] | None = None
+) -> str | None:
+    """请求将经由的代理描述（凭据已脱敏），用于日志提示。
+
+    显式代理直接返回；trust_env 下对齐 httpx 的环境代理选择语义：
+    请求按自身 scheme 在 HTTPS_PROXY / HTTP_PROXY 与 ALL_PROXY 之间选择（scheme 专属变量优先）、
+    NO_PROXY 含 `*` 时完全禁用环境代理、同名小写变量覆盖大写变量；
+    并把来源变量名一并带上，便于用户定位到底是谁配置了代理。
     """
     if proxy is not None:
-        return proxy
+        return sanitize_proxy_url(proxy)
     if not trust_env:
         return None
-    for name in _ENV_PROXY_NAMES:
-        value = os.environ.get(name)
-        if value:
-            return f"{value}（来自环境变量 {name}）"
-    return None
+    collected = _collect_environment_proxies(os.environ if environ is None else environ)
+    no_proxy = collected.pop("no", None)
+    if no_proxy is not None and any(host.strip() == "*" for host in no_proxy[0].split(",")):
+        # httpx 语义：NO_PROXY 含 * 时完全不使用环境代理
+        return None
+    mounts: dict[str, tuple[str, str]] = {}
+    for scheme in ("https", "http"):
+        entry = collected.get(scheme) or collected.get("all")
+        if entry is not None:
+            url, source = entry
+            # httpx 会为无 scheme 的代理值补全 http://
+            mounts[scheme] = (url if "://" in url else f"http://{url}", source)
+    if not mounts:
+        return None
+    if len(mounts) == 2 and mounts["https"][0] == mounts["http"][0]:
+        url = mounts["https"][0]
+        sources = list(dict.fromkeys((mounts["https"][1], mounts["http"][1])))
+        description = f"{sanitize_proxy_url(url)}（来自环境变量 {'、'.join(sources)}）"
+    else:
+        description = "；".join(
+            f"{scheme.upper()} 请求 → {sanitize_proxy_url(url)}（来自环境变量 {source}）"
+            for scheme, (url, source) in mounts.items()
+        )
+    if no_proxy is not None:
+        description += f"；NO_PROXY={no_proxy[0]} 命中的主机将直连"
+    return description
 
 
 _logged_proxy_descriptions: set[str] = set()

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, TypeAlias, TypeVar
 from pydantic import BaseModel
 
 from yutto.auth import load_auth
-from yutto.utils.fetcher import FetcherContext
+from yutto.utils.fetcher import FetcherContext, sanitize_proxy_url
 
 if TYPE_CHECKING:
     from yutto.core.request import DownloadRequest
@@ -303,7 +303,7 @@ def _to_json_value(value: object) -> JsonValue:
             if _is_credential_field(json_key):
                 continue
             if json_key.casefold() == "proxy" and isinstance(item, str):
-                result[json_key] = _sanitize_proxy(item)
+                result[json_key] = sanitize_proxy_url(item)
                 continue
             result[json_key] = _to_json_value(item)
         return result
@@ -317,19 +317,3 @@ def _is_credential_field(field: str) -> bool:
     return normalized in _CREDENTIAL_FIELDS or normalized.endswith(
         ("_api_key", "_cookie", "_credential", "_password", "_secret", "_token")
     )
-
-
-def _sanitize_proxy(proxy: str) -> str:
-    scheme_separator = proxy.find("://")
-    if scheme_separator < 0:
-        return proxy
-
-    authority_start = scheme_separator + 3
-    authority_end = len(proxy)
-    for separator in "/?#":
-        if (index := proxy.find(separator, authority_start)) >= 0:
-            authority_end = min(authority_end, index)
-    credential_separator = proxy.rfind("@", authority_start, authority_end)
-    if credential_separator < 0:
-        return proxy
-    return f"{proxy[: scheme_separator + 3]}{proxy[credential_separator + 1 :]}"

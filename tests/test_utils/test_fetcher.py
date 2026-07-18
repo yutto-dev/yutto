@@ -16,6 +16,7 @@ from yutto.utils.fetcher import (
     create_sync_client,
     describe_effective_proxy,
     resolve_proxy,
+    sanitize_proxy_url,
 )
 from yutto.utils.functional import as_sync
 
@@ -162,7 +163,16 @@ async def test_touch_url_cache_is_scoped_to_context_and_client():
     assert second_client.calls == 1
 
 
-_PROXY_ENV_NAMES = ("ALL_PROXY", "HTTPS_PROXY", "HTTP_PROXY", "all_proxy", "https_proxy", "http_proxy")
+_PROXY_ENV_NAMES = (
+    "ALL_PROXY",
+    "HTTPS_PROXY",
+    "HTTP_PROXY",
+    "NO_PROXY",
+    "all_proxy",
+    "https_proxy",
+    "http_proxy",
+    "no_proxy",
+)
 
 
 def _clear_proxy_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -179,7 +189,7 @@ def test_describe_effective_proxy_prefers_explicit_proxy(monkeypatch: pytest.Mon
 def test_describe_effective_proxy_names_the_env_variable(monkeypatch: pytest.MonkeyPatch):
     _clear_proxy_env(monkeypatch)
     monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:3067")
-    assert describe_effective_proxy(None, True) == "http://127.0.0.1:3067（来自环境变量 HTTPS_PROXY）"
+    assert describe_effective_proxy(None, True) == "HTTPS 请求 → http://127.0.0.1:3067（来自环境变量 HTTPS_PROXY）"
 
 
 def test_describe_effective_proxy_ignores_env_without_trust_env(monkeypatch: pytest.MonkeyPatch):
@@ -192,6 +202,78 @@ def test_describe_effective_proxy_ignores_env_without_trust_env(monkeypatch: pyt
 def test_describe_effective_proxy_without_any_proxy(monkeypatch: pytest.MonkeyPatch):
     _clear_proxy_env(monkeypatch)
     assert describe_effective_proxy(None, True) is None
+
+
+def test_describe_effective_proxy_masks_credentials():
+    # 显式代理与环境代理的 userinfo 都不能进入描述（进而不能进入日志与去重 key）
+    assert describe_effective_proxy("http://user:secret@10.0.0.1:8080", True) == "http://10.0.0.1:8080"
+    description = describe_effective_proxy(None, True, environ={"ALL_PROXY": "http://user:secret@127.0.0.1:7890"})
+    assert description == "http://127.0.0.1:7890（来自环境变量 ALL_PROXY）"
+    assert "secret" not in description and "user" not in description
+
+
+def test_describe_effective_proxy_scheme_specific_beats_all_proxy():
+    # httpx 语义：HTTPS 请求优先用 HTTPS_PROXY，ALL_PROXY 仅兜底其余 scheme
+    description = describe_effective_proxy(
+        None,
+        True,
+        environ={"HTTPS_PROXY": "http://10.0.0.2:8080", "ALL_PROXY": "http://10.0.0.3:8080"},
+    )
+    assert description == (
+        "HTTPS 请求 → http://10.0.0.2:8080（来自环境变量 HTTPS_PROXY）；"
+        "HTTP 请求 → http://10.0.0.3:8080（来自环境变量 ALL_PROXY）"
+    )
+
+
+def test_describe_effective_proxy_merges_same_proxy_for_both_schemes():
+    description = describe_effective_proxy(
+        None,
+        True,
+        environ={"HTTPS_PROXY": "http://127.0.0.1:7890", "HTTP_PROXY": "http://127.0.0.1:7890"},
+    )
+    assert description == "http://127.0.0.1:7890（来自环境变量 HTTPS_PROXY、HTTP_PROXY）"
+
+
+def test_describe_effective_proxy_no_proxy_wildcard_disables_env_proxies():
+    # httpx 语义：NO_PROXY 含 * 时完全不使用环境代理
+    assert describe_effective_proxy(None, True, environ={"ALL_PROXY": "http://127.0.0.1:7890", "NO_PROXY": "*"}) is None
+
+
+def test_describe_effective_proxy_mentions_no_proxy_exceptions():
+    description = describe_effective_proxy(
+        None,
+        True,
+        environ={"ALL_PROXY": "http://127.0.0.1:7890", "NO_PROXY": "localhost,.example.com"},
+    )
+    assert description == (
+        "http://127.0.0.1:7890（来自环境变量 ALL_PROXY）；NO_PROXY=localhost,.example.com 命中的主机将直连"
+    )
+
+
+def test_describe_effective_proxy_lowercase_overrides_uppercase():
+    # urllib getproxies_environment 语义：小写变量覆盖大写变量，空值小写变量则移除代理
+    description = describe_effective_proxy(
+        None,
+        True,
+        environ={"HTTP_PROXY": "http://10.0.0.4:8080", "http_proxy": "http://10.0.0.5:8080"},
+    )
+    assert description == "HTTP 请求 → http://10.0.0.5:8080（来自环境变量 http_proxy）"
+    assert describe_effective_proxy(None, True, environ={"HTTPS_PROXY": "http://10.0.0.6:8080", "https_proxy": ""}) is (
+        None
+    )
+
+
+def test_describe_effective_proxy_normalizes_schemeless_values():
+    # httpx 会为无 scheme 的代理值补全 http://
+    description = describe_effective_proxy(None, True, environ={"ALL_PROXY": "127.0.0.1:7890"})
+    assert description == "http://127.0.0.1:7890（来自环境变量 ALL_PROXY）"
+
+
+def test_sanitize_proxy_url():
+    assert sanitize_proxy_url("http://user:secret@10.0.0.1:8080") == "http://10.0.0.1:8080"
+    assert sanitize_proxy_url("socks5://user@127.0.0.1:1080") == "socks5://127.0.0.1:1080"
+    assert sanitize_proxy_url("http://127.0.0.1:8080") == "http://127.0.0.1:8080"
+    assert sanitize_proxy_url("127.0.0.1:7890") == "127.0.0.1:7890"
 
 
 @as_sync
