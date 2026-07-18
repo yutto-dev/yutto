@@ -20,7 +20,7 @@ from yutto.runtime import TaskRuntime
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from yutto.runtime import EventReplay, TaskContext, TaskEvent, TaskSnapshot
+    from yutto.runtime import EventReplay, TaskCapacityPool, TaskContext, TaskEvent, TaskSnapshot
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -43,6 +43,8 @@ class DownloadTaskService:
         replay_limit: int = 100,
         task_limit: int = 256,
         task_id_factory: Callable[[], str] | None = None,
+        seq_allocator: Callable[[], int] | None = None,
+        capacity_pool: TaskCapacityPool | None = None,
     ):
         self._context_factory = context_factory
         self._application_factory = application_factory
@@ -52,6 +54,8 @@ class DownloadTaskService:
             replay_limit=replay_limit,
             task_limit=task_limit,
             task_id_factory=task_id_factory,
+            seq_allocator=seq_allocator,
+            capacity_pool=capacity_pool,
         )
 
     async def __aenter__(self) -> Self:
@@ -106,6 +110,8 @@ class ResolveTaskService:
         replay_limit: int = 100,
         task_limit: int = 256,
         task_id_factory: Callable[[], str] | None = None,
+        seq_allocator: Callable[[], int] | None = None,
+        capacity_pool: TaskCapacityPool | None = None,
     ):
         self._context_factory = context_factory
         self._application_factory = application_factory
@@ -115,6 +121,8 @@ class ResolveTaskService:
             replay_limit=replay_limit,
             task_limit=task_limit,
             task_id_factory=task_id_factory,
+            seq_allocator=seq_allocator,
+            capacity_pool=capacity_pool,
         )
 
     async def __aenter__(self) -> Self:
