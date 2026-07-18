@@ -9,13 +9,16 @@ from returns.result import Success
 
 import yutto.download_manager as download_manager_module
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import bind_download_event_sink
+from yutto.core.operation import bind_download_event_sink, collect_resolve_failures, report_resolve_failure
 from yutto.core.request import DownloadRequest
-from yutto.core.result import ResolvedItem, ResolveResult
-from yutto.download_manager import DownloadManager, ResolveFailedError
+from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
+from yutto.download_manager import DownloadManager
+from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, ResolveFailedError
+from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
@@ -139,17 +142,21 @@ class _FakeClientContext:
         return False
 
 
-def _patch_resolve_environment(monkeypatch: pytest.MonkeyPatch, extractor: type) -> None:
+def _patch_resolve_network(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         return True
 
     async def fake_get_redirected_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
         return Success(url)
 
-    monkeypatch.setattr(download_manager_module, "UgcVideoExtractor", extractor)
     monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
     monkeypatch.setattr(Fetcher, "get_redirected_url", fake_get_redirected_url)
     monkeypatch.setattr(download_manager_module, "create_client", lambda **_: _FakeClientContext())
+
+
+def _patch_resolve_environment(monkeypatch: pytest.MonkeyPatch, extractor: type) -> None:
+    _patch_resolve_network(monkeypatch)
+    monkeypatch.setattr(download_manager_module, "UgcVideoExtractor", extractor)
 
 
 class _ShortcutExtractorBase:
@@ -161,7 +168,83 @@ class _ShortcutExtractorBase:
 
 
 @as_sync
-async def test_execute_resolve_fails_when_no_entry_resolves(monkeypatch: pytest.MonkeyPatch):
+async def test_execute_resolve_treats_filtered_only_nones_as_empty_success(monkeypatch: pytest.MonkeyPatch):
+    class FilteredExtractor(_ShortcutExtractorBase):
+        async def __call__(
+            self,
+            ctx: FetcherContext,
+            client: httpx.AsyncClient,
+            options: ExtractorOptions,
+        ) -> list[ResolvableEpisode | None]:
+            # 纯过滤（如发布时间过滤 / 选集过滤）产生的 None：没有失败上报
+            return [None, None]
+
+    _patch_resolve_environment(monkeypatch, FilteredExtractor)
+    manager = DownloadManager()
+    request = DownloadRequest.model_validate({"source": {"url": "BV1filtered"}})
+
+    with bind_download_event_sink(RecordingEventSink()):
+        result = await manager.execute_resolve(FetcherContext(), [request])
+
+    assert result == ResolveResult(items=(), failures=())
+
+
+@as_sync
+async def test_execute_resolve_raises_original_error_when_batch_source_is_gone(monkeypatch: pytest.MonkeyPatch):
+    async def raise_not_found(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
+
+    _patch_resolve_network(monkeypatch)
+    monkeypatch.setattr("yutto.extractor.ugc_video_batch.get_ugc_video_list", raise_not_found)
+    manager = DownloadManager()
+    request = DownloadRequest.model_validate(
+        {"source": {"url": "https://www.bilibili.com/video/BV1AbCdEfGhI"}, "scope": {"batch": True}}
+    )
+
+    # 真实 UgcVideoBatchExtractor 错误路径：NotFoundError 被吞成 [] 后不再伪装成空成功，
+    # 任务以原始异常失败，wire 错误码是稳定的 NOT_FOUND_ERROR 而非 internal_error
+    with bind_download_event_sink(RecordingEventSink()), pytest.raises(NotFoundError) as error_info:
+        await manager.execute_resolve(FetcherContext(), [request])
+    assert error_info.value.code is ErrorCode.NOT_FOUND_ERROR
+
+
+@as_sync
+async def test_execute_resolve_reports_partial_failures(monkeypatch: pytest.MonkeyPatch):
+    async def resolve_episode() -> EpisodeData | None:
+        return None
+
+    resolvable = ResolvableEpisode(info=make_info("P1"), data_coro=CoroutineWrapper(resolve_episode()))
+
+    class PartialExtractor(_ShortcutExtractorBase):
+        async def __call__(
+            self,
+            ctx: FetcherContext,
+            client: httpx.AsyncClient,
+            options: ExtractorOptions,
+        ) -> list[ResolvableEpisode | None]:
+            report_resolve_failure(MaxRetryError("获取视频 av2 信息失败：超出最大重试次数！"))
+            return [resolvable, None]
+
+    _patch_resolve_environment(monkeypatch, PartialExtractor)
+    manager = DownloadManager()
+    request = DownloadRequest.model_validate({"source": {"url": "BV1partial"}})
+
+    with bind_download_event_sink(RecordingEventSink()):
+        result = await manager.execute_resolve(FetcherContext(), [request])
+
+    # 部分失败：成功条目照常返回，失败以结构化形式保留在 failures 中
+    assert len(result.items) == 1
+    assert result.failures == (
+        ResolveFailure(
+            type="MaxRetryError",
+            message="获取视频 av2 信息失败：超出最大重试次数！",
+            code=ErrorCode.MAX_RETRY_ERROR.value,
+        ),
+    )
+
+
+@as_sync
+async def test_execute_resolve_aggregates_multiple_failures(monkeypatch: pytest.MonkeyPatch):
     class AllFailedExtractor(_ShortcutExtractorBase):
         async def __call__(
             self,
@@ -169,16 +252,47 @@ async def test_execute_resolve_fails_when_no_entry_resolves(monkeypatch: pytest.
             client: httpx.AsyncClient,
             options: ExtractorOptions,
         ) -> list[ResolvableEpisode | None]:
-            # extractor 用 None 同时表达「解析失败」与「被过滤」（视频不存在 / 无权限 / 请求失败）
+            report_resolve_failure(NotFoundError("啊叻？视频 av1 不见了诶"))
+            report_resolve_failure(MaxRetryError("获取视频 av2 信息失败：超出最大重试次数！"))
             return [None, None]
 
     _patch_resolve_environment(monkeypatch, AllFailedExtractor)
     manager = DownloadManager()
     request = DownloadRequest.model_validate({"source": {"url": "BV1failed"}})
 
-    # 「来源存在条目但全部未解析成功」不能伪装成一次成功的空结果
-    with bind_download_event_sink(RecordingEventSink()), pytest.raises(ResolveFailedError):
+    with bind_download_event_sink(RecordingEventSink()), pytest.raises(ResolveFailedError) as error_info:
         await manager.execute_resolve(FetcherContext(), [request])
+    assert error_info.value.code is ErrorCode.RESOLVE_FAILED_ERROR
+
+
+@as_sync
+async def test_resolve_ugc_video_lists_reports_expected_failures(monkeypatch: pytest.MonkeyPatch):
+    # pubdate 需落在默认过滤窗口（1971-01-01 起）内，用一个正常的时间戳
+    fake_list = {"title": "视频 2", "pubdate": 1700000000, "avid": AId("2"), "pages": []}
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        if str(avid) == "1":
+            raise MaxRetryError("超出最大重试次数！")
+        return fake_list
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    client = cast("httpx.AsyncClient", object())
+    with collect_resolve_failures() as failures:
+        results = await resolve_ugc_video_lists(
+            FetcherContext(),
+            client,
+            [AId("1"), AId("2")],
+            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+        )
+
+    # 失败以 None 占位、顺序保持，同时结构化上报 —— 收藏夹等批量 extractor 丢弃 None 前信息不再丢失
+    assert results == [None, fake_list]
+    assert [type(error).__name__ for error in failures] == ["MaxRetryError"]
 
 
 @as_sync

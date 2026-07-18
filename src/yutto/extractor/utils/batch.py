@@ -4,6 +4,7 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from yutto.api.ugc_video import get_ugc_video_list
+from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import MaxRetryError, NoAccessPermissionError, NotFoundError
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
@@ -43,9 +44,11 @@ async def resolve_ugc_video_lists(
             return ugc_video_list
         except (NotFoundError, NoAccessPermissionError) as e:
             Logger.error(e.message)
+            report_resolve_failure(e)
             return None
         except MaxRetryError as e:
             Logger.error(f"获取视频 {avid} 信息失败：{e.message}")
+            report_resolve_failure(e)
             return None
 
     return await asyncio.gather(*[resolve_one(avid) for avid in avids])

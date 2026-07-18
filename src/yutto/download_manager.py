@@ -9,10 +9,10 @@ from biliass import BlockOptions
 
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import emit_download_event
-from yutto.core.result import DownloadResult, ItemResult, ResolvedItem, ResolveResult
+from yutto.core.operation import collect_resolve_failures, emit_download_event
+from yutto.core.result import DownloadResult, ItemResult, ResolvedItem, ResolveFailure, ResolveResult
 from yutto.downloader.downloader import process_download
-from yutto.exceptions import NotLoginError, WrongArgumentError, WrongUrlError
+from yutto.exceptions import NotLoginError, ResolveFailedError, WrongArgumentError, WrongUrlError
 from yutto.extractor import (
     BangumiBatchExtractor,
     BangumiExtractor,
@@ -83,15 +83,6 @@ def show_batch_episode_title(
     return current_display_group
 
 
-class ResolveFailedError(RuntimeError):
-    """来源存在条目，但没有任何条目解析成功。
-
-    extractor 目前用 ``None`` 同时表达「解析失败」与「被过滤」，逐项原因暂无法
-    区分（见 issue #749 的 failed/filtered 语义讨论）；本异常至少保证「全部
-    未解析成功」不会伪装成一次成功的空结果。
-    """
-
-
 class DownloadManager:
     """Execute download requests sequentially in one shared network session."""
 
@@ -114,24 +105,27 @@ class DownloadManager:
     async def execute_resolve(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> ResolveResult:
         """Enumerate episodes for requests in order without downloading anything."""
         items: list[ResolvedItem] = []
-        total_entries = 0
         ctx.set_fetch_semaphore(fetch_workers=ctx.fetch_workers)
-        async with create_client(
-            cookies=ctx.cookies,
-            trust_env=ctx.trust_env,
-            proxy=ctx.proxy,
-        ) as client:
-            for request in requests:
-                episode_list = await self.resolve_request(client, ctx, request)
-                total_entries += len(episode_list)
-                items.extend(await self._resolved_items_from_episodes(episode_list))
-        if total_entries > 0 and not items:
-            # 真正的空来源（total_entries == 0，如空收藏夹）仍是成功的空结果
-            raise ResolveFailedError(
-                "解析未得到任何条目：来源存在条目但全部解析失败或被过滤"
-                "（可能视频不存在 / 无访问权限 / 网络请求失败，详见 server 日志）"
-            )
-        return ResolveResult(items=tuple(items))
+        with collect_resolve_failures() as collected:
+            async with create_client(
+                cookies=ctx.cookies,
+                trust_env=ctx.trust_env,
+                proxy=ctx.proxy,
+            ) as client:
+                for request in requests:
+                    items.extend(await self.resolve_items(client, ctx, request))
+        if collected and not items:
+            # 存在预期内失败且没有任何条目解析成功：任务失败而非空成功。
+            # 单一失败直接抛原始异常，wire 上保留其稳定错误码（如 not found）；
+            # 纯过滤导致的空结果（无失败上报，如时间过滤/空收藏夹）仍是 completed 空结果
+            if len(collected) == 1:
+                raise collected[0]
+            raise ResolveFailedError(f"解析未得到任何条目：{len(collected)} 个来源/条目解析失败（详见 server 日志）")
+        failures = tuple(
+            ResolveFailure(type=type(error).__name__, message=error.message, code=error.code.value)
+            for error in collected
+        )
+        return ResolveResult(items=tuple(items), failures=failures)
 
     async def resolve_items(
         self,

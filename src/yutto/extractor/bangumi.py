@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
+from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import (
     EpisodeNotFoundError,
     HttpStatusError,
@@ -73,4 +74,5 @@ class BangumiExtractor(SingleExtractor):
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
+            report_resolve_failure(e)
             return None

@@ -73,5 +73,18 @@ class ResolvedItem(_ResultModel):
     tags: tuple[str, ...] = ()
 
 
+class ResolveFailure(_ResultModel):
+    """一次预期内的解析失败（视频不存在 / 无访问权限 / 请求重试耗尽等）。
+
+    ``type`` / ``message`` / ``code`` 与任务级错误（TaskError）同构，
+    ``code`` 来自 yutto 的稳定错误码表。
+    """
+
+    type: str
+    message: str
+    code: int | str
+
+
 class ResolveResult(_ResultModel):
     items: tuple[ResolvedItem, ...] = Field(default_factory=tuple)
+    failures: tuple[ResolveFailure, ...] = Field(default_factory=tuple)

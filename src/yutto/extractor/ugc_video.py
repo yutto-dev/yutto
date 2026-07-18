@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 from yutto.api.ugc_video import get_ugc_video_list
+from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import (
     HttpStatusError,
     NoAccessPermissionError,
@@ -98,4 +99,5 @@ class UgcVideoExtractor(SingleExtractor):
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
+            report_resolve_failure(e)
             return None
