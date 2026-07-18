@@ -7,13 +7,14 @@ from yutto.core.events import (
     DownloadBatchStarted,
     DownloadEvent,
     DownloadEventSink,
+    DownloadItemListed,
     DownloadItemSkipped,
     DownloadProgress,
     DownloadRequestQueued,
     DownloadStageChanged,
 )
 from yutto.core.request import DownloadRequest
-from yutto.core.result import DownloadResult
+from yutto.core.result import DownloadResult, ResolveResult
 from yutto.runtime import TaskRuntime
 
 if TYPE_CHECKING:
@@ -25,6 +26,10 @@ if TYPE_CHECKING:
 
 class DownloadApplication(Protocol):
     async def download(self, request: DownloadRequest) -> DownloadResult: ...
+
+
+class ResolveApplication(Protocol):
+    async def resolve(self, request: DownloadRequest) -> ResolveResult: ...
 
 
 class DownloadTaskService:
@@ -86,6 +91,69 @@ class DownloadTaskService:
         return await application.download(request)
 
 
+class ResolveTaskService:
+    """Run frontend-independent resolve requests through a single-worker runtime.
+
+    Resolve tasks run in their own runtime so that enumerating a collection is
+    never queued behind a long-running download task.
+    """
+
+    def __init__(
+        self,
+        context_factory: Callable[[DownloadRequest], FetcherContext],
+        application_factory: Callable[[FetcherContext, DownloadEventSink], ResolveApplication],
+        *,
+        replay_limit: int = 100,
+        task_limit: int = 256,
+        task_id_factory: Callable[[], str] | None = None,
+    ):
+        self._context_factory = context_factory
+        self._application_factory = application_factory
+        self.runtime = TaskRuntime[DownloadRequest, ResolveResult](
+            self._run,
+            worker_count=1,
+            replay_limit=replay_limit,
+            task_limit=task_limit,
+            task_id_factory=task_id_factory,
+        )
+
+    async def __aenter__(self) -> Self:
+        await self.start()
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        await self.close(cancel_pending=True)
+
+    async def start(self) -> None:
+        await self.runtime.start()
+
+    async def close(self, *, cancel_pending: bool = False) -> None:
+        await self.runtime.close(cancel_pending=cancel_pending)
+
+    async def submit(self, request: DownloadRequest) -> TaskSnapshot[DownloadRequest, ResolveResult]:
+        return await self.runtime.submit(request)
+
+    def get(self, task_id: str) -> TaskSnapshot[DownloadRequest, ResolveResult] | None:
+        return self.runtime.get(task_id)
+
+    def list(self) -> tuple[TaskSnapshot[DownloadRequest, ResolveResult], ...]:
+        return self.runtime.list()
+
+    async def cancel(self, task_id: str) -> TaskSnapshot[DownloadRequest, ResolveResult] | None:
+        return await self.runtime.cancel(task_id)
+
+    def replay(self, task_id: str, *, after_seq: int = 0) -> EventReplay | None:
+        return self.runtime.replay(task_id, after_seq=after_seq)
+
+    def add_event_listener(self, listener: Callable[[TaskEvent], None]) -> Callable[[], None]:
+        return self.runtime.add_event_listener(listener)
+
+    async def _run(self, request: DownloadRequest, task_context: TaskContext) -> ResolveResult:
+        ctx = self._context_factory(request)
+        application = self._application_factory(ctx, _RuntimeDownloadEventSink(task_context))
+        return await application.resolve(request)
+
+
 class _RuntimeDownloadEventSink:
     def __init__(self, task_context: TaskContext):
         self._task_context = task_context
@@ -118,5 +186,31 @@ def _encode_runtime_event(event: DownloadEvent) -> tuple[str, dict[str, object]]
             return "item_skipped", {"item": item, "reason": reason.value}
         case DownloadArtifactCreated(item=item, path=path):
             return "artifact_created", {"path": path.as_posix(), "item": item}
+        case DownloadItemListed(
+            avid=avid,
+            cid=cid,
+            url=url,
+            name=name,
+            title=title,
+            cover_url=cover_url,
+            planned_path=planned_path,
+            display_group=display_group,
+            uploader=uploader,
+            description=description,
+            tags=tags,
+        ):
+            return "item_listed", {
+                "avid": avid,
+                "cid": cid,
+                "url": url,
+                "name": name,
+                "title": title,
+                "cover_url": cover_url,
+                "planned_path": planned_path.as_posix(),
+                "display_group": display_group,
+                "uploader": uploader,
+                "description": description,
+                "tags": list(tags),
+            }
         case _ as unreachable:
             assert_never(unreachable)

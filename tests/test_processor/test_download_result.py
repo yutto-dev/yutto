@@ -52,7 +52,9 @@ def make_resource_only_episode() -> EpisodeData:
         "info": {
             "avid": AId("1"),
             "cid": CId("1"),
+            "url": "https://www.bilibili.com/video/av1?p=1",
             "name": "episode",
+            "title": "episode",
             "cover_url": "",
             "path": Path("series/episode"),
             "display_group": None,

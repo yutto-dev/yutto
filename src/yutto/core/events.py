@@ -55,6 +55,23 @@ class DownloadArtifactCreated:
     path: Path
 
 
+@dataclass(frozen=True, slots=True)
+class DownloadItemListed:
+    """One episode enumerated during a resolve run; carries only stable listing data."""
+
+    avid: str
+    cid: str
+    url: str
+    name: str
+    title: str
+    cover_url: str
+    planned_path: Path
+    display_group: str | None = None
+    uploader: str = ""
+    description: str = ""
+    tags: tuple[str, ...] = ()
+
+
 DownloadEvent: TypeAlias = (
     DownloadBatchStarted
     | DownloadRequestQueued
@@ -62,6 +79,7 @@ DownloadEvent: TypeAlias = (
     | DownloadProgress
     | DownloadItemSkipped
     | DownloadArtifactCreated
+    | DownloadItemListed
 )
 
 

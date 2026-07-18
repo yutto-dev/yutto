@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from yutto.auth import default_auth_file
 from yutto.cli.request_adapter import download_request_parser_from_settings
 from yutto.core.application import YuttoApplication
-from yutto.core.task_service import DownloadTaskService
+from yutto.core.task_service import DownloadTaskService, ResolveTaskService
 from yutto.download_manager import DownloadManager
 from yutto.server.service import ServerPolicy, ServerPolicyOptions
 from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer
@@ -112,6 +112,11 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
         _build_download_application,
         task_limit=args.task_limit,
     )
+    resolve_service = ResolveTaskService(
+        policy.build_context,
+        _build_download_application,
+        task_limit=args.task_limit,
+    )
     return YuttoWebSocketServer(
         task_service,
         WebSocketServerOptions(
@@ -122,11 +127,13 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
         ),
         prepare_request=policy.prepare_request,
         parse_request=parse_request,
+        resolve_service=resolve_service,
     )
 
 
 def _build_download_application(ctx: FetcherContext, event_sink: DownloadEventSink) -> YuttoApplication:
-    return YuttoApplication(ctx, workflow=DownloadManager(), event_sink=event_sink)
+    manager = DownloadManager()
+    return YuttoApplication(ctx, workflow=manager, event_sink=event_sink, resolve_workflow=manager)
 
 
 @as_sync
