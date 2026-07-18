@@ -25,6 +25,10 @@ if TYPE_CHECKING:
     from yutto.core.result import DownloadResult, ResolveResult
     from yutto.runtime import EventReplay, TaskEvent, TaskSnapshot
 
+    _AnyTaskSnapshot: TypeAlias = (
+        TaskSnapshot[DownloadRequest, DownloadResult] | TaskSnapshot[DownloadRequest, ResolveResult]
+    )
+
 
 AUTHENTICATION_ERROR = -32001
 TASK_NOT_FOUND_ERROR = -32004
@@ -66,11 +70,6 @@ class ResolveTaskApi(Protocol):
     def replay(self, task_id: str, *, after_seq: int = 0) -> EventReplay | None: ...
 
     def add_event_listener(self, listener: Callable[[TaskEvent], None]) -> Callable[[], None]: ...
-
-
-_AnyTaskSnapshot: TypeAlias = (
-    "TaskSnapshot[DownloadRequest, DownloadResult] | TaskSnapshot[DownloadRequest, ResolveResult]"
-)
 
 
 class _SlowConsumerCloser:

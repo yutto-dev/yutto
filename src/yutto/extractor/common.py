@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from yutto.utils.fetcher import FetcherContext
 
 
-def _display_fields_from_metadata(metadata: MetaData | None) -> tuple[str, str, list[str]]:
+def _get_display_fields_from_metadata(metadata: MetaData | None) -> tuple[str, str, list[str]]:
     """listing 元数据中用于前端展示的字段：UP 主、简介、标签。"""
     if metadata is None:
         return "", "", []
@@ -79,7 +79,7 @@ def build_bangumi_info(
     }
     subpath_variables_base.update(subpath_variables)
     path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
-    uploader, description, tags = _display_fields_from_metadata(bangumi_info["metadata"])
+    uploader, description, tags = _get_display_fields_from_metadata(bangumi_info["metadata"])
     return EpisodeInfo(
         avid=avid,
         cid=bangumi_info["cid"],
@@ -176,7 +176,7 @@ def build_cheese_info(
     }
     subpath_variables_base.update(subpath_variables)
     path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
-    uploader, description, tags = _display_fields_from_metadata(cheese_info["metadata"])
+    uploader, description, tags = _get_display_fields_from_metadata(cheese_info["metadata"])
     return EpisodeInfo(
         avid=avid,
         cid=cheese_info["cid"],
@@ -282,7 +282,7 @@ def build_ugc_video_info(
     }
     subpath_variables_base.update(subpath_variables)
     path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
-    uploader, description, tags = _display_fields_from_metadata(ugc_video_info["metadata"])
+    uploader, description, tags = _get_display_fields_from_metadata(ugc_video_info["metadata"])
     return EpisodeInfo(
         avid=avid,
         cid=ugc_video_info["cid"],
