@@ -13,7 +13,7 @@ from yutto.core.operation import bind_download_event_sink, collect_resolve_failu
 from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
 from yutto.download_manager import DownloadManager
-from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, ResolveFailedError
+from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, NotLoginError, ResolveFailedError
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.asynclib import CoroutineWrapper
@@ -206,6 +206,24 @@ async def test_execute_resolve_raises_original_error_when_batch_source_is_gone(m
     with bind_download_event_sink(RecordingEventSink()), pytest.raises(NotFoundError) as error_info:
         await manager.execute_resolve(FetcherContext(), [request])
     assert error_info.value.code is ErrorCode.NOT_FOUND_ERROR
+
+
+@as_sync
+async def test_execute_resolve_raises_original_error_when_watch_later_needs_login(monkeypatch: pytest.MonkeyPatch):
+    async def raise_not_login(ctx: FetcherContext, client: httpx.AsyncClient):
+        raise NotLoginError("账号未登录，无法获取稍后再看列表")
+
+    _patch_resolve_network(monkeypatch)
+    monkeypatch.setattr("yutto.extractor.user_watch_later.get_watch_later_avids", raise_not_login)
+    manager = DownloadManager()
+    request = DownloadRequest.model_validate(
+        {"source": {"url": "https://www.bilibili.com/watchlater/"}, "scope": {"batch": True}}
+    )
+
+    # 真实 UserWatchLaterExtractor 错误路径：未登录时不再以空成功掩盖 NotLoginError
+    with bind_download_event_sink(RecordingEventSink()), pytest.raises(NotLoginError) as error_info:
+        await manager.execute_resolve(FetcherContext(), [request])
+    assert error_info.value.code is ErrorCode.NOT_LOGIN_ERROR
 
 
 @as_sync
