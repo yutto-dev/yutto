@@ -10,7 +10,7 @@ from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Awaitable, Callable
 
     import httpx
 
@@ -26,7 +26,7 @@ async def resolve_ugc_video_lists(
     avids: list[AvId],
     *,
     publication_time_filter: PublicationTimeFilter,
-    on_resolved: Callable[[int, AvId, UgcVideoList | None], None] | None = None,
+    on_resolved: Callable[[int, AvId, UgcVideoList | None], Awaitable[None]] | None = None,
 ) -> list[UgcVideoList | None]:
     """并发解析一批视频的分 P 列表，结果顺序与 avids 一致
 
@@ -34,9 +34,11 @@ async def resolve_ugc_video_lists(
     这里无需额外限流；被时间过滤或解析失败（NotFoundError / NoAccessPermissionError /
     MaxRetryError）的视频以 None 占位，不会中断整批解析，其余未预期的异常仍会向外抛出。
 
-    on_resolved 在**每个视频解析完成时**按完成顺序被调用（参数为 (index, avid, result)，
+    on_resolved 在**每个视频解析完成时**按完成顺序被 await（参数为 (index, avid, result)，
     index 是该 avid 在入参列表中的位置）——提取器用它把已就绪的条目立即推流给前端，
-    不必等整批 gather 结束。
+    不必等整批 gather 结束。回调约定在每推送一个分集后让出一次控制权（内置提取器均如此），
+    事件生产对消费者（如 server 每连接的 sender）始终可调度，单个超多分 P 的视频
+    也不会产生超出发送队列容量的同步 burst。
     """
 
     async def resolve_one(avid: AvId) -> UgcVideoList | None:
@@ -61,10 +63,7 @@ async def resolve_ugc_video_lists(
     async def resolve_and_notify(index: int, avid: AvId) -> UgcVideoList | None:
         result = await resolve_one(avid)
         if on_resolved is not None:
-            on_resolved(index, avid, result)
-            # 回调内的逐分集推流是同步的；每个视频之后让出控制权，
-            # 给事件消费者（如 server 的 sender）排空发送队列的机会
-            await asyncio.sleep(0)
+            await on_resolved(index, avid, result)
         return result
 
     return await asyncio.gather(*[resolve_and_notify(index, avid) for index, avid in enumerate(avids)])

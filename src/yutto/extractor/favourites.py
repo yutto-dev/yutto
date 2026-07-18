@@ -53,7 +53,7 @@ class FavouritesExtractor(BatchExtractor):
         # 模式下前端逐条看到列表）；完成顺序与收藏夹顺序无关，最终按 index 重排。
         episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
-        def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
+        async def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
             if ugc_video_list is None:
                 return
             favourite_video = favourite_videos[index]
@@ -83,6 +83,7 @@ class FavouritesExtractor(BatchExtractor):
                     display_group=display_group,
                 )
                 notify_episode_listed(episode)
+                await asyncio.sleep(0)
                 episodes.append(episode)
             episodes_by_index[index] = episodes
 

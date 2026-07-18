@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import TYPE_CHECKING
 
@@ -46,7 +47,7 @@ class UserWatchLaterExtractor(BatchExtractor):
         # 逐视频解析完成即构建分集并推流（notify_episode_listed），最终按 index 重排。
         episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
-        def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
+        async def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
             if ugc_video_list is None:
                 return
             built: list[ResolvableEpisode] = []
@@ -66,6 +67,7 @@ class UserWatchLaterExtractor(BatchExtractor):
                     "稍后再看/{title}/{name}",
                 )
                 notify_episode_listed(episode)
+                await asyncio.sleep(0)
                 built.append(episode)
             episodes_by_index[index] = built
 

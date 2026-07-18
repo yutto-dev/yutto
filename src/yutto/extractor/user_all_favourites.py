@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import TYPE_CHECKING
 
@@ -53,7 +54,7 @@ class UserAllFavouritesExtractor(BatchExtractor):
             # 回调在本轮循环内就被消费；循环变量经默认参数绑定（B023）。
             episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
-            def build_episodes(
+            async def build_episodes(
                 index: int,
                 _avid: AvId,
                 ugc_video_list: UgcVideoList | None,
@@ -91,6 +92,7 @@ class UserAllFavouritesExtractor(BatchExtractor):
                         display_group=display_group,
                     )
                     notify_episode_listed(episode)
+                    await asyncio.sleep(0)
                     built.append(episode)
                 _episodes_by_index[index] = built
 

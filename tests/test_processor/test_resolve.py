@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -371,6 +372,40 @@ async def test_resolve_ugc_video_lists_reports_expected_failures(monkeypatch: py
     # 失败以 None 占位、顺序保持，同时结构化上报 —— 收藏夹等批量 extractor 丢弃 None 前信息不再丢失
     assert results == [None, fake_list]
     assert [type(error).__name__ for error in failures] == ["MaxRetryError"]
+
+
+@as_sync
+async def test_resolve_ugc_video_lists_awaits_async_on_resolved(monkeypatch: pytest.MonkeyPatch):
+    fake_list = {"title": "视频", "pubdate": 1700000000, "avid": AId("2"), "pages": []}
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        return fake_list
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    calls: list[tuple[int, str, bool]] = []
+
+    async def on_resolved(index: int, avid: object, result: object) -> None:
+        calls.append((index, str(avid), result is not None))
+        # 契约：回调是异步的，逐分集的让出由回调自身负责（内置提取器均如此）
+        await asyncio.sleep(0)
+
+    client = cast("httpx.AsyncClient", object())
+    results = await resolve_ugc_video_lists(
+        FetcherContext(),
+        client,
+        [AId("1"), AId("2")],
+        publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+        on_resolved=on_resolved,
+    )
+
+    # 每个视频恰好触发一次 await 回调，携带 (入参序 index, avid, 解析结果)
+    assert len(results) == 2
+    assert sorted(calls) == [(0, "1", True), (1, "2", True)]
 
 
 @as_sync
