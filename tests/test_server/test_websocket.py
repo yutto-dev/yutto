@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
@@ -11,8 +12,13 @@ from websockets.typing import Origin
 
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult
-from yutto.runtime import TaskContext, TaskRuntime
-from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer, _SlowConsumerCloser
+from yutto.runtime import TaskContext, TaskRuntime, TaskSnapshot, TaskState
+from yutto.server.websocket import (
+    WebSocketServerOptions,
+    YuttoWebSocketServer,
+    _SlowConsumerCloser,
+    _task_snapshot_order,
+)
 from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor
@@ -20,7 +26,7 @@ pytestmark = pytest.mark.processor
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from yutto.runtime import EventReplay, TaskEvent, TaskSnapshot
+    from yutto.runtime import EventReplay, TaskEvent
 
 
 class FakeDownloadTaskApi:
@@ -245,6 +251,34 @@ async def test_download_task_lifecycle_replay_and_live_notifications():
             assert listed["next_offset"] is None
     finally:
         await server.close()
+
+
+def _snapshot_stub(task_id: str, created_at: datetime) -> TaskSnapshot[Any, Any]:
+    return TaskSnapshot(
+        task_id=task_id,
+        state=TaskState.QUEUED,
+        payload=cast("Any", None),
+        result=None,
+        error=None,
+        created_at=created_at,
+        started_at=None,
+        finished_at=None,
+        last_event_seq=0,
+    )
+
+
+def test_task_list_order_is_global_by_created_at_across_runtimes():
+    # download 与 resolve 两个 runtime 的快照如按分块拼接，新任务会插入合并序列中段，
+    # offset 分页会跨页漏掉/重复条目；task.list 的契约是按提交时间全局排序、并列时按 task_id 稳定
+    download_early = _snapshot_stub("task-1", datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC))
+    resolve_mid = _snapshot_stub("resolve-1", datetime(2026, 1, 1, 12, 0, 1, tzinfo=UTC))
+    download_late = _snapshot_stub("task-2", datetime(2026, 1, 1, 12, 0, 2, tzinfo=UTC))
+    tie_a = _snapshot_stub("a-tie", datetime(2026, 1, 1, 12, 0, 3, tzinfo=UTC))
+    tie_b = _snapshot_stub("b-tie", datetime(2026, 1, 1, 12, 0, 3, tzinfo=UTC))
+
+    merged = sorted([download_late, tie_b, resolve_mid, tie_a, download_early], key=_task_snapshot_order)
+
+    assert [snapshot.task_id for snapshot in merged] == ["task-1", "resolve-1", "task-2", "a-tie", "b-tie"]
 
 
 def test_transport_rejects_non_loopback_hosts_and_empty_tokens():

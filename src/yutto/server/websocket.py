@@ -19,6 +19,7 @@ from yutto.server.service import event_to_json, replay_to_json, snapshot_summary
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import datetime
     from socket import socket
 
     from yutto.core.result import DownloadResult, ResolveResult
@@ -91,6 +92,15 @@ class _SlowConsumerCloser:
     async def wait(self) -> None:
         if self._task is not None:
             await asyncio.gather(self._task, return_exceptions=True)
+
+
+def _task_snapshot_order(snapshot: _AnyTaskSnapshot) -> tuple[datetime, str]:
+    """task.list 的全局顺序：按提交时间升序、并列时按 task_id 稳定。
+
+    download / resolve 两个 runtime 的快照如按分块拼接，新任务会插入合并序列中段，
+    offset 分页就会跨页漏掉或重复条目。
+    """
+    return (snapshot.created_at, snapshot.task_id)
 
 
 def _task_snapshot_summary_to_json(
@@ -323,6 +333,7 @@ class YuttoWebSocketServer:
             snapshots: list[_AnyTaskSnapshot] = list(self._task_service.list())
             if self._resolve_service is not None:
                 snapshots.extend(self._resolve_service.list())
+            snapshots.sort(key=_task_snapshot_order)
             selected = snapshots[offset : offset + limit]
             next_offset = offset + len(selected)
             return {
