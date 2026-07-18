@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -9,7 +10,12 @@ from returns.result import Success
 
 import yutto.download_manager as download_manager_module
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import bind_download_event_sink, collect_resolve_failures, report_resolve_failure
+from yutto.core.operation import (
+    bind_download_event_sink,
+    collect_resolve_failures,
+    notify_episode_listed,
+    report_resolve_failure,
+)
 from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
 from yutto.download_manager import DownloadManager
@@ -132,6 +138,61 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
             tags=("标签A", "标签B"),
         ),
     ]
+
+
+@as_sync
+async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypatch: pytest.MonkeyPatch):
+    """流式提取器经 notify_episode_listed 提前推送的条目不会被收尾补发重复。"""
+
+    async def noop() -> EpisodeData | None:
+        return None
+
+    streamed = ResolvableEpisode(info=make_info("P1", display_group="标题"), data_coro=CoroutineWrapper(noop()))
+    late = ResolvableEpisode(info=make_info("P2", display_group="标题"), data_coro=CoroutineWrapper(noop()))
+
+    class FakeExtractor:
+        def resolve_shortcut(self, url: str) -> tuple[bool, str]:
+            return True, f"https://example.com/{url}"
+
+        def match(self, url: str) -> bool:
+            return url == "https://example.com/BV1stream"
+
+        async def __call__(
+            self,
+            ctx: FetcherContext,
+            client: httpx.AsyncClient,
+            options: ExtractorOptions,
+        ) -> list[ResolvableEpisode | None]:
+            # 流式提取器：解析过程中先推送 P1；P2 留给 resolve_items 收尾补发
+            notify_episode_listed(streamed)
+            return [streamed, late]
+
+    async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+        return True
+
+    async def fake_get_redirected_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(url)
+
+    monkeypatch.setattr(download_manager_module, "UgcVideoExtractor", FakeExtractor)
+    monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
+    monkeypatch.setattr(Fetcher, "get_redirected_url", fake_get_redirected_url)
+
+    manager = DownloadManager()
+    sink = RecordingEventSink()
+    client = cast("httpx.AsyncClient", object())
+    request = DownloadRequest.model_validate({"source": {"url": "BV1stream"}})
+
+    with bind_download_event_sink(sink):
+        items = await manager.resolve_items(client, FetcherContext(), request)
+
+    listed = [event for event in sink.events if isinstance(event, DownloadItemListed)]
+    # 每条恰好一次：流式推送的 P1 在前（提取中），P2 收尾补发
+    assert [event.name for event in listed] == ["P1", "P2"]
+    # 返回列表保持提取器给出的顺序
+    assert [item.name for item in items] == ["P1", "P2"]
+    # 两个懒协程都被关闭
+    assert inspect.getcoroutinestate(streamed.data_coro.coro) == inspect.CORO_CLOSED
+    assert inspect.getcoroutinestate(late.data_coro.coro) == inspect.CORO_CLOSED
 
 
 class _FakeClientContext:
@@ -311,6 +372,115 @@ async def test_resolve_ugc_video_lists_reports_expected_failures(monkeypatch: py
     # 失败以 None 占位、顺序保持，同时结构化上报 —— 收藏夹等批量 extractor 丢弃 None 前信息不再丢失
     assert results == [None, fake_list]
     assert [type(error).__name__ for error in failures] == ["MaxRetryError"]
+
+
+@as_sync
+async def test_resolve_ugc_video_lists_awaits_async_on_resolved(monkeypatch: pytest.MonkeyPatch):
+    fake_list = {"title": "视频", "pubdate": 1700000000, "avid": AId("2"), "pages": []}
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        return fake_list
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    calls: list[tuple[int, str, bool]] = []
+
+    async def on_resolved(index: int, avid: object, result: object) -> None:
+        calls.append((index, str(avid), result is not None))
+        # 契约：回调是异步的，逐分集的让出由回调自身负责（内置提取器均如此）
+        await asyncio.sleep(0)
+
+    client = cast("httpx.AsyncClient", object())
+    results = await resolve_ugc_video_lists(
+        FetcherContext(),
+        client,
+        [AId("1"), AId("2")],
+        publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+        on_resolved=on_resolved,
+    )
+
+    # 每个视频恰好触发一次 await 回调，携带 (入参序 index, avid, 解析结果)
+    assert len(results) == 2
+    assert sorted(calls) == [(0, "1", True), (1, "2", True)]
+
+
+@as_sync
+async def test_resolve_ugc_video_lists_cancels_siblings_on_fatal_error(monkeypatch: pytest.MonkeyPatch):
+    first_started = asyncio.Event()
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        if str(avid) == "1":
+            first_started.set()
+            await asyncio.sleep(0.05)
+            return {"title": "视频 1", "pubdate": 1700000000, "avid": AId("1"), "pages": []}
+        raise RuntimeError("boom")
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    calls: list[int] = []
+
+    async def on_resolved(index: int, avid: object, result: object) -> None:
+        calls.append(index)
+
+    client = cast("httpx.AsyncClient", object())
+    # 单个未预期异常直接抛原始异常（而非 ExceptionGroup），wire 错误类型保持稳定
+    with pytest.raises(RuntimeError, match="boom"):
+        await resolve_ugc_video_lists(
+            FetcherContext(),
+            client,
+            [AId("1"), AId("2")],
+            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+            on_resolved=on_resolved,
+        )
+
+    # fatal error 会取消并等待兄弟协程：函数抛错后不会再有任何回调发生
+    assert first_started.is_set()
+    assert calls == []
+    await asyncio.sleep(0.1)
+    assert calls == []
+
+
+@as_sync
+async def test_resolve_ugc_video_lists_cancels_workers_when_callback_fails(monkeypatch: pytest.MonkeyPatch):
+    resolved: list[str] = []
+
+    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: object):
+        if str(avid) == "2":
+            await asyncio.sleep(0.05)
+        resolved.append(str(avid))
+        return {"title": str(avid), "pubdate": 1700000000, "avid": avid, "pages": []}
+
+    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(None)
+
+    monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
+    monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
+
+    async def on_resolved(index: int, avid: object, result: object) -> None:
+        raise RuntimeError("callback boom")
+
+    client = cast("httpx.AsyncClient", object())
+    with pytest.raises(RuntimeError, match="callback boom"):
+        await resolve_ugc_video_lists(
+            FetcherContext(),
+            client,
+            [AId("1"), AId("2")],
+            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+            on_resolved=on_resolved,
+        )
+
+    # 回调自身失败同样取消其余 worker：慢的 avid 2 不会再完成解析
+    assert resolved == ["1"]
+    await asyncio.sleep(0.1)
+    assert resolved == ["1"]
 
 
 @as_sync

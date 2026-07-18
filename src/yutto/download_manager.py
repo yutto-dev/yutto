@@ -9,7 +9,7 @@ from biliass import BlockOptions
 
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import collect_resolve_failures, emit_download_event
+from yutto.core.operation import bind_episode_listed_hook, collect_resolve_failures, emit_download_event
 from yutto.core.result import DownloadResult, ItemResult, ResolvedItem, ResolveFailure, ResolveResult
 from yutto.downloader.downloader import process_download
 from yutto.exceptions import NotLoginError, ResolveFailedError, WrongArgumentError, WrongUrlError
@@ -83,6 +83,42 @@ def show_batch_episode_title(
     return current_display_group
 
 
+def _resolved_item_from(episode: ResolvableEpisode) -> ResolvedItem:
+    info = episode.info
+    return ResolvedItem(
+        avid=str(info["avid"]),
+        cid=str(info["cid"]),
+        url=info["url"],
+        name=info["name"],
+        title=info["title"],
+        cover_url=info["cover_url"],
+        planned_path=info["path"],
+        display_group=info["display_group"],
+        uploader=info["uploader"],
+        description=info["description"],
+        tags=tuple(info["tags"]),
+    )
+
+
+def _emit_item_listed(episode: ResolvableEpisode) -> None:
+    item = _resolved_item_from(episode)
+    emit_download_event(
+        DownloadItemListed(
+            avid=item.avid,
+            cid=item.cid,
+            url=item.url,
+            name=item.name,
+            title=item.title,
+            cover_url=item.cover_url,
+            planned_path=item.planned_path,
+            display_group=item.display_group,
+            uploader=item.uploader,
+            description=item.description,
+            tags=item.tags,
+        )
+    )
+
+
 class DownloadManager:
     """Execute download requests sequentially in one shared network session."""
 
@@ -136,54 +172,31 @@ class DownloadManager:
         """List the stable episode snapshots of one request; the volatile data is never fetched.
 
         返回的 planned_path 是模板解析出的计划路径；实际下载时可能因去重而调整。
+        item_listed 逐条推送：支持流式的 batch 提取器在每个视频解析完成时经
+        notify_episode_listed 交出分集（长列表边解析边出现在前端），提取结束后
+        这里只补发未流式推送过的条目；返回列表始终保持提取器的原始顺序。
         """
-        episode_list = await self.resolve_request(client, ctx, request)
-        return await self._resolved_items_from_episodes(episode_list)
+        streamed: set[int] = set()
 
-    async def _resolved_items_from_episodes(
-        self,
-        episode_list: list[ResolvableEpisode | None],
-    ) -> list[ResolvedItem]:
+        def stream_episode(episode: ResolvableEpisode) -> None:
+            streamed.add(id(episode))
+            _emit_item_listed(episode)
+
+        with bind_episode_listed_hook(stream_episode):
+            episode_list = await self.resolve_request(client, ctx, request)
         items: list[ResolvedItem] = []
         for episode in episode_list:
             if episode is None:
                 continue
             # resolve 模式不解析 data，关闭懒协程以免其永远不被 await
             episode.data_coro.coro.close()
-            info = episode.info
-            item = ResolvedItem(
-                avid=str(info["avid"]),
-                cid=str(info["cid"]),
-                url=info["url"],
-                name=info["name"],
-                title=info["title"],
-                cover_url=info["cover_url"],
-                planned_path=info["path"],
-                display_group=info["display_group"],
-                uploader=info["uploader"],
-                description=info["description"],
-                tags=tuple(info["tags"]),
-            )
-            emit_download_event(
-                DownloadItemListed(
-                    avid=item.avid,
-                    cid=item.cid,
-                    url=item.url,
-                    name=item.name,
-                    title=item.title,
-                    cover_url=item.cover_url,
-                    planned_path=item.planned_path,
-                    display_group=item.display_group,
-                    uploader=item.uploader,
-                    description=item.description,
-                    tags=item.tags,
-                )
-            )
-            items.append(item)
-            # 大列表会在无 await 的循环里同步产生大量 item_listed；让出控制权给
-            # 事件消费者（如 server 每连接的 sender），否则超出其发送队列容量的
-            # 部分会触发 slow-consumer 断连
-            await asyncio.sleep(0)
+            if id(episode) not in streamed:
+                _emit_item_listed(episode)
+                # 未流式化的提取器仍会在这个无 await 的循环里整批产出 item_listed；
+                # 逐条让出控制权给事件消费者（如 server 每连接的 sender），
+                # 避免超出其发送队列容量触发 slow-consumer 断连
+                await asyncio.sleep(0)
+            items.append(_resolved_item_from(episode))
         return items
 
     async def process_request(

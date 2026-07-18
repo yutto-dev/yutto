@@ -118,7 +118,7 @@ yutto serve \
 
 `request` 与 `download.start` 使用完全相同的请求模型。解析任务运行在独立的单 worker runtime 中，轻量的列表解析不会排在长下载任务之后；`task.get` / `task.list` / `task.cancel` / `task.subscribe` 对两类任务统一路由。
 
-解析过程中每列出一个条目会推送一条 `item_listed` 事件，任务完成后 `result.items` 包含全部条目。条目与 `item_listed` 事件的 `data` 携带相同字段：
+解析过程中每列出一个条目会推送一条 `item_listed` 事件。对合集 / 收藏夹 / 视频列表 / 空间投稿 / 稍后再看这类列表型批量来源，事件在解析进行中就按各视频完成的先后逐条推送（长列表边解析边出现，不必等整批完成），因此事件的到达顺序可能与最终顺序不同；每个条目恰好推送一次。任务完成后 `result.items` 仍按来源的原始顺序包含全部条目，需要稳定顺序的客户端应以 `result.items` 为准。条目与 `item_listed` 事件的 `data` 携带相同字段：
 
 - `avid` / `cid`：条目标识；
 - `url`：单集原子 URL，可直接用于后续 `download.start`；
