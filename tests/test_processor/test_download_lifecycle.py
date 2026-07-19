@@ -5,6 +5,7 @@ import asyncio
 import pytest
 
 from yutto.downloader.downloader import _run_download_lifecycle
+from yutto.utils.asynclib import make_coroutine_factory
 from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor
@@ -23,6 +24,25 @@ class FakeBuffer:
 
     async def close(self) -> None:
         self.closed = True
+
+
+@as_sync
+async def test_make_coroutine_factory_defers_coroutine_creation():
+    created: list[int] = []
+
+    async def resolve(value: int) -> int:
+        return value
+
+    def create_coroutine(value: int):
+        created.append(value)
+        return resolve(value)
+
+    factory = make_coroutine_factory(create_coroutine)(42)
+    assert created == []
+
+    coroutine = factory()
+    assert created == [42]
+    assert await coroutine == 42
 
 
 @pytest.mark.processor
@@ -54,7 +74,7 @@ async def test_download_lifecycle_failure_cancels_siblings_and_closes_buffers():
             sibling_cancelled.set()
 
     with pytest.raises(RuntimeError, match="block failed"):
-        await _run_download_lifecycle([progress(), failing_block(), sibling_block()], [buffer])
+        await _run_download_lifecycle([progress, failing_block, sibling_block], [buffer])
 
     assert progress_cancelled.is_set()
     assert sibling_cancelled.is_set()
@@ -70,7 +90,7 @@ async def test_download_lifecycle_success_closes_buffers_as_flushed():
     async def complete_block():
         await asyncio.sleep(0)
 
-    await _run_download_lifecycle([complete_block()], [buffer])
+    await _run_download_lifecycle([complete_block], [buffer])
 
     assert buffer.closed is True
     assert buffer.ensure_flushed_calls == 1
@@ -85,7 +105,7 @@ async def test_download_lifecycle_unflushed_success_is_an_error_and_still_closes
         await asyncio.sleep(0)
 
     with pytest.raises(RuntimeError, match="buffer 尚未清空"):
-        await _run_download_lifecycle([complete_block()], [buffer])
+        await _run_download_lifecycle([complete_block], [buffer])
 
     assert buffer.closed is True
     assert buffer.ensure_flushed_calls == 1
@@ -105,7 +125,7 @@ async def test_download_lifecycle_cancellation_cancels_children_and_closes_buffe
         finally:
             block_cancelled.set()
 
-    lifecycle_task = asyncio.create_task(_run_download_lifecycle([block()], [buffer]))
+    lifecycle_task = asyncio.create_task(_run_download_lifecycle([block], [buffer]))
     await block_started.wait()
     lifecycle_task.cancel()
 

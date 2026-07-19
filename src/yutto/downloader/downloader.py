@@ -17,7 +17,7 @@ from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
 from yutto.exceptions import PostprocessingError
 from yutto.media.quality import audio_quality_map, video_quality_map
-from yutto.utils.asynclib import CoroutineWrapper, first_successful_with_check
+from yutto.utils.asynclib import first_successful_with_check, make_coroutine_factory
 from yutto.utils.console.colorful import colored_string
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
@@ -29,9 +29,9 @@ from yutto.utils.metadata import write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Iterable
+    from collections.abc import Callable, Coroutine, Iterable
     from pathlib import Path
-    from typing import Protocol
+    from typing import Any, Protocol
 
     import httpx
 
@@ -123,13 +123,20 @@ def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[
 
 
 async def _run_download_lifecycle(
-    coroutines: Iterable[Awaitable[None]],
+    coroutine_factories: Iterable[Callable[[], Coroutine[Any, Any, None]]],
     buffers: Iterable[_DownloadBuffer],
 ) -> None:
-    """运行一次下载所需的协程，并统一回收任务与文件缓冲区。"""
-    tasks = [asyncio.ensure_future(coroutine) for coroutine in coroutines]
+    """按需创建下载任务，并统一回收任务与文件缓冲区。"""
+    tasks: list[asyncio.Task[None]] = []
     buffer_list = list(buffers)
     try:
+        for create_coroutine in coroutine_factories:
+            coroutine = create_coroutine()
+            try:
+                tasks.append(asyncio.create_task(coroutine))
+            except BaseException:
+                coroutine.close()
+                raise
         await asyncio.gather(*tasks)
         for buffer in buffer_list:
             buffer.ensure_flushed()
@@ -155,13 +162,16 @@ async def download_video_and_audio(
 
     buffers: list[AsyncFileBuffer | None] = [None, None]
     sizes: list[int | None] = [None, None]
-    coroutines_list: list[list[CoroutineWrapper[None]]] = []
-    scheduled = False
+    coroutine_factories_list: list[list[Callable[[], Coroutine[Any, Any, None]]]] = []
+    lifecycle_started = False
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
     ctx.set_download_semaphore(options["num_workers"])
 
     async def get_size(url: str) -> int | None:
         return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
+
+    defer_download_file = make_coroutine_factory(Fetcher.download_file_with_offset)
+    defer_progress = make_coroutine_factory(show_progress)
 
     try:
         if video is not None:
@@ -171,21 +181,19 @@ async def download_video_and_audio(
                 [get_size(url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
             )
             sizes[0] = vsize
-            video_coroutines = [
-                CoroutineWrapper(
-                    Fetcher.download_file_with_offset(
-                        ctx,
-                        client,
-                        video["url"],
-                        mirrors_filter(video["mirrors"]),
-                        vbuf,
-                        offset,
-                        block_size,
-                    )
+            video_coroutine_factories: list[Callable[[], Coroutine[Any, Any, None]]] = [
+                defer_download_file(
+                    ctx,
+                    client,
+                    video["url"],
+                    mirrors_filter(video["mirrors"]),
+                    vbuf,
+                    offset,
+                    block_size,
                 )
                 for offset, block_size in slice_blocks(vbuf.written_size, vsize, options["block_size"])
             ]
-            coroutines_list.append(video_coroutines)
+            coroutine_factories_list.append(video_coroutine_factories)
 
         if audio is not None:
             abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
@@ -194,36 +202,32 @@ async def download_video_and_audio(
                 [get_size(url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
             )
             sizes[1] = asize
-            audio_coroutines = [
-                CoroutineWrapper(
-                    Fetcher.download_file_with_offset(
-                        ctx,
-                        client,
-                        audio["url"],
-                        mirrors_filter(audio["mirrors"]),
-                        abuf,
-                        offset,
-                        block_size,
-                    )
+            audio_coroutine_factories: list[Callable[[], Coroutine[Any, Any, None]]] = [
+                defer_download_file(
+                    ctx,
+                    client,
+                    audio["url"],
+                    mirrors_filter(audio["mirrors"]),
+                    abuf,
+                    offset,
+                    block_size,
                 )
                 for offset, block_size in slice_blocks(abuf.written_size, asize, options["block_size"])
             ]
-            coroutines_list.append(audio_coroutines)
+            coroutine_factories_list.append(audio_coroutine_factories)
 
         # 为保证音频流和视频流尽可能并行，因此将两者混合一下～
-        coroutines = list(xmerge(*coroutines_list))
-        coroutines.insert(
-            0, CoroutineWrapper(show_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))))
+        coroutine_factories = list(xmerge(*coroutine_factories_list))
+        coroutine_factories.insert(
+            0,
+            defer_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))),
         )
-        scheduled = True
         Logger.info("开始下载……")
-        await _run_download_lifecycle(coroutines, filter_none_values(buffers))
+        lifecycle_started = True
+        await _run_download_lifecycle(coroutine_factories, filter_none_values(buffers))
         Logger.info("下载完成！")
     finally:
-        if not scheduled:
-            for coroutine_group in coroutines_list:
-                for coroutine in coroutine_group:
-                    coroutine.coro.close()
+        if not lifecycle_started:
             for buffer in filter_none_values(buffers):
                 await buffer.close()
 

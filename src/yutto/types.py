@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, NamedTuple, TypedDict
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
     from pathlib import Path
+    from typing import Any
 
     from yutto.media.codec import AudioCodec, VideoCodec
     from yutto.media.quality import AudioQuality, VideoQuality
-    from yutto.utils.asynclib import CoroutineWrapper
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
     from yutto.utils.filter import PublicationTimeFilter
     from yutto.utils.metadata import ChapterInfoData, MetaData
@@ -259,10 +260,10 @@ class EpisodeData(TypedDict):
 
 
 class ResolvableEpisode(NamedTuple):
-    """listing 阶段产出的条目：info 立即可用，data 经由懒协程在下载前按需解析"""
+    """listing 阶段产出的条目：info 立即可用，data 在下载前按需创建并解析"""
 
     info: EpisodeInfo
-    data_coro: CoroutineWrapper[EpisodeData | None]
+    resolve_data: Callable[[], Coroutine[Any, Any, EpisodeData | None]]
 
 
 class DownloaderOptions(TypedDict):

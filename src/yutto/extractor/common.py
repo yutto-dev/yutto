@@ -25,7 +25,7 @@ from yutto.path_templates import (
     resolve_path_template,
 )
 from yutto.types import EpisodeData, EpisodeInfo, ResolvableEpisode, format_ids
-from yutto.utils.asynclib import CoroutineWrapper
+from yutto.utils.asynclib import make_coroutine_factory
 from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
@@ -150,7 +150,7 @@ def make_bangumi_episode(
     info = build_bangumi_info(bangumi_info, options, subpath_variables, auto_subpath_template)
     return ResolvableEpisode(
         info=info,
-        data_coro=CoroutineWrapper(extract_bangumi_data(ctx, client, info, bangumi_info, options)),
+        resolve_data=make_coroutine_factory(extract_bangumi_data)(ctx, client, info, bangumi_info, options),
     )
 
 
@@ -247,7 +247,7 @@ def make_cheese_episode(
     info = build_cheese_info(cheese_info, options, subpath_variables, auto_subpath_template)
     return ResolvableEpisode(
         info=info,
-        data_coro=CoroutineWrapper(extract_cheese_data(ctx, client, episode_id, info, cheese_info, options)),
+        resolve_data=make_coroutine_factory(extract_cheese_data)(ctx, client, episode_id, info, cheese_info, options),
     )
 
 
@@ -358,5 +358,5 @@ def make_ugc_video_episode(
     info = build_ugc_video_info(avid, ugc_video_info, options, subpath_variables, auto_subpath_template, display_group)
     return ResolvableEpisode(
         info=info,
-        data_coro=CoroutineWrapper(extract_ugc_video_data(ctx, client, info, ugc_video_info, options)),
+        resolve_data=make_coroutine_factory(extract_ugc_video_data)(ctx, client, info, ugc_video_info, options),
     )
