@@ -88,15 +88,17 @@ async def resolve_ugc_video_lists(
 
     Completion = IndexedResolveItem[UgcVideoList] | IndexedResolveFailure | _FilteredResolveItem
     completed_by_index: dict[int, Completion] = {}
-    completed: asyncio.Queue[Completion] = asyncio.Queue()
+    completed: asyncio.Queue[Completion] | None = asyncio.Queue() if on_resolved is not None else None
 
     async def resolve_into(index: int, avid: AvId) -> None:
         result = await resolve_one(index, avid)
         completed_by_index[index] = result
-        completed.put_nowait(result)
+        if completed is not None:
+            completed.put_nowait(result)
 
     async def publish_completed(deliver: Callable[[IndexedResolveItem[UgcVideoList]], Awaitable[None]]) -> None:
         # 单一 producer：完成一个交付一个，publisher 的每次 await 都给消费者排空队列的机会
+        assert completed is not None
         for _ in range(len(avids)):
             result = await completed.get()
             if isinstance(result, IndexedResolveItem):
