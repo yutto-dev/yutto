@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -22,7 +21,6 @@ from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, NotLoginError, ResolveFailedError
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId, CId, ResolvableEpisode
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
@@ -68,9 +66,8 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
         executed.append("ran")
         return None
 
-    data_coro = resolve_episode()
     info = make_info("P1", display_group="标题")
-    resolvable = ResolvableEpisode(info=info, data_coro=CoroutineWrapper(data_coro))
+    resolvable = ResolvableEpisode(info=info, resolve_data=resolve_episode)
 
     class FakeExtractor:
         def resolve_shortcut(self, url: str) -> tuple[bool, str]:
@@ -119,9 +116,8 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
         tags=("标签A", "标签B"),
     )
     assert items == [expected_item]
-    # data 懒协程从未执行，且已被关闭，不会留下 un-awaited 警告
+    # data resolver 从未调用，因此没有未 await 的 coroutine 需要清理
     assert executed == []
-    assert inspect.getcoroutinestate(data_coro) == inspect.CORO_CLOSED
     assert sink.events == [
         DownloadStageChanged(name=DownloadStage.RESOLVING),
         DownloadItemListed(
@@ -144,11 +140,14 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
 async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypatch: pytest.MonkeyPatch):
     """流式提取器经 notify_episode_listed 提前推送的条目不会被收尾补发重复。"""
 
+    resolved: list[str] = []
+
     async def noop() -> EpisodeData | None:
+        resolved.append("ran")
         return None
 
-    streamed = ResolvableEpisode(info=make_info("P1", display_group="标题"), data_coro=CoroutineWrapper(noop()))
-    late = ResolvableEpisode(info=make_info("P2", display_group="标题"), data_coro=CoroutineWrapper(noop()))
+    streamed = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+    late = ResolvableEpisode(info=make_info("P2", display_group="标题"), resolve_data=noop)
 
     class FakeExtractor:
         def resolve_shortcut(self, url: str) -> tuple[bool, str]:
@@ -190,9 +189,8 @@ async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypa
     assert [event.name for event in listed] == ["P1", "P2"]
     # 返回列表保持提取器给出的顺序
     assert [item.name for item in items] == ["P1", "P2"]
-    # 两个懒协程都被关闭
-    assert inspect.getcoroutinestate(streamed.data_coro.coro) == inspect.CORO_CLOSED
-    assert inspect.getcoroutinestate(late.data_coro.coro) == inspect.CORO_CLOSED
+    # resolve-only 路径不会调用 data resolver，也不会提前创建 coroutine
+    assert resolved == []
 
 
 class _FakeClientContext:
@@ -292,7 +290,7 @@ async def test_execute_resolve_reports_partial_failures(monkeypatch: pytest.Monk
     async def resolve_episode() -> EpisodeData | None:
         return None
 
-    resolvable = ResolvableEpisode(info=make_info("P1"), data_coro=CoroutineWrapper(resolve_episode()))
+    resolvable = ResolvableEpisode(info=make_info("P1"), resolve_data=resolve_episode)
 
     class PartialExtractor(_ShortcutExtractorBase):
         async def __call__(

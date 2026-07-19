@@ -4,31 +4,29 @@ import asyncio
 import inspect
 import time
 import types
-from functools import wraps
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from functools import partial, wraps
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from typing_extensions import ParamSpec
 
 from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Generator, Iterable
+    from collections.abc import Callable, Coroutine, Iterable
 
 RetT = TypeVar("RetT")
 P = ParamSpec("P")
 
 
-class CoroutineWrapper(Generic[RetT]):
-    coro: Coroutine[Any, Any, RetT]
+def make_coroutine_factory(
+    fn: Callable[P, Coroutine[Any, Any, RetT]],
+) -> Callable[P, Callable[[], Coroutine[Any, Any, RetT]]]:
+    """绑定 coroutine function 的参数，延迟到 factory 调用时才创建 coroutine。"""
 
-    def __init__(self, coro: Coroutine[Any, Any, RetT]):
-        self.coro = coro
+    def bind(*args: P.args, **kwargs: P.kwargs) -> Callable[[], Coroutine[Any, Any, RetT]]:
+        return partial(fn, *args, **kwargs)
 
-    def __await__(self) -> Generator[Any, None, RetT]:
-        return (yield from self.coro.__await__())
-
-    def __del__(self):
-        self.coro.close()
+    return bind
 
 
 async def sleep_with_status_bar_refresh(seconds: float):

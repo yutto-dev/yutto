@@ -17,9 +17,8 @@ from yutto.download_manager import (
     ensure_unique_path,
     show_batch_episode_title,
 )
-from yutto.exceptions import WrongArgumentError
+from yutto.exceptions import NotLoginError, WrongArgumentError
 from yutto.types import AId, CId, ResolvableEpisode
-from yutto.utils.asynclib import CoroutineWrapper
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
 from yutto.utils.filter import PublicationTimeFilter
@@ -151,7 +150,7 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
             async def resolve_episode() -> EpisodeData | None:
                 return episode
 
-            return [ResolvableEpisode(info=episode["info"], data_coro=CoroutineWrapper(resolve_episode()))]
+            return [ResolvableEpisode(info=episode["info"], resolve_data=resolve_episode)]
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         validation_requirements.append(requirements)
@@ -245,6 +244,64 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
         },
     }
     assert result == (ItemResult(state=ItemState.DONE, output_path=Path("downloads/series/episode.mkv")),)
+
+
+@as_sync
+async def test_process_request_does_not_create_unreached_episode_coroutines(monkeypatch: pytest.MonkeyPatch):
+    first_episode = make_episode("series/first")
+    second_episode = make_episode("series/second")
+    created_coroutines: list[str] = []
+
+    def make_resolver(name: str, episode: EpisodeData):
+        def resolve_data():
+            created_coroutines.append(name)
+
+            async def resolve_episode() -> EpisodeData:
+                return episode
+
+            return resolve_episode()
+
+        return resolve_data
+
+    episodes: list[ResolvableEpisode | None] = [
+        ResolvableEpisode(info=first_episode["info"], resolve_data=make_resolver("first", first_episode)),
+        ResolvableEpisode(info=second_episode["info"], resolve_data=make_resolver("second", second_episode)),
+    ]
+    validation_results = iter([True, False])
+
+    async def fake_resolve_request(
+        client: httpx.AsyncClient,
+        ctx: FetcherContext,
+        request: DownloadRequest,
+    ) -> list[ResolvableEpisode | None]:
+        return episodes
+
+    async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+        return next(validation_results)
+
+    async def fake_process_download(
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        episode_data: EpisodeData,
+        options: DownloaderOptions,
+    ) -> ItemResult:
+        return ItemResult(state=ItemState.DONE, output_path=episode_data["info"]["path"])
+
+    manager = DownloadManager()
+    monkeypatch.setattr(manager, "resolve_request", fake_resolve_request)
+    monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
+    monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
+    monkeypatch.setattr(Logger, "new_line", lambda: None)
+
+    with pytest.raises(NotLoginError):
+        await manager.process_request(
+            cast("httpx.AsyncClient", object()),
+            FetcherContext(),
+            make_request(None),
+        )
+
+    # 第二个条目在校验失败前从未进入解析，因此连 coroutine 对象都不会创建。
+    assert created_coroutines == ["first"]
 
 
 @as_sync

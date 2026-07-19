@@ -188,8 +188,6 @@ class DownloadManager:
         for episode in episode_list:
             if episode is None:
                 continue
-            # resolve 模式不解析 data，关闭懒协程以免其永远不被 await
-            episode.data_coro.coro.close()
             if id(episode) not in streamed:
                 _emit_item_listed(episode)
                 # 未流式化的提取器仍会在这个无 await 的循环里整批产出 item_listed；
@@ -233,7 +231,7 @@ class DownloadManager:
                 await sleep_with_status_bar_refresh(request.network.download_interval)
 
             # 这时候才真正开始解析链接
-            episode_data = await episode.data_coro
+            episode_data = await episode.resolve_data()
             if episode_data is None:
                 continue
             # 保证路径唯一
