@@ -4,7 +4,6 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
-from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import (
     EpisodeNotFoundError,
     HttpStatusError,
@@ -14,13 +13,15 @@ from yutto.exceptions import (
 )
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import make_cheese_episode
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import EpisodeId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import ExtractorResolveOutcome
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -50,8 +51,11 @@ class CheeseExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> ResolvableEpisode | None:
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
+    ) -> ExtractorResolveOutcome:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         cheese_list = await get_cheese_list(ctx, client, season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
@@ -63,18 +67,21 @@ class CheeseExtractor(SingleExtractor):
             else:
                 raise EpisodeNotFoundError("在列表中未找到该剧集")
 
-            return make_cheese_episode(
-                ctx,
-                client,
-                self.episode_id,
-                cheese_list_item,
-                options,
-                {
-                    "title": cheese_list["title"],
-                },
-                "{name}",
+            return ResolveOutcome(
+                items=(
+                    make_cheese_episode(
+                        ctx,
+                        client,
+                        self.episode_id,
+                        cheese_list_item,
+                        options,
+                        {
+                            "title": cheese_list["title"],
+                        },
+                        "{name}",
+                    ),
+                )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
-            report_resolve_failure(e)
-            return None
+            return ResolveOutcome(failures=(e,))

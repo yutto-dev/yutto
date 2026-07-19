@@ -32,6 +32,8 @@ pytestmark = pytest.mark.processor
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from yutto.api.ugc_video import UgcVideoList
+    from yutto.extractor.utils.batch import IndexedResolveItem
     from yutto.runtime import EventReplay, TaskEvent
 
 
@@ -129,10 +131,10 @@ class BatchStreamingResolveApi(FakeResolveTaskApi):
     async def _run(self, request: DownloadRequest, context: TaskContext) -> ResolveResult:
         await self.release.wait()
 
-        async def on_resolved(index: int, avid: object, result: object) -> None:
+        async def on_resolved(resolved: IndexedResolveItem[UgcVideoList]) -> None:
             # 模拟内置提取器的回调：逐分集 emit 并让出控制权
             for page in range(self.pages_per_video):
-                context.emit("item_listed", {"avid": str(avid), "page": page})
+                context.emit("item_listed", {"avid": str(resolved.source), "page": page})
                 await asyncio.sleep(0)
 
         await resolve_ugc_video_lists(

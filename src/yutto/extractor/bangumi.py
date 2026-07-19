@@ -4,7 +4,6 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.bangumi import get_bangumi_list, get_season_id_by_episode_id
-from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import (
     EpisodeNotFoundError,
     HttpStatusError,
@@ -14,13 +13,15 @@ from yutto.exceptions import (
 )
 from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import make_bangumi_episode
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import EpisodeId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import ExtractorResolveOutcome
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -49,8 +50,11 @@ class BangumiExtractor(SingleExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> ResolvableEpisode | None:
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
+    ) -> ExtractorResolveOutcome:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         bangumi_list = await get_bangumi_list(ctx, client, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
@@ -62,17 +66,20 @@ class BangumiExtractor(SingleExtractor):
             else:
                 raise EpisodeNotFoundError("在列表中未找到该剧集")
 
-            return make_bangumi_episode(
-                ctx,
-                client,
-                bangumi_list_item,
-                options,
-                {
-                    "title": bangumi_list["title"],
-                },
-                "{name}",
+            return ResolveOutcome(
+                items=(
+                    make_bangumi_episode(
+                        ctx,
+                        client,
+                        bangumi_list_item,
+                        options,
+                        {
+                            "title": bangumi_list["title"],
+                        },
+                        "{name}",
+                    ),
+                )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
             Logger.error(e.message)
-            report_resolve_failure(e)
-            return None
+            return ResolveOutcome(failures=(e,))

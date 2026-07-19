@@ -10,6 +10,7 @@ from yutto.api.bangumi import (
 )
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_bangumi_episode
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import EpisodeId, MediaId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
@@ -17,7 +18,8 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
+    from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -71,8 +73,13 @@ class BangumiBatchExtractor(BatchExtractor):
             self.season_id = await get_season_id_by_media_id(ctx, client, media_id)
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[ResolvableEpisode | None]:
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
+        *,
+        on_item: EpisodeListedCallback | None = None,
+    ) -> ExtractorResolveOutcome:
         await self._parse_ids(ctx, client)
 
         bangumi_list = await get_bangumi_list(ctx, client, self.season_id)
@@ -84,16 +91,18 @@ class BangumiBatchExtractor(BatchExtractor):
         # 选集过滤
         episodes = parse_episodes_selection(options["episodes"], len(bangumi_list["pages"]))
         bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
-        return [
-            make_bangumi_episode(
-                ctx,
-                client,
-                bangumi_item,
-                options,
-                {
-                    "title": bangumi_list["title"],
-                },
-                "{title}/{name}",
+        return ResolveOutcome(
+            items=tuple(
+                make_bangumi_episode(
+                    ctx,
+                    client,
+                    bangumi_item,
+                    options,
+                    {
+                        "title": bangumi_list["title"],
+                    },
+                    "{title}/{name}",
+                )
+                for bangumi_item in bangumi_list["pages"]
             )
-            for bangumi_item in bangumi_list["pages"]
-        ]
+        )

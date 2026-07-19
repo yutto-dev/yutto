@@ -55,20 +55,21 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", touch_url_ok)
 
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         FetcherContext(),
         make_fake_client(),
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert [result["title"] if result is not None else None for result in results] == [
+    assert [item.value["title"] for item in outcome.items] == [
         "video-1",
         "video-2",
-        None,
         "video-4",
         "video-5",
     ]
+    assert [item.index for item in outcome.items] == [0, 1, 3, 4]
+    assert outcome.failures == ()
 
 
 @pytest.mark.processor
@@ -92,17 +93,18 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         FetcherContext(),
         make_fake_client(),
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert results[0] is not None
-    assert results[1] is None
-    assert results[2] is None
-    assert results[3] is not None
+    assert [item.index for item in outcome.items] == [0, 3]
+    assert [str(item.source) for item in outcome.items] == ["1", "4"]
+    assert [failure.index for failure in outcome.failures] == [1, 2]
+    assert [str(failure.source) for failure in outcome.failures] == ["2", "3"]
+    assert [type(failure.error).__name__ for failure in outcome.failures] == ["NotFoundError", "MaxRetryError"]
 
 
 @pytest.mark.processor
@@ -137,12 +139,13 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
     avids: list[AvId] = [AId(str(i)) for i in range(10)]
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         ctx,
         make_fake_client(),
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert all(result is not None for result in results)
+    assert len(outcome.items) == len(avids)
+    assert outcome.failures == ()
     assert max_running == fetch_workers
