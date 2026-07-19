@@ -5,7 +5,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_favourite_info, get_favourite_items, get_user_name
-from yutto.extractor._abc import StreamingBatchExtractor
+from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from yutto.utils.fetcher import FetcherContext
 
 
-class FavouritesExtractor(StreamingBatchExtractor):
+class FavouritesExtractor(BatchExtractor):
     """用户单一收藏夹"""
 
     REGEX_FAV = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<fid>\d+)((&ftype=create)|$)")

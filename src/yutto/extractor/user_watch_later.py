@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from yutto.api.space import get_watch_later_avids
 from yutto.exceptions import NotLoginError
-from yutto.extractor._abc import StreamingBatchExtractor
+from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from yutto.utils.fetcher import FetcherContext
 
 
-class UserWatchLaterExtractor(StreamingBatchExtractor):
+class UserWatchLaterExtractor(BatchExtractor):
     """用户稍后再看"""
 
     REGEX_WATCH_LATER_INDEX = re.compile(r"https?://www\.bilibili\.com/watchlater/?.*?$")

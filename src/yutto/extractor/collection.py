@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from yutto.api.collection import get_collection_details
 from yutto.api.space import get_user_name
-from yutto.extractor._abc import StreamingBatchExtractor
+from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from yutto.utils.fetcher import FetcherContext
 
 
-class CollectionExtractor(StreamingBatchExtractor):
+class CollectionExtractor(BatchExtractor):
     """视频合集"""
 
     REGEX_COLLECTION_LISTS = re.compile(

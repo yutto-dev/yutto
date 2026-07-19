@@ -14,7 +14,7 @@ from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, NotLoginError, ResolveFailedError
-from yutto.extractor._abc import StreamingBatchExtractor
+from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId, CId, ResolvableEpisode
@@ -151,7 +151,7 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
     final_copy = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
     late = ResolvableEpisode(info=make_info("P2", display_group="标题"), resolve_data=noop)
 
-    class FakeExtractor(StreamingBatchExtractor):
+    class FakeExtractor(BatchExtractor):
         def resolve_shortcut(self, id: str) -> tuple[bool, str]:
             return True, f"https://example.com/{id}"
 

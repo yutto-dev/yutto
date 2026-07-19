@@ -28,7 +28,7 @@ from yutto.extractor import (
     UserAllUgcVideosExtractor,
     UserWatchLaterExtractor,
 )
-from yutto.extractor._abc import StreamingBatchExtractor
+from yutto.extractor._abc import BatchExtractor
 from yutto.path_templates import create_unique_path_resolver
 from yutto.types import EpisodeData, ExtractorOptions
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
@@ -395,7 +395,7 @@ class DownloadManager:
                     ai_translation_language=request.resources.ai_translation_language,
                     publication_time_filter=publication_time_filter,
                 )
-                if on_item is not None and isinstance(extractor, StreamingBatchExtractor):
+                if isinstance(extractor, BatchExtractor):
                     download_list = await extractor(ctx, client, extractor_options, on_item=on_item)
                 else:
                     download_list = await extractor(ctx, client, extractor_options)

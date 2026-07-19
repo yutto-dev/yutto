@@ -14,7 +14,7 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.extractor._abc import ExtractorResolveOutcome
+    from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
     from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
@@ -62,6 +62,8 @@ class CheeseBatchExtractor(BatchExtractor):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
+        *,
+        on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
         await self._parse_ids(ctx, client)
 
