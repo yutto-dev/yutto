@@ -18,6 +18,7 @@ from yutto.download_manager import (
     show_batch_episode_title,
 )
 from yutto.exceptions import NotLoginError, WrongArgumentError
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher, FetcherContext
@@ -144,13 +145,15 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ):
+            *,
+            on_item: object | None = None,
+        ) -> ResolveOutcome:
             captured_extractor_options.update(options)
 
             async def resolve_episode() -> EpisodeData | None:
                 return episode
 
-            return [ResolvableEpisode(info=episode["info"], resolve_data=resolve_episode)]
+            return ResolveOutcome(items=(ResolvableEpisode(info=episode["info"], resolve_data=resolve_episode),))
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         validation_requirements.append(requirements)
@@ -263,18 +266,20 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
 
         return resolve_data
 
-    episodes: list[ResolvableEpisode | None] = [
+    episodes = (
         ResolvableEpisode(info=first_episode["info"], resolve_data=make_resolver("first", first_episode)),
         ResolvableEpisode(info=second_episode["info"], resolve_data=make_resolver("second", second_episode)),
-    ]
+    )
     validation_results = iter([True, False])
 
     async def fake_resolve_request(
         client: httpx.AsyncClient,
         ctx: FetcherContext,
         request: DownloadRequest,
-    ) -> list[ResolvableEpisode | None]:
-        return episodes
+        *,
+        on_item: object | None = None,
+    ) -> ResolveOutcome:
+        return ResolveOutcome(items=episodes)
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         return next(validation_results)

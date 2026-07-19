@@ -9,16 +9,12 @@ from returns.result import Success
 
 import yutto.download_manager as download_manager_module
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import (
-    bind_download_event_sink,
-    collect_resolve_failures,
-    notify_episode_listed,
-    report_resolve_failure,
-)
+from yutto.core.operation import bind_download_event_sink
 from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, NotLoginError, ResolveFailedError
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.fetcher import Fetcher, FetcherContext
@@ -29,6 +25,7 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.core.events import DownloadEvent
+    from yutto.extractor._abc import EpisodeListedCallback
     from yutto.types import EpisodeData, EpisodeInfo, ExtractorOptions
 
 pytestmark = pytest.mark.processor
@@ -81,8 +78,10 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ) -> list[ResolvableEpisode | None]:
-            return [None, resolvable]
+            *,
+            on_item: EpisodeListedCallback | None = None,
+        ) -> ResolveOutcome:
+            return ResolveOutcome(items=(resolvable,))
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         return True
@@ -115,7 +114,8 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
         description="视频简介",
         tags=("标签A", "标签B"),
     )
-    assert items == [expected_item]
+    assert items.items == (expected_item,)
+    assert items.failures == ()
     # data resolver 从未调用，因此没有未 await 的 coroutine 需要清理
     assert executed == []
     assert sink.events == [
@@ -137,8 +137,8 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
 
 
 @as_sync
-async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypatch: pytest.MonkeyPatch):
-    """流式提取器经 notify_episode_listed 提前推送的条目不会被收尾补发重复。"""
+async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypatch: pytest.MonkeyPatch):
+    """流式回调与最终结果中的等值条目不依赖对象身份去重。"""
 
     resolved: list[str] = []
 
@@ -147,6 +147,7 @@ async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypa
         return None
 
     streamed = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+    final_copy = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
     late = ResolvableEpisode(info=make_info("P2", display_group="标题"), resolve_data=noop)
 
     class FakeExtractor:
@@ -161,10 +162,14 @@ async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypa
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ) -> list[ResolvableEpisode | None]:
+            *,
+            on_item: EpisodeListedCallback | None = None,
+        ) -> ResolveOutcome:
             # 流式提取器：解析过程中先推送 P1；P2 留给 resolve_items 收尾补发
-            notify_episode_listed(streamed)
-            return [streamed, late]
+            assert on_item is not None
+            await on_item(streamed)
+            await on_item(streamed)
+            return ResolveOutcome(items=(final_copy, late))
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
         return True
@@ -188,7 +193,7 @@ async def test_resolve_items_streams_hooked_episodes_without_duplicates(monkeypa
     # 每条恰好一次：流式推送的 P1 在前（提取中），P2 收尾补发
     assert [event.name for event in listed] == ["P1", "P2"]
     # 返回列表保持提取器给出的顺序
-    assert [item.name for item in items] == ["P1", "P2"]
+    assert [item.name for item in items.items] == ["P1", "P2"]
     # resolve-only 路径不会调用 data resolver，也不会提前创建 coroutine
     assert resolved == []
 
@@ -234,9 +239,11 @@ async def test_execute_resolve_treats_filtered_only_nones_as_empty_success(monke
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ) -> list[ResolvableEpisode | None]:
-            # 纯过滤（如发布时间过滤 / 选集过滤）产生的 None：没有失败上报
-            return [None, None]
+            *,
+            on_item: EpisodeListedCallback | None = None,
+        ) -> ResolveOutcome:
+            # 纯过滤（如发布时间过滤 / 选集过滤）没有条目，也没有失败
+            return ResolveOutcome()
 
     _patch_resolve_environment(monkeypatch, FilteredExtractor)
     manager = DownloadManager()
@@ -298,9 +305,13 @@ async def test_execute_resolve_reports_partial_failures(monkeypatch: pytest.Monk
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ) -> list[ResolvableEpisode | None]:
-            report_resolve_failure(MaxRetryError("获取视频 av2 信息失败：超出最大重试次数！"))
-            return [resolvable, None]
+            *,
+            on_item: EpisodeListedCallback | None = None,
+        ) -> ResolveOutcome:
+            return ResolveOutcome(
+                items=(resolvable,),
+                failures=(MaxRetryError("获取视频 av2 信息失败：超出最大重试次数！"),),
+            )
 
     _patch_resolve_environment(monkeypatch, PartialExtractor)
     manager = DownloadManager()
@@ -328,10 +339,15 @@ async def test_execute_resolve_aggregates_multiple_failures(monkeypatch: pytest.
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ) -> list[ResolvableEpisode | None]:
-            report_resolve_failure(NotFoundError("啊叻？视频 av1 不见了诶"))
-            report_resolve_failure(MaxRetryError("获取视频 av2 信息失败：超出最大重试次数！"))
-            return [None, None]
+            *,
+            on_item: EpisodeListedCallback | None = None,
+        ) -> ResolveOutcome:
+            return ResolveOutcome(
+                failures=(
+                    NotFoundError("啊叻？视频 av1 不见了诶"),
+                    MaxRetryError("获取视频 av2 信息失败：超出最大重试次数！"),
+                )
+            )
 
     _patch_resolve_environment(monkeypatch, AllFailedExtractor)
     manager = DownloadManager()
@@ -359,17 +375,16 @@ async def test_resolve_ugc_video_lists_reports_expected_failures(monkeypatch: py
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
     client = cast("httpx.AsyncClient", object())
-    with collect_resolve_failures() as failures:
-        results = await resolve_ugc_video_lists(
-            FetcherContext(),
-            client,
-            [AId("1"), AId("2")],
-            publication_time_filter=PublicationTimeFilter.from_strings(None, None),
-        )
+    outcome = await resolve_ugc_video_lists(
+        FetcherContext(),
+        client,
+        [AId("1"), AId("2")],
+        publication_time_filter=PublicationTimeFilter.from_strings(None, None),
+    )
 
     # 失败以 None 占位、顺序保持，同时结构化上报 —— 收藏夹等批量 extractor 丢弃 None 前信息不再丢失
-    assert results == [None, fake_list]
-    assert [type(error).__name__ for error in failures] == ["MaxRetryError"]
+    assert outcome.results == (None, fake_list)
+    assert [type(error).__name__ for error in outcome.failures] == ["MaxRetryError"]
 
 
 @as_sync
@@ -393,7 +408,7 @@ async def test_resolve_ugc_video_lists_awaits_async_on_resolved(monkeypatch: pyt
         await asyncio.sleep(0)
 
     client = cast("httpx.AsyncClient", object())
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         FetcherContext(),
         client,
         [AId("1"), AId("2")],
@@ -402,7 +417,7 @@ async def test_resolve_ugc_video_lists_awaits_async_on_resolved(monkeypatch: pyt
     )
 
     # 每个视频恰好触发一次 await 回调，携带 (入参序 index, avid, 解析结果)
-    assert len(results) == 2
+    assert len(outcome.results) == 2
     assert sorted(calls) == [(0, "1", True), (1, "2", True)]
 
 
@@ -489,8 +504,10 @@ async def test_execute_resolve_keeps_genuinely_empty_source_as_success(monkeypat
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-        ) -> list[ResolvableEpisode | None]:
-            return []
+            *,
+            on_item: EpisodeListedCallback | None = None,
+        ) -> ResolveOutcome:
+            return ResolveOutcome()
 
     _patch_resolve_environment(monkeypatch, EmptySourceExtractor)
     manager = DownloadManager()

@@ -5,9 +5,9 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_favourite_info, get_favourite_items, get_user_name
-from yutto.core.operation import notify_episode_listed
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.extractor.utils.favourite import normalize_favourite_video_item
 from yutto.types import FId, MId
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoList
+    from yutto.extractor._abc import EpisodeListedCallback
     from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
@@ -38,8 +39,13 @@ class FavouritesExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[ResolvableEpisode | None]:
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
+        *,
+        on_item: EpisodeListedCallback | None = None,
+    ) -> ResolveOutcome:
         username, favourite_info = await asyncio.gather(
             get_user_name(ctx, client, self.mid),
             get_favourite_info(ctx, client, self.fid),
@@ -49,8 +55,8 @@ class FavouritesExtractor(BatchExtractor):
         favourite_videos = await get_favourite_items(ctx, client, self.fid)
         avids = [favourite_video["avid"] for favourite_video in favourite_videos]
 
-        # 每个视频解析完成即构建其分集并通过 notify_episode_listed 推流（resolve
-        # 模式下前端逐条看到列表）；完成顺序与收藏夹顺序无关，最终按 index 重排。
+        # 每个视频解析完成即构建其分集并通过显式回调推流；完成顺序与收藏夹
+        # 顺序无关，最终按 index 重排。
         episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
         async def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
@@ -82,16 +88,21 @@ class FavouritesExtractor(BatchExtractor):
                     auto_subpath_template,
                     display_group=display_group,
                 )
-                notify_episode_listed(episode)
-                await asyncio.sleep(0)
+                if on_item is not None:
+                    await on_item(episode)
+                else:
+                    await asyncio.sleep(0)
                 episodes.append(episode)
             episodes_by_index[index] = episodes
 
-        await resolve_ugc_video_lists(
+        batch_outcome = await resolve_ugc_video_lists(
             ctx,
             client,
             avids,
             publication_time_filter=options["publication_time_filter"],
             on_resolved=build_episodes,
         )
-        return [episode for index in range(len(avids)) for episode in episodes_by_index.get(index, [])]
+        return ResolveOutcome(
+            items=tuple(episode for index in range(len(avids)) for episode in episodes_by_index.get(index, [])),
+            failures=batch_outcome.failures,
+        )

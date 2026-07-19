@@ -4,10 +4,10 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.ugc_video import get_ugc_video_list
-from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
+from yutto.extractor.outcome import ResolveOutcome
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import AId, BvId
 from yutto.utils.console.logger import Badge, Logger
@@ -15,7 +15,8 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import EpisodeListedCallback
+    from yutto.types import AvId, ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
 
@@ -64,33 +65,39 @@ class UgcVideoBatchExtractor(BatchExtractor):
             return False
 
     async def extract(
-        self, ctx: FetcherContext, client: httpx.AsyncClient, options: ExtractorOptions
-    ) -> list[ResolvableEpisode | None]:
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
+        *,
+        on_item: EpisodeListedCallback | None = None,
+    ) -> ResolveOutcome:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except (NotFoundError, NoAccessPermissionError) as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
             Logger.error(e.message)
-            report_resolve_failure(e)
-            return []
+            return ResolveOutcome(failures=(e,))
 
         # 选集过滤
         episodes = parse_episodes_selection(options["episodes"], len(ugc_video_list["pages"]))
         ugc_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, ugc_video_list["pages"]))
 
-        return [
-            make_ugc_video_episode(
-                ctx,
-                client,
-                ugc_video_item["avid"],
-                ugc_video_item,
-                options,
-                {
-                    "title": ugc_video_list["title"],
-                    "pubdate": ugc_video_list["pubdate"],
-                },
-                "{title}/{name}",
+        return ResolveOutcome(
+            items=tuple(
+                make_ugc_video_episode(
+                    ctx,
+                    client,
+                    ugc_video_item["avid"],
+                    ugc_video_item,
+                    options,
+                    {
+                        "title": ugc_video_list["title"],
+                        "pubdate": ugc_video_list["pubdate"],
+                    },
+                    "{title}/{name}",
+                )
+                for ugc_video_item in ugc_video_list["pages"]
             )
-            for ugc_video_item in ugc_video_list["pages"]
-        ]
+        )

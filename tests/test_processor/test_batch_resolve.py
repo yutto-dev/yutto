@@ -55,14 +55,14 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", touch_url_ok)
 
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         FetcherContext(),
         make_fake_client(),
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert [result["title"] if result is not None else None for result in results] == [
+    assert [result["title"] if result is not None else None for result in outcome.results] == [
         "video-1",
         "video-2",
         None,
@@ -92,17 +92,18 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         FetcherContext(),
         make_fake_client(),
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert results[0] is not None
-    assert results[1] is None
-    assert results[2] is None
-    assert results[3] is not None
+    assert outcome.results[0] is not None
+    assert outcome.results[1] is None
+    assert outcome.results[2] is None
+    assert outcome.results[3] is not None
+    assert [type(error).__name__ for error in outcome.failures] == ["NotFoundError", "MaxRetryError"]
 
 
 @pytest.mark.processor
@@ -137,12 +138,13 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
     avids: list[AvId] = [AId(str(i)) for i in range(10)]
-    results = await resolve_ugc_video_lists(
+    outcome = await resolve_ugc_video_lists(
         ctx,
         make_fake_client(),
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert all(result is not None for result in results)
+    assert all(result is not None for result in outcome.results)
+    assert outcome.failures == ()
     assert max_running == fetch_workers

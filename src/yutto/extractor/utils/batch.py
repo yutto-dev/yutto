@@ -4,8 +4,8 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from yutto.api.ugc_video import get_ugc_video_list
-from yutto.core.operation import report_resolve_failure
 from yutto.exceptions import MaxRetryError, NoAccessPermissionError, NotFoundError
+from yutto.extractor.outcome import BatchResolveOutcome
 from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoList
+    from yutto.exceptions import YuttoBaseException
     from yutto.types import AvId
     from yutto.utils.fetcher import FetcherContext
     from yutto.utils.filter import PublicationTimeFilter
@@ -27,7 +28,7 @@ async def resolve_ugc_video_lists(
     *,
     publication_time_filter: PublicationTimeFilter,
     on_resolved: Callable[[int, AvId, UgcVideoList | None], Awaitable[None]] | None = None,
-) -> list[UgcVideoList | None]:
+) -> BatchResolveOutcome[UgcVideoList]:
     """并发解析一批视频的分 P 列表，结果顺序与 avids 一致
 
     并发度由 ctx 中已有的 fetch semaphore 控制（Fetcher 的每个请求都会经过 ctx.fetch_guard()），
@@ -44,31 +45,31 @@ async def resolve_ugc_video_lists(
     函数返回或抛错后不会再有回调或事件发生；单个异常直接抛原始异常，保持稳定错误码。
     """
 
-    async def resolve_one(avid: AvId) -> UgcVideoList | None:
+    async def resolve_one(avid: AvId) -> tuple[UgcVideoList | None, YuttoBaseException | None]:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, avid)
             if not publication_time_filter.matches(ugc_video_list["pubdate"]):
                 Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
-                return None
+                return None, None
             # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
             # 至于为什么前面那俩（投稿视频页和番剧页）不需要额外 touch，因为在 get_redirected_url 阶段连接过了呀
             unwrap_fetch_result(await Fetcher.touch_url(ctx, client, avid.to_url()))
-            return ugc_video_list
+            return ugc_video_list, None
         except (NotFoundError, NoAccessPermissionError) as e:
             Logger.error(e.message)
-            report_resolve_failure(e)
-            return None
+            return None, e
         except MaxRetryError as e:
             Logger.error(f"获取视频 {avid} 信息失败：{e.message}")
-            report_resolve_failure(e)
-            return None
+            return None, e
 
     results: list[UgcVideoList | None] = [None] * len(avids)
+    failures: list[YuttoBaseException | None] = [None] * len(avids)
     completed: asyncio.Queue[tuple[int, AvId, UgcVideoList | None]] = asyncio.Queue()
 
     async def resolve_into(index: int, avid: AvId) -> None:
-        result = await resolve_one(avid)
+        result, failure = await resolve_one(avid)
         results[index] = result
+        failures[index] = failure
         completed.put_nowait((index, avid, result))
 
     async def publish_completed(deliver: Callable[[int, AvId, UgcVideoList | None], Awaitable[None]]) -> None:
@@ -89,4 +90,7 @@ async def resolve_ugc_video_lists(
         if len(error_group.exceptions) == 1:
             raise error_group.exceptions[0] from None
         raise
-    return results
+    return BatchResolveOutcome(
+        results=tuple(results),
+        failures=tuple(failure for failure in failures if failure is not None),
+    )
