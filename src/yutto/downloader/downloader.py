@@ -175,7 +175,7 @@ async def download_video_and_audio(
 
     try:
         if video is not None:
-            vbuf = await AsyncFileBuffer(video_path, overwrite=options["overwrite"])
+            vbuf = await AsyncFileBuffer.open(video_path, overwrite=options["overwrite"])
             buffers[0] = vbuf
             vsize = await first_successful_with_check(
                 [get_size(url) for url in [video["url"], *mirrors_filter(video["mirrors"])]]
@@ -196,7 +196,7 @@ async def download_video_and_audio(
             coroutine_factories_list.append(video_coroutine_factories)
 
         if audio is not None:
-            abuf = await AsyncFileBuffer(audio_path, overwrite=options["overwrite"])
+            abuf = await AsyncFileBuffer.open(audio_path, overwrite=options["overwrite"])
             buffers[1] = abuf
             asize = await first_successful_with_check(
                 [get_size(url) for url in [audio["url"], *mirrors_filter(audio["mirrors"])]]
