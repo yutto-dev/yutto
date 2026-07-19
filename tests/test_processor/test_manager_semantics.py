@@ -29,6 +29,7 @@ from yutto.utils.time import TIME_FULL_FMT
 if TYPE_CHECKING:
     import httpx
 
+    from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import DownloaderOptions, EpisodeData, ExtractorOptions
 
 pytestmark = pytest.mark.processor
@@ -145,9 +146,7 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
             ctx: FetcherContext,
             client: httpx.AsyncClient,
             options: ExtractorOptions,
-            *,
-            on_item: object | None = None,
-        ) -> ResolveOutcome:
+        ) -> ExtractorResolveOutcome:
             captured_extractor_options.update(options)
 
             async def resolve_episode() -> EpisodeData | None:
@@ -276,9 +275,7 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
         client: httpx.AsyncClient,
         ctx: FetcherContext,
         request: DownloadRequest,
-        *,
-        on_item: object | None = None,
-    ) -> ResolveOutcome:
+    ) -> ExtractorResolveOutcome:
         return ResolveOutcome(items=episodes)
 
     async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from yutto.api.collection import get_collection_details
 from yutto.api.space import get_user_name
-from yutto.extractor._abc import BatchExtractor
+from yutto.extractor._abc import StreamingBatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -18,12 +18,13 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoList
-    from yutto.extractor._abc import EpisodeListedCallback
-    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
+    from yutto.extractor.utils.batch import IndexedResolveItem
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
-class CollectionExtractor(BatchExtractor):
+class CollectionExtractor(StreamingBatchExtractor):
     """视频合集"""
 
     REGEX_COLLECTION_LISTS = re.compile(
@@ -54,7 +55,7 @@ class CollectionExtractor(BatchExtractor):
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ExtractorResolveOutcome:
         username, collection_details = await asyncio.gather(
             get_user_name(ctx, client, self.mid),
             get_collection_details(ctx, client, self.series_id, self.mid),
@@ -72,9 +73,9 @@ class CollectionExtractor(BatchExtractor):
         # 逐视频解析完成即构建分集并通过显式回调推流，最终按 index 重排。
         episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
-        async def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
-            if ugc_video_list is None:
-                return
+        async def build_episodes(resolved: IndexedResolveItem[UgcVideoList]) -> None:
+            index = resolved.index
+            ugc_video_list = resolved.value
             if len(ugc_video_list["pages"]) != 1:
                 Logger.error(f"视频合集 {collection_title} 中的视频 {items[index]['avid']} 包含多个视频！")
             built: list[ResolvableEpisode] = []
@@ -111,5 +112,5 @@ class CollectionExtractor(BatchExtractor):
         )
         return ResolveOutcome(
             items=tuple(episode for index in range(len(avids)) for episode in episodes_by_index.get(index, [])),
-            failures=batch_outcome.failures,
+            failures=tuple(failure.error for failure in batch_outcome.failures),
         )

@@ -20,7 +20,7 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.extractor._abc import EpisodeListedCallback
+    from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
@@ -54,9 +54,7 @@ class BangumiExtractor(SingleExtractor):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
-        *,
-        on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ExtractorResolveOutcome:
         season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
         bangumi_list = await get_bangumi_list(ctx, client, season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))

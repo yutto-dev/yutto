@@ -5,7 +5,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_favourite_info, get_favourite_items, get_user_name
-from yutto.extractor._abc import BatchExtractor
+from yutto.extractor._abc import StreamingBatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -17,12 +17,13 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoList
-    from yutto.extractor._abc import EpisodeListedCallback
-    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
+    from yutto.extractor.utils.batch import IndexedResolveItem
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
-class FavouritesExtractor(BatchExtractor):
+class FavouritesExtractor(StreamingBatchExtractor):
     """用户单一收藏夹"""
 
     REGEX_FAV = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<fid>\d+)((&ftype=create)|$)")
@@ -45,7 +46,7 @@ class FavouritesExtractor(BatchExtractor):
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ExtractorResolveOutcome:
         username, favourite_info = await asyncio.gather(
             get_user_name(ctx, client, self.mid),
             get_favourite_info(ctx, client, self.fid),
@@ -59,9 +60,9 @@ class FavouritesExtractor(BatchExtractor):
         # 顺序无关，最终按 index 重排。
         episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
-        async def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
-            if ugc_video_list is None:
-                return
+        async def build_episodes(resolved: IndexedResolveItem[UgcVideoList]) -> None:
+            index = resolved.index
+            ugc_video_list = resolved.value
             favourite_video = favourite_videos[index]
             # 优先使用收藏夹 API 返回的人工标题；失效视频 title 为空时退回到 ugc 接口标题
             favourite_title = favourite_video["title"] or ugc_video_list["title"]
@@ -104,5 +105,5 @@ class FavouritesExtractor(BatchExtractor):
         )
         return ResolveOutcome(
             items=tuple(episode for index in range(len(avids)) for episode in episodes_by_index.get(index, [])),
-            failures=batch_outcome.failures,
+            failures=tuple(failure.error for failure in batch_outcome.failures),
         )

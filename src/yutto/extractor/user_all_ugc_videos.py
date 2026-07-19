@@ -5,7 +5,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_user_name, get_user_space_all_videos_avids
-from yutto.extractor._abc import BatchExtractor
+from yutto.extractor._abc import StreamingBatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -16,12 +16,13 @@ if TYPE_CHECKING:
     import httpx
 
     from yutto.api.ugc_video import UgcVideoList
-    from yutto.extractor._abc import EpisodeListedCallback
-    from yutto.types import AvId, ExtractorOptions, ResolvableEpisode
+    from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
+    from yutto.extractor.utils.batch import IndexedResolveItem
+    from yutto.types import ExtractorOptions, ResolvableEpisode
     from yutto.utils.fetcher import FetcherContext
 
 
-class UserAllUgcVideosExtractor(BatchExtractor):
+class UserAllUgcVideosExtractor(StreamingBatchExtractor):
     """UP 主个人空间全部投稿视频"""
 
     REGEX_SPACE = re.compile(r"https?://space\.bilibili\.com/(?P<mid>\d+)(/video)?")
@@ -42,7 +43,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ExtractorResolveOutcome:
         username = await get_user_name(ctx, client, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
@@ -58,9 +59,9 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         # 逐视频解析完成即构建分集并通过显式回调推流，最终按 index 重排。
         episodes_by_index: dict[int, list[ResolvableEpisode]] = {}
 
-        async def build_episodes(index: int, _avid: AvId, ugc_video_list: UgcVideoList | None) -> None:
-            if ugc_video_list is None:
-                return
+        async def build_episodes(resolved: IndexedResolveItem[UgcVideoList]) -> None:
+            index = resolved.index
+            ugc_video_list = resolved.value
             built: list[ResolvableEpisode] = []
             for ugc_video_item in ugc_video_list["pages"]:
                 episode = make_ugc_video_episode(
@@ -92,5 +93,5 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         )
         return ResolveOutcome(
             items=tuple(episode for index in range(len(avids)) for episode in episodes_by_index.get(index, [])),
-            failures=batch_outcome.failures,
+            failures=tuple(failure.error for failure in batch_outcome.failures),
         )

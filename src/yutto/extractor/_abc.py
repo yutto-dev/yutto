@@ -2,18 +2,22 @@ from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from yutto.types import ResolvableEpisode
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     import httpx
 
+    from yutto.exceptions import YuttoBaseException
     from yutto.extractor.outcome import ResolveOutcome
     from yutto.types import ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
-T = TypeVar("T")
+    ExtractorResolveOutcome: TypeAlias = ResolveOutcome[ResolvableEpisode, YuttoBaseException]
+
 EpisodeListedCallback = Callable[[ResolvableEpisode], Awaitable[None]]
 
 
@@ -33,9 +37,7 @@ class Extractor(metaclass=ABCMeta):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
-        *,
-        on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         raise NotImplementedError
 
 
@@ -45,10 +47,8 @@ class SingleExtractor(Extractor):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
-        *,
-        on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
-        return await self.extract(ctx, client, options, on_item=on_item)
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
+        return await self.extract(ctx, client, options)
 
     @abstractmethod
     async def extract(
@@ -56,9 +56,7 @@ class SingleExtractor(Extractor):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
-        *,
-        on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         raise NotImplementedError
 
 
@@ -68,9 +66,28 @@ class BatchExtractor(Extractor):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
+        return await self.extract(ctx, client, options)
+
+    @abstractmethod
+    async def extract(
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
+        raise NotImplementedError
+
+
+class StreamingBatchExtractor(BatchExtractor):
+    async def __call__(
+        self,
+        ctx: FetcherContext,
+        client: httpx.AsyncClient,
+        options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         return await self.extract(ctx, client, options, on_item=on_item)
 
     @abstractmethod
@@ -81,5 +98,5 @@ class BatchExtractor(Extractor):
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         raise NotImplementedError

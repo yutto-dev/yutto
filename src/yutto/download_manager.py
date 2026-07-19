@@ -28,6 +28,7 @@ from yutto.extractor import (
     UserAllUgcVideosExtractor,
     UserWatchLaterExtractor,
 )
+from yutto.extractor._abc import StreamingBatchExtractor
 from yutto.path_templates import create_unique_path_resolver
 from yutto.types import EpisodeData, ExtractorOptions
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
@@ -319,7 +320,7 @@ class DownloadManager:
         request: DownloadRequest,
         *,
         on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         """Match the request to an extractor and run its listing phase."""
         publication_time_filter = PublicationTimeFilter.from_strings(
             request.selection.start_time,
@@ -379,26 +380,25 @@ class DownloadManager:
         # 提取信息，构造解析任务～
         for extractor in extractors:
             if extractor.match(url):
-                download_list = await extractor(
-                    ctx,
-                    client,
-                    ExtractorOptions(
-                        episodes=request.selection.episodes,
-                        with_section=request.scope.with_section,
-                        require_video=request.resources.video,
-                        require_audio=request.resources.audio,
-                        require_danmaku=request.resources.danmaku,
-                        require_subtitle=request.resources.subtitle,
-                        require_metadata=request.resources.metadata,
-                        require_cover=request.resources.cover,
-                        require_chapter_info=request.resources.chapter_info,
-                        danmaku_format=request.danmaku.format,
-                        subpath_template=request.output.subpath_template,
-                        ai_translation_language=request.resources.ai_translation_language,
-                        publication_time_filter=publication_time_filter,
-                    ),
-                    on_item=on_item,
+                extractor_options = ExtractorOptions(
+                    episodes=request.selection.episodes,
+                    with_section=request.scope.with_section,
+                    require_video=request.resources.video,
+                    require_audio=request.resources.audio,
+                    require_danmaku=request.resources.danmaku,
+                    require_subtitle=request.resources.subtitle,
+                    require_metadata=request.resources.metadata,
+                    require_cover=request.resources.cover,
+                    require_chapter_info=request.resources.chapter_info,
+                    danmaku_format=request.danmaku.format,
+                    subpath_template=request.output.subpath_template,
+                    ai_translation_language=request.resources.ai_translation_language,
+                    publication_time_filter=publication_time_filter,
                 )
+                if on_item is not None and isinstance(extractor, StreamingBatchExtractor):
+                    download_list = await extractor(ctx, client, extractor_options, on_item=on_item)
+                else:
+                    download_list = await extractor(ctx, client, extractor_options)
                 break
         else:
             if request.scope.batch:

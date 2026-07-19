@@ -1,26 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import Generic, TypeVar
 
-if TYPE_CHECKING:
-    from yutto.exceptions import YuttoBaseException
-    from yutto.types import ResolvableEpisode
-
-T = TypeVar("T")
+ItemT = TypeVar("ItemT")
+FailureT = TypeVar("FailureT")
 
 
 @dataclass(frozen=True, slots=True)
-class ResolveOutcome:
-    """Explicit result of one extractor listing operation."""
+class ResolveOutcome(Generic[ItemT, FailureT]):
+    """Ordered successes and expected failures from one resolve operation."""
 
-    items: tuple[ResolvableEpisode, ...] = field(default_factory=tuple)
-    failures: tuple[YuttoBaseException, ...] = field(default_factory=tuple)
-
-
-@dataclass(frozen=True, slots=True)
-class BatchResolveOutcome(Generic[T]):
-    """Ordered results and expected failures from a concurrent batch lookup."""
-
-    results: tuple[T | None, ...] = field(default_factory=tuple)
-    failures: tuple[YuttoBaseException, ...] = field(default_factory=tuple)
+    items: tuple[ItemT, ...] = field(default_factory=tuple)
+    failures: tuple[FailureT, ...] = field(default_factory=tuple)

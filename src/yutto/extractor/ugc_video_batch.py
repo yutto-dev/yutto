@@ -15,7 +15,7 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.extractor._abc import EpisodeListedCallback
+    from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import AvId, ExtractorOptions
     from yutto.utils.fetcher import FetcherContext
 
@@ -69,9 +69,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
         ctx: FetcherContext,
         client: httpx.AsyncClient,
         options: ExtractorOptions,
-        *,
-        on_item: EpisodeListedCallback | None = None,
-    ) -> ResolveOutcome:
+    ) -> ExtractorResolveOutcome:
         try:
             ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))

@@ -62,13 +62,14 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert [result["title"] if result is not None else None for result in outcome.results] == [
+    assert [item.value["title"] for item in outcome.items] == [
         "video-1",
         "video-2",
-        None,
         "video-4",
         "video-5",
     ]
+    assert [item.index for item in outcome.items] == [0, 1, 3, 4]
+    assert outcome.failures == ()
 
 
 @pytest.mark.processor
@@ -99,11 +100,11 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert outcome.results[0] is not None
-    assert outcome.results[1] is None
-    assert outcome.results[2] is None
-    assert outcome.results[3] is not None
-    assert [type(error).__name__ for error in outcome.failures] == ["NotFoundError", "MaxRetryError"]
+    assert [item.index for item in outcome.items] == [0, 3]
+    assert [str(item.source) for item in outcome.items] == ["1", "4"]
+    assert [failure.index for failure in outcome.failures] == [1, 2]
+    assert [str(failure.source) for failure in outcome.failures] == ["2", "3"]
+    assert [type(failure.error).__name__ for failure in outcome.failures] == ["NotFoundError", "MaxRetryError"]
 
 
 @pytest.mark.processor
@@ -145,6 +146,6 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
 
-    assert all(result is not None for result in outcome.results)
+    assert len(outcome.items) == len(avids)
     assert outcome.failures == ()
     assert max_running == fetch_workers
