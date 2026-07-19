@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -198,17 +199,21 @@ class DownloadManager:
 
         返回的 planned_path 是模板解析出的计划路径；实际下载时可能因去重而调整。
         item_listed 逐条推送：支持流式的 batch 提取器通过显式 on_item 回调在
-        每个视频解析完成时交出分集，提取结束后这里只补发未流式推送过的条目；
-        返回列表始终保持提取器的原始顺序。
+        每个视频解析完成时交出分集，提取结束后按稳定键逐次消费已推送 occurrence，
+        再补发剩余条目；等值但独立的 occurrence 不会被合并，返回列表始终保持
+        提取器的原始顺序。
         """
-        emitted: set[tuple[str, str, str, Path, str | None]] = set()
+        streamed_by_key: dict[tuple[str, str, str, Path, str | None], deque[ResolvableEpisode]] = {}
 
         async def stream_episode(episode: ResolvableEpisode) -> None:
             key = _resolved_item_key(episode)
-            if key in emitted:
+            streamed = streamed_by_key.setdefault(key, deque())
+            # 防御同一 occurrence 的重复 callback；不同对象即使 snapshot 等值，
+            # 仍代表两个合法 occurrence，必须分别发送事件。
+            if any(item is episode for item in streamed):
                 await asyncio.sleep(0)
                 return
-            emitted.add(key)
+            streamed.append(episode)
             _emit_item_listed(episode)
             await asyncio.sleep(0)
 
@@ -216,8 +221,10 @@ class DownloadManager:
         items: list[ResolvedItem] = []
         for episode in outcome.items:
             key = _resolved_item_key(episode)
-            if key not in emitted:
-                emitted.add(key)
+            streamed = streamed_by_key.get(key)
+            if streamed:
+                streamed.popleft()
+            else:
                 _emit_item_listed(episode)
                 # 未流式化的提取器仍会在这个无 await 的循环里整批产出 item_listed；
                 # 逐条让出控制权给事件消费者（如 server 每连接的 sender），

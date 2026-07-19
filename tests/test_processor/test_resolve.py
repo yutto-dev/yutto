@@ -199,6 +199,55 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
     assert resolved == []
 
 
+@as_sync
+async def test_resolve_items_emits_each_equal_occurrence(monkeypatch: pytest.MonkeyPatch):
+    """字段完全相同的独立结果条目仍各自对应一条 item_listed 事件。"""
+
+    async def noop() -> EpisodeData | None:
+        return None
+
+    first = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+    second = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+
+    class FakeExtractor:
+        def resolve_shortcut(self, id: str) -> tuple[bool, str]:
+            return True, f"https://example.com/{id}"
+
+        def match(self, url: str) -> bool:
+            return url == "https://example.com/BV1equal"
+
+        async def __call__(
+            self,
+            ctx: FetcherContext,
+            client: httpx.AsyncClient,
+            options: ExtractorOptions,
+        ) -> ExtractorResolveOutcome:
+            return ResolveOutcome(items=(first, second))
+
+    async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+        return True
+
+    async def fake_get_redirected_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+        return Success(url)
+
+    monkeypatch.setattr(download_manager_module, "UgcVideoExtractor", FakeExtractor)
+    monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
+    monkeypatch.setattr(Fetcher, "get_redirected_url", fake_get_redirected_url)
+
+    manager = DownloadManager()
+    sink = RecordingEventSink()
+    client = cast("httpx.AsyncClient", object())
+    request = DownloadRequest.model_validate({"source": {"url": "BV1equal"}})
+
+    with bind_download_event_sink(sink):
+        outcome = await manager.resolve_items(client, FetcherContext(), request)
+
+    listed = [event for event in sink.events if isinstance(event, DownloadItemListed)]
+    assert len(listed) == len(outcome.items) == 2
+    assert listed[0] == listed[1]
+    assert outcome.items[0] == outcome.items[1]
+
+
 class _FakeClientContext:
     async def __aenter__(self) -> httpx.AsyncClient:
         return cast("httpx.AsyncClient", object())
