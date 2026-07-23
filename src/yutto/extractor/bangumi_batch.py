@@ -89,6 +89,7 @@ class BangumiBatchExtractor(BatchExtractor):
             filter(lambda item: options["with_section"] or not item["is_section"], bangumi_list["pages"])
         )
         # 选集过滤
+        is_multi_p = len(bangumi_list["pages"]) > 1
         episodes = parse_episodes_selection(options["episodes"], len(bangumi_list["pages"]))
         bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
         return ResolveOutcome(
@@ -102,6 +103,7 @@ class BangumiBatchExtractor(BatchExtractor):
                         "title": bangumi_list["title"],
                     },
                     "{title}/{name}",
+                    is_multi_p=is_multi_p,
                 )
                 for bangumi_item in bangumi_list["pages"]
             )

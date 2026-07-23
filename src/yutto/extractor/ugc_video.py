@@ -102,6 +102,7 @@ class UgcVideoExtractor(SingleExtractor):
                             "pubdate": ugc_video_list["pubdate"],
                         },
                         "{title}",
+                        is_multi_p=len(ugc_video_list["pages"]) > 1,
                     ),
                 )
             )

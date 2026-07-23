@@ -79,6 +79,7 @@ class CheeseExtractor(SingleExtractor):
                             "title": cheese_list["title"],
                         },
                         "{name}",
+                        is_multi_p=len(cheese_list["pages"]) > 1,
                     ),
                 )
             )

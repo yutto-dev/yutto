@@ -20,11 +20,117 @@ PathTemplateVariable = Literal[
     "download_date",
     "owner_uid",
     "owner_uname",
+    "mp_title",
 ]
 PathTemplateVariableDict = dict[PathTemplateVariable, int | str]
 UNKNOWN: str = "unknown_variable"
 
+MpTitlePreset = Literal[
+    "title",
+    "name",
+    "title-dot-name",
+    "title-dot-name-with-id",
+    "title-hyphen-name",
+    "title-hyphen-name-with-id",
+    "title-hyphen-space-name",
+    "title-hyphen-space-name-with-id",
+]
+MP_TITLE_PRESETS: tuple[MpTitlePreset, ...] = (
+    "title",
+    "name",
+    "title-dot-name",
+    "title-dot-name-with-id",
+    "title-hyphen-name",
+    "title-hyphen-name-with-id",
+    "title-hyphen-space-name",
+    "title-hyphen-space-name-with-id",
+)
+DEFAULT_MP_TITLE_PRESET: MpTitlePreset = "title-dot-name"
+
 _count: int = 0
+
+
+def strip_contained_title(name: str, title: str) -> str:
+    """若分 P 标题包含总标题全文，则移除重合部分。"""
+    if not title or not name:
+        return name
+    if title in name:
+        return name.replace(title, "", 1).strip(" -_.")
+    return name
+
+
+def sanitize_multi_version_name(value: str) -> str:
+    """Emby/Jellyfin 多版本模式下，将符号替换为下划线。"""
+    sanitized = re.sub(r"[^\w]+", "_", value, flags=re.UNICODE)
+    return sanitized.strip("_") or value
+
+
+def build_mp_title(
+    *,
+    title: str,
+    name: str,
+    part_id: int,
+    preset: MpTitlePreset,
+    is_multi_p: bool,
+) -> str:
+    """构建多 P 友好的标题（路径变量 `{mp_title}` / NFO 标题）。
+
+    单 P：始终等于 `title`。
+    多 P：按 `preset` 组合 `title` / `name` / `id`。
+    """
+    if not is_multi_p:
+        return title
+
+    part_name = strip_contained_title(name, title) if preset not in {"title", "name"} else name
+    # 组合类 preset 在剥离后若为空，回退到原始分 P 名
+    if preset not in {"title", "name"} and not part_name:
+        part_name = name
+
+    match preset:
+        case "title":
+            return title
+        case "name":
+            return name
+        case "title-dot-name":
+            return f"{title}.{part_name}" if part_name else title
+        case "title-dot-name-with-id":
+            return f"{title}.p{part_id}.{part_name}" if part_name else f"{title}.p{part_id}"
+        case "title-hyphen-name":
+            return f"{title}-{part_name}" if part_name else title
+        case "title-hyphen-name-with-id":
+            return f"{title}-p{part_id}-{part_name}" if part_name else f"{title}-p{part_id}"
+        case "title-hyphen-space-name":
+            return f"{title} - {part_name}" if part_name else title
+        case "title-hyphen-space-name-with-id":
+            return f"{title} - p{part_id} - {part_name}" if part_name else f"{title} - p{part_id}"
+        case _:
+            return f"{title}.{part_name}" if part_name else title
+
+
+def apply_mp_title_variable(
+    subpath_variables: PathTemplateVariableDict,
+    *,
+    preset: MpTitlePreset,
+    is_multi_p: bool,
+) -> str:
+    """向路径变量字典写入 `{mp_title}`，并返回计算后的标题。"""
+    raw_title = subpath_variables.get("title", UNKNOWN)
+    raw_name = subpath_variables.get("name", UNKNOWN)
+    raw_id = subpath_variables.get("id", 0)
+
+    title = str(raw_title) if raw_title != UNKNOWN else (str(raw_name) if raw_name != UNKNOWN else "")
+    name = str(raw_name) if raw_name != UNKNOWN else title
+    part_id = int(raw_id) if isinstance(raw_id, int) else 0
+
+    mp_title = build_mp_title(
+        title=title,
+        name=name,
+        part_id=part_id,
+        preset=preset,
+        is_multi_p=is_multi_p,
+    )
+    subpath_variables["mp_title"] = mp_title
+    return mp_title
 
 
 def repair_filename(filename: str) -> str:

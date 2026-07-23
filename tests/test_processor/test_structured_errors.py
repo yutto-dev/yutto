@@ -170,6 +170,8 @@ EMPTY_EXTRACTOR_OPTIONS: ExtractorOptions = {
     "subpath_template": "{auto}",
     "ai_translation_language": None,
     "publication_time_filter": PublicationTimeFilter.from_strings(),
+    "mp_title_preset": "title-dot-name",
+    "mp_as_multiple_version": False,
 }
 
 

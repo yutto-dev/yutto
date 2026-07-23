@@ -66,6 +66,8 @@ def download_request_from_namespace(args: argparse.Namespace) -> DownloadRequest
             "overwrite": args.overwrite,
             "subpath_template": args.subpath_template,
             "metadata_format_premiered": args.metadata_format_premiered,
+            "mp_title_preset": args.mp_title_preset,
+            "mp_as_multiple_version": args.mp_as_multiple_version,
         },
         "network": {
             "proxy": args.proxy,
@@ -158,6 +160,8 @@ def _download_request_defaults_from_settings(settings: YuttoSettings) -> dict[st
             "overwrite": settings.basic.overwrite,
             "subpath_template": settings.basic.subpath_template,
             "metadata_format_premiered": settings.basic.metadata_format_premiered,
+            "mp_title_preset": settings.basic.mp_title_preset,
+            "mp_as_multiple_version": settings.basic.mp_as_multiple_version,
         },
         "network": {
             "proxy": settings.basic.proxy,

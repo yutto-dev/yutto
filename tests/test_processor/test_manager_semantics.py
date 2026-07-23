@@ -49,6 +49,9 @@ def make_episode(path: str, display_group: str | None = None) -> EpisodeData:
             "tags": [],
             "path": Path(path),
             "display_group": display_group,
+            "mp_title": Path(path).name,
+            "is_multi_p": False,
+            "nfo_shared_stem": None,
         },
         "videos": [],
         "audios": [],
@@ -206,6 +209,8 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
             start_time=datetime(2024, 1, 2, 3, 4, 5),
             end_time=datetime(2025, 6, 7),
         ),
+        "mp_title_preset": "title-dot-name",
+        "mp_as_multiple_version": False,
     }
     assert captured_downloader_options == {
         "output_dir": Path("downloads"),

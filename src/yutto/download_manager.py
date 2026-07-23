@@ -401,6 +401,8 @@ class DownloadManager:
                     subpath_template=request.output.subpath_template,
                     ai_translation_language=request.resources.ai_translation_language,
                     publication_time_filter=publication_time_filter,
+                    mp_title_preset=request.output.mp_title_preset,
+                    mp_as_multiple_version=request.output.mp_as_multiple_version,
                 )
                 if isinstance(extractor, BatchExtractor):
                     download_list = await extractor(ctx, client, extractor_options, on_item=on_item)

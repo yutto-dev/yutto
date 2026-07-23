@@ -77,6 +77,7 @@ class BangumiExtractor(SingleExtractor):
                             "title": bangumi_list["title"],
                         },
                         "{name}",
+                        is_multi_p=len(bangumi_list["pages"]) > 1,
                     ),
                 )
             )

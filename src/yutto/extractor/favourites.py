@@ -88,6 +88,7 @@ class FavouritesExtractor(BatchExtractor):
                     },
                     auto_subpath_template,
                     display_group=display_group,
+                    is_multi_p=not is_single_page_video,
                 )
                 if on_item is not None:
                     await on_item(episode)

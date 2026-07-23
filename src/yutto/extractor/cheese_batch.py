@@ -70,6 +70,7 @@ class CheeseBatchExtractor(BatchExtractor):
         cheese_list = await get_cheese_list(ctx, client, self.season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         # 选集过滤
+        is_multi_p = len(cheese_list["pages"]) > 1
         episodes = parse_episodes_selection(options["episodes"], len(cheese_list["pages"]))
         cheese_list["pages"] = list(filter(lambda item: item["id"] in episodes, cheese_list["pages"]))
         return ResolveOutcome(
@@ -84,6 +85,7 @@ class CheeseBatchExtractor(BatchExtractor):
                         "title": cheese_list["title"],
                     },
                     "{title}/{name}",
+                    is_multi_p=is_multi_p,
                 )
                 for cheese_item in cheese_list["pages"]
             )

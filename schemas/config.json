@@ -202,6 +202,26 @@
           "title": "Metadata Format Premiered",
           "type": "string"
         },
+        "mp_title_preset": {
+          "default": "title-dot-name",
+          "enum": [
+            "title",
+            "name",
+            "title-dot-name",
+            "title-dot-name-with-id",
+            "title-hyphen-name",
+            "title-hyphen-name-with-id",
+            "title-hyphen-space-name",
+            "title-hyphen-space-name-with-id"
+          ],
+          "title": "Mp Title Preset",
+          "type": "string"
+        },
+        "mp_as_multiple_version": {
+          "default": false,
+          "title": "Mp As Multiple Version",
+          "type": "boolean"
+        },
         "download_interval": {
           "default": 0,
           "title": "Download Interval",
@@ -435,6 +455,8 @@
         "subpath_template": "{auto}",
         "aliases": {},
         "metadata_format_premiered": "%Y-%m-%d",
+        "mp_title_preset": "title-dot-name",
+        "mp_as_multiple_version": false,
         "download_interval": 0,
         "banned_mirrors_pattern": null,
         "vip_strict": false,

@@ -47,6 +47,9 @@ def make_info(name: str, display_group: str | None = None) -> EpisodeInfo:
         "tags": ["标签A", "标签B"],
         "path": Path(f"标题/{name}"),
         "display_group": display_group,
+        "mp_title": f"标题.{name}",
+        "is_multi_p": True,
+        "nfo_shared_stem": None,
     }
 
 

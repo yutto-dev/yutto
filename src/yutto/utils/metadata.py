@@ -50,8 +50,20 @@ def metadata_value_format(metadata: MetaData, metadata_format: dict[str, str]) -
     return formatted_metadata
 
 
-def write_metadata(metadata: MetaData, video_path: Path, metadata_format: dict[str, str]) -> Path:
-    metadata_path = video_path.with_suffix(".nfo")
+def apply_nfo_title(metadata: MetaData, nfo_title: str) -> None:
+    """将 NFO 的标题与排序标题统一为给定值。"""
+    metadata["title"] = nfo_title
+    metadata["show_title"] = nfo_title
+
+
+def write_metadata(
+    metadata: MetaData,
+    video_path: Path,
+    metadata_format: dict[str, str],
+    *,
+    nfo_path: Path | None = None,
+) -> Path:
+    metadata_path = nfo_path if nfo_path is not None else video_path.with_suffix(".nfo")
     custom_root = "episodedetails"  # TODO: 不同视频类型使用不同的 root name
     # 增加字段格式化内容，后续如果需要调整可以继续调整
     user_formatted_metadata = metadata_value_format(metadata, metadata_format) if metadata_format else metadata

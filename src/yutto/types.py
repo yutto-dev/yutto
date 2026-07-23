@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
     from yutto.media.codec import AudioCodec, VideoCodec
     from yutto.media.quality import AudioQuality, VideoQuality
+    from yutto.path_templates import MpTitlePreset
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
     from yutto.utils.filter import PublicationTimeFilter
     from yutto.utils.metadata import ChapterInfoData, MetaData
@@ -228,6 +229,8 @@ class ExtractorOptions(TypedDict):
     subpath_template: str
     ai_translation_language: str | None
     publication_time_filter: PublicationTimeFilter
+    mp_title_preset: MpTitlePreset
+    mp_as_multiple_version: bool
 
 
 class EpisodeInfo(TypedDict):
@@ -244,6 +247,9 @@ class EpisodeInfo(TypedDict):
     tags: list[str]
     path: Path  # 模板解析出的计划路径，下载时可能因去重而调整
     display_group: str | None  # 多分 p 视频的分组标题，单集为 None
+    mp_title: str  # 多 P 友好标题，用于 NFO 与路径变量 {mp_title}
+    is_multi_p: bool
+    nfo_shared_stem: str | None  # 多版本模式下共享 NFO 文件名（不含扩展名）
 
 
 class EpisodeData(TypedDict):

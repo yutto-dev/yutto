@@ -105,6 +105,17 @@ class OutputRequestOptions(_RequestModel):
     overwrite: bool = False
     subpath_template: str = "{auto}"
     metadata_format_premiered: str = TIME_DATE_FMT
+    mp_title_preset: Literal[
+        "title",
+        "name",
+        "title-dot-name",
+        "title-dot-name-with-id",
+        "title-hyphen-name",
+        "title-hyphen-name-with-id",
+        "title-hyphen-space-name",
+        "title-hyphen-space-name-with-id",
+    ] = "title-dot-name"
+    mp_as_multiple_version: bool = False
     enforce_directory_boundary: bool = Field(default=False, exclude=True)
 
 

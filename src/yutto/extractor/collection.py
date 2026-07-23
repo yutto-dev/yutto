@@ -95,6 +95,7 @@ class CollectionExtractor(BatchExtractor):
                         "pubdate": ugc_video_list["pubdate"],
                     },
                     "{series_title}/{title}",
+                    is_multi_p=len(ugc_video_list["pages"]) > 1,
                 )
                 if on_item is not None:
                     await on_item(episode)

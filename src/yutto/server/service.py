@@ -196,6 +196,7 @@ class ServerPolicy:
             "download_date",
             "owner_uid",
             "owner_uname",
+            "mp_title",
         }
         time_field_pattern = re.compile(r"\{(?:pubdate|download_date)@[^{}]{1,128}\}")
         template_for_validation = time_field_pattern.sub("{download_date}", template)

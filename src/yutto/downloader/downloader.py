@@ -25,7 +25,7 @@ from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import filter_none_values, xmerge
-from yutto.utils.metadata import write_chapter_info, write_metadata
+from yutto.utils.metadata import apply_nfo_title, write_chapter_info, write_metadata
 from yutto.utils.subtitle import write_subtitle
 
 if TYPE_CHECKING:
@@ -475,7 +475,13 @@ async def process_download(
 
     # 保存媒体描述文件
     if metadata is not None:
-        metadata_path = write_metadata(metadata, output_path, metadata_format)
+        # 多 P 友好标题：默认使用 mp_title；多版本模式下使用总标题并共享 NFO 文件名
+        nfo_title = episode_data["info"]["mp_title"]
+        apply_nfo_title(metadata, nfo_title)
+        nfo_path = None
+        if episode_data["info"]["nfo_shared_stem"] is not None:
+            nfo_path = output_path.parent / f"{episode_data['info']['nfo_shared_stem']}.nfo"
+        metadata_path = write_metadata(metadata, output_path, metadata_format, nfo_path=nfo_path)
         artifacts.append(Artifact(kind=ArtifactKind.METADATA, path=metadata_path))
         Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
 

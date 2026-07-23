@@ -81,6 +81,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
             return ResolveOutcome(failures=(e,))
 
         # 选集过滤
+        is_multi_p = len(ugc_video_list["pages"]) > 1
         episodes = parse_episodes_selection(options["episodes"], len(ugc_video_list["pages"]))
         ugc_video_list["pages"] = list(filter(lambda item: item["id"] in episodes, ugc_video_list["pages"]))
 
@@ -97,6 +98,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
                         "pubdate": ugc_video_list["pubdate"],
                     },
                     "{title}/{name}",
+                    is_multi_p=is_multi_p,
                 )
                 for ugc_video_item in ugc_video_list["pages"]
             )

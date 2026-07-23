@@ -254,6 +254,27 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         help="专用于 metadata 文件中 premiered 字段的日期格式",
     )
     group_basic.add_argument(
+        "--mp-title-preset",
+        default=settings.basic.mp_title_preset,
+        choices=[
+            "title",
+            "name",
+            "title-dot-name",
+            "title-dot-name-with-id",
+            "title-hyphen-name",
+            "title-hyphen-name-with-id",
+            "title-hyphen-space-name",
+            "title-hyphen-space-name-with-id",
+        ],
+        help="多 P 视频标题组合预设，影响路径变量 {mp_title} 与 NFO 标题",
+    )
+    group_basic.add_argument(
+        "--mp-as-multiple-version",
+        default=settings.basic.mp_as_multiple_version,
+        action="store_true",
+        help="将多 P 视频按 Emby/Jellyfin 多版本规则命名（共享 NFO）",
+    )
+    group_basic.add_argument(
         "--download-interval", default=settings.basic.download_interval, type=int, help="设置下载间隔，单位为秒"
     )
     group_basic.add_argument(

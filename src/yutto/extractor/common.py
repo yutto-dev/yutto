@@ -22,7 +22,11 @@ from yutto.exceptions import (
 )
 from yutto.path_templates import (
     UNKNOWN,
+    apply_mp_title_variable,
+    repair_filename,
     resolve_path_template,
+    sanitize_multi_version_name,
+    strip_contained_title,
 )
 from yutto.types import EpisodeData, EpisodeInfo, ResolvableEpisode, format_ids
 from yutto.utils.asynclib import make_coroutine_factory
@@ -57,11 +61,45 @@ def _get_display_fields_from_metadata(metadata: MetaData | None) -> tuple[str, s
     return uploader, metadata.get("plot", ""), list(metadata.get("tag") or [])
 
 
+def _resolve_episode_path(
+    options: ExtractorOptions,
+    subpath_variables: PathTemplateVariableDict,
+    auto_subpath_template: str,
+    *,
+    is_multi_p: bool,
+) -> tuple[Path, str, str | None]:
+    """解析下载路径，并返回 (path, mp_title, nfo_shared_stem)。"""
+    mp_title = apply_mp_title_variable(
+        subpath_variables,
+        preset=options["mp_title_preset"],
+        is_multi_p=is_multi_p,
+    )
+    nfo_shared_stem: str | None = None
+
+    if options["mp_as_multiple_version"] and is_multi_p:
+        raw_title = str(subpath_variables.get("title", UNKNOWN))
+        raw_name = str(subpath_variables.get("name", UNKNOWN))
+        title = raw_title if raw_title != UNKNOWN else raw_name
+        name = raw_name if raw_name != UNKNOWN else raw_title
+        part_name = strip_contained_title(name, title) or name
+        media_name = f"{sanitize_multi_version_name(title)} - {sanitize_multi_version_name(part_name)}"
+        # 多版本模式强制使用媒体名作为相对路径，便于同目录共享 NFO
+        path = Path(repair_filename(media_name))
+        nfo_shared_stem = repair_filename(title)
+        mp_title = title
+    else:
+        path = Path(resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables))
+
+    return path, mp_title, nfo_shared_stem
+
+
 def build_bangumi_info(
     bangumi_info: BangumiListItem,
     options: ExtractorOptions,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
+    *,
+    is_multi_p: bool = False,
 ) -> EpisodeInfo:
     avid = bangumi_info["avid"]
     subpath_variables_base: PathTemplateVariableDict = {
@@ -76,9 +114,15 @@ def build_bangumi_info(
         "download_date": bangumi_info["metadata"]["dateadded"],
         "owner_uid": UNKNOWN,
         "owner_uname": UNKNOWN,
+        "mp_title": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)
-    path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+    path, mp_title, nfo_shared_stem = _resolve_episode_path(
+        options,
+        subpath_variables_base,
+        auto_subpath_template,
+        is_multi_p=is_multi_p,
+    )
     uploader, description, tags = _get_display_fields_from_metadata(bangumi_info["metadata"])
     return EpisodeInfo(
         avid=avid,
@@ -90,8 +134,11 @@ def build_bangumi_info(
         uploader=uploader,
         description=description,
         tags=tags,
-        path=Path(path),
+        path=path,
         display_group=None,
+        mp_title=mp_title,
+        is_multi_p=is_multi_p,
+        nfo_shared_stem=nfo_shared_stem,
     )
 
 
@@ -146,8 +193,16 @@ def make_bangumi_episode(
     options: ExtractorOptions,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
+    *,
+    is_multi_p: bool = False,
 ) -> ResolvableEpisode:
-    info = build_bangumi_info(bangumi_info, options, subpath_variables, auto_subpath_template)
+    info = build_bangumi_info(
+        bangumi_info,
+        options,
+        subpath_variables,
+        auto_subpath_template,
+        is_multi_p=is_multi_p,
+    )
     return ResolvableEpisode(
         info=info,
         resolve_data=make_coroutine_factory(extract_bangumi_data)(ctx, client, info, bangumi_info, options),
@@ -159,6 +214,8 @@ def build_cheese_info(
     options: ExtractorOptions,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
+    *,
+    is_multi_p: bool = False,
 ) -> EpisodeInfo:
     avid = cheese_info["avid"]
     subpath_variables_base: PathTemplateVariableDict = {
@@ -173,9 +230,15 @@ def build_cheese_info(
         "download_date": UNKNOWN,
         "owner_uid": UNKNOWN,
         "owner_uname": UNKNOWN,
+        "mp_title": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)
-    path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+    path, mp_title, nfo_shared_stem = _resolve_episode_path(
+        options,
+        subpath_variables_base,
+        auto_subpath_template,
+        is_multi_p=is_multi_p,
+    )
     uploader, description, tags = _get_display_fields_from_metadata(cheese_info["metadata"])
     return EpisodeInfo(
         avid=avid,
@@ -187,8 +250,11 @@ def build_cheese_info(
         uploader=uploader,
         description=description,
         tags=tags,
-        path=Path(path),
+        path=path,
         display_group=None,
+        mp_title=mp_title,
+        is_multi_p=is_multi_p,
+        nfo_shared_stem=nfo_shared_stem,
     )
 
 
@@ -243,8 +309,16 @@ def make_cheese_episode(
     options: ExtractorOptions,
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{name}",
+    *,
+    is_multi_p: bool = False,
 ) -> ResolvableEpisode:
-    info = build_cheese_info(cheese_info, options, subpath_variables, auto_subpath_template)
+    info = build_cheese_info(
+        cheese_info,
+        options,
+        subpath_variables,
+        auto_subpath_template,
+        is_multi_p=is_multi_p,
+    )
     return ResolvableEpisode(
         info=info,
         resolve_data=make_coroutine_factory(extract_cheese_data)(ctx, client, episode_id, info, cheese_info, options),
@@ -258,6 +332,8 @@ def build_ugc_video_info(
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
     display_group: str | None = None,
+    *,
+    is_multi_p: bool = False,
 ) -> EpisodeInfo:
     owner_uid: str = (
         ugc_video_info["metadata"]["actor"][0]["profile"].split("/")[-1]
@@ -279,9 +355,15 @@ def build_ugc_video_info(
         "download_date": ugc_video_info["metadata"]["dateadded"],
         "owner_uid": owner_uid,
         "owner_uname": owner_uname,
+        "mp_title": UNKNOWN,
     }
     subpath_variables_base.update(subpath_variables)
-    path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
+    path, mp_title, nfo_shared_stem = _resolve_episode_path(
+        options,
+        subpath_variables_base,
+        auto_subpath_template,
+        is_multi_p=is_multi_p,
+    )
     uploader, description, tags = _get_display_fields_from_metadata(ugc_video_info["metadata"])
     return EpisodeInfo(
         avid=avid,
@@ -293,8 +375,11 @@ def build_ugc_video_info(
         uploader=uploader,
         description=description,
         tags=tags,
-        path=Path(path),
+        path=path,
         display_group=display_group,
+        mp_title=mp_title,
+        is_multi_p=is_multi_p,
+        nfo_shared_stem=nfo_shared_stem,
     )
 
 
@@ -354,8 +439,18 @@ def make_ugc_video_episode(
     subpath_variables: PathTemplateVariableDict,
     auto_subpath_template: str = "{title}",
     display_group: str | None = None,
+    *,
+    is_multi_p: bool = False,
 ) -> ResolvableEpisode:
-    info = build_ugc_video_info(avid, ugc_video_info, options, subpath_variables, auto_subpath_template, display_group)
+    info = build_ugc_video_info(
+        avid,
+        ugc_video_info,
+        options,
+        subpath_variables,
+        auto_subpath_template,
+        display_group,
+        is_multi_p=is_multi_p,
+    )
     return ResolvableEpisode(
         info=info,
         resolve_data=make_coroutine_factory(extract_ugc_video_data)(ctx, client, info, ugc_video_info, options),

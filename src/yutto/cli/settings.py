@@ -48,6 +48,20 @@ class YuttoBasicSettings(BaseModel):
     subpath_template: Annotated[str, Field("{auto}")]
     aliases: Annotated[dict[str, str], Field(dict[str, str]())]
     metadata_format_premiered: Annotated[str, Field(TIME_DATE_FMT)]
+    mp_title_preset: Annotated[
+        Literal[
+            "title",
+            "name",
+            "title-dot-name",
+            "title-dot-name-with-id",
+            "title-hyphen-name",
+            "title-hyphen-name-with-id",
+            "title-hyphen-space-name",
+            "title-hyphen-space-name-with-id",
+        ],
+        Field("title-dot-name"),
+    ]
+    mp_as_multiple_version: Annotated[bool, Field(False)]
     download_interval: Annotated[int, Field(0)]
     banned_mirrors_pattern: Annotated[str | None, Field(None)]
     vip_strict: Annotated[bool, Field(False)]

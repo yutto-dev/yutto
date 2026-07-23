@@ -92,6 +92,9 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
                 "{title}/{name}",
                 "--metadata-format-premiered",
                 "%Y",
+                "--mp-title-preset",
+                "title-hyphen-space-name",
+                "--mp-as-multiple-version",
                 "--proxy",
                 "no",
                 "--fetch-workers",
@@ -167,6 +170,8 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "overwrite": True,
         "subpath_template": "{title}/{name}",
         "metadata_format_premiered": "%Y",
+        "mp_title_preset": "title-hyphen-space-name",
+        "mp_as_multiple_version": True,
     }
     assert request.network.model_dump() == {
         "proxy": "no",
