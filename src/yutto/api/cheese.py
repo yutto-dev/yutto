@@ -94,7 +94,8 @@ async def get_cheese_playurl(
         raise NoAccessPermissionError(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
         )
-    if resp_json["data"]["is_preview"] == 1:
+    # playurl payload may omit is_preview for some titles
+    if resp_json["data"].get("is_preview") == 1:
         Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
     if resp_json["data"].get("dash") is None:
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")

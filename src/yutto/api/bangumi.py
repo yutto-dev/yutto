@@ -108,8 +108,8 @@ async def get_bangumi_playurl(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
         )
     video_info = resp_json["result"]["video_info"]
-    if video_info["is_preview"] == 1:
-        # Maybe always 0 in v2 API
+    # v2 playurl may omit is_preview for some OGV titles (see #585)
+    if video_info.get("is_preview") == 1:
         Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
     if video_info.get("dash") is None:
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
