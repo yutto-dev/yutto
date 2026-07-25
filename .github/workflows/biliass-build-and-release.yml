@@ -46,7 +46,7 @@ jobs:
             target: ppc64le
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.x
           allow-prereleases: true
@@ -80,7 +80,7 @@ jobs:
             target: armv7
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.x
           allow-prereleases: true
@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: setup-python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14"
           architecture: ${{ matrix.platform.target }}
@@ -148,7 +148,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: setup-python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14t"
           architecture: ${{ matrix.platform.target }}
@@ -180,7 +180,7 @@ jobs:
             target: aarch64
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.x
           allow-prereleases: true
