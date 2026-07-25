@@ -48,7 +48,7 @@ convert_to_ass(
 
 # protobuf
 convert_to_ass(
-    protobuf_bytes, # only bytes
+    protobuf_bytes,  # only bytes
     1920,
     1080,
     input_format="protobuf",
