@@ -17,7 +17,9 @@ from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ResolveResult
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.runtime import TaskContext, TaskRuntime, TaskSnapshot, TaskState, monotonic_seq_allocator
+from yutto.server.service import ServerPolicy, ServerPolicyOptions
 from yutto.server.websocket import (
+    REQUEST_REJECTED_ERROR,
     WebSocketServerOptions,
     YuttoWebSocketServer,
     _SlowConsumerCloser,
@@ -32,6 +34,7 @@ pytestmark = pytest.mark.processor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
 
     from yutto.api.ugc_video import UgcVideoList
     from yutto.extractor.utils.batch import IndexedResolveItem
@@ -181,6 +184,7 @@ async def start_server(
     token: str = "test-token",
     service: FakeDownloadTaskApi | None = None,
     resolve_service: FakeResolveTaskApi | None = None,
+    prepare_request: Callable[[DownloadRequest], DownloadRequest] | None = None,
 ) -> tuple[YuttoWebSocketServer, FakeDownloadTaskApi, str]:
     service = service or FakeDownloadTaskApi()
     server = YuttoWebSocketServer(
@@ -191,6 +195,7 @@ async def start_server(
             port=0,
             allowed_origins=allowed_origins,
         ),
+        prepare_request=prepare_request,
         resolve_service=resolve_service,
     )
     await server.start()
@@ -295,6 +300,74 @@ async def test_server_info_and_exact_origin_allowlist():
                 "code": -32602,
                 "message": "Invalid params",
             }
+    finally:
+        await server.close()
+
+
+@pytest.mark.parametrize(
+    ("method", "request_payload", "reason"),
+    [
+        (
+            "download.start",
+            {
+                "source": {"url": "BV1invalid"},
+                "access": {"auth_profile": "bad profile"},
+            },
+            "auth profile 名称不合法：bad profile",
+        ),
+        (
+            "resolve.start",
+            {
+                "source": {"url": "BV1invalid"},
+                "access": {"auth_profile": "bad profile"},
+            },
+            "auth profile 名称不合法：bad profile",
+        ),
+        (
+            "download.start",
+            {
+                "source": {"url": "BV1invalid"},
+                "network": {"fetch_workers": 0},
+            },
+            "network.fetch_workers must be between 1 and 8",
+        ),
+    ],
+)
+@as_sync
+async def test_server_policy_rejects_invalid_requests_before_task_submission(
+    tmp_path: Path,
+    method: str,
+    request_payload: dict[str, object],
+    reason: str,
+):
+    download_service = FakeDownloadTaskApi()
+    resolve_service = FakeResolveTaskApi()
+    policy = ServerPolicy(
+        ServerPolicyOptions(
+            download_root=tmp_path / "downloads",
+            tmp_root=tmp_path / "temporary",
+            auth_file=tmp_path / "auth.toml",
+        )
+    )
+    server, _, uri = await start_server(
+        service=download_service,
+        resolve_service=resolve_service,
+        prepare_request=policy.prepare_request,
+    )
+    try:
+        async with connect(uri, proxy=None) as connection:
+            await connection.send(rpc_request(1, "server.authenticate", {"token": "test-token"}))
+            await receive_json(connection)
+
+            await connection.send(rpc_request(2, method, {"request": request_payload}))
+            assert (await receive_json(connection))["error"] == {
+                "code": REQUEST_REJECTED_ERROR,
+                "message": "Request rejected",
+                "data": {"reason": reason},
+            }
+
+            assert download_service.list() == ()
+            assert resolve_service.list() == ()
     finally:
         await server.close()
 

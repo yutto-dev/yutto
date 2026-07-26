@@ -39,6 +39,10 @@ class ExecutionScope:
         fetch_workers: int = DEFAULT_FETCH_WORKERS,
         download_workers: int = DEFAULT_FETCH_WORKERS,
     ):
+        if fetch_workers < 1:
+            raise ValueError("fetch_workers must be at least 1")
+        if download_workers < 1:
+            raise ValueError("download_workers must be at least 1")
         self.client = client
         self.fetch_limiter = asyncio.Semaphore(fetch_workers)
         self.download_limiter = asyncio.Semaphore(download_workers)

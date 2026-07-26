@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, TypeAlias, TypeVar
 
 from pydantic import BaseModel
 
-from yutto.auth import load_auth
+from yutto.auth import load_auth, validate_profile
 from yutto.core.execution import RequestExecutionScopeFactory
 from yutto.utils.fetcher import resolve_proxy
 
@@ -85,6 +85,7 @@ class ServerPolicy:
         """Return an immutable copy with server-owned absolute output paths."""
         self._validate_workers(request)
         self._validate_proxy(request)
+        self._validate_auth_profile(request)
         self._validate_block_size(request)
         self._validate_save_codecs(request)
         self._validate_subpath_template(request.output.subpath_template)
@@ -138,6 +139,13 @@ class ServerPolicy:
     def _validate_proxy(request: DownloadRequest) -> None:
         try:
             resolve_proxy(request.network.proxy)
+        except ValueError as error:
+            raise ServerPolicyError(str(error)) from error
+
+    @staticmethod
+    def _validate_auth_profile(request: DownloadRequest) -> None:
+        try:
+            validate_profile(request.access.auth_profile)
         except ValueError as error:
             raise ServerPolicyError(str(error)) from error
 

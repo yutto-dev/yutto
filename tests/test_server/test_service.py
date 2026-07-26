@@ -146,6 +146,13 @@ def test_policy_rejects_worker_counts_outside_configured_limits(tmp_path: Path, 
         policy.prepare_request(make_request(network=network))
 
 
+def test_prepare_request_rejects_invalid_auth_profile(tmp_path: Path):
+    policy = make_policy(tmp_path)
+
+    with pytest.raises(ServerPolicyError, match="auth profile 名称不合法"):
+        policy.prepare_request(make_request(access={"auth_profile": "bad profile"}))
+
+
 @pytest.mark.parametrize("block_size", [0, -1, 64 * 1024 - 1, 64 * 1024 * 1024 + 1])
 def test_policy_rejects_unsafe_block_sizes(tmp_path: Path, block_size: int):
     policy = make_policy(tmp_path)

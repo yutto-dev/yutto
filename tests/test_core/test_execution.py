@@ -17,6 +17,26 @@ def make_request() -> DownloadRequest:
     return DownloadRequest.model_validate({"source": {"url": "BV1scope"}})
 
 
+@pytest.mark.parametrize(
+    ("fetch_workers", "download_workers", "field"),
+    [
+        (0, 8, "fetch_workers"),
+        (8, 0, "download_workers"),
+    ],
+)
+def test_execution_scope_rejects_non_positive_workers(
+    fetch_workers: int,
+    download_workers: int,
+    field: str,
+):
+    with pytest.raises(ValueError, match=rf"{field} must be at least 1"):
+        ExecutionScope(
+            cast("Any", object()),
+            fetch_workers=fetch_workers,
+            download_workers=download_workers,
+        )
+
+
 @as_sync
 async def test_execution_scope_download_guard_limits_concurrency():
     scope = ExecutionScope(cast("Any", object()), download_workers=2)
