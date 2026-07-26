@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
     """Generate the (offset, byte count) ranges used by parallel downloads."""
     if total_size is None:
-        return [(start, None)]
+        return [(0, None)]
     assert start <= total_size, f"起始地址（{start}）大于总地址（{total_size}）"
     remaining = total_size - start
     if remaining == 0:
@@ -95,11 +95,14 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
 
     try:
         if plan.video is not None:
-            video_buffer = await AsyncFileBuffer.open(plan.paths.video, overwrite=plan.overwrite)
-            buffers[0] = video_buffer
             video_size = await first_successful_with_check(
                 [get_size(url) for url in [plan.video.url, *mirrors_filter(list(plan.video.mirrors))]]
             )
+            video_buffer = await AsyncFileBuffer.open(
+                plan.paths.video,
+                overwrite=plan.overwrite or video_size is None,
+            )
+            buffers[0] = video_buffer
             sizes[0] = video_size
             coroutine_factories_list.append(
                 [
@@ -120,11 +123,14 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             )
 
         if plan.audio is not None:
-            audio_buffer = await AsyncFileBuffer.open(plan.paths.audio, overwrite=plan.overwrite)
-            buffers[1] = audio_buffer
             audio_size = await first_successful_with_check(
                 [get_size(url) for url in [plan.audio.url, *mirrors_filter(list(plan.audio.mirrors))]]
             )
+            audio_buffer = await AsyncFileBuffer.open(
+                plan.paths.audio,
+                overwrite=plan.overwrite or audio_size is None,
+            )
+            buffers[1] = audio_buffer
             sizes[1] = audio_size
             coroutine_factories_list.append(
                 [
@@ -145,14 +151,14 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             )
 
         coroutine_factories = list(xmerge(*coroutine_factories_list))
-        coroutine_factories.insert(
-            0,
-            defer_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))),
-        )
+        media_buffers = filter_none_values(buffers)
+        known_sizes = filter_none_values(sizes)
+        if len(known_sizes) == len(media_buffers):
+            coroutine_factories.insert(0, defer_progress(media_buffers, sum(known_sizes)))
         emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=plan.item))
         emit_download_report("开始下载……")
         lifecycle_started = True
-        await _run_download_lifecycle(coroutine_factories, filter_none_values(buffers))
+        await _run_download_lifecycle(coroutine_factories, media_buffers)
         emit_download_report("下载完成！")
     finally:
         if not lifecycle_started:
