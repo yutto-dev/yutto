@@ -128,6 +128,8 @@ yutto serve \
 - `planned_path`：按模板推导的计划路径（POSIX 风格），实际下载时可能因去重而调整；
 - `display_group`：批量解析时的分组名，无分组时为 `null`。
 
+两条输出都来自同一个不可变 listing snapshot；`planned_path` 固定记录 listing 时的计划路径，下载期去重不会回写它。snapshot 中的 `url` 是稳定的条目页面 URL，不包含易过期的音视频资源 URL、资源 bytes 或认证信息。
+
 错误语义：解析过程中预期内的失败（视频不存在 / 无访问权限 / 请求重试耗尽等）会以结构化形式保留 —— 任务完成时 `result.failures` 逐项列出 `type` / `message` / `code`（与任务级错误同构，`code` 来自 yutto 的稳定错误码表）。没有任何条目解析成功且存在失败时，任务以 `failed` 结束且错误码保持稳定（单一失败即原始失败的错误码，多个失败聚合为 `RESOLVE_FAILED_ERROR`），不会伪装成空成功；来源本就为空、或条目全部被过滤（如发布时间过滤）时，任务以 `completed` 返回空 `items` 且 `failures` 为空；部分失败时任务为 `completed`，成功条目在 `items`、失败记录在 `failures`。
 
 ## 本地资源边界

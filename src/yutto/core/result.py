@@ -4,7 +4,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
+
+from yutto.types import AId, AvId, BvId, CId
 
 
 class _ResultModel(BaseModel):
@@ -58,10 +60,10 @@ class DownloadResult(_ResultModel):
 
 
 class ResolvedItem(_ResultModel):
-    """A stable, listing-time snapshot of one episode; contains no expiring data."""
+    """The canonical immutable snapshot of one listed episode."""
 
-    avid: str
-    cid: str
+    avid: AvId
+    cid: CId
     url: str
     name: str
     title: str
@@ -71,6 +73,32 @@ class ResolvedItem(_ResultModel):
     uploader: str = ""
     description: str = ""
     tags: tuple[str, ...] = ()
+
+    @field_validator("avid", mode="plain", json_schema_input_type=str)
+    @classmethod
+    def validate_avid(cls, value: object) -> AvId:
+        if isinstance(value, AvId):
+            return value
+        if isinstance(value, str):
+            return BvId(value) if value.casefold().startswith(AvId.PREFIX.casefold()) else AId(value)
+        raise ValueError("avid must be an AvId instance or string")
+
+    @field_validator("cid", mode="plain", json_schema_input_type=str)
+    @classmethod
+    def validate_cid(cls, value: object) -> CId:
+        if isinstance(value, CId):
+            return value
+        if isinstance(value, str):
+            return CId(value)
+        raise ValueError("cid must be a CId instance or string")
+
+    @field_serializer("avid", "cid", when_used="json", return_type=str)
+    def serialize_id(self, value: AvId | CId) -> str:
+        return str(value)
+
+    @field_serializer("planned_path", when_used="json", return_type=str)
+    def serialize_planned_path(self, value: Path) -> str:
+        return value.as_posix()
 
 
 class ResolveFailure(_ResultModel):

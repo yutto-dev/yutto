@@ -14,6 +14,7 @@ from yutto.api.ugc_video import (
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
 )
+from yutto.core.result import ResolvedItem
 from yutto.exceptions import (
     HttpStatusError,
     NoAccessPermissionError,
@@ -78,18 +79,22 @@ def build_bangumi_info(
     subpath_variables_base.update(subpath_variables)
     path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
     uploader, description, tags = _get_display_fields_from_metadata(bangumi_info["metadata"])
+    planned_path = Path(path)
     return EpisodeInfo(
-        avid=avid,
-        cid=bangumi_info["cid"],
-        url=f"https://www.bilibili.com/bangumi/play/ep{bangumi_info['episode_id']}",
-        name=bangumi_info["name"],
-        title=str(subpath_variables_base["title"]),
-        cover_url=bangumi_info["metadata"]["thumb"],
-        uploader=uploader,
-        description=description,
-        tags=tags,
-        path=Path(path),
-        display_group=None,
+        listing=ResolvedItem(
+            avid=avid,
+            cid=bangumi_info["cid"],
+            url=f"https://www.bilibili.com/bangumi/play/ep{bangumi_info['episode_id']}",
+            name=bangumi_info["name"],
+            title=str(subpath_variables_base["title"]),
+            cover_url=bangumi_info["metadata"]["thumb"],
+            uploader=uploader,
+            description=description,
+            tags=tuple(tags),
+            planned_path=planned_path,
+            display_group=None,
+        ),
+        path=planned_path,
     )
 
 
@@ -100,8 +105,9 @@ async def extract_bangumi_data(
     options: ExtractorOptions,
 ) -> EpisodeData | None:
     try:
-        avid = info["avid"]
-        cid = info["cid"]
+        listing = info["listing"]
+        avid = listing.avid
+        cid = listing.cid
         if bangumi_info["is_preview"]:
             Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
         videos, audios = (
@@ -117,7 +123,7 @@ async def extract_bangumi_data(
         )
         metadata = bangumi_info["metadata"] if options["require_metadata"] else None
         cover_data = (
-            (await Fetcher.fetch_bin(scope, info["cover_url"])).value_or(None) if options["require_cover"] else None
+            (await Fetcher.fetch_bin(scope, listing.cover_url)).value_or(None) if options["require_cover"] else None
         )
         return EpisodeData(
             info=info,
@@ -171,18 +177,22 @@ def build_cheese_info(
     subpath_variables_base.update(subpath_variables)
     path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
     uploader, description, tags = _get_display_fields_from_metadata(cheese_info["metadata"])
+    planned_path = Path(path)
     return EpisodeInfo(
-        avid=avid,
-        cid=cheese_info["cid"],
-        url=f"https://www.bilibili.com/cheese/play/ep{cheese_info['episode_id']}",
-        name=cheese_info["name"],
-        title=str(subpath_variables_base["title"]),
-        cover_url=cheese_info["metadata"]["thumb"],
-        uploader=uploader,
-        description=description,
-        tags=tags,
-        path=Path(path),
-        display_group=None,
+        listing=ResolvedItem(
+            avid=avid,
+            cid=cheese_info["cid"],
+            url=f"https://www.bilibili.com/cheese/play/ep{cheese_info['episode_id']}",
+            name=cheese_info["name"],
+            title=str(subpath_variables_base["title"]),
+            cover_url=cheese_info["metadata"]["thumb"],
+            uploader=uploader,
+            description=description,
+            tags=tuple(tags),
+            planned_path=planned_path,
+            display_group=None,
+        ),
+        path=planned_path,
     )
 
 
@@ -194,8 +204,9 @@ async def extract_cheese_data(
     options: ExtractorOptions,
 ) -> EpisodeData | None:
     try:
-        avid = info["avid"]
-        cid = info["cid"]
+        listing = info["listing"]
+        avid = listing.avid
+        cid = listing.cid
         videos, audios = (
             await get_cheese_playurl(scope, avid, episode_id, cid)
             if options["require_video"] or options["require_audio"]
@@ -209,7 +220,7 @@ async def extract_cheese_data(
         )
         metadata = cheese_info["metadata"] if options["require_metadata"] else None
         cover_data = (
-            (await Fetcher.fetch_bin(scope, info["cover_url"])).value_or(None) if options["require_cover"] else None
+            (await Fetcher.fetch_bin(scope, listing.cover_url)).value_or(None) if options["require_cover"] else None
         )
         return EpisodeData(
             info=info,
@@ -273,18 +284,22 @@ def build_ugc_video_info(
     subpath_variables_base.update(subpath_variables)
     path = resolve_path_template(options["subpath_template"], auto_subpath_template, subpath_variables_base)
     uploader, description, tags = _get_display_fields_from_metadata(ugc_video_info["metadata"])
+    planned_path = Path(path)
     return EpisodeInfo(
-        avid=avid,
-        cid=ugc_video_info["cid"],
-        url=f"{avid.to_url()}?p={ugc_video_info['id']}",
-        name=ugc_video_info["name"],
-        title=str(subpath_variables_base["title"]),
-        cover_url=ugc_video_info["metadata"]["thumb"],
-        uploader=uploader,
-        description=description,
-        tags=tags,
-        path=Path(path),
-        display_group=display_group,
+        listing=ResolvedItem(
+            avid=avid,
+            cid=ugc_video_info["cid"],
+            url=f"{avid.to_url()}?p={ugc_video_info['id']}",
+            name=ugc_video_info["name"],
+            title=str(subpath_variables_base["title"]),
+            cover_url=ugc_video_info["metadata"]["thumb"],
+            uploader=uploader,
+            description=description,
+            tags=tuple(tags),
+            planned_path=planned_path,
+            display_group=display_group,
+        ),
+        path=planned_path,
     )
 
 
@@ -295,8 +310,9 @@ async def extract_ugc_video_data(
     options: ExtractorOptions,
 ) -> EpisodeData | None:
     try:
-        avid = info["avid"]
-        cid = info["cid"]
+        listing = info["listing"]
+        avid = listing.avid
+        cid = listing.cid
         videos, audios = (
             await get_ugc_video_playurl(scope, avid, cid, options["ai_translation_language"])
             if options["require_video"] or options["require_audio"]
@@ -313,7 +329,7 @@ async def extract_ugc_video_data(
         if metadata and chapter_info_data:
             attach_chapter_info(metadata, chapter_info_data)
         cover_data = (
-            (await Fetcher.fetch_bin(scope, info["cover_url"])).value_or(None) if options["require_cover"] else None
+            (await Fetcher.fetch_bin(scope, listing.cover_url)).value_or(None) if options["require_cover"] else None
         )
         return EpisodeData(
             info=info,

@@ -36,19 +36,36 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.processor
 
 
-def make_info(name: str, display_group: str | None = None) -> EpisodeInfo:
+def make_info(
+    name: str,
+    display_group: str | None = None,
+    *,
+    description: str = "视频简介",
+    tags: tuple[str, ...] = ("标签A", "标签B"),
+) -> EpisodeInfo:
+    planned_path = Path(f"标题/{name}")
     return {
-        "avid": AId("1"),
-        "cid": CId("10"),
-        "url": "https://www.bilibili.com/video/av1?p=1",
-        "name": name,
-        "title": "标题",
-        "cover_url": "https://example.com/cover.jpg",
-        "uploader": "某UP主",
-        "description": "视频简介",
-        "tags": ["标签A", "标签B"],
-        "path": Path(f"标题/{name}"),
-        "display_group": display_group,
+        "listing": ResolvedItem(
+            avid=AId("1"),
+            cid=CId("10"),
+            url="https://www.bilibili.com/video/av1?p=1",
+            name=name,
+            title="标题",
+            cover_url="https://example.com/cover.jpg",
+            uploader="某UP主",
+            description=description,
+            tags=tags,
+            planned_path=planned_path,
+            display_group=display_group,
+        ),
+        "path": planned_path,
+    }
+
+
+def copy_info(info: EpisodeInfo) -> EpisodeInfo:
+    return {
+        "listing": info["listing"].model_copy(),
+        "path": info["path"],
     }
 
 
@@ -104,8 +121,8 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
         items = await manager.resolve_items(ExecutionScope(client), request)
 
     expected_item = ResolvedItem(
-        avid="1",
-        cid="10",
+        avid=AId("1"),
+        cid=CId("10"),
         url="https://www.bilibili.com/video/av1?p=1",
         name="P1",
         title="标题",
@@ -122,20 +139,14 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
     assert executed == []
     assert sink.events == [
         DownloadStageChanged(name=DownloadStage.RESOLVING),
-        DownloadItemListed(
-            avid="1",
-            cid="10",
-            url="https://www.bilibili.com/video/av1?p=1",
-            name="P1",
-            title="标题",
-            cover_url="https://example.com/cover.jpg",
-            planned_path=Path("标题/P1"),
-            display_group="标题",
-            uploader="某UP主",
-            description="视频简介",
-            tags=("标签A", "标签B"),
-        ),
+        DownloadItemListed(item=expected_item),
     ]
+    listed = sink.events[1]
+    assert isinstance(listed, DownloadItemListed)
+    assert listed.item is items.items[0]
+    info["path"] = Path("标题/下载期重命名")
+    assert items.items[0].tags == ("标签A", "标签B")
+    assert items.items[0].planned_path == Path("标题/P1")
 
 
 @as_sync
@@ -148,8 +159,15 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
         resolved.append("ran")
         return None
 
-    streamed = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
-    final_copy = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+    first_info = make_info("P1", display_group="标题", description="先完成", tags=("first",))
+    second_info = make_info("P1", display_group="标题", description="后完成", tags=("second",))
+    final_first_info = copy_info(first_info)
+    final_second_info = copy_info(second_info)
+
+    streamed_first = ResolvableEpisode(info=first_info, resolve_data=noop)
+    streamed_second = ResolvableEpisode(info=second_info, resolve_data=noop)
+    final_first = ResolvableEpisode(info=final_first_info, resolve_data=noop)
+    final_second = ResolvableEpisode(info=final_second_info, resolve_data=noop)
     late = ResolvableEpisode(info=make_info("P2", display_group="标题"), resolve_data=noop)
 
     class FakeExtractor(BatchExtractor):
@@ -166,11 +184,13 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
             *,
             on_item: EpisodeListedCallback | None = None,
         ) -> ExtractorResolveOutcome:
-            # 流式提取器：解析过程中先推送 P1；P2 留给 resolve_items 收尾补发
+            # first/second 的旧五字段 key 相同但 metadata 不同；最终顺序反转，
+            # 用于保证 occurrence 由完整 canonical snapshot 匹配。
             assert on_item is not None
-            await on_item(streamed)
-            await on_item(streamed)
-            return ResolveOutcome(items=(final_copy, late))
+            await on_item(streamed_first)
+            await on_item(streamed_first)
+            await on_item(streamed_second)
+            return ResolveOutcome(items=(final_second, final_first, late))
 
     async def fake_validate_user_info(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return True
@@ -191,37 +211,51 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
         items = await manager.resolve_items(ExecutionScope(client), request)
 
     listed = [event for event in sink.events if isinstance(event, DownloadItemListed)]
-    # 每条恰好一次：流式推送的 P1 在前（提取中），P2 收尾补发
-    assert [event.name for event in listed] == ["P1", "P2"]
+    # 同一对象的重复 callback 不会重复发送；P2 在收尾阶段补发。
+    assert [event.item.name for event in listed] == ["P1", "P1", "P2"]
+    assert [event.item.description for event in listed] == ["先完成", "后完成", "视频简介"]
     # 返回列表保持提取器给出的顺序
-    assert [item.name for item in items.items] == ["P1", "P2"]
+    assert [item.name for item in items.items] == ["P1", "P1", "P2"]
+    assert [item.description for item in items.items] == ["后完成", "先完成", "视频简介"]
+    # event 与 result 复用同一 snapshot，即使最终 extractor 返回的是等值 copy。
+    assert listed[0].item is items.items[1]
+    assert listed[1].item is items.items[0]
+    assert listed[2].item is items.items[2]
     # resolve-only 路径不会调用 data resolver，也不会提前创建 coroutine
     assert resolved == []
 
 
 @as_sync
 async def test_resolve_items_emits_each_equal_occurrence(monkeypatch: pytest.MonkeyPatch):
-    """字段完全相同的独立结果条目仍各自对应一条 item_listed 事件。"""
+    """流式回调中字段完全相同的独立条目仍各自对应一条事件。"""
 
     async def noop() -> EpisodeData | None:
         return None
 
     first = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
     second = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+    final_first = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
+    final_second = ResolvableEpisode(info=make_info("P1", display_group="标题"), resolve_data=noop)
 
-    class FakeExtractor:
+    class FakeExtractor(BatchExtractor):
         def resolve_shortcut(self, id: str) -> tuple[bool, str]:
             return True, f"https://example.com/{id}"
 
         def match(self, url: str) -> bool:
             return url == "https://example.com/BV1equal"
 
-        async def __call__(
+        async def extract(
             self,
             scope: ExecutionScope,
             options: ExtractorOptions,
+            *,
+            on_item: EpisodeListedCallback | None = None,
         ) -> ExtractorResolveOutcome:
-            return ResolveOutcome(items=(first, second))
+            assert on_item is not None
+            await on_item(first)
+            await on_item(first)
+            await on_item(second)
+            return ResolveOutcome(items=(final_first, final_second))
 
     async def fake_validate_user_info(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return True
@@ -243,8 +277,12 @@ async def test_resolve_items_emits_each_equal_occurrence(monkeypatch: pytest.Mon
 
     listed = [event for event in sink.events if isinstance(event, DownloadItemListed)]
     assert len(listed) == len(outcome.items) == 2
-    assert listed[0] == listed[1]
+    assert listed[0].item == listed[1].item
+    assert listed[0].item is not listed[1].item
     assert outcome.items[0] == outcome.items[1]
+    assert outcome.items[0] is not outcome.items[1]
+    assert listed[0].item is outcome.items[0]
+    assert listed[1].item is outcome.items[1]
 
 
 class _FakeClientContext:

@@ -15,6 +15,7 @@ from yutto.core.events import (
 )
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ResolveResult
+from yutto.core.serialization import listing_item_to_wire
 from yutto.runtime import TaskRuntime
 
 if TYPE_CHECKING:
@@ -192,31 +193,7 @@ def _encode_runtime_event(event: DownloadEvent) -> tuple[str, dict[str, object]]
             return "item_skipped", {"item": item, "reason": reason.value}
         case DownloadArtifactCreated(item=item, path=path):
             return "artifact_created", {"path": path.as_posix(), "item": item}
-        case DownloadItemListed(
-            avid=avid,
-            cid=cid,
-            url=url,
-            name=name,
-            title=title,
-            cover_url=cover_url,
-            planned_path=planned_path,
-            display_group=display_group,
-            uploader=uploader,
-            description=description,
-            tags=tags,
-        ):
-            return "item_listed", {
-                "avid": avid,
-                "cid": cid,
-                "url": url,
-                "name": name,
-                "title": title,
-                "cover_url": cover_url,
-                "planned_path": planned_path.as_posix(),
-                "display_group": display_group,
-                "uploader": uploader,
-                "description": description,
-                "tags": list(tags),
-            }
+        case DownloadItemListed(item=item):
+            return "item_listed", listing_item_to_wire(item)
         case _ as unreachable:
             assert_never(unreachable)

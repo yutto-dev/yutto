@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
+    from yutto.core.result import ResolvedItem
     from yutto.media.codec import AudioCodec, VideoCodec
     from yutto.media.quality import AudioQuality, VideoQuality
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
@@ -231,23 +232,14 @@ class ExtractorOptions(TypedDict):
 
 
 class EpisodeInfo(TypedDict):
-    """条目在 listing 阶段即可得的稳定信息，不含 playurl 等易失数据"""
+    """下载期条目信息：不可变 listing 快照与可调整的实际路径。"""
 
-    avid: AvId
-    cid: CId
-    url: str  # 指向该条目自身的原子 URL，可直接作为单集下载的入口
-    name: str
-    title: str
-    cover_url: str
-    uploader: str  # UP 主名称，listing 元数据缺失时为空串
-    description: str  # 视频简介，listing 元数据缺失时为空串
-    tags: list[str]
-    path: Path  # 模板解析出的计划路径，下载时可能因去重而调整
-    display_group: str | None  # 多分 p 视频的分组标题，单集为 None
+    listing: ResolvedItem
+    path: Path  # 初始等于 listing.planned_path，下载时可能因去重而调整
 
 
 class EpisodeData(TypedDict):
-    """剧集数据 = 稳定的条目信息（info）+ 下载所需的资源数据"""
+    """剧集数据 = canonical listing + 下载期路径 + 下载所需的资源数据。"""
 
     info: EpisodeInfo
     videos: list[VideoUrlMeta]

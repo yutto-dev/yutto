@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, cast
 import pytest
 
 from yutto.core.execution import ExecutionScope
-from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
+from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState, ResolvedItem
 from yutto.downloader.downloader import process_download
 from yutto.types import AId, CId
 from yutto.utils.danmaku import write_danmaku
@@ -47,19 +47,19 @@ def make_options(tmp_path: Path) -> DownloaderOptions:
 
 
 def make_resource_only_episode() -> EpisodeData:
+    planned_path = Path("series/episode")
     return {
         "info": {
-            "avid": AId("1"),
-            "cid": CId("1"),
-            "url": "https://www.bilibili.com/video/av1?p=1",
-            "name": "episode",
-            "title": "episode",
-            "cover_url": "",
-            "uploader": "",
-            "description": "",
-            "tags": [],
-            "path": Path("series/episode"),
-            "display_group": None,
+            "listing": ResolvedItem(
+                avid=AId("1"),
+                cid=CId("1"),
+                url="https://www.bilibili.com/video/av1?p=1",
+                name="episode",
+                title="episode",
+                cover_url="",
+                planned_path=planned_path,
+            ),
+            "path": planned_path,
         },
         "videos": [],
         "audios": [],

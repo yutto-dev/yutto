@@ -5,7 +5,10 @@ from enum import StrEnum
 from pathlib import Path  # noqa: TC003 - runtime type hints are part of the event contract
 from typing import Literal, Protocol, TypeAlias
 
-from yutto.core.result import ItemSkipReason  # noqa: TC001 - runtime type hints support schema introspection
+from yutto.core.result import (  # noqa: TC001 - runtime type hints support schema introspection
+    ItemSkipReason,
+    ResolvedItem,
+)
 
 
 class DownloadStage(StrEnum):
@@ -57,19 +60,9 @@ class DownloadArtifactCreated:
 
 @dataclass(frozen=True, slots=True)
 class DownloadItemListed:
-    """One episode enumerated during a resolve run; carries only stable listing data."""
+    """One episode enumerated during a resolve run."""
 
-    avid: str
-    cid: str
-    url: str
-    name: str
-    title: str
-    cover_url: str
-    planned_path: Path
-    display_group: str | None = None
-    uploader: str = ""
-    description: str = ""
-    tags: tuple[str, ...] = ()
+    item: ResolvedItem
 
 
 DownloadEvent: TypeAlias = (
