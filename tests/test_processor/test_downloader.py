@@ -31,10 +31,25 @@ def test_slice_blocks_handles_resume_offsets(
 
 @pytest.mark.processor
 @as_sync
-async def test_unknown_size_restarts_fragment_when_server_ignores_range(tmp_path):
+async def test_unknown_size_restarts_fragment_and_http_200_retry(tmp_path):
     payload = b"A" * (64 * 1024) + b"B" * (64 * 1024)
+    download_attempts = 0
+    range_headers: list[str] = []
 
-    def ignore_range(_request: httpx.Request) -> httpx.Response:
+    class InterruptAfterFirstChunk(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield payload[: 64 * 1024]
+            raise httpx.ReadTimeout("interrupted")
+
+    def ignore_range(request: httpx.Request) -> httpx.Response:
+        nonlocal download_attempts
+        range_header = request.headers["Range"]
+        range_headers.append(range_header)
+        if range_header == "bytes=0-1":
+            return httpx.Response(200, content=payload)
+        download_attempts += 1
+        if download_attempts == 1:
+            return httpx.Response(200, stream=InterruptAfterFirstChunk())
         return httpx.Response(200, content=payload)
 
     episode = make_resource_only_episode()
@@ -55,4 +70,5 @@ async def test_unknown_size_restarts_fragment_when_server_ignores_range(tmp_path
     async with httpx.AsyncClient(transport=httpx.MockTransport(ignore_range)) as client:
         await download_video_and_audio(ExecutionScope(client), plan)
 
+    assert range_headers == ["bytes=0-1", "bytes=0-", f"bytes={64 * 1024}-"]
     assert plan.paths.audio.read_bytes() == payload
