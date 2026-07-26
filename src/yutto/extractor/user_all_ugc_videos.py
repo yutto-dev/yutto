@@ -5,12 +5,12 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_user_name, get_user_space_all_videos_avids
+from yutto.core.operation import emit_download_report
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import MId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
@@ -42,7 +42,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
         username = await get_user_name(scope, self.mid)
-        Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
+        emit_download_report(username, badge="UP 主投稿视频")
 
         publication_time_filter = options["publication_time_filter"]
         avids = await get_user_space_all_videos_avids(

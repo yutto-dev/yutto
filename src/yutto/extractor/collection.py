@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from yutto.api.collection import get_collection_details
 from yutto.api.space import get_user_name
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import MId, SeriesId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
@@ -58,7 +58,7 @@ class CollectionExtractor(BatchExtractor):
             get_collection_details(scope, self.series_id, self.mid),
         )
         collection_title = collection_details["title"]
-        Logger.custom(collection_title, Badge("视频合集", fore="black", back="cyan"))
+        emit_download_report(collection_title, badge="视频合集")
 
         # 选集过滤
         episodes = parse_episodes_selection(options["episodes"], len(collection_details["pages"]))
@@ -74,7 +74,10 @@ class CollectionExtractor(BatchExtractor):
             index = resolved.index
             ugc_video_list = resolved.value
             if len(ugc_video_list["pages"]) != 1:
-                Logger.error(f"视频合集 {collection_title} 中的视频 {items[index]['avid']} 包含多个视频！")
+                emit_download_report(
+                    f"视频合集 {collection_title} 中的视频 {items[index]['avid']} 包含多个视频！",
+                    ReportLevel.ERROR,
+                )
             built: list[ResolvableEpisode] = []
             for ugc_video_item in ugc_video_list["pages"]:
                 episode = make_ugc_video_episode(

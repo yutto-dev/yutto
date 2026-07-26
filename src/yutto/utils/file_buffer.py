@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 import aiofiles
 
-from yutto.utils.console.logger import Logger
+from yutto.core.operation import ReportLevel, emit_download_report
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -80,7 +80,10 @@ class AsyncFileBuffer:
             assert self.file_obj is not None
             ready_to_write_chunk = heapq.heappop(self.buffer)
             if ready_to_write_chunk.offset < self.written_size:
-                Logger.error(f"交叠的块范围 {ready_to_write_chunk.offset} < {self.written_size}，舍弃！")
+                emit_download_report(
+                    f"交叠的块范围 {ready_to_write_chunk.offset} < {self.written_size}，舍弃！",
+                    level=ReportLevel.ERROR,
+                )
                 continue
             await self.file_obj.write(ready_to_write_chunk.data)
             self.written_size += len(ready_to_write_chunk.data)
@@ -93,7 +96,7 @@ class AsyncFileBuffer:
         if self.file_obj is not None:
             await self.file_obj.close()
         else:
-            Logger.error("未预期的结果：未曾创建文件对象")
+            emit_download_report("未预期的结果：未曾创建文件对象", level=ReportLevel.ERROR)
 
     def __enter__(self) -> None:
         raise TypeError("Use async with instead")

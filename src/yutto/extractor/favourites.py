@@ -5,13 +5,13 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_favourite_info, get_favourite_items, get_user_name
+from yutto.core.operation import emit_download_report
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.extractor.utils.favourite import normalize_favourite_video_item
 from yutto.types import FId, MId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
@@ -48,7 +48,7 @@ class FavouritesExtractor(BatchExtractor):
             get_user_name(scope, self.mid),
             get_favourite_info(scope, self.fid),
         )
-        Logger.custom(favourite_info["title"], Badge("收藏夹", fore="black", back="cyan"))
+        emit_download_report(favourite_info["title"], badge="收藏夹")
 
         favourite_videos = await get_favourite_items(scope, self.fid)
         avids = [favourite_video["avid"] for favourite_video in favourite_videos]

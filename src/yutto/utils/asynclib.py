@@ -1,15 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
-import time
-import types
-from functools import partial, wraps
+from functools import partial
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from typing_extensions import ParamSpec
-
-from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Iterable
@@ -27,39 +22,6 @@ def make_coroutine_factory(
         return partial(fn, *args, **kwargs)
 
     return bind
-
-
-async def sleep_with_status_bar_refresh(seconds: float):
-    current_time = start_time = time.time()
-    while current_time - start_time < seconds:
-        Logger.status.next_tick()
-        await asyncio.sleep(min(1, seconds - (current_time - start_time)))
-        current_time = time.time()
-
-
-def async_cache(
-    args_to_cache_key: Callable[[inspect.BoundArguments], str],
-) -> Callable[[Callable[P, Coroutine[Any, Any, RetT]]], Callable[P, Coroutine[Any, Any, RetT]]]:
-    def decorator(fn: Callable[P, Coroutine[Any, Any, RetT]]) -> Callable[P, Coroutine[Any, Any, RetT]]:
-        CACHE: dict[str, RetT] = {}
-
-        @wraps(fn)
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> RetT:
-            assert isinstance(fn, types.FunctionType)
-
-            sig = inspect.signature(fn)
-            bound_args = sig.bind(*args, **kwargs)
-            bound_args.apply_defaults()
-            cache_key = args_to_cache_key(bound_args)
-            if cache_key in CACHE:
-                Logger.debug(f"{fn.__name__} cache hit: {cache_key}")
-                return CACHE[cache_key]
-            Logger.debug(f"{fn.__name__} cache miss: {cache_key}, all cache keys: {list(CACHE.keys())}")
-            return CACHE.setdefault(cache_key, await fn(*args, **kwargs))
-
-        return wrapper
-
-    return decorator
 
 
 async def first_successful(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[RetT]:

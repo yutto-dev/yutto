@@ -11,7 +11,7 @@ from biliass import BlockOptions
 
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import emit_download_event
+from yutto.core.operation import ReportLevel, emit_download_event, emit_download_report
 from yutto.core.result import DownloadResult, ItemResult, ResolvedItem, ResolveFailure, ResolveResult
 from yutto.downloader.downloader import process_download
 from yutto.exceptions import NotLoginError, ResolveFailedError, WrongArgumentError, WrongUrlError
@@ -30,15 +30,13 @@ from yutto.extractor import (
     UserWatchLaterExtractor,
 )
 from yutto.extractor._abc import BatchExtractor
+from yutto.input_parser import validate_batch_selection
 from yutto.path_templates import create_unique_path_resolver
 from yutto.types import EpisodeData, ExtractorOptions
-from yutto.utils.asynclib import sleep_with_status_bar_refresh
-from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.time import TIME_FULL_FMT
-from yutto.validator import validate_batch_selection
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -71,7 +69,7 @@ def show_batch_episode_title(
     display_group = episode_info["listing"].display_group
     # 分组变化时打印分组标题（多分 p 视频新出现或切换到另一个多分 p 视频）
     if display_group is not None and display_group != current_display_group:
-        Logger.custom(display_group, Badge("列表", fore="black", back="cyan"))
+        emit_download_report(display_group, badge="列表")
         current_display_group = display_group
     elif display_group is None:
         current_display_group = None
@@ -80,10 +78,7 @@ def show_batch_episode_title(
     if display_group is not None:
         # 多分 p 条目缩进显示，以区分分组标题行
         display_name = f"  {display_name}"
-    Logger.custom(
-        display_name,
-        Badge(f"[{index}/{total}]", fore="black", back="cyan"),
-    )
+    emit_download_report(display_name, badge=f"[{index}/{total}]")
     return current_display_group
 
 
@@ -231,8 +226,8 @@ class DownloadManager:
                 and previous_result.has_downloaded_media
                 and request.network.download_interval > 0
             ):
-                Logger.info(f"下载间隔 {request.network.download_interval} 秒")
-                await sleep_with_status_bar_refresh(request.network.download_interval)
+                emit_download_report(f"下载间隔 {request.network.download_interval} 秒")
+                await asyncio.sleep(request.network.download_interval)
 
             # 这时候才真正开始解析链接
             episode_data = await episode.resolve_data()
@@ -284,8 +279,8 @@ class DownloadManager:
                 },
             )
             item_results.append(previous_result)
-            Logger.new_line()
-        Logger.new_line()
+            emit_download_report("", ReportLevel.PLAIN)
+        emit_download_report("", ReportLevel.PLAIN)
         return tuple(item_results)
 
     async def resolve_request(
@@ -390,7 +385,7 @@ def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable
     new_path = Path(unique_name_resolver(str(original_path)))
     episode_data["info"]["path"] = new_path
     if original_path != new_path:
-        Logger.warning(f"文件名重复，已重命名为 {new_path.name}")
+        emit_download_report(f"文件名重复，已重命名为 {new_path.name}", ReportLevel.WARNING)
     return episode_data
 
 

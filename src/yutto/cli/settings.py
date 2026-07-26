@@ -1,28 +1,18 @@
 from __future__ import annotations
 
-import os
-import platform
 import tomllib
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
+from yutto.auth import xdg_config_home
 from yutto.media.quality import (
     AudioQuality,
     VideoQuality,
 )
 from yutto.utils.console.logger import Logger
 from yutto.utils.time import TIME_DATE_FMT
-
-
-def xdg_config_home() -> Path:
-    if (env := os.environ.get("XDG_CONFIG_HOME")) and (path := Path(env)).is_absolute():
-        return path
-    home = Path.home()
-    if platform.system() == "Windows":
-        return home / "AppData" / "Roaming"
-    return home / ".config"
 
 
 class YuttoBasicSettings(BaseModel):

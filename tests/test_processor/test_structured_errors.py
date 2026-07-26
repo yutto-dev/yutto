@@ -77,15 +77,11 @@ def test_selection_validation_raises_structured_argument_errors():
 
 @pytest.mark.processor
 @as_sync
-async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.MonkeyPatch):
-    rendered_errors: list[str] = []
-
+async def test_manager_raises_login_error(monkeypatch: pytest.MonkeyPatch):
     async def reject_login(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return False
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", reject_login)
-    monkeypatch.setattr(download_manager_module.Logger, "error", lambda message: rendered_errors.append(str(message)))
-
     with pytest.raises(NotLoginError) as exc_info:
         await DownloadManager().process_request(
             ExecutionScope(cast("httpx.AsyncClient", object())),
@@ -97,14 +93,11 @@ async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.
         "启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！",
         ErrorCode.NOT_LOGIN_ERROR,
     )
-    assert rendered_errors == []
 
 
 @pytest.mark.processor
 @as_sync
-async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatch: pytest.MonkeyPatch):
-    rendered_errors: list[str] = []
-
+async def test_manager_raises_url_errors_without_network(monkeypatch: pytest.MonkeyPatch):
     async def accept_login(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return True
 
@@ -113,8 +106,6 @@ async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatc
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", accept_login)
     monkeypatch.setattr(Fetcher, "get_redirected_url", reject_url)
-    monkeypatch.setattr(download_manager_module.Logger, "error", lambda message: rendered_errors.append(str(message)))
-
     with pytest.raises(WrongUrlError) as exc_info:
         await DownloadManager().process_request(
             ExecutionScope(cast("httpx.AsyncClient", object())),
@@ -126,7 +117,6 @@ async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatc
         "无效的 url(not-a-url)～请检查一下链接是否正确～",
         ErrorCode.WRONG_URL_ERROR,
     )
-    assert rendered_errors == []
 
 
 @pytest.mark.processor
@@ -195,7 +185,6 @@ async def test_single_extractors_raise_when_episode_is_missing(
 
     monkeypatch.setattr(module, "get_season_id_by_episode_id", get_season)
     monkeypatch.setattr(module, list_getter_name, get_empty_list)
-    monkeypatch.setattr(module.Logger, "custom", lambda *args, **kwargs: None)
     extractor = extractor_type()
     assert extractor.match(url)
 
@@ -214,11 +203,15 @@ def configure_download_cli(
     *,
     replace_logger: bool = True,
 ) -> tuple[list[str], list[str]]:
-    parser = SimpleNamespace(parse_args=lambda args: SimpleNamespace(command="download"))
+    parser = SimpleNamespace(parse_args=lambda args: SimpleNamespace(command="download", no_progress=True))
     rendered_errors: list[str] = []
     rendered_info: list[str] = []
 
-    def fail_download(scope_factory: object, requests: list[DownloadRequest]):
+    def fail_download(
+        scope_factory: object,
+        requests: list[DownloadRequest],
+        renderer: object,
+    ):
         raise failure
 
     monkeypatch.setattr(main_module, "cli", lambda: parser)

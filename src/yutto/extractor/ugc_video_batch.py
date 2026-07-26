@@ -4,13 +4,13 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.ugc_video import get_ugc_video_list
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import AId, BvId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.core.execution import ExecutionScope
@@ -71,10 +71,10 @@ class UgcVideoBatchExtractor(BatchExtractor):
     ) -> ExtractorResolveOutcome:
         try:
             ugc_video_list = await get_ugc_video_list(scope, self.avid)
-            Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
+            emit_download_report(ugc_video_list["title"], badge="投稿视频")
         except (NotFoundError, NoAccessPermissionError) as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
-            Logger.error(e.message)
+            emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))
 
         # 选集过滤

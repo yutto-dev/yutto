@@ -14,6 +14,7 @@ from yutto.api.ugc_video import (
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
 )
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.core.result import ResolvedItem
 from yutto.exceptions import (
     HttpStatusError,
@@ -27,7 +28,6 @@ from yutto.path_templates import (
 )
 from yutto.types import EpisodeData, EpisodeInfo, ResolvableEpisode, format_ids
 from yutto.utils.asynclib import make_coroutine_factory
-from yutto.utils.console.logger import Logger
 from yutto.utils.danmaku import EmptyDanmakuData
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData, attach_chapter_info
@@ -109,7 +109,10 @@ async def extract_bangumi_data(
         avid = listing.avid
         cid = listing.cid
         if bangumi_info["is_preview"]:
-            Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
+            emit_download_report(
+                f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）",
+                ReportLevel.WARNING,
+            )
         videos, audios = (
             await get_bangumi_playurl(scope, avid, cid)
             if options["require_video"] or options["require_audio"]
@@ -136,7 +139,7 @@ async def extract_bangumi_data(
             chapter_info_data=[],
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-        Logger.error(e.message)
+        emit_download_report(e.message, ReportLevel.ERROR)
         return None
 
 
@@ -233,7 +236,7 @@ async def extract_cheese_data(
             chapter_info_data=[],
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-        Logger.error(e.message)
+        emit_download_report(e.message, ReportLevel.ERROR)
         return None
 
 
@@ -342,7 +345,7 @@ async def extract_ugc_video_data(
             chapter_info_data=chapter_info_data,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-        Logger.error(e.message)
+        emit_download_report(e.message, ReportLevel.ERROR)
         return None
 
 

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 from yutto.api.ugc_video import get_ugc_video_list
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import (
     HttpStatusError,
     NoAccessPermissionError,
@@ -15,7 +16,6 @@ from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import AId, BvId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.core.execution import ExecutionScope
@@ -71,7 +71,10 @@ class UgcVideoExtractor(SingleExtractor):
                     assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
                     self.page = int(p_queries[0])
                 except (ValueError, AssertionError) as e:
-                    Logger.error(f"url 的 page 信息不正确, `{e}`, 请检查 `p=` 的值是否为整数且唯一～")
+                    emit_download_report(
+                        f"url 的 page 信息不正确, `{e}`, 请检查 `p=` 的值是否为整数且唯一～",
+                        ReportLevel.ERROR,
+                    )
                     return False
             return True
         else:
@@ -85,7 +88,7 @@ class UgcVideoExtractor(SingleExtractor):
         try:
             ugc_video_list = await get_ugc_video_list(scope, self.avid)
             self.avid = ugc_video_list["avid"]  # 当视频撞车时，使用新的 avid 替代原有 avid，见 #96
-            Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
+            emit_download_report(ugc_video_list["title"], badge="投稿视频")
             return ResolveOutcome(
                 items=(
                     make_ugc_video_episode(
@@ -102,5 +105,5 @@ class UgcVideoExtractor(SingleExtractor):
                 )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-            Logger.error(e.message)
+            emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))

@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-import sys
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeAlias
-
-if TYPE_CHECKING:
-    from types import TracebackType
+from typing import TypeAlias
 
 
 class ErrorCode(Enum):
@@ -91,22 +87,3 @@ class ResolveFailedError(YuttoBaseException):
     """解析任务未得到任何条目，且存在预期内的失败（多个失败聚合时使用；单一失败直接抛原始异常）"""
 
     code = ErrorCode.RESOLVE_FAILED_ERROR
-
-
-def handle_uncaught_exception(
-    exctype: type[BaseException], exception: BaseException, trace: TracebackType | None
-) -> Any:
-    old_hook(exctype, exception, trace)
-    if isinstance(exception, YuttoBaseException):
-        sys.exit(exception.code.value)
-
-
-sys.excepthook, old_hook = handle_uncaught_exception, sys.excepthook
-
-
-if __name__ == "__main__":
-    try:
-        raise HttpStatusError("HTTP 错误")
-    except (HttpStatusError, UnSupportedTypeError) as e:
-        print(e.code.value, e.message)
-        raise e

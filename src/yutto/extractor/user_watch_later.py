@@ -5,12 +5,12 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_watch_later_avids
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NotLoginError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
@@ -39,12 +39,12 @@ class UserWatchLaterExtractor(BatchExtractor):
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
-        Logger.custom("当前用户", Badge("稍后再看", fore="black", back="cyan"))
+        emit_download_report("当前用户", badge="稍后再看")
 
         try:
             avid_list = await get_watch_later_avids(scope)
         except NotLoginError as e:
-            Logger.error(e.message)
+            emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))
 
         # 逐视频解析完成即构建分集并通过显式回调推流，最终按 index 重排。

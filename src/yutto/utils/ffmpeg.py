@@ -8,7 +8,7 @@ import subprocess
 from functools import cached_property, reduce
 from pathlib import Path
 
-from yutto.utils.console.logger import Logger
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.utils.functional import Singleton
 
 _TERMINATE_TIMEOUT_SECONDS = 3.0
@@ -32,7 +32,7 @@ class FFmpeg(metaclass=Singleton):
     def exec(self, args: list[str]):
         cmd = [self.path]
         cmd.extend(args)
-        Logger.debug(" ".join(cmd))
+        emit_download_report(" ".join(cmd), level=ReportLevel.DEBUG)
         # NOTE(aheadlead): FFmpeg 会谜之从 stdin 读取一个字节，这会让调用 yutto 的 shell 脚本踩到坑
         # 这个行为在目前最新的 FFmpeg 6.0 仍然存在
         return subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True)
@@ -40,7 +40,7 @@ class FFmpeg(metaclass=Singleton):
     async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
         """Run FFmpeg without blocking the event loop and reap it on cancellation."""
         cmd = [self.path, *args]
-        Logger.debug(" ".join(cmd))
+        emit_download_report(" ".join(cmd), level=ReportLevel.DEBUG)
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdin=subprocess.DEVNULL,
