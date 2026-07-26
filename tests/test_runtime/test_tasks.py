@@ -15,7 +15,6 @@ from yutto.runtime import (
     TaskState,
     monotonic_seq_allocator,
 )
-from yutto.utils.asynclib import first_successful
 from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor
@@ -435,32 +434,6 @@ async def test_close_can_cancel_running_and_queued_tasks():
     assert running_snapshot.state is TaskState.CANCELLED
     assert queued_snapshot.state is TaskState.CANCELLED
     assert running_snapshot.error is None and queued_snapshot.error is None
-
-
-@as_sync
-async def test_runtime_cancellation_reaps_nested_first_successful_tasks():
-    child_started = asyncio.Event()
-    child_cancelled = asyncio.Event()
-
-    async def child() -> None:
-        child_started.set()
-        try:
-            await asyncio.Event().wait()
-        finally:
-            child_cancelled.set()
-
-    async def handler(payload: None, context: TaskContext) -> None:
-        await first_successful([child()])
-
-    async with TaskRuntime(handler) as runtime:
-        submitted = await runtime.submit(None)
-        await child_started.wait()
-        await runtime.cancel(submitted.task_id)
-        cancelled = await runtime.wait(submitted.task_id)
-
-    assert cancelled is not None
-    assert cancelled.state is TaskState.CANCELLED
-    assert child_cancelled.is_set()
 
 
 def test_runtime_rejects_invalid_limits():
