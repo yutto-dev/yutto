@@ -93,6 +93,8 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
     defer_download_file = make_coroutine_factory(Fetcher.download_file_with_offset)
     defer_progress = make_coroutine_factory(show_progress)
 
+    emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=plan.item))
+    emit_download_report("开始下载……")
     try:
         if plan.video is not None:
             video_size = await first_successful_with_check(
@@ -155,8 +157,6 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
         known_sizes = filter_none_values(sizes)
         if len(known_sizes) == len(media_buffers):
             coroutine_factories.insert(0, defer_progress(media_buffers, sum(known_sizes)))
-        emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=plan.item))
-        emit_download_report("开始下载……")
         lifecycle_started = True
         await _run_download_lifecycle(coroutine_factories, media_buffers)
         emit_download_report("下载完成！")
