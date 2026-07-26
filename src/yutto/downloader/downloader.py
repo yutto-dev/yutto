@@ -165,7 +165,6 @@ async def download_video_and_audio(
     coroutine_factories_list: list[list[Callable[[], Coroutine[Any, Any, None]]]] = []
     lifecycle_started = False
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
-    ctx.set_download_semaphore(options["num_workers"])
 
     async def get_size(url: str) -> int | None:
         return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))

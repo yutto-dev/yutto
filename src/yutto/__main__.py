@@ -8,19 +8,21 @@ import shlex
 import sys
 from typing import TYPE_CHECKING
 
+from yutto.api.user_info import validate_user_info
 from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.cli.event_renderer import CliApplicationEventRenderer
 from yutto.cli.request_adapter import download_request_from_namespace
 from yutto.core.application import YuttoApplication
+from yutto.core.execution import ExecutionScopeFactory, RequestExecutionScopeFactory
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
 from yutto.login import run_auth_logout, run_auth_status, run_login
-from yutto.utils.console.logger import Logger
-from yutto.utils.fetcher import FetcherContext
+from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.ffmpeg import FFmpegNotFoundError
 from yutto.utils.functional import as_sync
 from yutto.validator import (
+    hydrate_auth,
     initial_validation,
     validate_basic_arguments,
 )
@@ -28,7 +30,9 @@ from yutto.validator import (
 if TYPE_CHECKING:
     import argparse
 
+    from yutto.auth import AuthInfo
     from yutto.core.request import DownloadRequest
+    from yutto.utils.fetcher import ExecutionScope
 
 
 def main():
@@ -37,11 +41,20 @@ def main():
     match args.command:
         case "download":
             try:
-                ctx = FetcherContext()
-                initial_validation(ctx, args)
+                initial_validation(args)
                 args_list = flatten_args(args, parser)
+                auth_list = [hydrate_auth(item) for item in args_list]
                 requests = [download_request_from_namespace(item) for item in args_list]
-                run_download(ctx, requests)
+                credentials_by_request = {id(request): auth for request, auth in zip(requests, auth_list, strict=True)}
+
+                def resolve_credentials(request: DownloadRequest) -> AuthInfo | None:
+                    return credentials_by_request[id(request)]
+
+                scope_factory = RequestExecutionScopeFactory(
+                    resolve_credentials,
+                    on_open=announce_cli_auth,
+                )
+                run_download(scope_factory, requests)
             except YuttoBaseException as e:
                 Logger.error(e.message)
                 sys.exit(e.code.value)
@@ -75,13 +88,28 @@ def main():
 
 
 @as_sync
-async def run_download(ctx: FetcherContext, requests: list[DownloadRequest]):
+async def run_download(
+    scope_factory: ExecutionScopeFactory,
+    requests: list[DownloadRequest],
+):
     application = YuttoApplication(
-        ctx,
+        scope_factory,
         workflow=DownloadManager(),
         event_sink=CliApplicationEventRenderer(),
     )
     await application.download_all(requests)
+
+
+async def announce_cli_auth(scope: ExecutionScope, _request: DownloadRequest) -> None:
+    if scope.cookies.get("SESSDATA") is None:
+        Logger.info(
+            "未提供登录认证信息，无法下载高清视频、字幕等资源哦～请通过 `--auth` 参数提供认证信息，或者先使用 `yutto auth login` 登录存储认证信息后再下载～"
+        )
+        return
+    if await validate_user_info(scope, {"vip_status": True, "is_login": True}):
+        Logger.custom("成功以大会员身份登录～", badge=Badge("大会员", fore="white", back="magenta", style=["bold"]))
+    else:
+        Logger.warning("以非大会员身份登录，注意无法下载会员专享剧集喔～")
 
 
 def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[argparse.Namespace]:

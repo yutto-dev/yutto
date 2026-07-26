@@ -94,6 +94,18 @@ def resolve_proxy(proxy: str) -> tuple[str | None, bool]:
     return proxy, False
 
 
+def cookies_from_auth(auth_info: AuthInfo | None) -> httpx.Cookies:
+    cookies = httpx.Cookies()
+    if auth_info is None:
+        return cookies
+    # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
+    # 而番剧无法使用解码后的 SESSDATA
+    cookies.set("SESSDATA", quote(unquote(auth_info["SESSDATA"])))
+    if auth_info["bili_jct"]:
+        cookies.set("bili_jct", auth_info["bili_jct"])
+    return cookies
+
+
 class FetcherContext:
     proxy: str | None
     trust_env: bool
@@ -103,6 +115,7 @@ class FetcherContext:
     fetch_semaphore: asyncio.Semaphore | None
     download_semaphore: asyncio.Semaphore | None
     user_info_cache: UserInfo | None
+    wbi_img_cache: Mapping[str, str] | None
     touched_urls: WeakKeyDictionary[AsyncClient, set[str]]
 
     def __init__(
@@ -110,17 +123,18 @@ class FetcherContext:
         *,
         proxy: str | None = DEFAULT_PROXY,
         trust_env: bool = DEFAULT_TRUST_ENV,
-        headers: dict[str, str] = DEFAULT_HEADERS,
-        cookies: httpx.Cookies = DEFAULT_COOKIES,
+        headers: dict[str, str] | None = None,
+        cookies: httpx.Cookies | None = None,
     ):
         self.proxy = proxy
         self.trust_env = trust_env
-        self.headers = headers
-        self.cookies = cookies
+        self.headers = dict(DEFAULT_HEADERS if headers is None else headers)
+        self.cookies = httpx.Cookies(DEFAULT_COOKIES if cookies is None else cookies)
         self.fetch_workers = DEFAULT_FETCH_WORKERS
         self.fetch_semaphore = None
         self.download_semaphore = None
         self.user_info_cache = None
+        self.wbi_img_cache = None
         self.touched_urls = WeakKeyDictionary()
 
     def set_fetch_workers(self, fetch_workers: int):
@@ -135,12 +149,8 @@ class FetcherContext:
 
     def set_auth_info(self, auth_info: AuthInfo):
         self.user_info_cache = None
-        self.cookies = httpx.Cookies()
-        # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
-        # 而番剧无法使用解码后的 SESSDATA
-        self.cookies.set("SESSDATA", quote(unquote(auth_info["SESSDATA"])))
-        if auth_info["bili_jct"]:
-            self.cookies.set("bili_jct", auth_info["bili_jct"])
+        self.wbi_img_cache = None
+        self.cookies = cookies_from_auth(auth_info)
 
     def set_proxy(self, proxy: str):
         self.proxy, self.trust_env = resolve_proxy(proxy)
@@ -160,6 +170,36 @@ class FetcherContext:
             return
         async with self.download_semaphore:
             yield
+
+
+class ExecutionScope(FetcherContext):
+    """Request-scoped network resources used by one core execution."""
+
+    client: AsyncClient
+    download_workers: int
+
+    def __init__(
+        self,
+        client: AsyncClient,
+        *,
+        proxy: str | None = DEFAULT_PROXY,
+        trust_env: bool = DEFAULT_TRUST_ENV,
+        headers: dict[str, str] | None = None,
+        cookies: httpx.Cookies | None = None,
+        fetch_workers: int = DEFAULT_FETCH_WORKERS,
+        download_workers: int = DEFAULT_FETCH_WORKERS,
+    ):
+        super().__init__(
+            proxy=proxy,
+            trust_env=trust_env,
+            headers=headers,
+            cookies=cookies,
+        )
+        self.client = client
+        self.download_workers = download_workers
+        self.set_fetch_workers(fetch_workers)
+        self.set_fetch_semaphore(fetch_workers)
+        self.set_download_semaphore(download_workers)
 
 
 class Fetcher:

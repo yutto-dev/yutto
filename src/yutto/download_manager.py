@@ -35,7 +35,7 @@ from yutto.types import EpisodeData, ExtractorOptions
 from yutto.utils.asynclib import sleep_with_status_bar_refresh
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import DanmakuOptions
-from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.time import TIME_FULL_FMT
 from yutto.validator import validate_batch_selection
@@ -43,14 +43,13 @@ from yutto.validator import validate_batch_selection
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from httpx import AsyncClient
-
+    from yutto.core.execution import ExecutionScopeFactory
     from yutto.core.request import DanmakuRequestOptions, DownloadRequest
     from yutto.exceptions import YuttoBaseException
     from yutto.extractor._abc import EpisodeListedCallback
     from yutto.extractor.outcome import ResolveOutcome
-    from yutto.types import EpisodeData, EpisodeInfo, ResolvableEpisode
-    from yutto.utils.fetcher import FetcherContext
+    from yutto.types import EpisodeInfo, ResolvableEpisode
+    from yutto.utils.fetcher import ExecutionScope
 
 
 def show_batch_episode_title(
@@ -144,36 +143,34 @@ class _ResolvedItemsOutcome:
 
 
 class DownloadManager:
-    """Execute download requests sequentially in one shared network session."""
+    """Execute requests sequentially with one explicit scope per request."""
 
     def __init__(self):
         self.unique_path = create_unique_path_resolver()
 
-    async def execute(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> DownloadResult:
-        """Run requests in order while sharing the client and path allocator."""
+    async def execute(
+        self,
+        scope_factory: ExecutionScopeFactory,
+        requests: Sequence[DownloadRequest],
+    ) -> DownloadResult:
+        """Run requests in order while keeping network state request-scoped."""
         items: list[ItemResult] = []
-        ctx.set_fetch_semaphore(fetch_workers=ctx.fetch_workers)
-        async with create_client(
-            cookies=ctx.cookies,
-            trust_env=ctx.trust_env,
-            proxy=ctx.proxy,
-        ) as client:
-            for request in requests:
-                items.extend(await self.process_request(client, ctx, request))
+        for request in requests:
+            async with scope_factory.open(request) as scope:
+                items.extend(await self.process_request(scope, request))
         return DownloadResult(items=tuple(items))
 
-    async def execute_resolve(self, ctx: FetcherContext, requests: Sequence[DownloadRequest]) -> ResolveResult:
+    async def execute_resolve(
+        self,
+        scope_factory: ExecutionScopeFactory,
+        requests: Sequence[DownloadRequest],
+    ) -> ResolveResult:
         """Enumerate episodes for requests in order without downloading anything."""
         items: list[ResolvedItem] = []
         failures: list[YuttoBaseException] = []
-        ctx.set_fetch_semaphore(fetch_workers=ctx.fetch_workers)
-        async with create_client(
-            cookies=ctx.cookies,
-            trust_env=ctx.trust_env,
-            proxy=ctx.proxy,
-        ) as client:
-            for request in requests:
-                outcome = await self.resolve_items(client, ctx, request)
+        for request in requests:
+            async with scope_factory.open(request) as scope:
+                outcome = await self.resolve_items(scope, request)
                 items.extend(outcome.items)
                 failures.extend(outcome.failures)
         if failures and not items:
@@ -191,8 +188,7 @@ class DownloadManager:
 
     async def resolve_items(
         self,
-        client: AsyncClient,
-        ctx: FetcherContext,
+        scope: ExecutionScope,
         request: DownloadRequest,
     ) -> _ResolvedItemsOutcome:
         """List the stable episode snapshots of one request; the volatile data is never fetched.
@@ -217,7 +213,7 @@ class DownloadManager:
             _emit_item_listed(episode)
             await asyncio.sleep(0)
 
-        outcome = await self.resolve_request(client, ctx, request, on_item=stream_episode)
+        outcome = await self.resolve_request(scope, request, on_item=stream_episode)
         items: list[ResolvedItem] = []
         for episode in outcome.items:
             key = _resolved_item_key(episode)
@@ -235,11 +231,10 @@ class DownloadManager:
 
     async def process_request(
         self,
-        client: AsyncClient,
-        ctx: FetcherContext,
+        scope: ExecutionScope,
         request: DownloadRequest,
     ) -> tuple[ItemResult, ...]:
-        outcome = await self.resolve_request(client, ctx, request)
+        outcome = await self.resolve_request(scope, request)
         download_list = outcome.items
 
         item_results: list[ItemResult] = []
@@ -249,9 +244,9 @@ class DownloadManager:
         # 下载～
         for i, episode in enumerate(download_list):
             # 中途校验基于请求级缓存的用户信息（见 get_user_info），不会重复请求；
-            # 凭据若在过程中失效，需等缓存所在的 FetcherContext 重建后才能被发现
+            # 凭据若在过程中失效，需等当前 ExecutionScope 关闭后才能被发现
             if not await validate_user_info(
-                ctx,
+                scope,
                 {"is_login": request.access.login_strict, "vip_status": request.access.vip_strict},
             ):
                 raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
@@ -285,8 +280,8 @@ class DownloadManager:
                 )
 
             previous_result = await process_download(
-                ctx,
-                client,
+                scope,
+                scope.client,
                 episode_data,
                 {
                     "output_dir": request.output.directory,
@@ -305,7 +300,6 @@ class DownloadManager:
                     "output_format_audio_only": request.output.audio_only_format,
                     "overwrite": request.output.overwrite,
                     "block_size": request.network.block_size_bytes,
-                    "num_workers": request.network.download_workers,
                     "save_cover": request.resources.save_cover,
                     "metadata_format": {
                         "premiered": request.output.metadata_format_premiered,
@@ -322,8 +316,7 @@ class DownloadManager:
 
     async def resolve_request(
         self,
-        client: AsyncClient,
-        ctx: FetcherContext,
+        scope: ExecutionScope,
         request: DownloadRequest,
         *,
         on_item: EpisodeListedCallback | None = None,
@@ -367,13 +360,13 @@ class DownloadManager:
 
         # 在开始前校验，减少对第一个视频的请求
         if not await validate_user_info(
-            ctx,
+            scope,
             {"is_login": request.access.login_strict, "vip_status": request.access.vip_strict},
         ):
             raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
         # 重定向到可识别的 url
         try:
-            url = unwrap_fetch_result(await Fetcher.get_redirected_url(ctx, client, url))
+            url = unwrap_fetch_result(await Fetcher.get_redirected_url(scope, scope.client, url))
         except httpx.InvalidURL:
             raise WrongUrlError(f"无效的 url({url})～请检查一下链接是否正确～") from None
         except httpx.UnsupportedProtocol:
@@ -403,9 +396,9 @@ class DownloadManager:
                     publication_time_filter=publication_time_filter,
                 )
                 if isinstance(extractor, BatchExtractor):
-                    download_list = await extractor(ctx, client, extractor_options, on_item=on_item)
+                    download_list = await extractor(scope, scope.client, extractor_options, on_item=on_item)
                 else:
-                    download_list = await extractor(ctx, client, extractor_options)
+                    download_list = await extractor(scope, scope.client, extractor_options)
                 break
         else:
             if request.scope.batch:

@@ -6,7 +6,8 @@ from typing import Any
 
 import pytest
 
-from yutto.cli.cli import add_download_arguments
+import yutto.__main__ as main_module
+from yutto.cli.cli import add_download_arguments, cli, handle_default_subcommand
 from yutto.cli.request_adapter import (
     download_request_from_mapping,
     download_request_from_namespace,
@@ -315,6 +316,55 @@ def test_rpc_mapping_inherits_local_settings_without_credentials():
     assert request.output.directory == Path()
     assert "inline-secret" not in request.model_dump_json()
     assert "legacy-secret" not in request.model_dump_json()
+
+
+def test_task_list_preserves_per_item_network_and_auth_overrides(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    task_list = tmp_path / "downloads.txt"
+    task_list.write_text(
+        "\n".join(
+            [
+                "BV1first --proxy no --fetch-workers 2 --num-workers 3 --auth-profile first",
+                "BV1second --no-inherit --proxy auto --fetch-workers 5 --num-workers 7 --auth-profile second",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    parser = cli()
+    args = parser.parse_args(
+        handle_default_subcommand(
+            [
+                str(task_list),
+                "--proxy",
+                "https://127.0.0.1:7890",
+                "--fetch-workers",
+                "11",
+                "--num-workers",
+                "13",
+                "--auth-profile",
+                "outer",
+            ]
+        )
+    )
+    monkeypatch.setattr(main_module, "validate_basic_arguments", lambda args: None)
+
+    requests = [download_request_from_namespace(item) for item in main_module.flatten_args(args, parser)]
+
+    assert [
+        (
+            request.source.url,
+            request.network.proxy,
+            request.network.fetch_workers,
+            request.network.download_workers,
+            request.access.auth_profile,
+        )
+        for request in requests
+    ] == [
+        ("BV1first", "no", 2, 3, "first"),
+        ("BV1second", "auto", 5, 7, "second"),
+    ]
 
 
 def test_server_request_parser_validates_configured_defaults_eagerly():

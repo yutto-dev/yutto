@@ -26,7 +26,7 @@ from yutto.extractor.bangumi import BangumiExtractor
 from yutto.extractor.cheese import CheeseExtractor
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import SeasonId
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import ExecutionScope, Fetcher, FetcherContext
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 from yutto.validator import validate_batch_selection
@@ -87,8 +87,7 @@ async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.
 
     with pytest.raises(NotLoginError) as exc_info:
         await DownloadManager().process_request(
-            cast("httpx.AsyncClient", object()),
-            FetcherContext(),
+            ExecutionScope(cast("httpx.AsyncClient", object())),
             make_request(),
         )
 
@@ -117,8 +116,7 @@ async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatc
 
     with pytest.raises(WrongUrlError) as exc_info:
         await DownloadManager().process_request(
-            cast("httpx.AsyncClient", object()),
-            FetcherContext(),
+            ExecutionScope(cast("httpx.AsyncClient", object())),
             make_request("not-a-url"),
         )
 
@@ -144,8 +142,7 @@ async def test_manager_reports_unmatched_url_as_structured_error(monkeypatch: py
 
     with pytest.raises(WrongUrlError) as exc_info:
         await DownloadManager().process_request(
-            cast("httpx.AsyncClient", object()),
-            FetcherContext(),
+            ExecutionScope(cast("httpx.AsyncClient", object())),
             make_request("https://example.com/unsupported"),
         )
 
@@ -221,13 +218,14 @@ def configure_download_cli(
     rendered_errors: list[str] = []
     rendered_info: list[str] = []
 
-    def fail_download(ctx: FetcherContext, requests: list[DownloadRequest]):
+    def fail_download(scope_factory: object, requests: list[DownloadRequest]):
         raise failure
 
     monkeypatch.setattr(main_module, "cli", lambda: parser)
     monkeypatch.setattr(main_module.sys, "argv", ["yutto", "BV1structured"])
-    monkeypatch.setattr(main_module, "initial_validation", lambda ctx, args: None)
+    monkeypatch.setattr(main_module, "initial_validation", lambda args: None)
     monkeypatch.setattr(main_module, "flatten_args", lambda args, parser: [args])
+    monkeypatch.setattr(main_module, "hydrate_auth", lambda args: None)
     monkeypatch.setattr(main_module, "download_request_from_namespace", lambda args: make_request())
     monkeypatch.setattr(main_module, "run_download", fail_download)
     if replace_logger:

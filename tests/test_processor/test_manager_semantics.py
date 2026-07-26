@@ -9,6 +9,7 @@ import pytest
 from returns.result import Success
 
 import yutto.download_manager as download_manager_module
+from yutto.core.execution import RequestExecutionScopeFactory
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ItemResult, ItemState
 from yutto.download_manager import (
@@ -21,7 +22,7 @@ from yutto.exceptions import NotLoginError, WrongArgumentError
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import ExecutionScope, Fetcher, FetcherContext
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 from yutto.utils.time import TIME_FULL_FMT
@@ -29,6 +30,7 @@ from yutto.utils.time import TIME_FULL_FMT
 if TYPE_CHECKING:
     import httpx
 
+    from yutto.auth import AuthInfo
     from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import DownloaderOptions, EpisodeData, ExtractorOptions
 
@@ -183,7 +185,7 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
 
     manager = DownloadManager()
     client = cast("httpx.AsyncClient", object())
-    result = await manager.process_request(client, FetcherContext(), make_request(tmp_dir))
+    result = await manager.process_request(ExecutionScope(client), make_request(tmp_dir))
 
     assert validation_requirements == [
         {"is_login": False, "vip_status": False},
@@ -224,7 +226,6 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
         "output_format_audio_only": "flac",
         "overwrite": True,
         "block_size": 1_310_720,
-        "num_workers": 13,
         "save_cover": True,
         "metadata_format": {"premiered": "%Y", "dateadded": TIME_FULL_FMT},
         "banned_mirrors_pattern": "example\\.com",
@@ -272,8 +273,7 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
     validation_results = iter([True, False])
 
     async def fake_resolve_request(
-        client: httpx.AsyncClient,
-        ctx: FetcherContext,
+        scope: ExecutionScope,
         request: DownloadRequest,
     ) -> ExtractorResolveOutcome:
         return ResolveOutcome(items=episodes)
@@ -297,8 +297,7 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
 
     with pytest.raises(NotLoginError):
         await manager.process_request(
-            cast("httpx.AsyncClient", object()),
-            FetcherContext(),
+            ExecutionScope(cast("httpx.AsyncClient", object())),
             make_request(None),
         )
 
@@ -307,41 +306,76 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
 
 
 @as_sync
-async def test_execute_reuses_session_and_path_resolver_in_request_order():
-    ctx = FetcherContext()
+async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
     requests = [
-        DownloadRequest.model_validate({"source": {"url": "BV1first"}}),
-        DownloadRequest.model_validate({"source": {"url": "BV1second"}}),
+        DownloadRequest.model_validate(
+            {
+                "source": {"url": "BV1first"},
+                "access": {"auth_profile": "first"},
+                "network": {
+                    "proxy": "no",
+                    "fetch_workers": 2,
+                    "download_workers": 3,
+                },
+            }
+        ),
+        DownloadRequest.model_validate(
+            {
+                "source": {"url": "BV1second"},
+                "access": {"auth_profile": "second"},
+                "network": {
+                    "proxy": "auto",
+                    "fetch_workers": 5,
+                    "download_workers": 7,
+                },
+            }
+        ),
     ]
 
     class RecordingManager(DownloadManager):
         def __init__(self) -> None:
             super().__init__()
-            self.calls: list[tuple[httpx.AsyncClient, FetcherContext, str, str]] = []
+            self.calls: list[tuple[ExecutionScope, str, str]] = []
 
         async def process_request(
             self,
-            client: httpx.AsyncClient,
-            ctx: FetcherContext,
+            scope: ExecutionScope,
             request: DownloadRequest,
         ) -> tuple[ItemResult, ...]:
             path = self.unique_path("same/video.mp4")
-            self.calls.append((client, ctx, request.source.url, path))
+            self.calls.append((scope, request.source.url, path))
             return (ItemResult(state=ItemState.DONE, output_path=Path(path)),)
 
-    manager = RecordingManager()
-    result = await manager.execute(ctx, requests)
+    def resolve_credentials(request: DownloadRequest) -> AuthInfo:
+        return cast(
+            "AuthInfo",
+            {
+                "SESSDATA": f"{request.access.auth_profile},session",
+                "bili_jct": None,
+            },
+        )
 
-    assert [url for _, _, url, _ in manager.calls] == ["BV1first", "BV1second"]
+    manager = RecordingManager()
+    result = await manager.execute(RequestExecutionScopeFactory(resolve_credentials), requests)
+
+    assert [url for _, url, _ in manager.calls] == ["BV1first", "BV1second"]
     # unique_path 返回的字符串使用平台原生分隔符，按 Path 比较
-    assert [Path(path) for _, _, _, path in manager.calls] == [
+    assert [Path(path) for _, _, path in manager.calls] == [
         Path("same/video.mp4"),
         Path("same/video (1).mp4"),
     ]
-    assert manager.calls[0][0] is manager.calls[1][0]
-    assert manager.calls[0][1] is ctx and manager.calls[1][1] is ctx
-    assert manager.calls[0][0].is_closed
-    assert ctx.fetch_semaphore is not None
+    first_scope, second_scope = (scope for scope, _, _ in manager.calls)
+    assert first_scope is not second_scope
+    assert first_scope.client is not second_scope.client
+    assert first_scope.client.is_closed and second_scope.client.is_closed
+    assert (first_scope.proxy, first_scope.trust_env) == (None, False)
+    assert (second_scope.proxy, second_scope.trust_env) == (None, True)
+    assert (first_scope.fetch_workers, first_scope.download_workers) == (2, 3)
+    assert (second_scope.fetch_workers, second_scope.download_workers) == (5, 7)
+    assert first_scope.fetch_semaphore is not second_scope.fetch_semaphore
+    assert first_scope.download_semaphore is not second_scope.download_semaphore
+    assert first_scope.cookies.get("SESSDATA") == "first%2Csession"
+    assert second_scope.cookies.get("SESSDATA") == "second%2Csession"
     assert result == DownloadResult(
         items=(
             ItemResult(state=ItemState.DONE, output_path=Path("same/video.mp4")),
@@ -365,17 +399,16 @@ async def test_execute_stops_on_failure_and_closes_client():
 
         async def process_request(
             self,
-            client: httpx.AsyncClient,
-            ctx: FetcherContext,
+            scope: ExecutionScope,
             request: DownloadRequest,
         ) -> tuple[ItemResult, ...]:
-            self.client = client
+            self.client = scope.client
             self.calls.append(request.source.url)
             raise WrongArgumentError("request failed")
 
     manager = FailingManager()
     with pytest.raises(WrongArgumentError, match="request failed"):
-        await manager.execute(FetcherContext(), requests)
+        await manager.execute(RequestExecutionScopeFactory(), requests)
 
     assert manager.calls == ["BV1first"]
     assert manager.client is not None and manager.client.is_closed
@@ -394,17 +427,16 @@ async def test_execute_cancellation_closes_client():
 
         async def process_request(
             self,
-            client: httpx.AsyncClient,
-            ctx: FetcherContext,
+            scope: ExecutionScope,
             request: DownloadRequest,
         ) -> tuple[ItemResult, ...]:
-            self.client = client
+            self.client = scope.client
             started.set()
             await release.wait()
             return ()
 
     manager = BlockingManager()
-    execution = asyncio.create_task(manager.execute(FetcherContext(), [request]))
+    execution = asyncio.create_task(manager.execute(RequestExecutionScopeFactory(), [request]))
     await started.wait()
     execution.cancel()
 

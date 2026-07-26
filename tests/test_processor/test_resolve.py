@@ -7,8 +7,10 @@ from typing import TYPE_CHECKING, cast
 import pytest
 from returns.result import Success
 
+import yutto.core.execution as execution_module
 import yutto.download_manager as download_manager_module
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
+from yutto.core.execution import RequestExecutionScopeFactory
 from yutto.core.operation import bind_download_event_sink
 from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
@@ -18,7 +20,7 @@ from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId, CId, ResolvableEpisode
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import ExecutionScope, Fetcher, FetcherContext
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
@@ -100,7 +102,7 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
     request = DownloadRequest.model_validate({"source": {"url": "BV1baseline"}})
 
     with bind_download_event_sink(sink):
-        items = await manager.resolve_items(client, FetcherContext(), request)
+        items = await manager.resolve_items(ExecutionScope(client), request)
 
     expected_item = ResolvedItem(
         avid="1",
@@ -188,7 +190,7 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
     request = DownloadRequest.model_validate({"source": {"url": "BV1stream"}})
 
     with bind_download_event_sink(sink):
-        items = await manager.resolve_items(client, FetcherContext(), request)
+        items = await manager.resolve_items(ExecutionScope(client), request)
 
     listed = [event for event in sink.events if isinstance(event, DownloadItemListed)]
     # 每条恰好一次：流式推送的 P1 在前（提取中），P2 收尾补发
@@ -240,7 +242,7 @@ async def test_resolve_items_emits_each_equal_occurrence(monkeypatch: pytest.Mon
     request = DownloadRequest.model_validate({"source": {"url": "BV1equal"}})
 
     with bind_download_event_sink(sink):
-        outcome = await manager.resolve_items(client, FetcherContext(), request)
+        outcome = await manager.resolve_items(ExecutionScope(client), request)
 
     listed = [event for event in sink.events if isinstance(event, DownloadItemListed)]
     assert len(listed) == len(outcome.items) == 2
@@ -265,7 +267,7 @@ def _patch_resolve_network(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
     monkeypatch.setattr(Fetcher, "get_redirected_url", fake_get_redirected_url)
-    monkeypatch.setattr(download_manager_module, "create_client", lambda **_: _FakeClientContext())
+    monkeypatch.setattr(execution_module, "create_client", lambda **_: _FakeClientContext())
 
 
 def _patch_resolve_environment(monkeypatch: pytest.MonkeyPatch, extractor: type) -> None:
@@ -298,7 +300,7 @@ async def test_execute_resolve_treats_filtered_source_as_empty_success(monkeypat
     request = DownloadRequest.model_validate({"source": {"url": "BV1filtered"}})
 
     with bind_download_event_sink(RecordingEventSink()):
-        result = await manager.execute_resolve(FetcherContext(), [request])
+        result = await manager.execute_resolve(RequestExecutionScopeFactory(), [request])
 
     assert result == ResolveResult(items=(), failures=())
 
@@ -318,7 +320,7 @@ async def test_execute_resolve_raises_original_error_when_batch_source_is_gone(m
     # 真实 UgcVideoBatchExtractor 错误路径：NotFoundError 被吞成 [] 后不再伪装成空成功，
     # 任务以原始异常失败，wire 错误码是稳定的 NOT_FOUND_ERROR 而非 internal_error
     with bind_download_event_sink(RecordingEventSink()), pytest.raises(NotFoundError) as error_info:
-        await manager.execute_resolve(FetcherContext(), [request])
+        await manager.execute_resolve(RequestExecutionScopeFactory(), [request])
     assert error_info.value.code is ErrorCode.NOT_FOUND_ERROR
 
 
@@ -336,7 +338,7 @@ async def test_execute_resolve_raises_original_error_when_watch_later_needs_logi
 
     # 真实 UserWatchLaterExtractor 错误路径：未登录时不再以空成功掩盖 NotLoginError
     with bind_download_event_sink(RecordingEventSink()), pytest.raises(NotLoginError) as error_info:
-        await manager.execute_resolve(FetcherContext(), [request])
+        await manager.execute_resolve(RequestExecutionScopeFactory(), [request])
     assert error_info.value.code is ErrorCode.NOT_LOGIN_ERROR
 
 
@@ -364,7 +366,7 @@ async def test_execute_resolve_reports_partial_failures(monkeypatch: pytest.Monk
     request = DownloadRequest.model_validate({"source": {"url": "BV1partial"}})
 
     with bind_download_event_sink(RecordingEventSink()):
-        result = await manager.execute_resolve(FetcherContext(), [request])
+        result = await manager.execute_resolve(RequestExecutionScopeFactory(), [request])
 
     # 部分失败：成功条目照常返回，失败以结构化形式保留在 failures 中
     assert len(result.items) == 1
@@ -398,7 +400,7 @@ async def test_execute_resolve_aggregates_multiple_failures(monkeypatch: pytest.
     request = DownloadRequest.model_validate({"source": {"url": "BV1failed"}})
 
     with bind_download_event_sink(RecordingEventSink()), pytest.raises(ResolveFailedError) as error_info:
-        await manager.execute_resolve(FetcherContext(), [request])
+        await manager.execute_resolve(RequestExecutionScopeFactory(), [request])
     assert error_info.value.code is ErrorCode.RESOLVE_FAILED_ERROR
 
 
@@ -556,7 +558,7 @@ async def test_execute_resolve_keeps_genuinely_empty_source_as_success(monkeypat
     request = DownloadRequest.model_validate({"source": {"url": "BV1empty"}})
 
     with bind_download_event_sink(RecordingEventSink()):
-        result = await manager.execute_resolve(FetcherContext(), [request])
+        result = await manager.execute_resolve(RequestExecutionScopeFactory(), [request])
 
     # 真正的空来源（如空收藏夹）仍是成功的空结果，与「全部解析失败」区分开
     assert result == ResolveResult(items=())

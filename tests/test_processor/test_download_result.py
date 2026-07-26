@@ -40,7 +40,6 @@ def make_options(tmp_path: Path) -> DownloaderOptions:
         "output_format_audio_only": "infer",
         "overwrite": False,
         "block_size": 512 * 1024,
-        "num_workers": 1,
         "metadata_format": {},
         "banned_mirrors_pattern": None,
         "danmaku_options": cast("DanmakuOptions", {}),

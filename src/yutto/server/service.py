@@ -12,9 +12,11 @@ from typing import TYPE_CHECKING, TypeAlias, TypeVar
 from pydantic import BaseModel
 
 from yutto.auth import load_auth
-from yutto.utils.fetcher import FetcherContext
+from yutto.core.execution import RequestExecutionScopeFactory
+from yutto.utils.fetcher import resolve_proxy
 
 if TYPE_CHECKING:
+    from yutto.auth import AuthInfo
     from yutto.core.request import DownloadRequest
     from yutto.runtime import EventReplay, TaskEvent, TaskSnapshot
 
@@ -82,6 +84,7 @@ class ServerPolicy:
     def prepare_request(self, request: DownloadRequest) -> DownloadRequest:
         """Return an immutable copy with server-owned absolute output paths."""
         self._validate_workers(request)
+        self._validate_proxy(request)
         self._validate_block_size(request)
         self._validate_save_codecs(request)
         self._validate_subpath_template(request.output.subpath_template)
@@ -108,20 +111,16 @@ class ServerPolicy:
         )
         return request.model_copy(update={"output": output})
 
-    def build_context(self, request: DownloadRequest) -> FetcherContext:
-        """Build a fetch context without attaching credentials to the request."""
-        self._validate_workers(request)
-        context = FetcherContext()
+    def build_scope_factory(self) -> RequestExecutionScopeFactory:
+        """Build the shared request-to-scope boundary used by server tasks."""
+        return RequestExecutionScopeFactory(self.resolve_credentials)
+
+    def resolve_credentials(self, request: DownloadRequest) -> AuthInfo | None:
+        """Resolve one auth profile without attaching credentials to the request."""
         try:
-            context.set_proxy(request.network.proxy)
-            auth = load_auth(self.options.auth_file, request.access.auth_profile)
+            return load_auth(self.options.auth_file, request.access.auth_profile)
         except ValueError as error:
             raise ServerPolicyError(str(error)) from error
-
-        context.set_fetch_workers(request.network.fetch_workers)
-        if auth is not None:
-            context.set_auth_info(auth)
-        return context
 
     def _validate_workers(self, request: DownloadRequest) -> None:
         self._validate_worker_count(
@@ -134,6 +133,13 @@ class ServerPolicy:
             request.network.download_workers,
             self.options.max_download_workers,
         )
+
+    @staticmethod
+    def _validate_proxy(request: DownloadRequest) -> None:
+        try:
+            resolve_proxy(request.network.proxy)
+        except ValueError as error:
+            raise ServerPolicyError(str(error)) from error
 
     def _validate_block_size(self, request: DownloadRequest) -> None:
         value = request.network.block_size_bytes

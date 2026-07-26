@@ -5,8 +5,9 @@ from typing import Any, cast
 import pytest
 from returns.result import Success
 
-from yutto.api.user_info import get_user_info, parse_user_info, user_info_matches
-from yutto.utils.fetcher import Fetcher, FetcherContext, create_client
+from yutto.api.user_info import get_user_info, get_wbi_img, parse_user_info, user_info_matches, validate_user_info
+from yutto.types import UserInfo
+from yutto.utils.fetcher import ExecutionScope, Fetcher, FetcherContext, create_client
 from yutto.utils.functional import as_sync
 
 
@@ -54,4 +55,73 @@ async def test_user_info_cache_is_scoped_to_fetcher_context(monkeypatch: pytest.
     assert await get_user_info(first_context, client) == {"vip_status": True, "is_login": True}
     assert await get_user_info(first_context, client) == {"vip_status": True, "is_login": True}
     assert await get_user_info(second_context, client) == {"vip_status": False, "is_login": False}
+    assert calls == 2
+
+
+@pytest.mark.processor
+@as_sync
+async def test_validate_user_info_reuses_execution_scope_client_and_cache(monkeypatch: pytest.MonkeyPatch):
+    client = cast("Any", object())
+    scope = ExecutionScope(client)
+    clients: list[Any] = []
+
+    async def fake_fetch_json(ctx, active_client, url):
+        clients.append(active_client)
+        return Success({"data": {"vipStatus": 1, "isLogin": True}})
+
+    monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
+
+    requirements = UserInfo(vip_status=True, is_login=True)
+    assert await validate_user_info(scope, requirements)
+    assert await validate_user_info(scope, requirements)
+    assert clients == [client]
+
+
+@pytest.mark.processor
+@as_sync
+async def test_wbi_cache_is_scoped_to_context(monkeypatch: pytest.MonkeyPatch):
+    responses = iter(
+        [
+            {
+                "data": {
+                    "wbi_img": {
+                        "img_url": "https://example.com/first-img.png",
+                        "sub_url": "https://example.com/first-sub.png",
+                    }
+                }
+            },
+            {
+                "data": {
+                    "wbi_img": {
+                        "img_url": "https://example.com/second-img.png",
+                        "sub_url": "https://example.com/second-sub.png",
+                    }
+                }
+            },
+        ]
+    )
+    calls = 0
+
+    async def fake_fetch_json(ctx, client, url):
+        nonlocal calls
+        calls += 1
+        return Success(next(responses))
+
+    monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
+    first_context = FetcherContext()
+    second_context = FetcherContext()
+    client = cast("Any", object())
+
+    assert await get_wbi_img(first_context, client) == {
+        "img_key": "first-img",
+        "sub_key": "first-sub",
+    }
+    assert await get_wbi_img(first_context, client) == {
+        "img_key": "first-img",
+        "sub_key": "first-sub",
+    }
+    assert await get_wbi_img(second_context, client) == {
+        "img_key": "second-img",
+        "sub_key": "second-sub",
+    }
     assert calls == 2
