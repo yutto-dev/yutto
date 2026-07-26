@@ -1,49 +1,61 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import pytest
+from returns.result import Success
 
+import yutto.downloader.transfer as transfer_module
 from yutto.core.execution import ExecutionScope
+from yutto.core.request import DownloadRequest
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState, ResolvedItem
 from yutto.downloader.downloader import process_download
-from yutto.types import AId, CId
+from yutto.downloader.planner import DownloadPlanner
+from yutto.types import AId, AudioUrlMeta, CId
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import DownloaderOptions, EpisodeData
+    from yutto.types import EpisodeData
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions
+    from yutto.utils.file_buffer import AsyncFileBuffer
 
 pytestmark = pytest.mark.processor
 
 
-def make_options(tmp_path: Path) -> DownloaderOptions:
-    return {
-        "output_dir": tmp_path / "output",
-        "tmp_dir": tmp_path / "temporary",
-        "require_video": False,
-        "require_chapter_info": False,
-        "save_cover": True,
-        "video_quality": 80,
-        "video_download_codec": "avc",
-        "video_save_codec": "copy",
-        "video_download_codec_priority": None,
-        "require_audio": False,
-        "audio_quality": 30280,
-        "audio_download_codec": "mp4a",
-        "audio_save_codec": "copy",
-        "output_format": "infer",
-        "output_format_audio_only": "infer",
-        "overwrite": False,
-        "block_size": 512 * 1024,
-        "metadata_format": {},
-        "banned_mirrors_pattern": None,
-        "danmaku_options": cast("DanmakuOptions", {}),
-    }
+def make_request(
+    tmp_path: Path,
+    *,
+    audio: bool = False,
+    save_cover: bool = True,
+) -> DownloadRequest:
+    return DownloadRequest.model_validate(
+        {
+            "source": {"url": "BV1test"},
+            "resources": {
+                "video": False,
+                "audio": audio,
+                "chapter_info": False,
+                "save_cover": save_cover,
+            },
+            "stream": {
+                "video_quality": 80,
+                "video_download_codec": "avc",
+                "video_save_codec": "copy",
+                "audio_quality": 30280,
+                "audio_download_codec": "mp4a",
+                "audio_save_codec": "copy",
+            },
+            "output": {
+                "directory": tmp_path / "output",
+                "temporary_directory": tmp_path / "temporary",
+            },
+        }
+    )
 
 
 def make_resource_only_episode() -> EpisodeData:
@@ -91,12 +103,72 @@ def make_resource_only_episode() -> EpisodeData:
 
 
 @as_sync
+async def test_download_cancellation_closes_buffer(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    download_started = asyncio.Event()
+    download_cancelled = asyncio.Event()
+    buffer_closed = asyncio.Event()
+
+    async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
+        return Success(1)
+
+    async def download_file(*_args: object, **_kwargs: object) -> None:
+        download_started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            download_cancelled.set()
+
+    async def show_progress(*_args: object, **_kwargs: object) -> None:
+        await asyncio.Event().wait()
+
+    original_close = transfer_module.AsyncFileBuffer.close
+
+    async def close_buffer(buffer: AsyncFileBuffer) -> None:
+        await original_close(buffer)
+        buffer_closed.set()
+
+    monkeypatch.setattr(transfer_module.Fetcher, "get_size", get_size)
+    monkeypatch.setattr(transfer_module.Fetcher, "download_file_with_offset", download_file)
+    monkeypatch.setattr(transfer_module, "show_progress", show_progress)
+    monkeypatch.setattr(transfer_module.AsyncFileBuffer, "close", close_buffer)
+
+    audio: AudioUrlMeta = {
+        "url": "https://example.test/audio",
+        "mirrors": [],
+        "codec": "mp4a",
+        "width": 0,
+        "height": 0,
+        "quality": 30280,
+    }
+    episode = make_resource_only_episode()
+    episode["audios"] = [audio]
+    plan = DownloadPlanner().plan(episode, make_request(tmp_path, audio=True))
+    plan.paths.temporary_dir.mkdir(parents=True)
+    task = asyncio.create_task(
+        transfer_module.download_video_and_audio(
+            ExecutionScope(cast("httpx.AsyncClient", object())),
+            plan,
+        )
+    )
+    await download_started.wait()
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert download_cancelled.is_set()
+    assert buffer_closed.is_set()
+
+
+@as_sync
 async def test_resource_only_download_returns_final_artifacts_without_temporary_files(tmp_path: Path):
-    scope = ExecutionScope(cast("httpx.AsyncClient", object()))
     result = await process_download(
-        scope,
+        ExecutionScope(cast("httpx.AsyncClient", object())),
         make_resource_only_episode(),
-        make_options(tmp_path),
+        make_request(tmp_path),
     )
 
     output_dir = tmp_path / "output/series"
@@ -115,9 +187,7 @@ async def test_resource_only_download_returns_final_artifacts_without_temporary_
 
 
 @as_sync
-async def test_existing_media_is_reported_and_temporary_resources_are_cleaned(tmp_path: Path):
-    options = make_options(tmp_path)
-    options["require_audio"] = True
+async def test_existing_media_returns_artifacts_and_cleans_temporary_resources(tmp_path: Path):
     episode = make_resource_only_episode()
     episode["subtitles"] = []
     episode["metadata"] = None
@@ -137,11 +207,10 @@ async def test_existing_media_is_reported_and_temporary_resources_are_cleaned(tm
     output_path.parent.mkdir(parents=True)
     output_path.write_bytes(b"existing")
 
-    scope = ExecutionScope(cast("httpx.AsyncClient", object()))
     result = await process_download(
-        scope,
+        ExecutionScope(cast("httpx.AsyncClient", object())),
         episode,
-        options,
+        make_request(tmp_path, audio=True),
     )
 
     assert result == ItemResult(
@@ -159,9 +228,6 @@ async def test_existing_media_is_reported_and_temporary_resources_are_cleaned(tm
 
 @as_sync
 async def test_missing_requested_audio_does_not_clean_uncreated_video_file(tmp_path: Path):
-    options = make_options(tmp_path)
-    options["require_audio"] = True
-    options["save_cover"] = False
     episode = make_resource_only_episode()
     episode["videos"] = [
         {
@@ -178,11 +244,10 @@ async def test_missing_requested_audio_does_not_clean_uncreated_video_file(tmp_p
     episode["danmaku"] = {"source_type": None, "save_type": None, "data": []}
     episode["cover_data"] = None
 
-    scope = ExecutionScope(cast("httpx.AsyncClient", object()))
     result = await process_download(
-        scope,
+        ExecutionScope(cast("httpx.AsyncClient", object())),
         episode,
-        options,
+        make_request(tmp_path, audio=True, save_cover=False),
     )
 
     assert result == ItemResult(

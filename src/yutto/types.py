@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from yutto.core.result import ResolvedItem
     from yutto.media.codec import AudioCodec, VideoCodec
     from yutto.media.quality import AudioQuality, VideoQuality
-    from yutto.utils.danmaku import DanmakuData, DanmakuOptions, DanmakuSaveType
+    from yutto.utils.danmaku import DanmakuData, DanmakuSaveType
     from yutto.utils.filter import PublicationTimeFilter
     from yutto.utils.metadata import ChapterInfoData, MetaData
     from yutto.utils.subtitle import SubtitleData
@@ -256,29 +256,6 @@ class ResolvableEpisode(NamedTuple):
 
     info: EpisodeInfo
     resolve_data: Callable[[], Coroutine[Any, Any, EpisodeData | None]]
-
-
-class DownloaderOptions(TypedDict):
-    output_dir: Path
-    tmp_dir: Path
-    require_video: bool
-    require_chapter_info: bool
-    save_cover: bool
-    video_quality: VideoQuality
-    video_download_codec: VideoCodec
-    video_save_codec: str
-    video_download_codec_priority: list[VideoCodec] | None
-    require_audio: bool
-    audio_quality: AudioQuality
-    audio_download_codec: AudioCodec
-    audio_save_codec: str
-    output_format: str
-    output_format_audio_only: str
-    overwrite: bool
-    block_size: int
-    metadata_format: dict[str, str]
-    banned_mirrors_pattern: str | None
-    danmaku_options: DanmakuOptions
 
 
 class FavouriteMetaData(TypedDict):

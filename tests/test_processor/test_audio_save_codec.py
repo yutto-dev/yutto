@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from yutto.downloader.downloader import resolve_audio_save_codec
+from yutto.downloader.planner import resolve_audio_save_codec
 
 pytestmark = pytest.mark.processor
 
