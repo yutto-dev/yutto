@@ -238,22 +238,27 @@ def test_adapter_rejects_unvalidated_codec_pair():
 
 
 def test_cover_only_request_keeps_existing_save_cover_semantics():
-    request = DownloadRequest.model_validate(
-        {
-            "source": {"url": "BV1xx"},
-            "resources": {
-                "video": False,
-                "audio": False,
-                "danmaku": False,
-                "subtitle": False,
-                "metadata": False,
-                "cover": True,
-                "chapter_info": False,
-            },
-        }
+    request = download_request_from_namespace(
+        parse_download_args(
+            [
+                "BV1xx",
+                "--cover-only",
+            ]
+        )
     )
 
+    assert request.resources.cover is True
     assert request.resources.save_cover is True
+    assert not any(
+        (
+            request.resources.video,
+            request.resources.audio,
+            request.resources.danmaku,
+            request.resources.subtitle,
+            request.resources.metadata,
+            request.resources.chapter_info,
+        )
+    )
 
 
 def test_core_rejects_save_cover_when_cover_is_disabled():
