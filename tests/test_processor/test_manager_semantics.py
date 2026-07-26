@@ -25,14 +25,13 @@ from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
-from yutto.utils.time import TIME_FULL_FMT
 
 if TYPE_CHECKING:
     import httpx
 
     from yutto.auth import AuthInfo
     from yutto.extractor._abc import ExtractorResolveOutcome
-    from yutto.types import DownloaderOptions, EpisodeData, ExtractorOptions
+    from yutto.types import EpisodeData, ExtractorOptions
 
 pytestmark = pytest.mark.processor
 
@@ -129,11 +128,11 @@ def make_request(tmp_dir: Path | None) -> DownloadRequest:
 @pytest.mark.processor
 @pytest.mark.parametrize("tmp_dir", [None, Path("temporary")])
 @as_sync
-async def test_process_request_preserves_extractor_and_downloader_option_mapping(
+async def test_process_request_preserves_extractor_mapping_and_passes_download_request_directly(
     monkeypatch: pytest.MonkeyPatch, tmp_dir: Path | None
 ):
     captured_extractor_options: dict[str, Any] = {}
-    captured_downloader_options: dict[str, Any] = {}
+    captured_download_request: DownloadRequest | None = None
     validation_requirements: list[dict[str, bool]] = []
     episode = make_episode("series/episode")
 
@@ -166,24 +165,22 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
     async def fake_process_download(
         scope: ExecutionScope,
         episode_data: EpisodeData,
-        options: DownloaderOptions,
+        request: DownloadRequest,
     ) -> ItemResult:
+        nonlocal captured_download_request
         assert episode_data is episode
-        captured_downloader_options.update(options)
+        captured_download_request = request
         return ItemResult(state=ItemState.DONE, output_path=Path("downloads/series/episode.mkv"))
-
-    def fake_block_options(**options: Any) -> dict[str, Any]:
-        return options
 
     monkeypatch.setattr(download_manager_module, "UgcVideoExtractor", FakeExtractor)
     monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
     monkeypatch.setattr(Fetcher, "get_redirected_url", fake_get_redirected_url)
     monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
-    monkeypatch.setattr(download_manager_module, "BlockOptions", fake_block_options)
 
     manager = DownloadManager()
     client = cast("httpx.AsyncClient", object())
-    result = await manager.process_request(ExecutionScope(client), make_request(tmp_dir))
+    request = make_request(tmp_dir)
+    result = await manager.process_request(ExecutionScope(client), request)
 
     assert validation_requirements == [
         {"is_login": False, "vip_status": False},
@@ -207,43 +204,7 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
             end_time=datetime(2025, 6, 7),
         ),
     }
-    assert captured_downloader_options == {
-        "output_dir": Path("downloads"),
-        "tmp_dir": tmp_dir or Path("downloads"),
-        "require_video": True,
-        "require_chapter_info": True,
-        "video_quality": 116,
-        "video_download_codec": "hevc",
-        "video_save_codec": "av1",
-        "video_download_codec_priority": ["av1", "hevc"],
-        "require_audio": False,
-        "audio_quality": 30280,
-        "audio_download_codec": "eac3",
-        "audio_save_codec": "flac",
-        "output_format": "mkv",
-        "output_format_audio_only": "flac",
-        "overwrite": True,
-        "block_size": 1_310_720,
-        "save_cover": True,
-        "metadata_format": {"premiered": "%Y", "dateadded": TIME_FULL_FMT},
-        "banned_mirrors_pattern": "example\\.com",
-        "danmaku_options": {
-            "font_size": 48,
-            "font": "Test Font",
-            "opacity": 0.6,
-            "display_region_ratio": 0.75,
-            "speed": 1.25,
-            "block_options": {
-                "block_top": True,
-                "block_bottom": True,
-                "block_scroll": True,
-                "block_reverse": True,
-                "block_special": True,
-                "block_colorful": True,
-                "block_keyword_patterns": ["spam", "eggs"],
-            },
-        },
-    }
+    assert captured_download_request is request
     assert result == (ItemResult(state=ItemState.DONE, output_path=Path("downloads/series/episode.mkv")),)
 
 
@@ -282,7 +243,7 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
     async def fake_process_download(
         scope: ExecutionScope,
         episode_data: EpisodeData,
-        options: DownloaderOptions,
+        request: DownloadRequest,
     ) -> ItemResult:
         return ItemResult(state=ItemState.DONE, output_path=episode_data["info"]["path"])
 

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import httpx
-from biliass import BlockOptions
 
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
@@ -33,16 +32,14 @@ from yutto.extractor._abc import BatchExtractor
 from yutto.input_parser import validate_batch_selection
 from yutto.path_templates import create_unique_path_resolver
 from yutto.types import EpisodeData, ExtractorOptions
-from yutto.utils.danmaku import DanmakuOptions
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.filter import PublicationTimeFilter
-from yutto.utils.time import TIME_FULL_FMT
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     from yutto.core.execution import ExecutionScope, ExecutionScopeFactory
-    from yutto.core.request import DanmakuRequestOptions, DownloadRequest
+    from yutto.core.request import DownloadRequest
     from yutto.exceptions import YuttoBaseException
     from yutto.extractor._abc import EpisodeListedCallback
     from yutto.extractor.outcome import ResolveOutcome
@@ -252,31 +249,7 @@ class DownloadManager:
             previous_result = await process_download(
                 scope,
                 episode_data,
-                {
-                    "output_dir": request.output.directory,
-                    "tmp_dir": request.output.temporary_directory or request.output.directory,
-                    "require_video": request.resources.video,
-                    "require_chapter_info": request.resources.chapter_info,
-                    "video_quality": request.stream.video_quality,
-                    "video_download_codec": request.stream.video_download_codec,
-                    "video_save_codec": request.stream.video_save_codec,
-                    "video_download_codec_priority": request.stream.video_download_codec_priority,
-                    "require_audio": request.resources.audio,
-                    "audio_quality": request.stream.audio_quality,
-                    "audio_download_codec": request.stream.audio_download_codec,
-                    "audio_save_codec": request.stream.audio_save_codec,
-                    "output_format": request.output.format,
-                    "output_format_audio_only": request.output.audio_only_format,
-                    "overwrite": request.output.overwrite,
-                    "block_size": request.network.block_size_bytes,
-                    "save_cover": request.resources.save_cover,
-                    "metadata_format": {
-                        "premiered": request.output.metadata_format_premiered,
-                        "dateadded": TIME_FULL_FMT,
-                    },
-                    "banned_mirrors_pattern": request.network.banned_mirrors_pattern,
-                    "danmaku_options": create_danmaku_options(request.danmaku),
-                },
+                request,
             )
             item_results.append(previous_result)
             emit_download_report("", ReportLevel.PLAIN)
@@ -396,23 +369,3 @@ def ensure_output_path_is_scoped(path: Path, output_root: Path, temporary_root: 
     for root in (output_root.resolve(), temporary_root.resolve()):
         if not (root / path).resolve().is_relative_to(root):
             raise WrongArgumentError("解析后的输出路径超出了 server 配置的根目录")
-
-
-def create_danmaku_options(options: DanmakuRequestOptions) -> DanmakuOptions:
-    block_options = BlockOptions(
-        block_top=options.block_top,
-        block_bottom=options.block_bottom,
-        block_scroll=options.block_scroll,
-        block_reverse=options.block_reverse,
-        block_special=options.block_special,
-        block_colorful=options.block_colorful,
-        block_keyword_patterns=options.block_keyword_patterns,
-    )
-    return DanmakuOptions(
-        font_size=options.font_size,
-        font=options.font,
-        opacity=options.opacity,
-        display_region_ratio=options.display_region_ratio,
-        speed=options.speed,
-        block_options=block_options,
-    )

@@ -224,8 +224,9 @@ class Fetcher:
             while not done:
                 try:
                     url = random.choice(url_pool)
+                    request_offset = offset + block_offset
                     headers["Range"] = "bytes={}-{}".format(
-                        offset + block_offset, offset + size - 1 if size is not None else ""
+                        request_offset, offset + size - 1 if size is not None else ""
                     )
                     async with scope.client.stream(
                         "GET",
@@ -233,6 +234,13 @@ class Fetcher:
                         headers=headers,
                         timeout=httpx.Timeout(7, connect=3),
                     ) as resp:
+                        if size is None and request_offset > 0 and resp.status_code == 200:
+                            # The origin ignored our retry Range and returned the whole
+                            # representation. Unknown-size transfers have one writer, so
+                            # restarting it is safe; appending here would duplicate the prefix.
+                            await file_buffer.restart()
+                            offset = 0
+                            block_offset = 0
                         # 如果直接用 1KiB 的话，会产生大量的块，需要消耗大量的 CPU 资源来维持顺序，
                         # 而使用 1MiB 以上或者不使用流式下载方式时，由于分块太大，
                         # 导致进度条显示的实时速度并不准，波动太大，用户体验不佳，

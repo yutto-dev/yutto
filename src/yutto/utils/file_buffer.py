@@ -16,6 +16,10 @@ if TYPE_CHECKING:
     class AsyncWritableBinaryFile(Protocol):
         async def write(self, data: bytes) -> int: ...
 
+        async def seek(self, offset: int) -> int: ...
+
+        async def truncate(self, size: int | None = None) -> int: ...
+
         async def close(self) -> None: ...
 
 
@@ -87,6 +91,14 @@ class AsyncFileBuffer:
                 continue
             await self.file_obj.write(ready_to_write_chunk.data)
             self.written_size += len(ready_to_write_chunk.data)
+
+    async def restart(self) -> None:
+        """Discard the current fragment and restart sequential writes at byte zero."""
+        assert self.file_obj is not None
+        await self.file_obj.seek(0)
+        await self.file_obj.truncate(0)
+        self.written_size = 0
+        self.buffer.clear()
 
     def ensure_flushed(self) -> None:
         if self.buffer:
