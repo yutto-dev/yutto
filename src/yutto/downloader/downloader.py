@@ -11,15 +11,13 @@ from yutto.core.events import (
     DownloadStage,
     DownloadStageChanged,
 )
-from yutto.core.operation import emit_download_event
+from yutto.core.operation import emit_download_event, emit_download_report
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
 from yutto.exceptions import PostprocessingError
 from yutto.media.quality import audio_quality_map, video_quality_map
 from yutto.utils.asynclib import first_successful_with_check, make_coroutine_factory
-from yutto.utils.console.colorful import colored_string
-from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
@@ -73,9 +71,9 @@ def slice_blocks(start: int, total_size: int | None, block_size: int | None = No
 def show_videos_info(videos: list[VideoUrlMeta], selected: int):
     """显示视频详细信息"""
     if not videos:
-        Logger.info("不包含任何视频流")
+        emit_download_report("不包含任何视频流")
         return
-    Logger.info(f"共包含以下 {len(videos)} 个视频流：")
+    emit_download_report(f"共包含以下 {len(videos)} 个视频流：")
     for i, video in enumerate(videos):
         log = "{}{:2} [{:^4}] [{:>4}x{:<4}] <{:^8}> #{}".format(
             "*" if i == selected else " ",
@@ -86,24 +84,20 @@ def show_videos_info(videos: list[VideoUrlMeta], selected: int):
             video_quality_map[video["quality"]]["description"],
             len(video["mirrors"]) + 1,
         )
-        if i == selected:
-            log = colored_string(log, fore="blue")
-        Logger.info(log)
+        emit_download_report(log, color="blue" if i == selected else None)
 
 
 def show_audios_info(audios: list[AudioUrlMeta], selected: int):
     """显示音频详细信息"""
     if not audios:
-        Logger.info("不包含任何音频流")
+        emit_download_report("不包含任何音频流")
         return
-    Logger.info(f"共包含以下 {len(audios)} 个音频流：")
+    emit_download_report(f"共包含以下 {len(audios)} 个音频流：")
     for i, audio in enumerate(audios):
         log = "{}{:2} [{:^4}] <{:^8}>".format(
             "*" if i == selected else " ", i, audio["codec"].upper(), audio_quality_map[audio["quality"]]["description"]
         )
-        if i == selected:
-            log = colored_string(log, fore="magenta")
-        Logger.info(log)
+        emit_download_report(log, color="magenta" if i == selected else None)
 
 
 def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[str]], list[str]]:
@@ -216,10 +210,10 @@ async def download_video_and_audio(
             0,
             defer_progress(list(filter_none_values(buffers)), sum(filter_none_values(sizes))),
         )
-        Logger.info("开始下载……")
+        emit_download_report("开始下载……")
         lifecycle_started = True
         await _run_download_lifecycle(coroutine_factories, filter_none_values(buffers))
-        Logger.info("下载完成！")
+        emit_download_report("下载完成！")
     finally:
         if not lifecycle_started:
             for buffer in filter_none_values(buffers):
@@ -277,7 +271,7 @@ async def merge_video_and_audio(
 
     ffmpeg = FFmpeg()
     command_builder = FFmpegCommandBuilder()
-    Logger.info("开始合并……")
+    emit_download_report("开始合并……")
     video_save_codec = options["video_save_codec"]
     audio_save_codec = options["audio_save_codec"]
 
@@ -291,7 +285,7 @@ async def merge_video_and_audio(
     if audio is not None:
         resolved_audio_save_codec = resolve_audio_save_codec(audio["codec"], audio_save_codec, output_path.suffix)
         if resolved_audio_save_codec not in {audio_save_codec, "copy"}:
-            Logger.info(
+            emit_download_report(
                 f"输出容器 {output_path.suffix} 无法直接封装 {audio['codec']} 音频，将自动转码为 {resolved_audio_save_codec}"
             )
         audio_save_codec = resolved_audio_save_codec
@@ -337,11 +331,11 @@ async def merge_video_and_audio(
             message += f"\n{detail}"
         raise PostprocessingError(message)
     else:
-        Logger.debug(result.stderr.decode())
+        emit_download_report(result.stderr.decode(), level="debug")
 
     if not output_path.exists():
         raise PostprocessingError("合并失败：FFmpeg 未生成目标文件！")
-    Logger.info("合并完成！")
+    emit_download_report("合并完成！")
 
 
 def cleanup_tmp_files(
@@ -396,7 +390,7 @@ async def process_download(
     require_audio = options["require_audio"]
     metadata_format = options["metadata_format"]
     danmaku_options = options["danmaku_options"]
-    Logger.info(f"开始处理视频 {filename}")
+    emit_download_report(f"开始处理视频 {filename}")
     emit_download_event(DownloadStageChanged(name=DownloadStage.PREPARING, item=filename))
     output_dir.mkdir(parents=True, exist_ok=True)
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -447,9 +441,9 @@ async def process_download(
         for subtitle in subtitles:
             subtitle_path = write_subtitle(subtitle["lines"], output_path, subtitle["lang"])
             artifacts.append(Artifact(kind=ArtifactKind.SUBTITLE, path=subtitle_path))
-        Logger.custom(
+        emit_download_report(
             "{} 字幕已全部生成".format(", ".join([subtitle["lang"] for subtitle in subtitles])),
-            badge=Badge("字幕", fore="black", back="cyan"),
+            badge="字幕",
         )
 
     # 保存弹幕
@@ -462,15 +456,13 @@ async def process_download(
             danmaku_options,
         )
         artifacts.extend(Artifact(kind=ArtifactKind.DANMAKU, path=path) for path in danmaku_paths)
-        Logger.custom(
-            "{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge=Badge("弹幕", fore="black", back="cyan")
-        )
+        emit_download_report("{} 弹幕已生成".format(danmaku["save_type"]).upper(), badge="弹幕")
 
     # 保存媒体描述文件
     if metadata is not None:
         metadata_path = write_metadata(metadata, output_path, metadata_format)
         artifacts.append(Artifact(kind=ArtifactKind.METADATA, path=metadata_path))
-        Logger.custom("NFO 媒体描述文件已生成", badge=Badge("描述文件", fore="black", back="cyan"))
+        emit_download_report("NFO 媒体描述文件已生成", badge="描述文件")
 
     # 保存封面
     if cover_data is not None:
@@ -479,14 +471,14 @@ async def process_download(
             cover_save_path = output_dir.joinpath(f"{filename}-poster.jpg")
             cover_save_path.write_bytes(cover_data)
             artifacts.append(Artifact(kind=ArtifactKind.COVER, path=cover_save_path))
-            Logger.custom("封面已生成", badge=Badge("封面", fore="black", back="cyan"))
+            emit_download_report("封面已生成", badge="封面")
 
     # 保存章节信息
     if chapter_info_data:
         write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
     if not (will_download_audio or will_download_video):
-        Logger.warning("没有音视频需要下载")
+        emit_download_report("没有音视频需要下载", level="warning")
         cleanup_tmp_files(
             None,
             None,
@@ -518,7 +510,6 @@ async def process_download(
 
     if output_path.exists():
         if not options["overwrite"]:
-            Logger.info(f"文件 {filename} 已存在")
             emit_download_event(
                 DownloadItemSkipped(
                     item=filename,
@@ -543,7 +534,7 @@ async def process_download(
                 artifacts=tuple(artifacts),
             )
         else:
-            Logger.info("文件已存在，因启用 overwrite 选项强制删除……")
+            emit_download_report("文件已存在，因启用 overwrite 选项强制删除……")
             output_path.unlink()
 
     video = video if will_download_video else None

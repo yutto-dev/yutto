@@ -8,12 +8,12 @@ from yutto.api.bangumi import (
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
+from yutto.core.operation import emit_download_report
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_bangumi_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import EpisodeId, MediaId, SeasonId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.core.execution import ExecutionScope
@@ -80,7 +80,7 @@ class BangumiBatchExtractor(BatchExtractor):
         await self._parse_ids(scope)
 
         bangumi_list = await get_bangumi_list(scope, self.season_id)
-        Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
+        emit_download_report(bangumi_list["title"], badge="番剧")
         # 如果没有 with_section 则不需要专区内容
         bangumi_list["pages"] = list(
             filter(lambda item: options["with_section"] or not item["is_section"], bangumi_list["pages"])

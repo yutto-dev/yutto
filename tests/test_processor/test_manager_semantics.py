@@ -10,6 +10,7 @@ from returns.result import Success
 
 import yutto.download_manager as download_manager_module
 from yutto.core.execution import ExecutionScope, RequestExecutionScopeFactory
+from yutto.core.operation import bind_download_report_sink
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ItemResult, ItemState, ResolvedItem
 from yutto.download_manager import (
@@ -21,7 +22,6 @@ from yutto.download_manager import (
 from yutto.exceptions import NotLoginError, WrongArgumentError
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import AId, CId, ResolvableEpisode
-from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
@@ -180,7 +180,6 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
     monkeypatch.setattr(Fetcher, "get_redirected_url", fake_get_redirected_url)
     monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
     monkeypatch.setattr(download_manager_module, "BlockOptions", fake_block_options)
-    monkeypatch.setattr(Logger, "new_line", lambda: None)
 
     manager = DownloadManager()
     client = cast("httpx.AsyncClient", object())
@@ -291,7 +290,6 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
     monkeypatch.setattr(manager, "resolve_request", fake_resolve_request)
     monkeypatch.setattr(download_manager_module, "validate_user_info", fake_validate_user_info)
     monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
-    monkeypatch.setattr(Logger, "new_line", lambda: None)
 
     with pytest.raises(NotLoginError):
         await manager.process_request(
@@ -445,38 +443,34 @@ async def test_execute_cancellation_closes_client():
 
 
 @pytest.mark.processor
-def test_ensure_unique_path_updates_episode_and_only_warns_on_rename(monkeypatch: pytest.MonkeyPatch):
-    warnings: list[str] = []
+def test_ensure_unique_path_updates_episode_and_only_warns_on_rename():
+    reports: list[tuple[str, str]] = []
     resolved_paths: list[str] = []
 
     def resolve_unique_path(path: str) -> str:
         resolved_paths.append(path)
         return "group/video (1).mp4"
 
-    monkeypatch.setattr(Logger, "warning", lambda message: warnings.append(str(message)))
-
     renamed_episode = make_episode("group/video.mp4")
-    result = ensure_unique_path(renamed_episode, resolve_unique_path)
+    with bind_download_report_sink(lambda message, level, _badge, _color: reports.append((message, level))):
+        result = ensure_unique_path(renamed_episode, resolve_unique_path)
+        unchanged_episode = make_episode("group/another.mp4")
+        ensure_unique_path(unchanged_episode, lambda path: path)
 
     assert result is renamed_episode
     assert result["info"]["path"] == Path("group/video (1).mp4")
     assert result["info"]["listing"].planned_path == Path("group/video.mp4")
     assert resolved_paths == [str(Path("group/video.mp4"))]
-    assert warnings == ["文件名重复，已重命名为 video (1).mp4"]
-
-    unchanged_episode = make_episode("group/another.mp4")
-    ensure_unique_path(unchanged_episode, lambda path: path)
-    assert warnings == ["文件名重复，已重命名为 video (1).mp4"]
+    assert reports == [("文件名重复，已重命名为 video (1).mp4", "warning")]
 
 
 @pytest.mark.processor
-def test_show_batch_episode_title_preserves_order_and_group_state(monkeypatch: pytest.MonkeyPatch):
+def test_show_batch_episode_title_preserves_order_and_group_state():
     output: list[tuple[str, str]] = []
 
-    def capture_output(message: Any, badge: Badge, *args: Any, **kwargs: Any):
-        output.append((str(message), badge.text))
-
-    monkeypatch.setattr(Logger, "custom", capture_output)
+    def capture_output(message: str, _level: Any, badge: str | None, _color: Any) -> None:
+        assert badge is not None
+        output.append((message, badge))
 
     current_group: str | None = None
     group_states: list[str | None] = []
@@ -486,9 +480,10 @@ def test_show_batch_episode_title_preserves_order_and_group_state(monkeypatch: p
         make_episode("单集"),
         make_episode("投稿 B/P1", "投稿 B"),
     ]
-    for index, episode in enumerate(episodes, start=1):
-        current_group = show_batch_episode_title(episode["info"], index, len(episodes), current_group)
-        group_states.append(current_group)
+    with bind_download_report_sink(capture_output):
+        for index, episode in enumerate(episodes, start=1):
+            current_group = show_batch_episode_title(episode["info"], index, len(episodes), current_group)
+            group_states.append(current_group)
 
     assert group_states == ["投稿 A", "投稿 A", None, "投稿 B"]
     assert output == [

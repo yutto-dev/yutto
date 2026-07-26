@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from yutto.api.ugc_video import UgcVideoList, get_ugc_video_list
+from yutto.core.operation import emit_download_report
 from yutto.exceptions import MaxRetryError, NoAccessPermissionError, NotFoundError
 from yutto.extractor.outcome import ResolveOutcome
-from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
 if TYPE_CHECKING:
@@ -70,17 +70,20 @@ async def resolve_ugc_video_lists(
         try:
             ugc_video_list = await get_ugc_video_list(scope, avid)
             if not publication_time_filter.matches(ugc_video_list["pubdate"]):
-                Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
+                emit_download_report(
+                    f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}",
+                    "debug",
+                )
                 return _FilteredResolveItem(index=index, source=avid)
             # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
             # 至于为什么前面那俩（投稿视频页和番剧页）不需要额外 touch，因为在 get_redirected_url 阶段连接过了呀
             unwrap_fetch_result(await Fetcher.touch_url(scope, avid.to_url()))
             return IndexedResolveItem(index=index, source=avid, value=ugc_video_list)
         except (NotFoundError, NoAccessPermissionError) as e:
-            Logger.error(e.message)
+            emit_download_report(e.message, "error")
             return IndexedResolveFailure(index=index, source=avid, error=e)
         except MaxRetryError as e:
-            Logger.error(f"获取视频 {avid} 信息失败：{e.message}")
+            emit_download_report(f"获取视频 {avid} 信息失败：{e.message}", "error")
             return IndexedResolveFailure(index=index, source=avid, error=e)
 
     Completion = IndexedResolveItem[UgcVideoList] | IndexedResolveFailure | _FilteredResolveItem

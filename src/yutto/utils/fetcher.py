@@ -10,8 +10,8 @@ import httpx
 from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
 
+from yutto.core.operation import emit_download_report
 from yutto.exceptions import MaxRetryError
-from yutto.utils.console.logger import Logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
@@ -46,13 +46,13 @@ class MaxRetry:
                 try:
                     return Success(await connect_once(*args, **kwargs))
                 except httpx.TimeoutException:
-                    Logger.warning(f"抓取超时，正在重试，剩余 {retry - 1} 次")
+                    emit_download_report(f"抓取超时，正在重试，剩余 {retry - 1} 次", level="warning")
                 except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
                     raise e
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
-                    Logger.warning(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次")
+                    emit_download_report(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次", level="warning")
                 finally:
                     retry -= 1
             return Failure(MaxRetryError("超出最大重试次数！"))
@@ -115,8 +115,7 @@ class Fetcher:
         encoding: str | None = None,  # TODO(SigureMo): Support this
     ) -> str | None:
         async with scope.fetch_guard():
-            Logger.debug(f"Fetch text: {url}")
-            Logger.status.next_tick()
+            emit_download_report(f"Fetch text: {url}", level="debug")
             resp = await scope.client.get(url, params=params)
             if not resp.is_success:
                 return None
@@ -131,8 +130,7 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> bytes | None:
         async with scope.fetch_guard():
-            Logger.debug(f"Fetch bin: {url}")
-            Logger.status.next_tick()
+            emit_download_report(f"Fetch bin: {url}", level="debug")
             resp = await scope.client.get(url, params=params)
             if not resp.is_success:
                 return None
@@ -147,8 +145,7 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> Any:
         async with scope.fetch_guard():
-            Logger.debug(f"Fetch json: {url}")
-            Logger.status.next_tick()
+            emit_download_report(f"Fetch json: {url}", level="debug")
             resp = await scope.client.get(url, params=params)
             if not resp.is_success:
                 resp.raise_for_status()
@@ -164,10 +161,9 @@ class Fetcher:
             resp = await scope.client.get(url)
             redirected_url = str(resp.url)
             if redirected_url == url:
-                Logger.debug(f"Get redircted url: {url}")
+                emit_download_report(f"Get redircted url: {url}", level="debug")
             else:
-                Logger.debug(f"Get redircted url: {url} -> {redirected_url}")
-            Logger.status.next_tick()
+                emit_download_report(f"Get redircted url: {url} -> {redirected_url}", level="debug")
             return redirected_url
 
     @staticmethod
@@ -182,7 +178,7 @@ class Fetcher:
             )
             if resp.status_code == 206:
                 size = int(resp.headers["Content-Range"].split("/")[-1])
-                Logger.debug(f"Get size: {url} {size}")
+                emit_download_report(f"Get size: {url} {size}", level="debug")
                 return size
             else:
                 return None
@@ -191,10 +187,10 @@ class Fetcher:
     @MaxRetry(2)
     async def touch_url(scope: ExecutionScope, url: str) -> None:
         if url in scope.touched_urls:
-            Logger.debug(f"touch_url cache hit: {url}")
+            emit_download_report(f"touch_url cache hit: {url}", level="debug")
             return
         async with scope.fetch_guard():
-            Logger.debug(f"Touch url: {url}")
+            emit_download_report(f"Touch url: {url}", level="debug")
             await scope.client.get(url)
             scope.touched_urls.add(url)
 
@@ -208,7 +204,10 @@ class Fetcher:
         size: int | None,
     ) -> None:
         async with scope.download_guard():
-            Logger.debug(f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}")
+            emit_download_report(
+                f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}",
+                level="debug",
+            )
             done = False
             headers = scope.client.headers.copy()
             url_pool = [url] + mirrors
@@ -236,18 +235,24 @@ class Fetcher:
                     done = True
 
                 except httpx.TimeoutException:
-                    Logger.warning(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...")
-                    Logger.debug(f"超时链接：{url}")
+                    emit_download_report(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...", level="warning")
+                    emit_download_report(f"超时链接：{url}", level="debug")
                 except (httpx.HTTPError, h2.exceptions.H2Error) as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
-                    Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...")
-                    Logger.debug(f"超时链接：{url}")
+                    emit_download_report(
+                        f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...",
+                        level="warning",
+                    )
+                    emit_download_report(f"超时链接：{url}", level="debug")
                 except ValueError as e:
                     # 由于 httpx 经常出现此问题，暂时捕获该问题
                     if "semaphore released too many times" not in str(e):
                         raise e
-                    Logger.warning(f"文件 {file_buffer.file_path} 下载出错（{e}），尝试重新连接...")
+                    emit_download_report(
+                        f"文件 {file_buffer.file_path} 下载出错（{e}），尝试重新连接...",
+                        level="warning",
+                    )
 
 
 def _client_kwargs(

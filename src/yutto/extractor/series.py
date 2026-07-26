@@ -5,12 +5,12 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_medialist_avids, get_medialist_title, get_user_name
+from yutto.core.operation import emit_download_report
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import MId, SeriesId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
@@ -47,7 +47,7 @@ class SeriesExtractor(BatchExtractor):
         username, series_title = await asyncio.gather(
             get_user_name(scope, self.mid), get_medialist_title(scope, self.series_id)
         )
-        Logger.custom(series_title, Badge("视频列表", fore="black", back="cyan"))
+        emit_download_report(series_title, badge="视频列表")
 
         avids = await get_medialist_avids(scope, self.series_id, self.mid)
 

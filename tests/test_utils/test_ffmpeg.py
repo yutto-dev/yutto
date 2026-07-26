@@ -362,11 +362,8 @@ async def test_ffmpeg_exec_async_kills_after_terminate_timeout(monkeypatch: pyte
 
 @pytest.mark.processor
 @as_sync
-async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+async def test_merge_uses_async_ffmpeg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     commands: list[list[str]] = []
-    infos: list[str] = []
-    errors: list[str] = []
-    debugs: list[str] = []
 
     class FakeFFmpeg:
         async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
@@ -376,9 +373,6 @@ async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch
             return subprocess.CompletedProcess(args, 0, b"", b"ffmpeg detail")
 
     monkeypatch.setattr(downloader_module, "FFmpeg", FakeFFmpeg)
-    monkeypatch.setattr(downloader_module.Logger, "info", lambda message: infos.append(str(message)))
-    monkeypatch.setattr(downloader_module.Logger, "error", lambda message: errors.append(str(message)))
-    monkeypatch.setattr(downloader_module.Logger, "debug", lambda message: debugs.append(str(message)))
 
     output_path = tmp_path / "output.m4a"
     options = make_merge_options()
@@ -389,9 +383,6 @@ async def test_merge_uses_async_ffmpeg_without_changing_success_logs(monkeypatch
     assert commands[0][-1] == str(output_path)
     assert commands[0][commands[0].index("-acodec") + 1] == "copy"
     assert options["audio_save_codec"] == "mp4a"
-    assert infos == ["开始合并……", "合并完成！"]
-    assert errors == []
-    assert debugs == ["ffmpeg detail"]
 
 
 @pytest.mark.processor
@@ -442,9 +433,7 @@ async def test_merge_cancellation_removes_partial_output(monkeypatch: pytest.Mon
             await asyncio.Event().wait()
             raise AssertionError("unreachable")
 
-    infos: list[str] = []
     monkeypatch.setattr(downloader_module, "FFmpeg", BlockingFFmpeg)
-    monkeypatch.setattr(downloader_module.Logger, "info", lambda message: infos.append(str(message)))
     output_path = tmp_path / "output.m4a"
     merging = asyncio.create_task(merge_audio(output_path))
     await started.wait()
@@ -454,4 +443,3 @@ async def test_merge_cancellation_removes_partial_output(monkeypatch: pytest.Mon
         await merging
 
     assert output_path.exists() is False
-    assert infos == ["开始合并……"]

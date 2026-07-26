@@ -5,7 +5,7 @@ from html import unescape
 from pathlib import Path
 from typing import Literal
 
-from yutto.utils.console.logger import Logger
+from yutto.core.operation import emit_download_report
 from yutto.utils.time import get_time_str_by_stamp
 
 PathTemplateVariable = Literal[
@@ -86,7 +86,7 @@ def resolve_path_template(
     for key, value in subpath_variables.items():
         # 未知变量警告
         if f"{{{key}}}" in path_template and value == UNKNOWN:
-            Logger.warning("使用了未知的变量，可能导致产生错误的下载路径")
+            emit_download_report("使用了未知的变量，可能导致产生错误的下载路径", "warning")
         # 只对字符串值修改，int 型不修改以适配高级模板
         if isinstance(value, str):
             subpath_variables[key] = repair_filename(value)

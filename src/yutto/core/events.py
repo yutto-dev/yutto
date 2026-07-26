@@ -44,6 +44,7 @@ class DownloadProgress:
     speed_per_second: float
     phase: DownloadStage = DownloadStage.DOWNLOADING
     unit: Literal["bytes"] = "bytes"
+    buffered_blocks: int = 0
 
 
 @dataclass(frozen=True, slots=True)

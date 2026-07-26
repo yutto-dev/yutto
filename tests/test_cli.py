@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import yutto.cli.event_renderer as renderer_module
 import yutto.validator as validator_module
 from yutto.cli.cli import (
     add_auth_logout_arguments,
@@ -15,6 +16,7 @@ from yutto.cli.cli import (
     handle_default_subcommand,
 )
 from yutto.cli.settings import YuttoSettings
+from yutto.core.events import DownloadProgress
 from yutto.exceptions import ErrorCode
 
 if TYPE_CHECKING:
@@ -147,3 +149,18 @@ def test_root_parser_rejects_removed_top_level_login():
         cli().parse_args(handle_default_subcommand(["login"]))
 
     assert exc_info.value.code == 2
+
+
+def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch):
+    rendered: list[str] = []
+    monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (80, 24))
+    monkeypatch.setattr(renderer_module.Logger.status, "set", rendered.append)
+    progress = DownloadProgress(current=1024, total=2048, speed_per_second=1024)
+
+    renderer_module.CliApplicationEventRenderer(progress_enabled=False).emit(progress)
+    assert rendered == []
+
+    renderer_module.CliApplicationEventRenderer().emit(progress)
+    assert len(rendered) == 1
+    assert "1.00 KiB" in rendered[0]
+    assert "2.00 KiB" in rendered[0]

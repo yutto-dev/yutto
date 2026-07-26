@@ -5,8 +5,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from yutto.core.operation import emit_download_report
 from yutto.exceptions import WrongArgumentError
-from yutto.utils.console.logger import Logger
 
 
 def path_from_cli(path: str) -> Path:
@@ -37,7 +37,7 @@ def alias_parser(file_path: str) -> dict[str, str]:
 def file_scheme_parser(url: str) -> list[str]:
     file_url: str = urllib.parse.urlparse(url).path
     file_path = path_from_cli(urllib.request.url2pathname(file_url))
-    Logger.info(f"解析下载列表 {file_path} 中...")
+    emit_download_report(f"解析下载列表 {file_path} 中...")
     result: list[str] = []
     with file_path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -56,11 +56,20 @@ def validate_episodes_selection(episodes_str: str) -> bool:
     return bool(re.match(rf"{regex_compose}$", episodes_str))
 
 
+def validate_batch_selection(episodes: str) -> None:
+    """检查 Core 请求中的批量选集格式。"""
+    if not validate_episodes_selection(episodes):
+        raise WrongArgumentError(f"选集参数（{episodes}）格式不正确呀～重新检查一下下～")
+
+
 def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
     """将选集字符串转为列表（标号从 1 开始）"""
 
     if total == 0:
-        Logger.warning("该剧集列表无任何剧集，猜测正片尚未上线，如果想要下载 PV 等特殊剧集，请添加参数 -s")
+        emit_download_report(
+            "该剧集列表无任何剧集，猜测正片尚未上线，如果想要下载 PV 等特殊剧集，请添加参数 -s",
+            "warning",
+        )
         return []
 
     def resolve_negative(value: int) -> int:
@@ -69,7 +78,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         return value if value > 0 else value + total + 1
 
     # 解析字符串为列表
-    Logger.info(f"全 {total} 话")
+    emit_download_report(f"全 {total} 话")
     if validate_episodes_selection(episodes_str):
         episodes_str = episodes_str.replace("$", "-1")
         episode_list: list[int] = []
@@ -104,9 +113,9 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         else:
             out_of_range.append(episode)
     if out_of_range:
-        Logger.warning("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))))
+        emit_download_report("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))), "warning")
 
-    Logger.info("已选择第 {} 话".format(",".join(list(map(str, episodes)))))
+    emit_download_report("已选择第 {} 话".format(",".join(list(map(str, episodes)))))
     if not episodes:
-        Logger.warning("没有选中任何剧集")
+        emit_download_report("没有选中任何剧集", "warning")
     return episodes

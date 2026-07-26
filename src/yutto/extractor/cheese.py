@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.cheese import get_cheese_list, get_season_id_by_episode_id
+from yutto.core.operation import emit_download_report
 from yutto.exceptions import (
     EpisodeNotFoundError,
     HttpStatusError,
@@ -15,7 +16,6 @@ from yutto.extractor._abc import SingleExtractor
 from yutto.extractor.common import make_cheese_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import EpisodeId
-from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
     from yutto.core.execution import ExecutionScope
@@ -55,7 +55,7 @@ class CheeseExtractor(SingleExtractor):
     ) -> ExtractorResolveOutcome:
         season_id = await get_season_id_by_episode_id(scope, self.episode_id)
         cheese_list = await get_cheese_list(scope, season_id)
-        Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
+        emit_download_report(cheese_list["title"], badge="课程")
         try:
             for cheese_item in cheese_list["pages"]:
                 if cheese_item["episode_id"] == self.episode_id:
@@ -79,5 +79,5 @@ class CheeseExtractor(SingleExtractor):
                 )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-            Logger.error(e.message)
+            emit_download_report(e.message, "error")
             return ResolveOutcome(failures=(e,))

@@ -1,20 +1,28 @@
 from __future__ import annotations
 
 import os
+import platform
 import re
 import tomllib
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 
-from yutto.cli.settings import xdg_config_home
-
 if TYPE_CHECKING:
     from argparse import Namespace
-    from pathlib import Path
 
 PROFILE_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def xdg_config_home() -> Path:
+    if (env := os.environ.get("XDG_CONFIG_HOME")) and (path := Path(env)).is_absolute():
+        return path
+    home = Path.home()
+    if platform.system() == "Windows":
+        return home / "AppData" / "Roaming"
+    return home / ".config"
 
 
 class AuthInfo(TypedDict):

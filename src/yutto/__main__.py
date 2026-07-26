@@ -14,6 +14,7 @@ from yutto.cli.event_renderer import CliApplicationEventRenderer
 from yutto.cli.request_adapter import download_request_from_namespace
 from yutto.core.application import YuttoApplication
 from yutto.core.execution import ExecutionScopeFactory, RequestExecutionScopeFactory
+from yutto.core.operation import bind_download_report_sink
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
@@ -54,30 +55,36 @@ class _CliAuthAnnouncer:
 
 def main():
     parser = cli()
-    args = parser.parse_args(handle_default_subcommand(sys.argv[1:]))
+    renderer = CliApplicationEventRenderer()
+    with bind_download_report_sink(renderer.report):
+        args = parser.parse_args(handle_default_subcommand(sys.argv[1:]))
     match args.command:
         case "download":
-            try:
-                initial_validation(args)
-                args_list = flatten_args(args, parser)
-                auth_list = [hydrate_auth(item) for item in args_list]
-                requests = [download_request_from_namespace(item) for item in args_list]
-                credentials_by_request = {id(request): auth for request, auth in zip(requests, auth_list, strict=True)}
+            renderer.progress_enabled = not args.no_progress and sys.stdout.isatty()
+            with bind_download_report_sink(renderer.report):
+                try:
+                    initial_validation(args)
+                    args_list = flatten_args(args, parser)
+                    auth_list = [hydrate_auth(item) for item in args_list]
+                    requests = [download_request_from_namespace(item) for item in args_list]
+                    credentials_by_request = {
+                        id(request): auth for request, auth in zip(requests, auth_list, strict=True)
+                    }
 
-                def resolve_credentials(request: DownloadRequest) -> AuthInfo | None:
-                    return credentials_by_request[id(request)]
+                    def resolve_credentials(request: DownloadRequest) -> AuthInfo | None:
+                        return credentials_by_request[id(request)]
 
-                scope_factory = RequestExecutionScopeFactory(
-                    resolve_credentials,
-                    on_open=_CliAuthAnnouncer(),
-                )
-                run_download(scope_factory, requests)
-            except YuttoBaseException as e:
-                Logger.error(e.message)
-                sys.exit(e.code.value)
-            except (KeyboardInterrupt, asyncio.exceptions.CancelledError):
-                Logger.info("已终止下载，再次运行即可继续下载～")
-                sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
+                    scope_factory = RequestExecutionScopeFactory(
+                        resolve_credentials,
+                        on_open=_CliAuthAnnouncer(),
+                    )
+                    run_download(scope_factory, requests, renderer)
+                except YuttoBaseException as e:
+                    Logger.error(e.message)
+                    sys.exit(e.code.value)
+                except (KeyboardInterrupt, asyncio.exceptions.CancelledError):
+                    Logger.info("已终止下载，再次运行即可继续下载～")
+                    sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
         case "auth":
             match args.auth_command:
                 case "login":
@@ -93,7 +100,8 @@ def main():
             from yutto.server.command import run_server_command
 
             try:
-                run_server_command(args)
+                with bind_download_report_sink(renderer.report):
+                    run_server_command(args)
             except KeyboardInterrupt:
                 Logger.info("yutto server 已停止")
             except (FFmpegNotFoundError, OSError, ValueError) as e:
@@ -108,13 +116,16 @@ def main():
 async def run_download(
     scope_factory: ExecutionScopeFactory,
     requests: list[DownloadRequest],
+    renderer: CliApplicationEventRenderer,
 ):
-    application = YuttoApplication(
-        scope_factory,
-        workflow=DownloadManager(),
-        event_sink=CliApplicationEventRenderer(),
-    )
-    await application.download_all(requests)
+    async with renderer:
+        application = YuttoApplication(
+            scope_factory,
+            workflow=DownloadManager(),
+            event_sink=renderer,
+        )
+        with bind_download_report_sink(renderer.report):
+            await application.download_all(requests)
 
 
 async def announce_cli_auth(scope: ExecutionScope, _request: DownloadRequest) -> None:

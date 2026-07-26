@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from returns.result import Failure
 
+from yutto.core.operation import emit_download_report
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
@@ -16,7 +17,6 @@ from yutto.types import (
     VideoUrlMeta,
     format_ids,
 )
-from yutto.utils.console.logger import Logger
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
 from yutto.utils.metadata import MetaData
@@ -108,7 +108,7 @@ async def get_bangumi_playurl(
     video_info = resp_json["result"]["video_info"]
     if video_info["is_preview"] == 1:
         # Maybe always 0 in v2 API
-        Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
+        emit_download_report(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）", "warning")
     if video_info.get("dash") is None:
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
 
@@ -157,7 +157,10 @@ async def get_bangumi_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> 
     if subtitles_json_info is None:
         return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
-        Logger.warning(f"无法获取该视频的字幕（{format_ids(avid, cid)}），原因：{subtitles_json_info.get('message')}")
+        emit_download_report(
+            f"无法获取该视频的字幕（{format_ids(avid, cid)}），原因：{subtitles_json_info.get('message')}",
+            "warning",
+        )
         return []
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
@@ -166,7 +169,10 @@ async def get_bangumi_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> 
 
         # 检查 subtitle_url 是否有效
         if subtitle_url is None or not subtitle_url.strip():
-            Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}")
+            emit_download_report(
+                f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}",
+                "warning",
+            )
             continue
 
         subtitle_text = (await Fetcher.fetch_json(scope, "https:" + subtitle_url)).value_or(None)

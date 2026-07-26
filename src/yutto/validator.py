@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 import biliass
 
 from yutto.auth import format_auth_inline, resolve_auth
-from yutto.exceptions import ErrorCode, WrongArgumentError
-from yutto.input_parser import validate_episodes_selection
+from yutto.exceptions import ErrorCode
+from yutto.input_parser import validate_batch_selection
 from yutto.media.codec import audio_codec_priority_default, video_codec_priority_default
 from yutto.utils.console.colorful import set_no_color
 from yutto.utils.console.logger import Logger, set_logger_debug
@@ -37,7 +37,7 @@ def hydrate_auth(args: argparse.Namespace) -> AuthInfo | None:
 def initial_validation(args: argparse.Namespace):
     """初始化检查，仅执行一次"""
 
-    if not args.no_progress:
+    if not args.no_progress and sys.stdout.isatty():
         Logger.enable_statusbar()
 
     # 在使用 --no-color 或者环境变量 NO_COLOR 非空时都应该不显示颜色
@@ -149,11 +149,3 @@ def validate_basic_arguments(args: argparse.Namespace):
 def validate_batch_arguments(args: argparse.Namespace):
     """检查批量下载相关选项"""
     validate_batch_selection(args.episodes)
-
-
-def validate_batch_selection(episodes: str):
-    """检查 Core 请求中的批量选集格式。"""
-    # 检查 episodes 格式（简单的正则检查，后续过滤剧集时还有完整检查）
-    if not validate_episodes_selection(episodes):
-        # TODO: 错误信息链接到相应文档，当然需要先写文档……
-        raise WrongArgumentError(f"选集参数（{episodes}）格式不正确呀～重新检查一下下～")

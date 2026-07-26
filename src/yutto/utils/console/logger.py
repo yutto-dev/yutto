@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
 
 from yutto.utils.console.colorful import colored_string
@@ -103,49 +102,6 @@ class Logger:
         Logger.custom(string, DEBUG_BADGE, *print_args, **print_kwargs)
 
     @classmethod
-    def custom_multiline(cls, string: Any, badge: Badge, *print_args: Any, **print_kwargs: Any):
-        prefix = badge + " "
-        lines = string.split("\n")
-        multiline_string = prefix + "\n".join(
-            [((" " * get_string_width(prefix)) if i != 0 else "") + line for i, line in enumerate(lines)]
-        )
-        print(multiline_string, *print_args, **print_kwargs)
-
-    @classmethod
-    def warning_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
-        Logger.custom_multiline(string, WARNING_BADGE, *print_args, **print_kwargs)
-
-    @classmethod
-    def error_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
-        Logger.custom_multiline(string, ERROR_BADGE, *print_args, **print_kwargs)
-
-    @classmethod
-    def info_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
-        Logger.custom_multiline(string, INFO_BADGE, *print_args, **print_kwargs)
-
-    @classmethod
-    def deprecated_warning_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
-        Logger.custom_multiline(string, DEPRECATED_BADGE, *print_args, **print_kwargs)
-
-    @classmethod
-    def debug_multiline(cls, string: Any, *print_args: Any, **print_kwargs: Any):
-        if not _logger_debug:
-            return
-        Logger.custom_multiline(string, INFO_BADGE, *print_args, **print_kwargs)
-
-    @classmethod
     def print(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         cls.status.clear()
         print(string, *print_args, **print_kwargs)
-
-    @classmethod
-    def json(cls, obj: list[Any] | dict[str, Any], *print_args: Any, **print_kwargs: Any):
-        Logger.print(json.dumps(obj, indent=2), *print_args, **print_kwargs)
-
-    @classmethod
-    def new_line(cls):
-        cls.print("")
-
-    @classmethod
-    def is_debug(cls) -> bool:
-        return _logger_debug
