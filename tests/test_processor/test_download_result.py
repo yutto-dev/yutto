@@ -1,26 +1,32 @@
 from __future__ import annotations
 
 import asyncio
+import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import pytest
 from returns.result import Success
 
+import yutto.downloader.executor as executor_module
 import yutto.downloader.transfer as transfer_module
 from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState, ResolvedItem
 from yutto.downloader.downloader import process_download
+from yutto.downloader.media_muxer import MediaMuxer
 from yutto.downloader.planner import DownloadPlanner
-from yutto.types import AId, AudioUrlMeta, CId
+from yutto.exceptions import PostprocessingError
+from yutto.types import AId, CId
 from yutto.utils.danmaku import write_danmaku
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
     import httpx
 
-    from yutto.types import EpisodeData
+    from yutto.downloader.planner import DownloadPlan
+    from yutto.media.codec import AudioCodec
+    from yutto.types import AudioUrlMeta, EpisodeData
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions
     from yutto.utils.file_buffer import AsyncFileBuffer
 
@@ -30,6 +36,7 @@ pytestmark = pytest.mark.processor
 def make_request(
     tmp_path: Path,
     *,
+    video: bool = False,
     audio: bool = False,
     save_cover: bool = True,
 ) -> DownloadRequest:
@@ -37,7 +44,7 @@ def make_request(
         {
             "source": {"url": "BV1test"},
             "resources": {
-                "video": False,
+                "video": video,
                 "audio": audio,
                 "chapter_info": False,
                 "save_cover": save_cover,
@@ -102,6 +109,24 @@ def make_resource_only_episode() -> EpisodeData:
     }
 
 
+def make_audio(codec: AudioCodec = "mp4a") -> AudioUrlMeta:
+    return {
+        "url": "https://signed.example.test/audio?token=audio-secret",
+        "mirrors": ["https://mirror.example.test/audio?token=mirror-secret"],
+        "codec": codec,
+        "width": 0,
+        "height": 0,
+        "quality": 30280,
+    }
+
+
+def make_media_episode() -> EpisodeData:
+    episode = make_resource_only_episode()
+    episode["audios"] = [make_audio()]
+    episode["chapter_info_data"] = [{"start": 0, "end": 1, "content": "chapter"}]
+    return episode
+
+
 @as_sync
 async def test_download_cancellation_closes_buffer(
     monkeypatch: pytest.MonkeyPatch,
@@ -135,17 +160,7 @@ async def test_download_cancellation_closes_buffer(
     monkeypatch.setattr(transfer_module, "show_progress", show_progress)
     monkeypatch.setattr(transfer_module.AsyncFileBuffer, "close", close_buffer)
 
-    audio: AudioUrlMeta = {
-        "url": "https://example.test/audio",
-        "mirrors": [],
-        "codec": "mp4a",
-        "width": 0,
-        "height": 0,
-        "quality": 30280,
-    }
-    episode = make_resource_only_episode()
-    episode["audios"] = [audio]
-    plan = DownloadPlanner().plan(episode, make_request(tmp_path, audio=True))
+    plan = DownloadPlanner().plan(make_media_episode(), make_request(tmp_path, audio=True))
     plan.paths.temporary_dir.mkdir(parents=True)
     task = asyncio.create_task(
         transfer_module.download_video_and_audio(
@@ -161,6 +176,55 @@ async def test_download_cancellation_closes_buffer(
 
     assert download_cancelled.is_set()
     assert buffer_closed.is_set()
+
+
+@pytest.mark.parametrize("cancelled", [False, True], ids=["failure", "cancellation"])
+@as_sync
+async def test_interrupted_mux_keeps_resume_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    cancelled: bool,
+):
+    started = asyncio.Event()
+
+    class InterruptedFFmpeg:
+        async def exec_async(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+            Path(args[-1]).write_bytes(b"partial output")
+            if cancelled:
+                started.set()
+                await asyncio.Event().wait()
+            return subprocess.CompletedProcess(args, 1, b"", b"ffmpeg failed")
+
+    async def write_audio_fragment(_scope: ExecutionScope, plan: DownloadPlan) -> None:
+        plan.paths.audio.write_bytes(b"resumable audio")
+
+    muxer = MediaMuxer(InterruptedFFmpeg())
+    monkeypatch.setattr(executor_module, "download_video_and_audio", write_audio_fragment)
+    monkeypatch.setattr(executor_module, "MediaMuxer", lambda: muxer)
+    execution = asyncio.create_task(
+        process_download(
+            ExecutionScope(cast("httpx.AsyncClient", object())),
+            make_media_episode(),
+            make_request(tmp_path, audio=True),
+        )
+    )
+    if cancelled:
+        await started.wait()
+        execution.cancel()
+        error = asyncio.CancelledError
+    else:
+        error = PostprocessingError
+
+    with pytest.raises(error):
+        await execution
+
+    output_dir = tmp_path / "output/series"
+    temporary_dir = tmp_path / "temporary/series"
+    assert (output_dir / "episode.zh-CN.srt").exists()
+    assert (temporary_dir / "episode_audio.m4s").read_bytes() == b"resumable audio"
+    assert (temporary_dir / "episode_cover.jpg").exists()
+    assert (temporary_dir / "episode_chapter_info.ini").exists()
+    assert not (output_dir / "episode.m4a").exists()
 
 
 @as_sync
@@ -188,24 +252,14 @@ async def test_resource_only_download_returns_final_artifacts_without_temporary_
 
 @as_sync
 async def test_existing_media_returns_artifacts_and_cleans_temporary_resources(tmp_path: Path):
-    episode = make_resource_only_episode()
-    episode["subtitles"] = []
+    episode = make_media_episode()
     episode["metadata"] = None
     episode["danmaku"] = {"source_type": None, "save_type": None, "data": []}
-    episode["audios"] = [
-        {
-            "url": "https://example.test/audio",
-            "mirrors": [],
-            "codec": "mp4a",
-            "width": 0,
-            "height": 0,
-            "quality": 30280,
-        }
-    ]
-    episode["chapter_info_data"] = [{"start": 0, "end": 1, "content": "chapter"}]
     output_path = tmp_path / "output/series/episode.m4a"
+    subtitle_path = tmp_path / "output/series/episode.zh-CN.srt"
     output_path.parent.mkdir(parents=True)
     output_path.write_bytes(b"existing")
+    subtitle_path.write_text("stale subtitle")
 
     result = await process_download(
         ExecutionScope(cast("httpx.AsyncClient", object())),
@@ -218,10 +272,12 @@ async def test_existing_media_returns_artifacts_and_cleans_temporary_resources(t
         output_path=output_path,
         skip_reason=ItemSkipReason.ALREADY_EXISTS,
         artifacts=(
+            Artifact(kind=ArtifactKind.SUBTITLE, path=subtitle_path),
             Artifact(kind=ArtifactKind.COVER, path=tmp_path / "output/series/episode-poster.jpg"),
             Artifact(kind=ArtifactKind.MEDIA, path=output_path),
         ),
     )
+    assert subtitle_path.read_text() != "stale subtitle"
     assert not (tmp_path / "temporary/series/episode_cover.jpg").exists()
     assert not (tmp_path / "temporary/series/episode_chapter_info.ini").exists()
 

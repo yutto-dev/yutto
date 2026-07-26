@@ -24,14 +24,6 @@ if TYPE_CHECKING:
 class DownloadExecutor:
     """Execute one immutable decision plan against its extractor payload."""
 
-    def __init__(
-        self,
-        artifact_writer: ArtifactWriter | None = None,
-        media_muxer: MediaMuxer | None = None,
-    ):
-        self._artifact_writer = artifact_writer if artifact_writer is not None else ArtifactWriter()
-        self._media_muxer = media_muxer
-
     async def execute(
         self,
         scope: ExecutionScope,
@@ -40,11 +32,12 @@ class DownloadExecutor:
     ) -> ItemResult:
         plan.paths.output_dir.mkdir(parents=True, exist_ok=True)
         plan.paths.temporary_dir.mkdir(parents=True, exist_ok=True)
-        emit_streams_selected(plan)
+        emit_streams_selected(episode_data, plan)
 
         artifacts: list[Artifact] = []
+        artifact_writer = ArtifactWriter()
         emit_download_event(DownloadStageChanged(name=DownloadStage.WRITING_RESOURCES, item=plan.item))
-        for resource in self._artifact_writer.write(episode_data, plan):
+        for resource in artifact_writer.write(episode_data, plan):
             artifacts.extend(resource.artifacts)
             if resource.kind is ArtifactKind.SUBTITLE:
                 emit_download_report(f"{', '.join(resource.labels)} 字幕已全部生成", badge="字幕")
@@ -57,7 +50,7 @@ class DownloadExecutor:
 
         if not plan.has_media:
             emit_download_report("没有音视频需要下载", "warning")
-            self._artifact_writer.cleanup_temporary(plan)
+            artifact_writer.cleanup_temporary(plan)
             if not plan.media_requested:
                 return ItemResult(
                     state=ItemState.DONE,
@@ -86,7 +79,7 @@ class DownloadExecutor:
                     )
                 )
                 artifacts.append(Artifact(kind=ArtifactKind.MEDIA, path=plan.paths.output))
-                self._artifact_writer.cleanup_temporary(plan)
+                artifact_writer.cleanup_temporary(plan)
                 return ItemResult(
                     state=ItemState.SKIPPED,
                     output_path=plan.paths.output,
@@ -105,11 +98,10 @@ class DownloadExecutor:
                 f"输出容器 {plan.paths.output.suffix} 无法直接封装 {plan.audio.codec} 音频，"
                 f"将自动转码为 {plan.audio_save_codec}",
             )
-        media_muxer = self._media_muxer if self._media_muxer is not None else MediaMuxer()
-        await media_muxer.mux(plan)
+        await MediaMuxer().mux(plan)
 
         cleanup_temporary_media(plan)
-        self._artifact_writer.cleanup_temporary(plan)
+        artifact_writer.cleanup_temporary(plan)
         artifacts.append(Artifact(kind=ArtifactKind.MEDIA, path=plan.paths.output))
         emit_download_event(DownloadArtifactCreated(item=plan.item, path=plan.paths.output))
         return ItemResult(
@@ -119,36 +111,41 @@ class DownloadExecutor:
         )
 
 
-def emit_streams_selected(plan: DownloadPlan) -> None:
-    if not plan.video_candidates:
+def emit_streams_selected(episode_data: EpisodeData, plan: DownloadPlan) -> None:
+    videos = episode_data["videos"]
+    selected_video_index = plan.video.index if plan.video is not None else -1
+    if not videos:
         emit_download_report("不包含任何视频流")
     else:
-        emit_download_report(f"共包含以下 {len(plan.video_candidates)} 个视频流：")
-        for candidate in plan.video_candidates:
-            assert candidate.width is not None and candidate.height is not None
+        emit_download_report(f"共包含以下 {len(videos)} 个视频流：")
+        for index, candidate in enumerate(videos):
+            selected = index == selected_video_index
             message = "{}{:2} [{:^4}] [{:>4}x{:<4}] <{:^8}> #{}".format(
-                "*" if candidate.selected else " ",
-                candidate.index,
-                candidate.codec.upper(),
-                candidate.width,
-                candidate.height,
-                video_quality_map[candidate.quality]["description"],
-                candidate.mirror_count,
+                "*" if selected else " ",
+                index,
+                candidate["codec"].upper(),
+                candidate["width"],
+                candidate["height"],
+                video_quality_map[candidate["quality"]]["description"],
+                len(candidate["mirrors"]) + 1,
             )
-            emit_download_report(message, color="blue" if candidate.selected else None)
+            emit_download_report(message, color="blue" if selected else None)
 
-    if not plan.audio_candidates:
+    audios = episode_data["audios"]
+    selected_audio_index = plan.audio.index if plan.audio is not None else -1
+    if not audios:
         emit_download_report("不包含任何音频流")
     else:
-        emit_download_report(f"共包含以下 {len(plan.audio_candidates)} 个音频流：")
-        for candidate in plan.audio_candidates:
+        emit_download_report(f"共包含以下 {len(audios)} 个音频流：")
+        for index, candidate in enumerate(audios):
+            selected = index == selected_audio_index
             message = "{}{:2} [{:^4}] <{:^8}>".format(
-                "*" if candidate.selected else " ",
-                candidate.index,
-                candidate.codec.upper(),
-                audio_quality_map[candidate.quality]["description"],
+                "*" if selected else " ",
+                index,
+                candidate["codec"].upper(),
+                audio_quality_map[candidate["quality"]]["description"],
             )
             emit_download_report(
                 message,
-                color="magenta" if candidate.selected else None,
+                color="magenta" if selected else None,
             )

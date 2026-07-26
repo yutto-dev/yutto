@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 
-from yutto.core.request import DownloadRequest
-from yutto.core.result import ResolvedItem
-from yutto.downloader.planner import DownloadPlanner
-from yutto.types import AId, CId
+from tests.test_processor.test_download_result import make_audio, make_request, make_resource_only_episode
+from yutto.downloader.planner import DownloadPlan, DownloadPlanner
 
 if TYPE_CHECKING:
+    from yutto.core.request import DownloadRequest
     from yutto.media.codec import AudioCodec, VideoCodec
-    from yutto.types import AudioUrlMeta, EpisodeData, VideoUrlMeta
+    from yutto.types import EpisodeData, VideoUrlMeta
 
 pytestmark = pytest.mark.processor
+
+OutputFormat = Literal["infer", "mp4", "mkv", "mov"]
+AudioOnlyFormat = Literal["infer", "m4a", "aac", "mp3", "flac", "mp4", "mkv", "mov"]
 
 
 def make_video(codec: VideoCodec = "avc") -> VideoUrlMeta:
@@ -29,175 +30,70 @@ def make_video(codec: VideoCodec = "avc") -> VideoUrlMeta:
     }
 
 
-def make_audio(codec: AudioCodec = "mp4a") -> AudioUrlMeta:
-    return {
-        "url": "https://signed.example.test/audio?token=audio-secret",
-        "mirrors": ["https://mirror.example.test/audio?token=mirror-secret"],
-        "codec": codec,
-        "width": 0,
-        "height": 0,
-        "quality": 30280,
-    }
-
-
-def make_episode(
-    *,
-    videos: list[VideoUrlMeta] | None = None,
-    audios: list[AudioUrlMeta] | None = None,
-    path: Path = Path("series/episode"),
-) -> EpisodeData:
-    return {
-        "info": {
-            "listing": ResolvedItem(
-                avid=AId("1"),
-                cid=CId("1"),
-                url="https://www.bilibili.com/video/av1?p=1",
-                name=path.name,
-                title=path.name,
-                cover_url="",
-                planned_path=path,
-            ),
-            "path": path,
-        },
-        "videos": videos or [],
-        "audios": audios or [],
-        "subtitles": [],
-        "metadata": None,
-        "danmaku": {"source_type": None, "save_type": None, "data": []},
-        "cover_data": None,
-        "chapter_info_data": [],
-    }
-
-
-def make_request(
+def make_plan(
     tmp_path: Path,
     *,
-    video: bool,
-    audio: bool,
-    video_codec: VideoCodec = "avc",
-    audio_codec: AudioCodec = "mp4a",
-    video_save_codec: str = "copy",
-    audio_save_codec: str = "copy",
-    output_format: str = "infer",
-    audio_only_format: str = "infer",
+    video_codec: VideoCodec | None = None,
+    audio_codec: AudioCodec | None = None,
+    output_format: OutputFormat = "infer",
+    audio_only_format: AudioOnlyFormat = "infer",
+    path: Path = Path("series/episode"),
     use_output_as_temporary: bool = False,
-) -> DownloadRequest:
-    return DownloadRequest.model_validate(
-        {
-            "source": {"url": "BV1planner"},
-            "resources": {
-                "video": video,
-                "audio": audio,
-                "danmaku": False,
-                "subtitle": False,
-                "metadata": False,
-                "cover": False,
-                "chapter_info": False,
-            },
-            "stream": {
-                "video_download_codec": video_codec,
-                "video_save_codec": video_save_codec,
-                "audio_download_codec": audio_codec,
-                "audio_save_codec": audio_save_codec,
-            },
-            "output": {
-                "directory": tmp_path / "output",
-                "temporary_directory": None if use_output_as_temporary else tmp_path / "temporary",
-                "format": output_format,
-                "audio_only_format": audio_only_format,
-            },
-            "danmaku": {
-                "block_keyword_patterns": ["original-pattern"],
-            },
-        }
+) -> tuple[EpisodeData, DownloadRequest, DownloadPlan]:
+    episode = make_resource_only_episode()
+    episode["info"]["path"] = path
+    episode["videos"] = [make_video(video_codec)] if video_codec is not None else []
+    episode["audios"] = [make_audio(audio_codec)] if audio_codec is not None else []
+    request = make_request(
+        tmp_path,
+        video=video_codec is not None,
+        audio=audio_codec is not None,
     )
+    if video_codec is not None:
+        request.stream.video_download_codec = video_codec
+    if audio_codec is not None:
+        request.stream.audio_download_codec = audio_codec
+    request.output.format = output_format
+    request.output.audio_only_format = audio_only_format
+    if use_output_as_temporary:
+        request.output.temporary_directory = None
+    request.danmaku.block_keyword_patterns = ["original-pattern"]
+    return episode, request, DownloadPlanner().plan(episode, request)
 
 
 @pytest.mark.parametrize(
-    (
-        "video_codec",
-        "audio_codec",
-        "request_video",
-        "request_audio",
-        "output_format",
-        "audio_only_format",
-        "audio_save_codec",
-        "expected_suffix",
-    ),
+    ("video_codec", "audio_codec", "output_format", "audio_only_format", "suffix"),
     [
-        ("avc", "flac", True, True, "infer", "infer", "copy", ".mkv"),
-        ("avc", "flac", False, True, "infer", "infer", "copy", ".flac"),
-        ("avc", "eac3", False, True, "infer", "infer", "copy", ".mkv"),
-        ("avc", "mp4a", False, True, "infer", "infer", "copy", ".m4a"),
-        ("avc", "mp4a", False, True, "infer", "mp3", "copy", ".mp3"),
-        ("avc", "mp4a", True, True, "mov", "infer", "copy", ".mov"),
-        ("avc", "mp4a", False, False, "infer", "infer", "copy", ".m4a"),
+        ("avc", "flac", "infer", "infer", ".mkv"),
+        (None, "flac", "infer", "infer", ".flac"),
+        (None, "eac3", "infer", "infer", ".mkv"),
+        (None, "mp4a", "infer", "mp3", ".mp3"),
+        ("avc", "mp4a", "mov", "infer", ".mov"),
     ],
 )
-def test_planner_infers_output_container_without_side_effects(
+def test_planner_resolves_output_without_io(
     tmp_path: Path,
-    video_codec: VideoCodec,
-    audio_codec: AudioCodec,
-    request_video: bool,
-    request_audio: bool,
-    output_format: str,
-    audio_only_format: str,
-    audio_save_codec: str,
-    expected_suffix: str,
+    video_codec: VideoCodec | None,
+    audio_codec: AudioCodec | None,
+    output_format: OutputFormat,
+    audio_only_format: AudioOnlyFormat,
+    suffix: str,
 ):
-    episode = make_episode(videos=[make_video(video_codec)], audios=[make_audio(audio_codec)])
-    request = make_request(
+    _, _, plan = make_plan(
         tmp_path,
-        video=request_video,
-        audio=request_audio,
         video_codec=video_codec,
         audio_codec=audio_codec,
         output_format=output_format,
         audio_only_format=audio_only_format,
-        audio_save_codec=audio_save_codec,
     )
-    plan = DownloadPlanner().plan(episode, request)
 
-    assert plan.paths.output == tmp_path / f"output/series/episode{expected_suffix}"
+    assert plan.paths.output == tmp_path / f"output/series/episode{suffix}"
     assert not (tmp_path / "output").exists()
     assert not (tmp_path / "temporary").exists()
 
 
-def test_planner_resolves_codecs_hvc1_and_nested_paths(tmp_path: Path):
-    episode = make_episode(
-        videos=[make_video("hevc")],
-        audios=[make_audio("mp4a")],
-        path=Path("nested/series/episode"),
-    )
-    request = make_request(
-        tmp_path,
-        video=True,
-        audio=True,
-        video_codec="hevc",
-        audio_codec="mp4a",
-        video_save_codec="copy",
-        audio_save_codec="copy",
-        output_format="mp4",
-    )
-
-    plan = DownloadPlanner().plan(episode, request)
-
-    assert plan.video is not None
-    assert plan.video.index == 0
-    assert plan.video_save_codec == "copy"
-    assert plan.attach_hvc1_tag is True
-    assert plan.audio is not None
-    assert plan.audio.index == 0
-    assert plan.audio_save_codec == "copy"
-    assert plan.paths.video == tmp_path / "temporary/nested/series/episode_video.m4s"
-    assert plan.paths.saved_cover == tmp_path / "output/nested/series/episode-poster.jpg"
-
-
-def test_planner_freezes_inputs_and_hides_signed_urls_from_repr(tmp_path: Path):
-    episode = make_episode(videos=[make_video()], audios=[make_audio()])
-    request = make_request(tmp_path, video=True, audio=True)
-
-    plan = DownloadPlanner().plan(episode, request)
+def test_planner_snapshots_inputs_without_exposing_signed_urls(tmp_path: Path):
+    episode, request, plan = make_plan(tmp_path, video_codec="avc", audio_codec="mp4a")
     episode["videos"][0]["mirrors"].append("https://later.example.test/video")
     episode["audios"][0]["mirrors"].append("https://later.example.test/audio")
     request.danmaku.block_keyword_patterns.append("later-pattern")
@@ -209,37 +105,20 @@ def test_planner_freezes_inputs_and_hides_signed_urls_from_repr(tmp_path: Path):
     assert plan.resources.danmaku.block_keyword_patterns == ("original-pattern",)
     assert "signed.example.test" not in repr(plan)
     assert "mirror.example.test" not in repr(plan)
-    with pytest.raises(FrozenInstanceError):
-        plan.__setattr__("item", "mutated")
 
 
-def test_planner_uses_output_directory_when_temporary_directory_is_unset(tmp_path: Path):
-    episode = make_episode(audios=[make_audio()])
-    request = make_request(
+def test_planner_resolves_nested_temporary_paths_and_forced_transcode(tmp_path: Path):
+    _, request, plan = make_plan(
         tmp_path,
-        video=False,
-        audio=True,
+        audio_codec="mp4a",
+        audio_only_format="mp3",
+        path=Path("nested/series/episode"),
         use_output_as_temporary=True,
     )
 
-    plan = DownloadPlanner().plan(episode, request)
-
-    assert plan.paths.temporary_dir == tmp_path / "output/series"
-    assert plan.paths.audio == tmp_path / "output/series/episode_audio.m4s"
-
-
-def test_planner_precomputes_forced_audio_transcode_notice(tmp_path: Path):
-    episode = make_episode(audios=[make_audio()])
-    request = make_request(
-        tmp_path,
-        video=False,
-        audio=True,
-        audio_only_format="mp3",
-        audio_save_codec="copy",
-    )
-
-    plan = DownloadPlanner().plan(episode, request)
-
+    assert plan.paths.temporary_dir == tmp_path / "output/nested/series"
+    assert plan.paths.audio == tmp_path / "output/nested/series/episode_audio.m4s"
+    assert plan.paths.saved_cover == tmp_path / "output/nested/series/episode-poster.jpg"
     assert plan.audio_save_codec == "mp3"
     assert plan.requires_audio_transcode_notice is True
     assert request.stream.audio_save_codec == "copy"

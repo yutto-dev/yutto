@@ -49,17 +49,6 @@ class AudioStream:
 
 
 @dataclass(frozen=True, slots=True)
-class StreamCandidate:
-    index: int
-    codec: str
-    quality: int
-    mirror_count: int
-    selected: bool
-    width: int | None = None
-    height: int | None = None
-
-
-@dataclass(frozen=True, slots=True)
 class DanmakuPlan:
     font_size: int | None
     font: str
@@ -104,8 +93,6 @@ class DownloadPlan:
 
     item: str
     paths: DownloadPaths
-    video_candidates: tuple[StreamCandidate, ...]
-    audio_candidates: tuple[StreamCandidate, ...]
     video: VideoStream | None
     audio: AudioStream | None
     media_requested: bool
@@ -202,28 +189,6 @@ class DownloadPlanner:
         return DownloadPlan(
             item=episode_data["info"]["path"].name,
             paths=paths,
-            video_candidates=tuple(
-                StreamCandidate(
-                    index=index,
-                    codec=video["codec"],
-                    quality=video["quality"],
-                    selected=index == selected_video_index,
-                    width=video["width"],
-                    height=video["height"],
-                    mirror_count=len(video["mirrors"]) + 1,
-                )
-                for index, video in enumerate(episode_data["videos"])
-            ),
-            audio_candidates=tuple(
-                StreamCandidate(
-                    index=index,
-                    codec=audio["codec"],
-                    quality=audio["quality"],
-                    selected=index == selected_audio_index,
-                    mirror_count=len(audio["mirrors"]) + 1,
-                )
-                for index, audio in enumerate(episode_data["audios"])
-            ),
             video=freeze_video_stream(video_meta, selected_video_index),
             audio=freeze_audio_stream(audio_meta, selected_audio_index),
             media_requested=request.resources.video or request.resources.audio,
