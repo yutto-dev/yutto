@@ -10,7 +10,7 @@ from returns.result import Success
 
 import yutto.download_manager as download_manager_module
 from yutto.core.execution import ExecutionScope, RequestExecutionScopeFactory
-from yutto.core.operation import bind_download_report_sink
+from yutto.core.operation import ReportLevel, bind_download_report_sink
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ItemResult, ItemState, ResolvedItem
 from yutto.download_manager import (
@@ -444,7 +444,7 @@ async def test_execute_cancellation_closes_client():
 
 @pytest.mark.processor
 def test_ensure_unique_path_updates_episode_and_only_warns_on_rename():
-    reports: list[tuple[str, str]] = []
+    reports: list[tuple[str, ReportLevel]] = []
     resolved_paths: list[str] = []
 
     def resolve_unique_path(path: str) -> str:
@@ -461,7 +461,7 @@ def test_ensure_unique_path_updates_episode_and_only_warns_on_rename():
     assert result["info"]["path"] == Path("group/video (1).mp4")
     assert result["info"]["listing"].planned_path == Path("group/video.mp4")
     assert resolved_paths == [str(Path("group/video.mp4"))]
-    assert reports == [("文件名重复，已重命名为 video (1).mp4", "warning")]
+    assert reports == [("文件名重复，已重命名为 video (1).mp4", ReportLevel.WARNING)]
 
 
 @pytest.mark.processor

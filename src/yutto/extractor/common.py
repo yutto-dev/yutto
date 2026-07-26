@@ -14,7 +14,7 @@ from yutto.api.ugc_video import (
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
 )
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.core.result import ResolvedItem
 from yutto.exceptions import (
     HttpStatusError,
@@ -111,7 +111,7 @@ async def extract_bangumi_data(
         if bangumi_info["is_preview"]:
             emit_download_report(
                 f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）",
-                "warning",
+                ReportLevel.WARNING,
             )
         videos, audios = (
             await get_bangumi_playurl(scope, avid, cid)
@@ -139,7 +139,7 @@ async def extract_bangumi_data(
             chapter_info_data=[],
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-        emit_download_report(e.message, "error")
+        emit_download_report(e.message, ReportLevel.ERROR)
         return None
 
 
@@ -236,7 +236,7 @@ async def extract_cheese_data(
             chapter_info_data=[],
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-        emit_download_report(e.message, "error")
+        emit_download_report(e.message, ReportLevel.ERROR)
         return None
 
 
@@ -345,7 +345,7 @@ async def extract_ugc_video_data(
             chapter_info_data=chapter_info_data,
         )
     except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-        emit_download_report(e.message, "error")
+        emit_download_report(e.message, ReportLevel.ERROR)
         return None
 
 

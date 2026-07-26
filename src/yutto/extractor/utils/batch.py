@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from yutto.api.ugc_video import UgcVideoList, get_ugc_video_list
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import MaxRetryError, NoAccessPermissionError, NotFoundError
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
@@ -72,7 +72,7 @@ async def resolve_ugc_video_lists(
             if not publication_time_filter.matches(ugc_video_list["pubdate"]):
                 emit_download_report(
                     f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}",
-                    "debug",
+                    ReportLevel.DEBUG,
                 )
                 return _FilteredResolveItem(index=index, source=avid)
             # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
@@ -80,10 +80,10 @@ async def resolve_ugc_video_lists(
             unwrap_fetch_result(await Fetcher.touch_url(scope, avid.to_url()))
             return IndexedResolveItem(index=index, source=avid, value=ugc_video_list)
         except (NotFoundError, NoAccessPermissionError) as e:
-            emit_download_report(e.message, "error")
+            emit_download_report(e.message, ReportLevel.ERROR)
             return IndexedResolveFailure(index=index, source=avid, error=e)
         except MaxRetryError as e:
-            emit_download_report(f"获取视频 {avid} 信息失败：{e.message}", "error")
+            emit_download_report(f"获取视频 {avid} 信息失败：{e.message}", ReportLevel.ERROR)
             return IndexedResolveFailure(index=index, source=avid, error=e)
 
     Completion = IndexedResolveItem[UgcVideoList] | IndexedResolveFailure | _FilteredResolveItem

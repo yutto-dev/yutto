@@ -5,7 +5,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.space import get_watch_later_avids
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NotLoginError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
@@ -44,7 +44,7 @@ class UserWatchLaterExtractor(BatchExtractor):
         try:
             avid_list = await get_watch_later_avids(scope)
         except NotLoginError as e:
-            emit_download_report(e.message, "error")
+            emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))
 
         # 逐视频解析完成即构建分集并通过显式回调推流，最终按 index 重排。

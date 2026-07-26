@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 from yutto.api.ugc_video import get_ugc_video_list
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import (
     HttpStatusError,
     NoAccessPermissionError,
@@ -71,7 +71,10 @@ class UgcVideoExtractor(SingleExtractor):
                     assert len(p_queries) == 1, f"p should only have one value in url `{url}`, but got {len(p_queries)}"
                     self.page = int(p_queries[0])
                 except (ValueError, AssertionError) as e:
-                    emit_download_report(f"url 的 page 信息不正确, `{e}`, 请检查 `p=` 的值是否为整数且唯一～", "error")
+                    emit_download_report(
+                        f"url 的 page 信息不正确, `{e}`, 请检查 `p=` 的值是否为整数且唯一～",
+                        ReportLevel.ERROR,
+                    )
                     return False
             return True
         else:
@@ -102,5 +105,5 @@ class UgcVideoExtractor(SingleExtractor):
                 )
             )
         except (NoAccessPermissionError, HttpStatusError, UnSupportedTypeError, NotFoundError) as e:
-            emit_download_report(e.message, "error")
+            emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))

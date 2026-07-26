@@ -153,14 +153,18 @@ def test_root_parser_rejects_removed_top_level_login():
 
 def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch):
     rendered: list[str] = []
+    debug_messages: list[str] = []
     monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (80, 24))
     monkeypatch.setattr(renderer_module.Logger.status, "set", rendered.append)
-    progress = DownloadProgress(current=1024, total=2048, speed_per_second=1024)
+    monkeypatch.setattr(renderer_module.Logger, "debug", debug_messages.append)
+    progress = DownloadProgress(current=1024, total=2048, speed_per_second=1024, buffered_blocks=2049)
 
     renderer_module.CliApplicationEventRenderer(progress_enabled=False).emit(progress)
     assert rendered == []
+    assert debug_messages == []
 
     renderer_module.CliApplicationEventRenderer().emit(progress)
     assert len(rendered) == 1
     assert "1.00 KiB" in rendered[0]
     assert "2.00 KiB" in rendered[0]
+    assert debug_messages == ["number blocks in buffer: 2049"]

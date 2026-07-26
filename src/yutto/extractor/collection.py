@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from yutto.api.collection import get_collection_details
 from yutto.api.space import get_user_name
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
@@ -76,7 +76,7 @@ class CollectionExtractor(BatchExtractor):
             if len(ugc_video_list["pages"]) != 1:
                 emit_download_report(
                     f"视频合集 {collection_title} 中的视频 {items[index]['avid']} 包含多个视频！",
-                    "error",
+                    ReportLevel.ERROR,
                 )
             built: list[ResolvableEpisode] = []
             for ugc_video_item in ugc_video_list["pages"]:

@@ -3,15 +3,29 @@ from __future__ import annotations
 from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from enum import StrEnum
+from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from yutto.core.events import DownloadEvent, DownloadEventSink
 
-ReportLevel: TypeAlias = Literal["debug", "error", "info", "plain", "warning"]
-ReportColor: TypeAlias = Literal["blue", "green", "magenta"]
+
+class ReportLevel(StrEnum):
+    DEBUG = "debug"
+    ERROR = "error"
+    INFO = "info"
+    PLAIN = "plain"
+    WARNING = "warning"
+
+
+class ReportColor(StrEnum):
+    BLUE = "blue"
+    GREEN = "green"
+    MAGENTA = "magenta"
+
+
 ReportSink: TypeAlias = Callable[[str, ReportLevel, str | None, ReportColor | None], None]
 
 _event_sink: ContextVar[DownloadEventSink | None] = ContextVar("yutto_download_event_sink", default=None)
@@ -44,7 +58,7 @@ def emit_download_event(event: DownloadEvent) -> None:
 
 def emit_download_report(
     message: str,
-    level: ReportLevel = "info",
+    level: ReportLevel = ReportLevel.INFO,
     badge: str | None = None,
     color: ReportColor | None = None,
 ) -> None:

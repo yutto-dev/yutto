@@ -10,7 +10,7 @@ import httpx
 from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import MaxRetryError
 
 if TYPE_CHECKING:
@@ -46,13 +46,19 @@ class MaxRetry:
                 try:
                     return Success(await connect_once(*args, **kwargs))
                 except httpx.TimeoutException:
-                    emit_download_report(f"抓取超时，正在重试，剩余 {retry - 1} 次", level="warning")
+                    emit_download_report(
+                        f"抓取超时，正在重试，剩余 {retry - 1} 次",
+                        level=ReportLevel.WARNING,
+                    )
                 except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
                     raise e
                 except httpx.HTTPError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
-                    emit_download_report(f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次", level="warning")
+                    emit_download_report(
+                        f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次",
+                        level=ReportLevel.WARNING,
+                    )
                 finally:
                     retry -= 1
             return Failure(MaxRetryError("超出最大重试次数！"))
@@ -115,7 +121,7 @@ class Fetcher:
         encoding: str | None = None,  # TODO(SigureMo): Support this
     ) -> str | None:
         async with scope.fetch_guard():
-            emit_download_report(f"Fetch text: {url}", level="debug")
+            emit_download_report(f"Fetch text: {url}", level=ReportLevel.DEBUG)
             resp = await scope.client.get(url, params=params)
             if not resp.is_success:
                 return None
@@ -130,7 +136,7 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> bytes | None:
         async with scope.fetch_guard():
-            emit_download_report(f"Fetch bin: {url}", level="debug")
+            emit_download_report(f"Fetch bin: {url}", level=ReportLevel.DEBUG)
             resp = await scope.client.get(url, params=params)
             if not resp.is_success:
                 return None
@@ -145,7 +151,7 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> Any:
         async with scope.fetch_guard():
-            emit_download_report(f"Fetch json: {url}", level="debug")
+            emit_download_report(f"Fetch json: {url}", level=ReportLevel.DEBUG)
             resp = await scope.client.get(url, params=params)
             if not resp.is_success:
                 resp.raise_for_status()
@@ -161,9 +167,12 @@ class Fetcher:
             resp = await scope.client.get(url)
             redirected_url = str(resp.url)
             if redirected_url == url:
-                emit_download_report(f"Get redircted url: {url}", level="debug")
+                emit_download_report(f"Get redircted url: {url}", level=ReportLevel.DEBUG)
             else:
-                emit_download_report(f"Get redircted url: {url} -> {redirected_url}", level="debug")
+                emit_download_report(
+                    f"Get redircted url: {url} -> {redirected_url}",
+                    level=ReportLevel.DEBUG,
+                )
             return redirected_url
 
     @staticmethod
@@ -178,7 +187,7 @@ class Fetcher:
             )
             if resp.status_code == 206:
                 size = int(resp.headers["Content-Range"].split("/")[-1])
-                emit_download_report(f"Get size: {url} {size}", level="debug")
+                emit_download_report(f"Get size: {url} {size}", level=ReportLevel.DEBUG)
                 return size
             else:
                 return None
@@ -187,10 +196,10 @@ class Fetcher:
     @MaxRetry(2)
     async def touch_url(scope: ExecutionScope, url: str) -> None:
         if url in scope.touched_urls:
-            emit_download_report(f"touch_url cache hit: {url}", level="debug")
+            emit_download_report(f"touch_url cache hit: {url}", level=ReportLevel.DEBUG)
             return
         async with scope.fetch_guard():
-            emit_download_report(f"Touch url: {url}", level="debug")
+            emit_download_report(f"Touch url: {url}", level=ReportLevel.DEBUG)
             await scope.client.get(url)
             scope.touched_urls.add(url)
 
@@ -206,7 +215,7 @@ class Fetcher:
         async with scope.download_guard():
             emit_download_report(
                 f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}",
-                level="debug",
+                level=ReportLevel.DEBUG,
             )
             done = False
             headers = scope.client.headers.copy()
@@ -235,23 +244,26 @@ class Fetcher:
                     done = True
 
                 except httpx.TimeoutException:
-                    emit_download_report(f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...", level="warning")
-                    emit_download_report(f"超时链接：{url}", level="debug")
+                    emit_download_report(
+                        f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...",
+                        level=ReportLevel.WARNING,
+                    )
+                    emit_download_report(f"超时链接：{url}", level=ReportLevel.DEBUG)
                 except (httpx.HTTPError, h2.exceptions.H2Error) as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
                     emit_download_report(
                         f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...",
-                        level="warning",
+                        level=ReportLevel.WARNING,
                     )
-                    emit_download_report(f"超时链接：{url}", level="debug")
+                    emit_download_report(f"超时链接：{url}", level=ReportLevel.DEBUG)
                 except ValueError as e:
                     # 由于 httpx 经常出现此问题，暂时捕获该问题
                     if "semaphore released too many times" not in str(e):
                         raise e
                     emit_download_report(
                         f"文件 {file_buffer.file_path} 下载出错（{e}），尝试重新连接...",
-                        level="warning",
+                        level=ReportLevel.WARNING,
                     )
 
 

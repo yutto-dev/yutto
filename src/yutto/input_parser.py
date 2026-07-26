@@ -5,7 +5,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import WrongArgumentError
 
 
@@ -68,7 +68,7 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
     if total == 0:
         emit_download_report(
             "该剧集列表无任何剧集，猜测正片尚未上线，如果想要下载 PV 等特殊剧集，请添加参数 -s",
-            "warning",
+            ReportLevel.WARNING,
         )
         return []
 
@@ -113,9 +113,12 @@ def parse_episodes_selection(episodes_str: str, total: int) -> list[int]:
         else:
             out_of_range.append(episode)
     if out_of_range:
-        emit_download_report("剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))), "warning")
+        emit_download_report(
+            "剧集 {} 不存在".format(",".join(list(map(str, out_of_range)))),
+            ReportLevel.WARNING,
+        )
 
     emit_download_report("已选择第 {} 话".format(",".join(list(map(str, episodes)))))
     if not episodes:
-        emit_download_report("没有选中任何剧集", "warning")
+        emit_download_report("没有选中任何剧集", ReportLevel.WARNING)
     return episodes

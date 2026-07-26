@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any
 
 from yutto.utils.console.colorful import colored_string
@@ -105,3 +106,7 @@ class Logger:
     def print(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         cls.status.clear()
         print(string, *print_args, **print_kwargs)
+
+    @classmethod
+    def json(cls, obj: list[Any] | dict[str, Any], *print_args: Any, **print_kwargs: Any):
+        Logger.print(json.dumps(obj, indent=2), *print_args, **print_kwargs)

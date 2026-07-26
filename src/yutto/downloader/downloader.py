@@ -11,7 +11,7 @@ from yutto.core.events import (
     DownloadStage,
     DownloadStageChanged,
 )
-from yutto.core.operation import emit_download_event, emit_download_report
+from yutto.core.operation import ReportColor, ReportLevel, emit_download_event, emit_download_report
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.selector import select_audio, select_video
@@ -84,7 +84,7 @@ def show_videos_info(videos: list[VideoUrlMeta], selected: int):
             video_quality_map[video["quality"]]["description"],
             len(video["mirrors"]) + 1,
         )
-        emit_download_report(log, color="blue" if i == selected else None)
+        emit_download_report(log, color=ReportColor.BLUE if i == selected else None)
 
 
 def show_audios_info(audios: list[AudioUrlMeta], selected: int):
@@ -97,7 +97,7 @@ def show_audios_info(audios: list[AudioUrlMeta], selected: int):
         log = "{}{:2} [{:^4}] <{:^8}>".format(
             "*" if i == selected else " ", i, audio["codec"].upper(), audio_quality_map[audio["quality"]]["description"]
         )
-        emit_download_report(log, color="magenta" if i == selected else None)
+        emit_download_report(log, color=ReportColor.MAGENTA if i == selected else None)
 
 
 def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[str]], list[str]]:
@@ -331,7 +331,7 @@ async def merge_video_and_audio(
             message += f"\n{detail}"
         raise PostprocessingError(message)
     else:
-        emit_download_report(result.stderr.decode(), level="debug")
+        emit_download_report(result.stderr.decode(), level=ReportLevel.DEBUG)
 
     if not output_path.exists():
         raise PostprocessingError("合并失败：FFmpeg 未生成目标文件！")
@@ -478,7 +478,7 @@ async def process_download(
         write_chapter_info(filename, chapter_info_data, chapter_info_path)
 
     if not (will_download_audio or will_download_video):
-        emit_download_report("没有音视频需要下载", level="warning")
+        emit_download_report("没有音视频需要下载", level=ReportLevel.WARNING)
         cleanup_tmp_files(
             None,
             None,

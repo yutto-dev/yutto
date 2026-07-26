@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from returns.result import Failure
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportColor, ReportLevel, emit_download_report
 from yutto.exceptions import (
     NoAccessPermissionError,
     NotFoundError,
@@ -146,7 +146,7 @@ async def get_ugc_video_list(scope: ExecutionScope, avid: AvId) -> UgcVideoList:
     list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
     res_json = (await Fetcher.fetch_json(scope, list_api.format(**avid.to_dict()))).value_or(None)
     if res_json is None or res_json.get("data") is None:
-        emit_download_report(f"啊叻？视频 {avid} 不见了诶", "warning")
+        emit_download_report(f"啊叻？视频 {avid} 不见了诶", ReportLevel.WARNING)
         return result
 
     # 对无意义的分 p 视频名进行修改
@@ -178,14 +178,14 @@ def show_ai_translation_language(resp_json: dict[str, Any], ai_translation_langu
         if ai_translation_language:
             emit_download_report(
                 f"该视频未启用 AI 原声翻译功能, 无法获得 {ai_translation_language} 语言翻译哦～",
-                "warning",
+                ReportLevel.WARNING,
             )
         return
     if not resp_json["data"]["language"]["items"]:
         if ai_translation_language:
             emit_download_report(
                 f"该视频未启用 AI 原声翻译功能, 无法获得 {ai_translation_language} 语言翻译哦～",
-                "warning",
+                ReportLevel.WARNING,
             )
         return
     current_lang_id = -1
@@ -200,14 +200,17 @@ def show_ai_translation_language(resp_json: dict[str, Any], ai_translation_langu
             lang_info["lang"],
         )
         if i == current_lang_id:
-            emit_download_report(log, color="green")
+            emit_download_report(log, color=ReportColor.GREEN)
         else:
             emit_download_report(log)
     if current_lang_id != -1:
         # language found, do nothing
         return
     if ai_translation_language:
-        emit_download_report(f"该视频未为语言 {ai_translation_language} 支持 AI 原声翻译功能哦～", "warning")
+        emit_download_report(
+            f"该视频未为语言 {ai_translation_language} 支持 AI 原声翻译功能哦～",
+            ReportLevel.WARNING,
+        )
         return
     emit_download_report("若想启用 AI 原声翻译功能，可以使用 `--ai-translation-language=<code>` 参数指定目标语言喔～")
 
@@ -307,7 +310,7 @@ async def get_ugc_video_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -
         if subtitle_url is None or not subtitle_url.strip():
             emit_download_report(
                 f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}",
-                "warning",
+                ReportLevel.WARNING,
             )
             continue
 
@@ -332,7 +335,7 @@ async def get_ugc_video_chapters(scope: ExecutionScope, avid: AvId, cid: CId) ->
     if not data_has_chained_keys(chapter_json_info, ["data", "view_points"]):
         emit_download_report(
             f"无法获取该视频的章节信息（{format_ids(avid, cid)}），原因：{chapter_json_info.get('message')}",
-            "warning",
+            ReportLevel.WARNING,
         )
         return []
 
@@ -393,7 +396,7 @@ def _parse_actor_info(video_info: dict[str, Any]):
             )
         )
     else:
-        emit_download_report("未找到演职人员信息", "warning")
+        emit_download_report("未找到演职人员信息", ReportLevel.WARNING)
     return actors
 
 

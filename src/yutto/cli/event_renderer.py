@@ -11,6 +11,7 @@ from yutto.core.events import (
     DownloadRequestQueued,
     DownloadStageChanged,
 )
+from yutto.core.operation import ReportColor, ReportLevel
 from yutto.core.result import ItemSkipReason
 from yutto.utils.console.attributes import get_terminal_size
 from yutto.utils.console.colorful import RGBColor, colored_string
@@ -18,7 +19,6 @@ from yutto.utils.console.formatter import size_format
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    from yutto.core.operation import ReportColor, ReportLevel
     from yutto.utils.console.colorful import Color, Style
 
 
@@ -65,11 +65,26 @@ class CliApplicationEventRenderer:
         color: ReportColor | None,
     ) -> None:
         if color is not None:
-            message = colored_string(message, fore=color)
+            report_colors: dict[ReportColor, Color] = {
+                ReportColor.BLUE: "blue",
+                ReportColor.GREEN: "green",
+                ReportColor.MAGENTA: "magenta",
+            }
+            message = colored_string(message, fore=report_colors[color])
         if badge is not None:
             Logger.custom(message, Badge(badge, fore="black", back="cyan"))
             return
-        getattr(Logger, "print" if level == "plain" else level)(message)
+        match level:
+            case ReportLevel.DEBUG:
+                Logger.debug(message)
+            case ReportLevel.ERROR:
+                Logger.error(message)
+            case ReportLevel.INFO:
+                Logger.info(message)
+            case ReportLevel.PLAIN:
+                Logger.print(message)
+            case ReportLevel.WARNING:
+                Logger.warning(message)
 
     def emit(self, event: DownloadEvent) -> None:
         match event:
@@ -92,6 +107,8 @@ class CliApplicationEventRenderer:
     def _render_progress(self, progress: DownloadProgress) -> None:
         is_fast = progress.speed_per_second >= 8 * 1024 * 1024
         is_congested = progress.buffered_blocks > 2048
+        if is_congested:
+            Logger.debug(f"number blocks in buffer: {progress.buffered_blocks}")
         bar_color: Color = "red" if is_congested else ("green" if is_fast else "cyan")
         bar_width = min(get_terminal_size()[0] - 40, 50)
         bar = (

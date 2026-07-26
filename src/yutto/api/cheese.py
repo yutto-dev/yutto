@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from returns.result import Failure
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NoAccessPermissionError, UnSupportedTypeError
 from yutto.media.codec import audio_codec_map, video_codec_map
 from yutto.types import (
@@ -91,7 +91,10 @@ async def get_cheese_playurl(
             f"无法获取该视频链接（{format_ids(avid, cid)}），原因：{resp_json.get('message')}"
         )
     if resp_json["data"]["is_preview"] == 1:
-        emit_download_report(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）", "warning")
+        emit_download_report(
+            f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）",
+            ReportLevel.WARNING,
+        )
     if resp_json["data"].get("dash") is None:
         raise UnSupportedTypeError(f"该视频（{format_ids(avid, cid)}）尚不支持 DASH 格式")
     return (
@@ -129,7 +132,7 @@ async def get_cheese_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> l
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
         emit_download_report(
             f"无法获取该视频的字幕（{format_ids(avid, cid)}），原因：{subtitles_json_info.get('message')}",
-            "warning",
+            ReportLevel.WARNING,
         )
         return []
     subtitles_info = subtitles_json_info["data"]["subtitle"]
@@ -141,7 +144,7 @@ async def get_cheese_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> l
         if subtitle_url is None or not subtitle_url.strip():
             emit_download_report(
                 f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}",
-                "warning",
+                ReportLevel.WARNING,
             )
             continue
 

@@ -4,7 +4,7 @@ import datetime
 import re
 from dataclasses import dataclass
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +29,7 @@ class PublicationTimeFilter:
             return datetime.datetime.strptime(user_input, "%Y-%m-%d")
         elif re.match(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$", user_input):
             return datetime.datetime.strptime(user_input, "%Y-%m-%d %H:%M:%S")
-        emit_download_report(f"稿件过滤参数: {user_input} 看不懂呢┭┮﹏┭┮，不会生效哦", "error")
+        emit_download_report(f"稿件过滤参数: {user_input} 看不懂呢┭┮﹏┭┮，不会生效哦", ReportLevel.ERROR)
         return None
 
     def matches(self, timestamp: int) -> bool:

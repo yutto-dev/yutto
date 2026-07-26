@@ -11,7 +11,7 @@ from biliass import BlockOptions
 
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
-from yutto.core.operation import emit_download_event, emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_event, emit_download_report
 from yutto.core.result import DownloadResult, ItemResult, ResolvedItem, ResolveFailure, ResolveResult
 from yutto.downloader.downloader import process_download
 from yutto.exceptions import NotLoginError, ResolveFailedError, WrongArgumentError, WrongUrlError
@@ -279,8 +279,8 @@ class DownloadManager:
                 },
             )
             item_results.append(previous_result)
-            emit_download_report("", "plain")
-        emit_download_report("", "plain")
+            emit_download_report("", ReportLevel.PLAIN)
+        emit_download_report("", ReportLevel.PLAIN)
         return tuple(item_results)
 
     async def resolve_request(
@@ -385,7 +385,7 @@ def ensure_unique_path(episode_data: EpisodeData, unique_name_resolver: Callable
     new_path = Path(unique_name_resolver(str(original_path)))
     episode_data["info"]["path"] = new_path
     if original_path != new_path:
-        emit_download_report(f"文件名重复，已重命名为 {new_path.name}", "warning")
+        emit_download_report(f"文件名重复，已重命名为 {new_path.name}", ReportLevel.WARNING)
     return episode_data
 
 

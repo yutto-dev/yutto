@@ -4,7 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from yutto.api.ugc_video import get_ugc_video_list
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
 from yutto.extractor.common import make_ugc_video_episode
@@ -74,7 +74,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
             emit_download_report(ugc_video_list["title"], badge="投稿视频")
         except (NotFoundError, NoAccessPermissionError) as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
-            emit_download_report(e.message, "error")
+            emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))
 
         # 选集过滤

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 import aiofiles
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -82,7 +82,7 @@ class AsyncFileBuffer:
             if ready_to_write_chunk.offset < self.written_size:
                 emit_download_report(
                     f"交叠的块范围 {ready_to_write_chunk.offset} < {self.written_size}，舍弃！",
-                    level="error",
+                    level=ReportLevel.ERROR,
                 )
                 continue
             await self.file_obj.write(ready_to_write_chunk.data)
@@ -96,7 +96,7 @@ class AsyncFileBuffer:
         if self.file_obj is not None:
             await self.file_obj.close()
         else:
-            emit_download_report("未预期的结果：未曾创建文件对象", level="error")
+            emit_download_report("未预期的结果：未曾创建文件对象", level=ReportLevel.ERROR)
 
     def __enter__(self) -> None:
         raise TypeError("Use async with instead")

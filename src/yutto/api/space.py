@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 from returns.result import Failure, Result, Success
 
 from yutto.api.user_info import encode_wbi, get_wbi_img
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NotLoginError
 from yutto.types import BvId, FavouriteMetaData, FavouriteVideoData, FId
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
@@ -51,10 +51,10 @@ async def get_user_space_all_videos_avids(
                         if _should_stop_user_space_pagination(video_infos, stop_before_timestamp):
                             break
                     case Failure(error):
-                        emit_download_report(f"获取用户空间视频列表第 {pn} 页失败：{error}", "error")
+                        emit_download_report(f"获取用户空间视频列表第 {pn} 页失败：{error}", ReportLevel.ERROR)
                         break
             case Failure(error):
-                emit_download_report(f"获取用户空间视频列表第 {pn} 页失败：{error}", "error")
+                emit_download_report(f"获取用户空间视频列表第 {pn} 页失败：{error}", ReportLevel.ERROR)
                 break
         pn += 1
     return all_avid
@@ -103,16 +103,16 @@ async def get_user_name(scope: ExecutionScope, mid: MId) -> str:
         case Success({"code": 0, "data": {"name": username}}):
             return str(username)
         case Success({"code": -404}):
-            emit_download_report(f"用户 {mid} 不存在，疑似注销或被封禁", "warning")
+            emit_download_report(f"用户 {mid} 不存在，疑似注销或被封禁", ReportLevel.WARNING)
         case Success({"message": message}):
             emit_download_report(
                 f"获取用户名失败了呢，错误信息：{message}，可尝试检查 `--auth` 参数正确性或者通过 `yutto auth login` 登录账号后重试～",
-                "error",
+                ReportLevel.ERROR,
             )
         case Success(user_info):
-            emit_download_report(f"获取用户名失败了呢，返回值异常：{user_info}", "error")
+            emit_download_report(f"获取用户名失败了呢，返回值异常：{user_info}", ReportLevel.ERROR)
         case Failure(error):
-            emit_download_report(f"获取用户名失败：{error}", "error")
+            emit_download_report(f"获取用户名失败：{error}", ReportLevel.ERROR)
     return f"「用户{mid}」"
 
 
