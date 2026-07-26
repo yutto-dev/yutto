@@ -4,7 +4,7 @@ import asyncio
 import os
 from typing import TYPE_CHECKING
 
-from yutto.core.operation import emit_download_report
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import PostprocessingError
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 
@@ -69,7 +69,7 @@ class MediaMuxer:
                 message += f"\n{detail}"
             raise PostprocessingError(message)
 
-        emit_download_report(result.stderr.decode(), level="debug")
+        emit_download_report(result.stderr.decode(), level=ReportLevel.DEBUG)
         if not plan.paths.output.exists():
             raise PostprocessingError("合并失败：FFmpeg 未生成目标文件！")
         emit_download_report("合并完成！")

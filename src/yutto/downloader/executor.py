@@ -8,7 +8,7 @@ from yutto.core.events import (
     DownloadStage,
     DownloadStageChanged,
 )
-from yutto.core.operation import emit_download_event, emit_download_report
+from yutto.core.operation import ReportColor, ReportLevel, emit_download_event, emit_download_report
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.artifact_writer import ArtifactWriter
 from yutto.downloader.media_muxer import MediaMuxer
@@ -49,7 +49,7 @@ class DownloadExecutor:
                 emit_download_report("封面已生成", badge="封面")
 
         if not plan.has_media:
-            emit_download_report("没有音视频需要下载", "warning")
+            emit_download_report("没有音视频需要下载", ReportLevel.WARNING)
             artifact_writer.cleanup_temporary(plan)
             if not plan.media_requested:
                 return ItemResult(
@@ -129,7 +129,7 @@ def emit_streams_selected(episode_data: EpisodeData, plan: DownloadPlan) -> None
                 video_quality_map[candidate["quality"]]["description"],
                 len(candidate["mirrors"]) + 1,
             )
-            emit_download_report(message, color="blue" if selected else None)
+            emit_download_report(message, color=ReportColor.BLUE if selected else None)
 
     audios = episode_data["audios"]
     selected_audio_index = plan.audio.index if plan.audio is not None else -1
@@ -147,5 +147,5 @@ def emit_streams_selected(episode_data: EpisodeData, plan: DownloadPlan) -> None
             )
             emit_download_report(
                 message,
-                color="magenta" if selected else None,
+                color=ReportColor.MAGENTA if selected else None,
             )
