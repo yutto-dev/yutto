@@ -13,8 +13,9 @@ from yutto.core.result import (
     ItemSkipReason,
     ItemState,
     ResolvedItem,
+    ResolveResult,
 )
-from yutto.types import AId, CId
+from yutto.types import AId, BvId, CId
 
 pytestmark = pytest.mark.processor
 
@@ -61,6 +62,33 @@ def test_resolved_item_is_a_typed_immutable_listing_snapshot():
         item.name = "changed"  # ty: ignore[invalid-assignment]
     with pytest.raises(ValidationError, match="Extra inputs"):
         ResolvedItem.model_validate({**payload, "play_url": "https://example.com/expiring"})
+
+
+@pytest.mark.parametrize("avid", [AId("808982399"), BvId("BV1f34y1k7D5"), BvId("bv1f34y1k7D5")])
+def test_listing_results_round_trip_through_json_with_typed_ids(avid: AId | BvId):
+    cid = CId("144541892")
+    item = ResolvedItem(
+        avid=avid,
+        cid=cid,
+        url="https://www.bilibili.com/video/av808982399?p=1",
+        name="P1",
+        title="标题",
+        cover_url="https://example.com/cover.jpg",
+        planned_path=Path("标题/P1"),
+        tags=("标签A", "标签B"),
+    )
+    assert item.avid is avid
+    assert item.cid is cid
+
+    restored_item = ResolvedItem.model_validate_json(item.model_dump_json())
+    restored_result = ResolveResult.model_validate_json(ResolveResult(items=(item,)).model_dump_json())
+
+    assert restored_item == item
+    assert type(restored_item.avid) is type(avid)
+    assert isinstance(restored_item.cid, CId)
+    assert restored_result.items == (item,)
+    assert type(restored_result.items[0].avid) is type(avid)
+    assert isinstance(restored_result.items[0].cid, CId)
 
 
 def test_item_result_validates_skip_reason_without_requiring_artifacts():
