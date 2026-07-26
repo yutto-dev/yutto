@@ -8,6 +8,7 @@ import pytest
 import yutto.__main__ as main_module
 import yutto.server.command as server_command_module
 from yutto.cli.cli import cli, handle_default_subcommand
+from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import ErrorCode
 from yutto.server.command import resolve_server_token
 
@@ -27,6 +28,7 @@ def test_serve_io_error_is_rendered_without_traceback(monkeypatch: pytest.Monkey
     rendered_errors: list[str] = []
 
     def fail_server(args: object) -> None:
+        emit_download_report("server report", ReportLevel.ERROR)
         raise OSError("address already in use")
 
     monkeypatch.setattr(main_module, "cli", lambda: parser)
@@ -38,7 +40,7 @@ def test_serve_io_error_is_rendered_without_traceback(monkeypatch: pytest.Monkey
         main_module.main()
 
     assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
-    assert rendered_errors == ["address already in use"]
+    assert rendered_errors == ["server report", "address already in use"]
 
 
 def test_environment_token_takes_precedence(tmp_path):

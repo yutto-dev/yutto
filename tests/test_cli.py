@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 from typing import TYPE_CHECKING
 
 import pytest
 
+import yutto.__main__ as main_module
 import yutto.cli.event_renderer as renderer_module
 import yutto.validator as validator_module
 from yutto.cli.cli import (
@@ -17,6 +19,13 @@ from yutto.cli.cli import (
 )
 from yutto.cli.settings import YuttoSettings
 from yutto.core.events import DownloadProgress
+from yutto.core.execution import RequestExecutionScopeFactory
+from yutto.core.operation import (
+    ReportColor,
+    ReportLevel,
+    bind_download_report_sink,
+    emit_download_report,
+)
 from yutto.exceptions import ErrorCode
 
 if TYPE_CHECKING:
@@ -168,3 +177,35 @@ def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch)
     assert "1.00 KiB" in rendered[0]
     assert "2.00 KiB" in rendered[0]
     assert debug_messages == ["number blocks in buffer: 2049"]
+
+
+def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch: pytest.MonkeyPatch):
+    output: list[tuple[str, object]] = []
+
+    async def cancel_download(_application: object, _requests: object) -> None:
+        emit_download_report("warning", ReportLevel.WARNING)
+        emit_download_report("badge", badge="TAG", color=ReportColor.GREEN)
+        raise asyncio.CancelledError
+
+    monkeypatch.setattr(main_module.YuttoApplication, "download_all", cancel_download)
+    monkeypatch.setattr(renderer_module.Logger, "warning", lambda message: output.append(("warning", message)))
+    monkeypatch.setattr(
+        renderer_module.Logger,
+        "custom",
+        lambda message, badge: output.append(("badge", (message, badge.text))),
+    )
+    monkeypatch.setattr(renderer_module.Logger.status, "clear", lambda: output.append(("cleared", True)))
+    monkeypatch.setattr(renderer_module, "colored_string", lambda message, *, fore, **_: f"{fore}:{message}")
+
+    emit_download_report("unbound")
+    with bind_download_report_sink(lambda message, *_: output.append(("outer", message))):
+        with pytest.raises(asyncio.CancelledError):
+            main_module.run_download(RequestExecutionScopeFactory(), [], renderer_module.CliApplicationEventRenderer())
+        emit_download_report("outer")
+
+    assert output == [
+        ("warning", "warning"),
+        ("badge", ("green:badge", "TAG")),
+        ("cleared", True),
+        ("outer", "outer"),
+    ]
