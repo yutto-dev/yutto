@@ -35,6 +35,23 @@ if TYPE_CHECKING:
     from yutto.core.request import DownloadRequest
 
 
+class _CliAuthAnnouncer:
+    """Announce each effective credential once without sharing request caches."""
+
+    def __init__(self):
+        self._announced_credentials: set[tuple[str | None, str | None]] = set()
+
+    async def __call__(self, scope: ExecutionScope, request: DownloadRequest) -> None:
+        credentials = (
+            scope.client.cookies.get("SESSDATA"),
+            scope.client.cookies.get("bili_jct"),
+        )
+        if credentials in self._announced_credentials:
+            return
+        self._announced_credentials.add(credentials)
+        await announce_cli_auth(scope, request)
+
+
 def main():
     parser = cli()
     args = parser.parse_args(handle_default_subcommand(sys.argv[1:]))
@@ -52,7 +69,7 @@ def main():
 
                 scope_factory = RequestExecutionScopeFactory(
                     resolve_credentials,
-                    on_open=announce_cli_auth,
+                    on_open=_CliAuthAnnouncer(),
                 )
                 run_download(scope_factory, requests)
             except YuttoBaseException as e:
