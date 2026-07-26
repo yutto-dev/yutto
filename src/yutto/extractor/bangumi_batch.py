@@ -16,11 +16,9 @@ from yutto.types import EpisodeId, MediaId, SeasonId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
     from yutto.types import ExtractorOptions
-    from yutto.utils.fetcher import FetcherContext
 
 
 class BangumiBatchExtractor(BatchExtractor):
@@ -62,27 +60,26 @@ class BangumiBatchExtractor(BatchExtractor):
         else:
             return False
 
-    async def _parse_ids(self, ctx: FetcherContext, client: httpx.AsyncClient):
+    async def _parse_ids(self, scope: ExecutionScope):
         if "episode_id" in self._match_result.groupdict().keys():
             episode_id = EpisodeId(self._match_result.group("episode_id"))
-            self.season_id = await get_season_id_by_episode_id(ctx, client, episode_id)
+            self.season_id = await get_season_id_by_episode_id(scope, episode_id)
         elif "season_id" in self._match_result.groupdict().keys():
             self.season_id = SeasonId(self._match_result.group("season_id"))
         else:
             media_id = MediaId(self._match_result.group("media_id"))
-            self.season_id = await get_season_id_by_media_id(ctx, client, media_id)
+            self.season_id = await get_season_id_by_media_id(scope, media_id)
 
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
-        await self._parse_ids(ctx, client)
+        await self._parse_ids(scope)
 
-        bangumi_list = await get_bangumi_list(ctx, client, self.season_id)
+        bangumi_list = await get_bangumi_list(scope, self.season_id)
         Logger.custom(bangumi_list["title"], Badge("番剧", fore="black", back="cyan"))
         # 如果没有 with_section 则不需要专区内容
         bangumi_list["pages"] = list(
@@ -94,8 +91,7 @@ class BangumiBatchExtractor(BatchExtractor):
         return ResolveOutcome(
             items=tuple(
                 make_bangumi_episode(
-                    ctx,
-                    client,
+                    scope,
                     bangumi_item,
                     options,
                     {

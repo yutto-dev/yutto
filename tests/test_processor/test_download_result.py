@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, cast
 
 import pytest
 
+from yutto.core.execution import ExecutionScope
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
 from yutto.downloader.downloader import process_download
 from yutto.types import AId, CId
 from yutto.utils.danmaku import write_danmaku
-from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
@@ -40,7 +40,6 @@ def make_options(tmp_path: Path) -> DownloaderOptions:
         "output_format_audio_only": "infer",
         "overwrite": False,
         "block_size": 512 * 1024,
-        "num_workers": 1,
         "metadata_format": {},
         "banned_mirrors_pattern": None,
         "danmaku_options": cast("DanmakuOptions", {}),
@@ -93,9 +92,9 @@ def make_resource_only_episode() -> EpisodeData:
 
 @as_sync
 async def test_resource_only_download_returns_final_artifacts_without_temporary_files(tmp_path: Path):
+    scope = ExecutionScope(cast("httpx.AsyncClient", object()))
     result = await process_download(
-        FetcherContext(),
-        cast("httpx.AsyncClient", object()),
+        scope,
         make_resource_only_episode(),
         make_options(tmp_path),
     )
@@ -138,9 +137,9 @@ async def test_existing_media_is_reported_and_temporary_resources_are_cleaned(tm
     output_path.parent.mkdir(parents=True)
     output_path.write_bytes(b"existing")
 
+    scope = ExecutionScope(cast("httpx.AsyncClient", object()))
     result = await process_download(
-        FetcherContext(),
-        cast("httpx.AsyncClient", object()),
+        scope,
         episode,
         options,
     )
@@ -179,9 +178,9 @@ async def test_missing_requested_audio_does_not_clean_uncreated_video_file(tmp_p
     episode["danmaku"] = {"source_type": None, "save_type": None, "data": []}
     episode["cover_data"] = None
 
+    scope = ExecutionScope(cast("httpx.AsyncClient", object()))
     result = await process_download(
-        FetcherContext(),
-        cast("httpx.AsyncClient", object()),
+        scope,
         episode,
         options,
     )

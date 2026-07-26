@@ -10,12 +10,10 @@ import urllib.parse
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from yutto.types import UserInfo
-from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
+from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
 if TYPE_CHECKING:
-    from httpx import AsyncClient
-
-    from yutto.utils.fetcher import FetcherContext
+    from yutto.core.execution import ExecutionScope
 
 
 class WbiImg(TypedDict):
@@ -23,7 +21,6 @@ class WbiImg(TypedDict):
     sub_key: str
 
 
-wbi_img_cache: WbiImg | None = None  # Simulate the LocalStorage of the browser
 dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(16, 64))).encode())[:-2].decode()  # fmt: skip
 dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
 USER_INFO_API = "https://api.bilibili.com/x/web-interface/nav"
@@ -40,12 +37,12 @@ def parse_user_info(res_json: dict[str, Any]) -> UserInfo:
     )
 
 
-async def get_user_info(ctx: FetcherContext, client: AsyncClient) -> UserInfo:
-    if ctx.user_info_cache is not None:
-        return ctx.user_info_cache
-    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, USER_INFO_API))
-    ctx.user_info_cache = parse_user_info(res_json)
-    return ctx.user_info_cache
+async def get_user_info(scope: ExecutionScope) -> UserInfo:
+    if scope.user_info_cache is not None:
+        return scope.user_info_cache
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, USER_INFO_API))
+    scope.user_info_cache = parse_user_info(res_json)
+    return scope.user_info_cache
 
 
 def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
@@ -56,35 +53,30 @@ def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
     return True
 
 
-async def validate_user_info(ctx: FetcherContext, check_option: UserInfo) -> bool:
+async def validate_user_info(scope: ExecutionScope, check_option: UserInfo) -> bool:
     """UserInfo 结构和用户输入是匹配的，如果要校验则置 True 即可，估计不会有要校验为 False 的情况吧~~"""
     if not check_option["is_login"] and not check_option["vip_status"]:
         return True
 
-    # 命中缓存时无需建立网络客户端
-    if ctx.user_info_cache is not None:
-        return user_info_matches(ctx.user_info_cache, check_option)
+    if scope.user_info_cache is not None:
+        return user_info_matches(scope.user_info_cache, check_option)
 
-    async with create_client(
-        cookies=ctx.cookies,
-        trust_env=ctx.trust_env,
-        proxy=ctx.proxy,
-    ) as client:
-        user_info = await get_user_info(ctx, client)
-        return user_info_matches(user_info, check_option)
+    user_info = await get_user_info(scope)
+    return user_info_matches(user_info, check_option)
 
 
-async def get_wbi_img(ctx: FetcherContext, client: AsyncClient) -> WbiImg:
-    global wbi_img_cache
-
-    if wbi_img_cache is not None:
-        return wbi_img_cache
-    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, USER_INFO_API))
+async def get_wbi_img(scope: ExecutionScope) -> WbiImg:
+    if scope.wbi_img_cache is not None:
+        return cast("WbiImg", scope.wbi_img_cache)
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, USER_INFO_API))
     wbi_img: WbiImg = {
         "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
         "sub_key": _get_key_from_url(res_json["data"]["wbi_img"]["sub_url"]),
     }
-    wbi_img_cache = wbi_img
+    scope.wbi_img_cache = {
+        "img_key": wbi_img["img_key"],
+        "sub_key": wbi_img["sub_key"],
+    }
     return wbi_img
 
 

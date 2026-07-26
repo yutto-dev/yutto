@@ -22,13 +22,11 @@ from yutto.utils.metadata import MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
-    from httpx import AsyncClient
-
+    from yutto.core.execution import ExecutionScope
     from yutto.types import (
         AvId,
         MultiLangSubtitle,
     )
-    from yutto.utils.fetcher import FetcherContext
 
 
 class CheeseListItem(TypedDict):
@@ -45,15 +43,15 @@ class CheeseList(TypedDict):
     pages: list[CheeseListItem]
 
 
-async def get_season_id_by_episode_id(ctx: FetcherContext, client: AsyncClient, episode_id: EpisodeId) -> SeasonId:
+async def get_season_id_by_episode_id(scope: ExecutionScope, episode_id: EpisodeId) -> SeasonId:
     home_url = f"https://api.bilibili.com/pugv/view/web/season?ep_id={episode_id}"
-    res_json = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, home_url))
+    res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, home_url))
     return SeasonId(str(res_json["data"]["season_id"]))
 
 
-async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: SeasonId) -> CheeseList:
+async def get_cheese_list(scope: ExecutionScope, season_id: SeasonId) -> CheeseList:
     list_api = "https://api.bilibili.com/pugv/view/web/season?season_id={season_id}"
-    list_result = await Fetcher.fetch_json(ctx, client, list_api.format(season_id=season_id))
+    list_result = await Fetcher.fetch_json(scope, list_api.format(season_id=season_id))
     if isinstance(list_result, Failure):
         raise NoAccessPermissionError(f"无法解析该课程列表（season_id: {season_id}）") from list_result.failure()
     resp_json = list_result.unwrap()
@@ -78,15 +76,13 @@ async def get_cheese_list(ctx: FetcherContext, client: AsyncClient, season_id: S
 
 
 async def get_cheese_playurl(
-    ctx: FetcherContext, client: AsyncClient, avid: AvId, episode_id: EpisodeId, cid: CId
+    scope: ExecutionScope, avid: AvId, episode_id: EpisodeId, cid: CId
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
     play_api = (
         "https://api.bilibili.com/pugv/player/web/playurl?avid={aid}&cid={"
         "cid}&qn=80&fnver=0&fnval=16&fourk=1&ep_id={episode_id}&from_client=BROWSER&drm_tech_type=2"
     )
-    play_result = await Fetcher.fetch_json(
-        ctx, client, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id)
-    )
+    play_result = await Fetcher.fetch_json(scope, play_api.format(**avid.to_dict(), cid=cid, episode_id=episode_id))
     if isinstance(play_result, Failure):
         raise NoAccessPermissionError(f"无法获取该视频链接（{format_ids(avid, cid)}）") from play_result.failure()
     resp_json = play_result.unwrap()
@@ -124,12 +120,10 @@ async def get_cheese_playurl(
     )
 
 
-async def get_cheese_subtitles(
-    ctx: FetcherContext, client: AsyncClient, avid: AvId, cid: CId
-) -> list[MultiLangSubtitle]:
+async def get_cheese_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
-    subtitles_json_info = (await Fetcher.fetch_json(ctx, client, subtitle_url)).value_or(None)
+    subtitles_json_info = (await Fetcher.fetch_json(scope, subtitle_url)).value_or(None)
     if subtitles_json_info is None:
         return []
     if not data_has_chained_keys(subtitles_json_info, ["data", "subtitle", "subtitles"]):
@@ -145,7 +139,7 @@ async def get_cheese_subtitles(
             Logger.warning(f"跳过无效的字幕URL（{format_ids(avid, cid)}），语言：{sub_info.get('lan_doc', '未知')}")
             continue
 
-        subtitle_text = (await Fetcher.fetch_json(ctx, client, "https:" + subtitle_url)).value_or(None)
+        subtitle_text = (await Fetcher.fetch_json(scope, "https:" + subtitle_url)).value_or(None)
         if subtitle_text is None:
             continue
         results.append(

@@ -14,13 +14,11 @@ from yutto.types import FId, MId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import httpx
-
     from yutto.api.ugc_video import UgcVideoList
+    from yutto.core.execution import ExecutionScope
     from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
     from yutto.extractor.utils.batch import IndexedResolveItem
     from yutto.types import ExtractorOptions, ResolvableEpisode
-    from yutto.utils.fetcher import FetcherContext
 
 
 class FavouritesExtractor(BatchExtractor):
@@ -41,19 +39,18 @@ class FavouritesExtractor(BatchExtractor):
 
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
         username, favourite_info = await asyncio.gather(
-            get_user_name(ctx, client, self.mid),
-            get_favourite_info(ctx, client, self.fid),
+            get_user_name(scope, self.mid),
+            get_favourite_info(scope, self.fid),
         )
         Logger.custom(favourite_info["title"], Badge("收藏夹", fore="black", back="cyan"))
 
-        favourite_videos = await get_favourite_items(ctx, client, self.fid)
+        favourite_videos = await get_favourite_items(scope, self.fid)
         avids = [favourite_video["avid"] for favourite_video in favourite_videos]
 
         # 每个视频解析完成即构建其分集并通过显式回调推流；完成顺序与收藏夹
@@ -75,8 +72,7 @@ class FavouritesExtractor(BatchExtractor):
                     is_single_page_video=is_single_page_video,
                 )
                 episode = make_ugc_video_episode(
-                    ctx,
-                    client,
+                    scope,
                     resolved_video_item["avid"],
                     resolved_video_item,
                     options,
@@ -97,8 +93,7 @@ class FavouritesExtractor(BatchExtractor):
             episodes_by_index[index] = episodes
 
         batch_outcome = await resolve_ugc_video_lists(
-            ctx,
-            client,
+            scope,
             avids,
             publication_time_filter=options["publication_time_filter"],
             on_resolved=build_episodes,

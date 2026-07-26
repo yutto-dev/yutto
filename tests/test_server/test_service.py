@@ -8,6 +8,8 @@ from typing import cast
 import pytest
 from pydantic import BaseModel
 
+from yutto.auth import load_auth
+from yutto.core.execution import RequestExecutionScopeFactory
 from yutto.core.request import DownloadRequest
 from yutto.core.result import Artifact, ArtifactKind, DownloadResult, ItemResult, ItemState
 from yutto.runtime import EventReplay, TaskError, TaskEvent, TaskSnapshot, TaskState
@@ -20,6 +22,7 @@ from yutto.server.service import (
     snapshot_summary_to_json,
     snapshot_to_json,
 )
+from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor
 
@@ -143,6 +146,13 @@ def test_policy_rejects_worker_counts_outside_configured_limits(tmp_path: Path, 
         policy.prepare_request(make_request(network=network))
 
 
+def test_prepare_request_rejects_invalid_auth_profile(tmp_path: Path):
+    policy = make_policy(tmp_path)
+
+    with pytest.raises(ServerPolicyError, match="auth profile 名称不合法"):
+        policy.prepare_request(make_request(access={"auth_profile": "bad profile"}))
+
+
 @pytest.mark.parametrize("block_size", [0, -1, 64 * 1024 - 1, 64 * 1024 * 1024 + 1])
 def test_policy_rejects_unsafe_block_sizes(tmp_path: Path, block_size: int):
     policy = make_policy(tmp_path)
@@ -181,7 +191,8 @@ def test_options_reject_non_positive_worker_limits(tmp_path: Path, field: str):
         ServerPolicyOptions(**options)  # ty: ignore[invalid-argument-type]
 
 
-def test_build_context_applies_proxy_fetch_limit_and_selected_auth_profile(tmp_path: Path):
+@as_sync
+async def test_scope_factory_applies_request_network_and_selected_auth_profile(tmp_path: Path):
     policy = make_policy(tmp_path, max_fetch_workers=4)
     policy.options.auth_file.write_text(
         """
@@ -199,20 +210,63 @@ bili_jct = "csrf-value"
         network={"proxy": "no", "fetch_workers": 3},
     )
 
-    context = policy.build_context(request)
-
-    assert context.proxy is None
-    assert context.trust_env is False
-    assert context.fetch_workers == 3
-    assert context.cookies.get("SESSDATA") == "session%2Cvalue"
-    assert context.cookies.get("bili_jct") == "csrf-value"
+    async with policy.build_scope_factory().open(request) as scope:
+        assert scope.client.trust_env is False
+        assert scope.fetch_limiter._value == 3
+        assert scope.client.cookies.get("SESSDATA") == "session%2Cvalue"
+        assert scope.client.cookies.get("bili_jct") == "csrf-value"
 
 
-def test_build_context_rejects_invalid_auth_profile_without_exposing_auth_file(tmp_path: Path):
+@as_sync
+async def test_cli_and_server_scope_factories_interpret_same_request_equivalently(tmp_path: Path):
+    policy = make_policy(tmp_path)
+    policy.options.auth_file.write_text(
+        """
+[profiles.work]
+sessdata = "session,value"
+bili_jct = "csrf-value"
+""".strip(),
+        encoding="utf-8",
+    )
+    request = make_request(
+        access={"auth_profile": "work"},
+        network={
+            "proxy": "no",
+            "fetch_workers": 3,
+            "download_workers": 4,
+        },
+    )
+    cli_factory = RequestExecutionScopeFactory(
+        lambda active_request: load_auth(
+            policy.options.auth_file,
+            active_request.access.auth_profile,
+        )
+    )
+
+    async with (
+        cli_factory.open(request) as cli_scope,
+        policy.build_scope_factory().open(request) as server_scope,
+    ):
+        assert (
+            cli_scope.client.trust_env,
+            cli_scope.fetch_limiter._value,
+            cli_scope.download_limiter._value,
+            cli_scope.client.cookies.get("SESSDATA"),
+            cli_scope.client.cookies.get("bili_jct"),
+        ) == (
+            server_scope.client.trust_env,
+            server_scope.fetch_limiter._value,
+            server_scope.download_limiter._value,
+            server_scope.client.cookies.get("SESSDATA"),
+            server_scope.client.cookies.get("bili_jct"),
+        )
+
+
+def test_scope_factory_rejects_invalid_auth_profile_without_exposing_auth_file(tmp_path: Path):
     policy = make_policy(tmp_path)
 
     with pytest.raises(ServerPolicyError, match="auth profile"):
-        policy.build_context(make_request(access={"auth_profile": "bad profile"}))
+        policy.resolve_credentials(make_request(access={"auth_profile": "bad profile"}))
 
 
 class CredentialPayload(BaseModel):

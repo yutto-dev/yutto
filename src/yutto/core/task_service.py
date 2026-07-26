@@ -20,8 +20,8 @@ from yutto.runtime import TaskRuntime
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from yutto.core.execution import ExecutionScopeFactory
     from yutto.runtime import EventReplay, TaskCapacityPool, TaskContext, TaskEvent, TaskSnapshot
-    from yutto.utils.fetcher import FetcherContext
 
 
 class DownloadApplication(Protocol):
@@ -37,8 +37,8 @@ class DownloadTaskService:
 
     def __init__(
         self,
-        context_factory: Callable[[DownloadRequest], FetcherContext],
-        application_factory: Callable[[FetcherContext, DownloadEventSink], DownloadApplication],
+        scope_factory: ExecutionScopeFactory,
+        application_factory: Callable[[ExecutionScopeFactory, DownloadEventSink], DownloadApplication],
         *,
         replay_limit: int = 100,
         task_limit: int = 256,
@@ -46,7 +46,7 @@ class DownloadTaskService:
         seq_allocator: Callable[[], int] | None = None,
         capacity_pool: TaskCapacityPool | None = None,
     ):
-        self._context_factory = context_factory
+        self._scope_factory = scope_factory
         self._application_factory = application_factory
         self.runtime = TaskRuntime[DownloadRequest, DownloadResult](
             self._run,
@@ -90,8 +90,7 @@ class DownloadTaskService:
         return self.runtime.add_event_listener(listener)
 
     async def _run(self, request: DownloadRequest, task_context: TaskContext) -> DownloadResult:
-        ctx = self._context_factory(request)
-        application = self._application_factory(ctx, _RuntimeDownloadEventSink(task_context))
+        application = self._application_factory(self._scope_factory, _RuntimeDownloadEventSink(task_context))
         return await application.download(request)
 
 
@@ -104,8 +103,8 @@ class ResolveTaskService:
 
     def __init__(
         self,
-        context_factory: Callable[[DownloadRequest], FetcherContext],
-        application_factory: Callable[[FetcherContext, DownloadEventSink], ResolveApplication],
+        scope_factory: ExecutionScopeFactory,
+        application_factory: Callable[[ExecutionScopeFactory, DownloadEventSink], ResolveApplication],
         *,
         replay_limit: int = 100,
         task_limit: int = 256,
@@ -113,7 +112,7 @@ class ResolveTaskService:
         seq_allocator: Callable[[], int] | None = None,
         capacity_pool: TaskCapacityPool | None = None,
     ):
-        self._context_factory = context_factory
+        self._scope_factory = scope_factory
         self._application_factory = application_factory
         self.runtime = TaskRuntime[DownloadRequest, ResolveResult](
             self._run,
@@ -157,8 +156,7 @@ class ResolveTaskService:
         return self.runtime.add_event_listener(listener)
 
     async def _run(self, request: DownloadRequest, task_context: TaskContext) -> ResolveResult:
-        ctx = self._context_factory(request)
-        application = self._application_factory(ctx, _RuntimeDownloadEventSink(task_context))
+        application = self._application_factory(self._scope_factory, _RuntimeDownloadEventSink(task_context))
         return await application.resolve(request)
 
 

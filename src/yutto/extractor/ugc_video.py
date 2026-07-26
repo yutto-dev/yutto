@@ -18,11 +18,9 @@ from yutto.types import AId, BvId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import AvId, ExtractorOptions
-    from yutto.utils.fetcher import FetcherContext
 
 
 class UgcVideoExtractor(SingleExtractor):
@@ -81,19 +79,17 @@ class UgcVideoExtractor(SingleExtractor):
 
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
     ) -> ExtractorResolveOutcome:
         try:
-            ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
+            ugc_video_list = await get_ugc_video_list(scope, self.avid)
             self.avid = ugc_video_list["avid"]  # 当视频撞车时，使用新的 avid 替代原有 avid，见 #96
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
             return ResolveOutcome(
                 items=(
                     make_ugc_video_episode(
-                        ctx,
-                        client,
+                        scope,
                         self.avid,
                         ugc_video_list["pages"][self.page - 1],
                         options,

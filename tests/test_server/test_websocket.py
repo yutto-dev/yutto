@@ -12,18 +12,21 @@ from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError, InvalidStatus
 from websockets.typing import Origin
 
+from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ResolveResult
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.runtime import TaskContext, TaskRuntime, TaskSnapshot, TaskState, monotonic_seq_allocator
+from yutto.server.service import ServerPolicy, ServerPolicyOptions
 from yutto.server.websocket import (
+    REQUEST_REJECTED_ERROR,
     WebSocketServerOptions,
     YuttoWebSocketServer,
     _SlowConsumerCloser,
     _task_snapshot_order,
 )
 from yutto.types import AId
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
@@ -31,6 +34,7 @@ pytestmark = pytest.mark.processor
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
 
     from yutto.api.ugc_video import UgcVideoList
     from yutto.extractor.utils.batch import IndexedResolveItem
@@ -137,9 +141,9 @@ class BatchStreamingResolveApi(FakeResolveTaskApi):
                 context.emit("item_listed", {"avid": str(resolved.source), "page": page})
                 await asyncio.sleep(0)
 
+        scope = ExecutionScope(cast("Any", object()))
         await resolve_ugc_video_lists(
-            FetcherContext(),
-            cast("Any", object()),
+            scope,
             [AId(str(index + 1)) for index in range(self.video_count)],
             publication_time_filter=PublicationTimeFilter.from_strings(None, None),
             on_resolved=on_resolved,
@@ -148,11 +152,11 @@ class BatchStreamingResolveApi(FakeResolveTaskApi):
 
 
 def _patch_batch_listing(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_get_ugc_video_list(ctx: FetcherContext, client: Any, avid: Any):
+    async def fake_get_ugc_video_list(scope: ExecutionScope, avid: Any):
         # 立即返回：所有视频几乎同时就绪，复现并发完成的最坏情况
         return {"title": str(avid), "pubdate": 1700000000, "avid": avid, "pages": []}
 
-    async def fake_touch_url(ctx: FetcherContext, client: Any, url: str):
+    async def fake_touch_url(scope: ExecutionScope, url: str):
         return Success(None)
 
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
@@ -180,6 +184,7 @@ async def start_server(
     token: str = "test-token",
     service: FakeDownloadTaskApi | None = None,
     resolve_service: FakeResolveTaskApi | None = None,
+    prepare_request: Callable[[DownloadRequest], DownloadRequest] | None = None,
 ) -> tuple[YuttoWebSocketServer, FakeDownloadTaskApi, str]:
     service = service or FakeDownloadTaskApi()
     server = YuttoWebSocketServer(
@@ -190,6 +195,7 @@ async def start_server(
             port=0,
             allowed_origins=allowed_origins,
         ),
+        prepare_request=prepare_request,
         resolve_service=resolve_service,
     )
     await server.start()
@@ -294,6 +300,74 @@ async def test_server_info_and_exact_origin_allowlist():
                 "code": -32602,
                 "message": "Invalid params",
             }
+    finally:
+        await server.close()
+
+
+@pytest.mark.parametrize(
+    ("method", "request_payload", "reason"),
+    [
+        (
+            "download.start",
+            {
+                "source": {"url": "BV1invalid"},
+                "access": {"auth_profile": "bad profile"},
+            },
+            "auth profile 名称不合法：bad profile",
+        ),
+        (
+            "resolve.start",
+            {
+                "source": {"url": "BV1invalid"},
+                "access": {"auth_profile": "bad profile"},
+            },
+            "auth profile 名称不合法：bad profile",
+        ),
+        (
+            "download.start",
+            {
+                "source": {"url": "BV1invalid"},
+                "network": {"fetch_workers": 0},
+            },
+            "network.fetch_workers must be between 1 and 8",
+        ),
+    ],
+)
+@as_sync
+async def test_server_policy_rejects_invalid_requests_before_task_submission(
+    tmp_path: Path,
+    method: str,
+    request_payload: dict[str, object],
+    reason: str,
+):
+    download_service = FakeDownloadTaskApi()
+    resolve_service = FakeResolveTaskApi()
+    policy = ServerPolicy(
+        ServerPolicyOptions(
+            download_root=tmp_path / "downloads",
+            tmp_root=tmp_path / "temporary",
+            auth_file=tmp_path / "auth.toml",
+        )
+    )
+    server, _, uri = await start_server(
+        service=download_service,
+        resolve_service=resolve_service,
+        prepare_request=policy.prepare_request,
+    )
+    try:
+        async with connect(uri, proxy=None) as connection:
+            await connection.send(rpc_request(1, "server.authenticate", {"token": "test-token"}))
+            await receive_json(connection)
+
+            await connection.send(rpc_request(2, method, {"request": request_payload}))
+            assert (await receive_json(connection))["error"] == {
+                "code": REQUEST_REJECTED_ERROR,
+                "message": "Request rejected",
+                "data": {"reason": reason},
+            }
+
+            assert download_service.list() == ()
+            assert resolve_service.list() == ()
     finally:
         await server.close()
 

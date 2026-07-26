@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import yutto.validator as validator_module
 from yutto.cli.cli import (
     add_auth_logout_arguments,
     add_auth_status_arguments,
@@ -14,6 +15,7 @@ from yutto.cli.cli import (
     handle_default_subcommand,
 )
 from yutto.cli.settings import YuttoSettings
+from yutto.exceptions import ErrorCode
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -62,6 +64,19 @@ def test_download_parser_rejects_auth_config(tmp_path: Path):
         make_download_parser().parse_args(["https://example.com", "--auth-config", str(auth_file)])
 
     assert exc_info.value.code == 2
+
+
+def test_download_validation_rejects_non_positive_num_workers(monkeypatch: pytest.MonkeyPatch):
+    args = make_download_parser().parse_args(["https://example.com", "--num-workers", "0"])
+    errors: list[str] = []
+    monkeypatch.setattr(validator_module, "FFmpeg", object)
+    monkeypatch.setattr(validator_module.Logger, "error", errors.append)
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator_module.validate_basic_arguments(args)
+
+    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
+    assert errors == ["num_workers 参数值（0）不满足要求哦（应为不小于 1 的整数）"]
 
 
 def test_login_parser_accepts_auth_file(tmp_path: Path):

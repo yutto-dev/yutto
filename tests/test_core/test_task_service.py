@@ -16,12 +16,12 @@ from yutto.core.events import (
     DownloadStage,
     DownloadStageChanged,
 )
+from yutto.core.execution import ExecutionScopeFactory, RequestExecutionScopeFactory
 from yutto.core.operation import emit_download_event
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ItemSkipReason
 from yutto.core.task_service import DownloadTaskService, _encode_runtime_event
 from yutto.runtime import TaskState
-from yutto.utils.fetcher import FetcherContext
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
@@ -40,37 +40,35 @@ def task_ids() -> Iterator[str]:
 class RecordingApplication:
     def __init__(
         self,
-        ctx: FetcherContext,
+        scope_factory: ExecutionScopeFactory,
         event_sink: DownloadEventSink,
-        calls: list[tuple[FetcherContext, str]],
+        calls: list[tuple[ExecutionScopeFactory, str]],
     ):
-        self.ctx = ctx
+        self.scope_factory = scope_factory
         self.event_sink = event_sink
         self.calls = calls
         self.result = DownloadResult()
 
     async def download(self, request: DownloadRequest) -> DownloadResult:
         self.event_sink.emit(DownloadStageChanged(name=DownloadStage.RESOLVING))
-        self.calls.append((self.ctx, request.source.url))
+        self.calls.append((self.scope_factory, request.source.url))
         return self.result
 
 
 @as_sync
 async def test_download_task_service_runs_requests_in_order_and_bridges_events():
     ids = task_ids()
-    contexts: list[FetcherContext] = []
-    calls: list[tuple[FetcherContext, str]] = []
+    scope_factory = RequestExecutionScopeFactory()
+    calls: list[tuple[ExecutionScopeFactory, str]] = []
 
-    def context_factory(request: DownloadRequest) -> FetcherContext:
-        ctx = FetcherContext()
-        contexts.append(ctx)
-        return ctx
-
-    def application_factory(ctx: FetcherContext, event_sink: DownloadEventSink) -> RecordingApplication:
-        return RecordingApplication(ctx, event_sink, calls)
+    def application_factory(
+        factory: ExecutionScopeFactory,
+        event_sink: DownloadEventSink,
+    ) -> RecordingApplication:
+        return RecordingApplication(factory, event_sink, calls)
 
     service = DownloadTaskService(
-        context_factory,
+        scope_factory,
         application_factory=application_factory,
         task_id_factory=lambda: next(ids),
     )
@@ -86,7 +84,7 @@ async def test_download_task_service_runs_requests_in_order_and_bridges_events()
         assert first_done.result == DownloadResult()
         assert second_done.result == DownloadResult()
         assert [url for _, url in calls] == ["BV1first", "BV1second"]
-        assert [ctx for ctx, _ in calls] == contexts
+        assert all(factory is scope_factory for factory, _ in calls)
         first_replay = service.replay(first.task_id)
         assert first_replay is not None
         assert [(event.kind, event.data) for event in first_replay.events if event.kind == "stage"] == [

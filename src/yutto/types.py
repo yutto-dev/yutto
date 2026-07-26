@@ -284,7 +284,6 @@ class DownloaderOptions(TypedDict):
     output_format_audio_only: str
     overwrite: bool
     block_size: int
-    num_workers: int
     metadata_format: dict[str, str]
     banned_mirrors_pattern: str | None
     danmaku_options: DanmakuOptions

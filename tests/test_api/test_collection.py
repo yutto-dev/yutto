@@ -3,8 +3,9 @@ from __future__ import annotations
 import pytest
 
 from yutto.api.collection import get_collection_details
+from yutto.core.execution import ExecutionScope
 from yutto.types import BvId, MId, SeriesId
-from yutto.utils.fetcher import FetcherContext, create_client
+from yutto.utils.fetcher import create_client
 from yutto.utils.functional import as_sync
 
 
@@ -14,9 +15,9 @@ async def test_get_collection_details():
     # 测试页面：https://space.bilibili.com/6762654/lists?sid=39879&ctype=0
     series_id = SeriesId("39879")
     mid = MId("6762654")
-    ctx = FetcherContext()
     async with create_client() as client:
-        collection_details = await get_collection_details(ctx, client, series_id=series_id, mid=mid)
+        scope = ExecutionScope(client)
+        collection_details = await get_collection_details(scope, series_id=series_id, mid=mid)
         title = collection_details["title"]
         avids = [page["avid"] for page in collection_details["pages"]]
         assert title == "傻开心整活"

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from yutto.core.events import DownloadEventSink
-    from yutto.utils.fetcher import FetcherContext
+    from yutto.core.execution import ExecutionScopeFactory
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,20 +107,21 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
     parse_request = download_request_parser_from_settings(args.server_settings)
     default_request = parse_request({"source": {"url": "yutto-server-default-validation"}})
     policy.prepare_request(default_request)
-    policy.build_context(default_request)
+    policy.resolve_credentials(default_request)
+    scope_factory = policy.build_scope_factory()
     # download 与 resolve 两个 runtime 共享同一事件序号空间与全局任务容量，
     # 维持 v1 契约：`seq` 全局递增可去重、`--task-limit` 是两类任务的总量
     event_seq_allocator = monotonic_seq_allocator()
     task_capacity = TaskCapacityPool(args.task_limit)
     task_service = DownloadTaskService(
-        policy.build_context,
+        scope_factory,
         _build_download_application,
         task_limit=args.task_limit,
         seq_allocator=event_seq_allocator,
         capacity_pool=task_capacity,
     )
     resolve_service = ResolveTaskService(
-        policy.build_context,
+        scope_factory,
         _build_download_application,
         task_limit=args.task_limit,
         seq_allocator=event_seq_allocator,
@@ -140,9 +141,17 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
     )
 
 
-def _build_download_application(ctx: FetcherContext, event_sink: DownloadEventSink) -> YuttoApplication:
+def _build_download_application(
+    scope_factory: ExecutionScopeFactory,
+    event_sink: DownloadEventSink,
+) -> YuttoApplication:
     manager = DownloadManager()
-    return YuttoApplication(ctx, workflow=manager, event_sink=event_sink, resolve_workflow=manager)
+    return YuttoApplication(
+        scope_factory,
+        workflow=manager,
+        event_sink=event_sink,
+        resolve_workflow=manager,
+    )
 
 
 @as_sync

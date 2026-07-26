@@ -13,11 +13,9 @@ from yutto.types import AId, BvId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
     from yutto.types import AvId, ExtractorOptions
-    from yutto.utils.fetcher import FetcherContext
 
 
 class UgcVideoBatchExtractor(BatchExtractor):
@@ -66,14 +64,13 @@ class UgcVideoBatchExtractor(BatchExtractor):
 
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
         try:
-            ugc_video_list = await get_ugc_video_list(ctx, client, self.avid)
+            ugc_video_list = await get_ugc_video_list(scope, self.avid)
             Logger.custom(ugc_video_list["title"], Badge("投稿视频", fore="black", back="cyan"))
         except (NotFoundError, NoAccessPermissionError) as e:
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
@@ -87,8 +84,7 @@ class UgcVideoBatchExtractor(BatchExtractor):
         return ResolveOutcome(
             items=tuple(
                 make_ugc_video_episode(
-                    ctx,
-                    client,
+                    scope,
                     ugc_video_item["avid"],
                     ugc_video_item,
                     options,
