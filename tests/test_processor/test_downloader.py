@@ -15,6 +15,25 @@ from ..conftest import TEST_DIR
 
 
 @pytest.mark.processor
+@pytest.mark.parametrize(
+    ("start", "total_size", "block_size", "expected"),
+    [
+        (7, None, 512, [(7, None)]),
+        (7, 20, None, [(7, 13)]),
+        (20, 20, None, []),
+        (7, 21, 5, [(7, 5), (12, 5), (17, 4)]),
+    ],
+)
+def test_slice_blocks_preserves_resume_offset(
+    start: int,
+    total_size: int | None,
+    block_size: int | None,
+    expected: list[tuple[int, int | None]],
+):
+    assert slice_blocks(start, total_size, block_size) == expected
+
+
+@pytest.mark.processor
 @as_sync
 async def test_150_kB_downloader():
     # test_dir = "./downloader_test/"

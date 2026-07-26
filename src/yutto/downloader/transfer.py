@@ -26,19 +26,16 @@ if TYPE_CHECKING:
 
 
 def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
-    """Generate the (start, size) ranges used by parallel downloads."""
+    """Generate the (offset, byte count) ranges used by parallel downloads."""
     if total_size is None:
-        return [(0, None)]
-    if block_size is None:
-        return [(0, total_size - 1)]
+        return [(start, None)]
     assert start <= total_size, f"起始地址（{start}）大于总地址（{total_size}）"
-    offset_list: list[tuple[int, int | None]] = [(i, block_size) for i in range(start, total_size, block_size)]
-    if (total_size - start) % block_size != 0:
-        offset_list[-1] = (
-            start + (total_size - start) // block_size * block_size,
-            total_size - start - (total_size - start) // block_size * block_size,
-        )
-    return offset_list
+    remaining = total_size - start
+    if remaining == 0:
+        return []
+    if block_size is None:
+        return [(start, remaining)]
+    return [(offset, min(block_size, total_size - offset)) for offset in range(start, total_size, block_size)]
 
 
 def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[str]], list[str]]:
