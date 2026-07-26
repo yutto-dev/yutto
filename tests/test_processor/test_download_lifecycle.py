@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from yutto.downloader.downloader import _run_download_lifecycle
+from yutto.downloader.transfer import _run_download_lifecycle
 from yutto.utils.asynclib import make_coroutine_factory
 from yutto.utils.functional import as_sync
 

@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from yutto.core.execution import ExecutionScope
-from yutto.downloader.downloader import slice_blocks
+from yutto.downloader.transfer import slice_blocks
 from yutto.utils.fetcher import Fetcher, create_client, unwrap_fetch_result
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import as_sync
