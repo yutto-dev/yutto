@@ -4,7 +4,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, InstanceOf, field_serializer, model_validator
+
+from yutto.types import AvId, CId
 
 
 class _ResultModel(BaseModel):
@@ -58,10 +60,10 @@ class DownloadResult(_ResultModel):
 
 
 class ResolvedItem(_ResultModel):
-    """A stable, listing-time snapshot of one episode; contains no expiring data."""
+    """The canonical immutable snapshot of one listed episode."""
 
-    avid: str
-    cid: str
+    avid: InstanceOf[AvId]
+    cid: InstanceOf[CId]
     url: str
     name: str
     title: str
@@ -71,6 +73,14 @@ class ResolvedItem(_ResultModel):
     uploader: str = ""
     description: str = ""
     tags: tuple[str, ...] = ()
+
+    @field_serializer("avid", "cid", when_used="json", return_type=str)
+    def serialize_id(self, value: AvId | CId) -> str:
+        return str(value)
+
+    @field_serializer("planned_path", when_used="json", return_type=str)
+    def serialize_planned_path(self, value: Path) -> str:
+        return value.as_posix()
 
 
 class ResolveFailure(_ResultModel):

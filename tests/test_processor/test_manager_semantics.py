@@ -11,7 +11,7 @@ from returns.result import Success
 import yutto.download_manager as download_manager_module
 from yutto.core.execution import ExecutionScope, RequestExecutionScopeFactory
 from yutto.core.request import DownloadRequest
-from yutto.core.result import DownloadResult, ItemResult, ItemState
+from yutto.core.result import DownloadResult, ItemResult, ItemState, ResolvedItem
 from yutto.download_manager import (
     DownloadManager,
     ensure_output_path_is_scoped,
@@ -38,19 +38,20 @@ pytestmark = pytest.mark.processor
 
 
 def make_episode(path: str, display_group: str | None = None) -> EpisodeData:
+    planned_path = Path(path)
     return {
         "info": {
-            "avid": AId("1"),
-            "cid": CId("1"),
-            "url": "https://www.bilibili.com/video/av1?p=1",
-            "name": Path(path).name,
-            "title": Path(path).name,
-            "cover_url": "",
-            "uploader": "",
-            "description": "",
-            "tags": [],
-            "path": Path(path),
-            "display_group": display_group,
+            "listing": ResolvedItem(
+                avid=AId("1"),
+                cid=CId("1"),
+                url="https://www.bilibili.com/video/av1?p=1",
+                name=planned_path.name,
+                title=planned_path.name,
+                cover_url="",
+                planned_path=planned_path,
+                display_group=display_group,
+            ),
+            "path": planned_path,
         },
         "videos": [],
         "audios": [],
@@ -459,6 +460,7 @@ def test_ensure_unique_path_updates_episode_and_only_warns_on_rename(monkeypatch
 
     assert result is renamed_episode
     assert result["info"]["path"] == Path("group/video (1).mp4")
+    assert result["info"]["listing"].planned_path == Path("group/video.mp4")
     assert resolved_paths == [str(Path("group/video.mp4"))]
     assert warnings == ["文件名重复，已重命名为 video (1).mp4"]
 

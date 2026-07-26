@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 from yutto.auth import load_auth, validate_profile
 from yutto.core.execution import RequestExecutionScopeFactory
+from yutto.core.result import ResolvedItem, ResolveResult
+from yutto.core.serialization import listing_item_to_wire
 from yutto.utils.fetcher import resolve_proxy
 
 if TYPE_CHECKING:
@@ -307,6 +309,12 @@ def _to_json_value(value: object) -> JsonValue:
     if isinstance(value, Path):
         # wire 上的路径统一使用正斜杠，避免协议输出随 server 所在平台变化
         return value.as_posix()
+    if isinstance(value, ResolveResult):
+        result = value.model_dump(mode="python")
+        result["items"] = [listing_item_to_wire(item) for item in value.items]
+        return _to_json_value(result)
+    if isinstance(value, ResolvedItem):
+        return _to_json_value(listing_item_to_wire(value))
     if isinstance(value, BaseModel):
         # python mode 保留 Path 等原生类型，统一交由本函数的分支序列化
         return _to_json_value(value.model_dump(mode="python"))

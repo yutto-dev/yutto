@@ -68,7 +68,7 @@ def show_batch_episode_title(
     Returns:
         更新后的 current_display_group，供下一次调用使用。
     """
-    display_group = episode_info["display_group"]
+    display_group = episode_info["listing"].display_group
     # 分组变化时打印分组标题（多分 p 视频新出现或切换到另一个多分 p 视频）
     if display_group is not None and display_group != current_display_group:
         Logger.custom(display_group, Badge("列表", fore="black", back="cyan"))
@@ -87,52 +87,15 @@ def show_batch_episode_title(
     return current_display_group
 
 
-def _resolved_item_from(episode: ResolvableEpisode) -> ResolvedItem:
-    info = episode.info
-    return ResolvedItem(
-        avid=str(info["avid"]),
-        cid=str(info["cid"]),
-        url=info["url"],
-        name=info["name"],
-        title=info["title"],
-        cover_url=info["cover_url"],
-        planned_path=info["path"],
-        display_group=info["display_group"],
-        uploader=info["uploader"],
-        description=info["description"],
-        tags=tuple(info["tags"]),
-    )
+def _emit_item_listed(item: ResolvedItem) -> None:
+    emit_download_event(DownloadItemListed(item=item))
 
 
-def _emit_item_listed(episode: ResolvableEpisode) -> None:
-    item = _resolved_item_from(episode)
-    emit_download_event(
-        DownloadItemListed(
-            avid=item.avid,
-            cid=item.cid,
-            url=item.url,
-            name=item.name,
-            title=item.title,
-            cover_url=item.cover_url,
-            planned_path=item.planned_path,
-            display_group=item.display_group,
-            uploader=item.uploader,
-            description=item.description,
-            tags=item.tags,
-        )
-    )
-
-
-def _resolved_item_key(episode: ResolvableEpisode) -> tuple[str, str, str, Path, str | None]:
-    """Return a stable occurrence key for matching streamed and final items."""
-    info = episode.info
-    return (
-        str(info["avid"]),
-        str(info["cid"]),
-        info["url"],
-        info["path"],
-        info["display_group"],
-    )
+@dataclass(eq=False, slots=True)
+class _StreamedResolvedItem:
+    episode: ResolvableEpisode
+    item: ResolvedItem
+    consumed: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,38 +157,51 @@ class DownloadManager:
 
         返回的 planned_path 是模板解析出的计划路径；实际下载时可能因去重而调整。
         item_listed 逐条推送：支持流式的 batch 提取器通过显式 on_item 回调在
-        每个视频解析完成时交出分集，提取结束后按稳定键逐次消费已推送 occurrence，
-        再补发剩余条目；等值但独立的 occurrence 不会被合并，返回列表始终保持
-        提取器的原始顺序。
+        每个视频解析完成时交出分集，提取结束后按 identity 或完整 canonical
+        snapshot 逐次消费已推送 occurrence，再补发剩余条目；等值但独立的
+        occurrence 不会被合并，返回列表始终保持提取器的原始顺序。
         """
-        streamed_by_key: dict[tuple[str, str, str, Path, str | None], deque[ResolvableEpisode]] = {}
+        streamed_by_identity: dict[int, _StreamedResolvedItem] = {}
+        streamed_by_item: dict[ResolvedItem, deque[_StreamedResolvedItem]] = {}
 
         async def stream_episode(episode: ResolvableEpisode) -> None:
-            key = _resolved_item_key(episode)
-            streamed = streamed_by_key.setdefault(key, deque())
-            # 防御同一 occurrence 的重复 callback；不同对象即使 snapshot 等值，
-            # 仍代表两个合法 occurrence，必须分别发送事件。
-            if any(item is episode for item in streamed):
+            streamed = streamed_by_identity.get(id(episode))
+            # identity 只用于防御同一 occurrence 的重复 callback；强引用 episode
+            # 可避免本次 resolve 内 id 重用。等值但不同对象仍分别创建 snapshot。
+            if streamed is not None and streamed.episode is episode:
                 await asyncio.sleep(0)
                 return
-            streamed.append(episode)
-            _emit_item_listed(episode)
+            item = episode.info["listing"]
+            streamed = _StreamedResolvedItem(episode=episode, item=item)
+            streamed_by_identity[id(episode)] = streamed
+            streamed_by_item.setdefault(item, deque()).append(streamed)
+            _emit_item_listed(item)
             await asyncio.sleep(0)
 
         outcome = await self.resolve_request(scope, request, on_item=stream_episode)
         items: list[ResolvedItem] = []
         for episode in outcome.items:
-            key = _resolved_item_key(episode)
-            streamed = streamed_by_key.get(key)
-            if streamed:
-                streamed.popleft()
+            streamed = streamed_by_identity.get(id(episode))
+            if streamed is not None and streamed.episode is episode and not streamed.consumed:
+                streamed.consumed = True
+                item = streamed.item
             else:
-                _emit_item_listed(episode)
-                # 未流式化的提取器仍会在这个无 await 的循环里整批产出 item_listed；
-                # 逐条让出控制权给事件消费者（如 server 每连接的 sender），
-                # 避免超出其发送队列容量触发 slow-consumer 断连
-                await asyncio.sleep(0)
-            items.append(_resolved_item_from(episode))
+                probe = episode.info["listing"]
+                pending = streamed_by_item.get(probe)
+                while pending and pending[0].consumed:
+                    pending.popleft()
+                if pending:
+                    streamed = pending.popleft()
+                    streamed.consumed = True
+                    item = streamed.item
+                else:
+                    item = probe
+                    _emit_item_listed(item)
+                    # 未流式化的提取器仍会在这个无 await 的循环里整批产出 item_listed；
+                    # 逐条让出控制权给事件消费者（如 server 每连接的 sender），
+                    # 避免超出其发送队列容量触发 slow-consumer 断连
+                    await asyncio.sleep(0)
+            items.append(item)
         return _ResolvedItemsOutcome(items=tuple(items), failures=outcome.failures)
 
     async def process_request(
