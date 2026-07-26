@@ -94,11 +94,12 @@ class CliApplicationEventRenderer:
                 Logger.custom(f"列表项 {url}", Badge(f"[{index}/{total}]", fore="black", back="cyan"))
             case DownloadStageChanged():
                 self._progress_active = False
-            case DownloadProgress() as progress if self.progress_enabled:
-                self._progress_active = True
-                self._render_progress(progress)
-            case DownloadProgress():
-                pass
+            case DownloadProgress() as progress:
+                if progress.buffered_blocks > 2048:
+                    Logger.debug(f"number blocks in buffer: {progress.buffered_blocks}")
+                if self.progress_enabled:
+                    self._progress_active = True
+                    self._render_progress(progress)
             case DownloadItemSkipped(item=item, reason=ItemSkipReason.ALREADY_EXISTS):
                 Logger.info(f"文件 {item} 已存在")
             case _:
@@ -107,8 +108,6 @@ class CliApplicationEventRenderer:
     def _render_progress(self, progress: DownloadProgress) -> None:
         is_fast = progress.speed_per_second >= 8 * 1024 * 1024
         is_congested = progress.buffered_blocks > 2048
-        if is_congested:
-            Logger.debug(f"number blocks in buffer: {progress.buffered_blocks}")
         bar_color: Color = "red" if is_congested else ("green" if is_fast else "cyan")
         bar_width = min(get_terminal_size()[0] - 40, 50)
         bar = (

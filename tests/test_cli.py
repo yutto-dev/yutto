@@ -170,13 +170,13 @@ def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch)
 
     renderer_module.CliApplicationEventRenderer(progress_enabled=False).emit(progress)
     assert rendered == []
-    assert debug_messages == []
+    assert debug_messages == ["number blocks in buffer: 2049"]
 
     renderer_module.CliApplicationEventRenderer().emit(progress)
     assert len(rendered) == 1
     assert "1.00 KiB" in rendered[0]
     assert "2.00 KiB" in rendered[0]
-    assert debug_messages == ["number blocks in buffer: 2049"]
+    assert debug_messages == ["number blocks in buffer: 2049"] * 2
 
 
 def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch: pytest.MonkeyPatch):
