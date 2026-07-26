@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 from yutto.core.events import DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event, emit_download_report
 from yutto.downloader.progressbar import show_progress
-from yutto.utils.asynclib import first_successful_with_check, make_coroutine_factory
+from yutto.exceptions import MaxRetryError
+from yutto.utils.asynclib import NoSuccessfulResultError, make_coroutine_factory, race_for_first_success
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.file_buffer import AsyncFileBuffer
 from yutto.utils.functional import filter_none_values, xmerge
@@ -52,6 +53,23 @@ def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[
     return mirrors_filter
 
 
+async def _probe_media_size(scope: ExecutionScope, url: str, mirrors: Iterable[str]) -> int | None:
+    async def probe(candidate: str) -> int | None:
+        return unwrap_fetch_result(await Fetcher.get_size(scope, candidate))
+
+    create_probe = make_coroutine_factory(probe)
+    try:
+        return await race_for_first_success(create_probe(candidate) for candidate in (url, *mirrors))
+    except NoSuccessfulResultError as error:
+        if len(error.exceptions) == 1 and isinstance(error.exceptions[0], MaxRetryError):
+            raise error.exceptions[0] from None
+        if not error.exceptions:
+            raise MaxRetryError("媒体大小探测失败：所有地址均已取消") from error
+        raise MaxRetryError(f"媒体大小探测失败：{len(error.exceptions)} 个地址均不可用") from ExceptionGroup(
+            "all media size probes failed", error.exceptions
+        )
+
+
 async def _run_download_lifecycle(
     coroutine_factories: Iterable[Callable[[], Coroutine[Any, Any, None]]],
     buffers: Iterable[_DownloadBuffer],
@@ -87,9 +105,6 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
     lifecycle_started = False
     mirrors_filter = create_mirrors_filter(plan.banned_mirrors_pattern)
 
-    async def get_size(url: str) -> int | None:
-        return unwrap_fetch_result(await Fetcher.get_size(scope, url))
-
     defer_download_file = make_coroutine_factory(Fetcher.download_file_with_offset)
     defer_progress = make_coroutine_factory(show_progress)
 
@@ -97,8 +112,10 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
     emit_download_report("开始下载……")
     try:
         if plan.video is not None:
-            video_size = await first_successful_with_check(
-                [get_size(url) for url in [plan.video.url, *mirrors_filter(list(plan.video.mirrors))]]
+            video_size = await _probe_media_size(
+                scope,
+                plan.video.url,
+                mirrors_filter(list(plan.video.mirrors)),
             )
             video_buffer = await AsyncFileBuffer.open(
                 plan.paths.video,
@@ -125,8 +142,10 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             )
 
         if plan.audio is not None:
-            audio_size = await first_successful_with_check(
-                [get_size(url) for url in [plan.audio.url, *mirrors_filter(list(plan.audio.mirrors))]]
+            audio_size = await _probe_media_size(
+                scope,
+                plan.audio.url,
+                mirrors_filter(list(plan.audio.mirrors)),
             )
             audio_buffer = await AsyncFileBuffer.open(
                 plan.paths.audio,

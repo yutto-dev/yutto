@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import httpx
 import pytest
+from returns.result import Failure
 
 from tests.test_processor.test_download_result import make_request, make_resource_only_episode
 from yutto.core.execution import ExecutionScope
 from yutto.downloader.planner import DownloadPlanner
-from yutto.downloader.transfer import download_video_and_audio, slice_blocks
+from yutto.downloader.transfer import _probe_media_size, download_video_and_audio, slice_blocks
+from yutto.exceptions import MaxRetryError
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional import as_sync
 
+pytestmark = pytest.mark.processor
 
-@pytest.mark.processor
+
 @pytest.mark.parametrize(
     ("start", "total_size", "block_size", "expected"),
     [
@@ -29,7 +33,29 @@ def test_slice_blocks_handles_resume_offsets(
     assert slice_blocks(start, total_size, block_size) == expected
 
 
-@pytest.mark.processor
+@as_sync
+async def test_probe_media_size_preserves_probe_failures(monkeypatch: pytest.MonkeyPatch):
+    failures = {
+        "primary": MaxRetryError("primary failed"),
+        "mirror": MaxRetryError("mirror failed"),
+    }
+
+    async def get_size(_scope: ExecutionScope, url: str) -> Failure[MaxRetryError]:
+        return Failure(failures[url])
+
+    monkeypatch.setattr(Fetcher, "get_size", get_size)
+    async with httpx.AsyncClient() as client:
+        scope = ExecutionScope(client)
+        with pytest.raises(MaxRetryError) as single_failure:
+            await _probe_media_size(scope, "primary", [])
+        with pytest.raises(MaxRetryError) as multiple_failure:
+            await _probe_media_size(scope, "primary", ["mirror"])
+
+    assert single_failure.value is failures["primary"]
+    assert isinstance(multiple_failure.value.__cause__, ExceptionGroup)
+    assert set(multiple_failure.value.__cause__.exceptions) == set(failures.values())
+
+
 @as_sync
 async def test_unknown_size_restarts_fragment_and_http_200_retry(tmp_path):
     payload = b"A" * (64 * 1024) + b"B" * (64 * 1024)

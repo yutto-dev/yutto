@@ -7,10 +7,18 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from typing_extensions import ParamSpec
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Iterable
+    from collections.abc import Awaitable, Callable, Coroutine, Iterable
 
 RetT = TypeVar("RetT")
 P = ParamSpec("P")
+
+
+class NoSuccessfulResultError(Exception):
+    """No raced operation completed successfully."""
+
+    def __init__(self, exceptions: Iterable[Exception]):
+        self.exceptions = tuple(exceptions)
+        super().__init__("no raced operation completed successfully")
 
 
 def make_coroutine_factory(
@@ -24,29 +32,38 @@ def make_coroutine_factory(
     return bind
 
 
-async def first_successful(coros: Iterable[Coroutine[Any, Any, RetT]]) -> list[RetT]:
-    tasks = [asyncio.create_task(coro) for coro in coros]
+async def race_for_first_success(factories: Iterable[Callable[[], Awaitable[RetT]]]) -> RetT:
+    """Return the first successful value after reaping every started operation."""
 
-    results: list[RetT] = []
-    try:
-        while not results:
-            done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            results = [task.result() for task in done if task.exception() is None]
-    except asyncio.CancelledError:
+    factory_list = tuple(factories)
+    winner: list[RetT] = []
+    failures: list[Exception] = []
+    remaining = len(factory_list)
+    completed = asyncio.Event()
+
+    async def run(factory: Callable[[], Awaitable[RetT]]) -> None:
+        nonlocal remaining
+        try:
+            value = await factory()
+        except asyncio.CancelledError:
+            raise
+        except Exception as error:
+            failures.append(error)
+        else:
+            if not winner:
+                winner.append(value)
+        finally:
+            remaining -= 1
+            if winner or not remaining:
+                completed.set()
+
+    async with asyncio.TaskGroup() as group:
+        tasks = [group.create_task(run(factory)) for factory in factory_list]
+        if tasks:
+            await completed.wait()
         for task in tasks:
             task.cancel()
-        if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
-        raise
-    for task in tasks:
-        task.cancel()
-    return results
 
-
-async def first_successful_with_check(coros: Iterable[Coroutine[Any, Any, RetT]]) -> RetT:
-    results = await first_successful(coros)
-    if not results:
-        raise Exception("All coroutines failed")
-    if len(set(results)) != 1:
-        raise Exception("Multiple coroutines returned different results")
-    return results[0]
+    if winner:
+        return winner[0]
+    raise NoSuccessfulResultError(failures)
