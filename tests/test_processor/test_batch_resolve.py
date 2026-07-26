@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, cast
 import pytest
 from returns.result import Failure, Success
 
+from yutto.core.execution import ExecutionScope
 from yutto.exceptions import MaxRetryError, NotFoundError
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.types import AId
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
@@ -34,7 +35,7 @@ def make_fake_client() -> httpx.AsyncClient:
     return cast("httpx.AsyncClient", object())
 
 
-async def touch_url_ok(ctx: FetcherContext, client: httpx.AsyncClient, url: str) -> Result[None, MaxRetryError]:
+async def touch_url_ok(scope: ExecutionScope, url: str) -> Result[None, MaxRetryError]:
     return Success(None)
 
 
@@ -44,7 +45,7 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
     avids: list[AvId] = [AId("1"), AId("2"), AId("3"), AId("4"), AId("5")]
     filtered_avid = avids[2]
 
-    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: AvId) -> UgcVideoList:
+    async def fake_get_ugc_video_list(scope: ExecutionScope, avid: AvId) -> UgcVideoList:
         # 让完成顺序与传入顺序相反，验证结果顺序不受完成顺序影响
         await asyncio.sleep(0.01 * (len(avids) - avids.index(avid)))
         if avid == filtered_avid:
@@ -55,9 +56,9 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", touch_url_ok)
 
+    scope = ExecutionScope(make_fake_client())
     outcome = await resolve_ugc_video_lists(
-        FetcherContext(),
-        make_fake_client(),
+        scope,
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
@@ -79,12 +80,12 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
     not_found_avid = avids[1]
     max_retry_url = avids[2].to_url()
 
-    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: AvId) -> UgcVideoList:
+    async def fake_get_ugc_video_list(scope: ExecutionScope, avid: AvId) -> UgcVideoList:
         if avid == not_found_avid:
             raise NotFoundError(f"啊叻？视频 {avid} 不见了诶")
         return make_ugc_video_list(avid)
 
-    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str) -> Result[None, MaxRetryError]:
+    async def fake_touch_url(scope: ExecutionScope, url: str) -> Result[None, MaxRetryError]:
         # 走真实的 unwrap_fetch_result 抛出路径
         if url == max_retry_url:
             return Failure(MaxRetryError("超出最大重试次数！"))
@@ -93,9 +94,9 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
+    scope = ExecutionScope(make_fake_client())
     outcome = await resolve_ugc_video_lists(
-        FetcherContext(),
-        make_fake_client(),
+        scope,
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )
@@ -114,25 +115,24 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
     running = 0
     max_running = 0
 
-    ctx = FetcherContext()
-    ctx.set_fetch_semaphore(fetch_workers=fetch_workers)
+    scope = ExecutionScope(make_fake_client(), fetch_workers=fetch_workers)
 
-    async def occupy_fetch_guard() -> None:
+    async def occupy_fetch_guard(active_scope: ExecutionScope) -> None:
         nonlocal running, max_running
-        # 模拟真实 Fetcher 请求经过 ctx.fetch_guard() 的行为
-        async with ctx.fetch_guard():
+        # 模拟真实 Fetcher 请求经过 scope.fetch_guard() 的行为
+        async with active_scope.fetch_guard():
             running += 1
             max_running = max(max_running, running)
             await asyncio.sleep(0.01)
             running -= 1
 
-    async def fake_get_ugc_video_list(ctx: FetcherContext, client: httpx.AsyncClient, avid: AvId) -> UgcVideoList:
-        await occupy_fetch_guard()
+    async def fake_get_ugc_video_list(active_scope: ExecutionScope, avid: AvId) -> UgcVideoList:
+        await occupy_fetch_guard(active_scope)
         return make_ugc_video_list(avid)
 
-    async def fake_touch_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str) -> Result[None, MaxRetryError]:
+    async def fake_touch_url(active_scope: ExecutionScope, url: str) -> Result[None, MaxRetryError]:
         # touch_url 与其他请求共用同一个 fetch semaphore，也计入并发统计
-        await occupy_fetch_guard()
+        await occupy_fetch_guard(active_scope)
         return Success(None)
 
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
@@ -140,8 +140,7 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
 
     avids: list[AvId] = [AId(str(i)) for i in range(10)]
     outcome = await resolve_ugc_video_lists(
-        ctx,
-        make_fake_client(),
+        scope,
         avids,
         publication_time_filter=PublicationTimeFilter.from_strings(),
     )

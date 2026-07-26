@@ -9,12 +9,10 @@ from yutto.types import ResolvableEpisode
 if TYPE_CHECKING:
     from typing import TypeAlias
 
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.exceptions import YuttoBaseException
     from yutto.extractor.outcome import ResolveOutcome
     from yutto.types import ExtractorOptions
-    from yutto.utils.fetcher import FetcherContext
 
     ExtractorResolveOutcome: TypeAlias = ResolveOutcome[ResolvableEpisode, YuttoBaseException]
 
@@ -34,8 +32,7 @@ class Extractor(metaclass=ABCMeta):
     @abstractmethod
     async def __call__(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
     ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         raise NotImplementedError
@@ -44,17 +41,15 @@ class Extractor(metaclass=ABCMeta):
 class SingleExtractor(Extractor):
     async def __call__(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
     ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
-        return await self.extract(ctx, client, options)
+        return await self.extract(scope, options)
 
     @abstractmethod
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
     ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
         raise NotImplementedError
@@ -63,19 +58,17 @@ class SingleExtractor(Extractor):
 class BatchExtractor(Extractor):
     async def __call__(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ResolveOutcome[ResolvableEpisode, YuttoBaseException]:
-        return await self.extract(ctx, client, options, on_item=on_item)
+        return await self.extract(scope, options, on_item=on_item)
 
     @abstractmethod
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,

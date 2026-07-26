@@ -12,6 +12,7 @@ from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError, InvalidStatus
 from websockets.typing import Origin
 
+from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ResolveResult
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
@@ -23,7 +24,7 @@ from yutto.server.websocket import (
     _task_snapshot_order,
 )
 from yutto.types import AId
-from yutto.utils.fetcher import Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
@@ -137,9 +138,9 @@ class BatchStreamingResolveApi(FakeResolveTaskApi):
                 context.emit("item_listed", {"avid": str(resolved.source), "page": page})
                 await asyncio.sleep(0)
 
+        scope = ExecutionScope(cast("Any", object()))
         await resolve_ugc_video_lists(
-            FetcherContext(),
-            cast("Any", object()),
+            scope,
             [AId(str(index + 1)) for index in range(self.video_count)],
             publication_time_filter=PublicationTimeFilter.from_strings(None, None),
             on_resolved=on_resolved,
@@ -148,11 +149,11 @@ class BatchStreamingResolveApi(FakeResolveTaskApi):
 
 
 def _patch_batch_listing(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_get_ugc_video_list(ctx: FetcherContext, client: Any, avid: Any):
+    async def fake_get_ugc_video_list(scope: ExecutionScope, avid: Any):
         # 立即返回：所有视频几乎同时就绪，复现并发完成的最坏情况
         return {"title": str(avid), "pubdate": 1700000000, "avid": avid, "pages": []}
 
-    async def fake_touch_url(ctx: FetcherContext, client: Any, url: str):
+    async def fake_touch_url(scope: ExecutionScope, url: str):
         return Success(None)
 
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)

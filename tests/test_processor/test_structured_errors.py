@@ -12,6 +12,7 @@ import yutto.__main__ as main_module
 import yutto.download_manager as download_manager_module
 import yutto.extractor.bangumi as bangumi_module
 import yutto.extractor.cheese as cheese_module
+from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import (
@@ -26,7 +27,7 @@ from yutto.extractor.bangumi import BangumiExtractor
 from yutto.extractor.cheese import CheeseExtractor
 from yutto.input_parser import parse_episodes_selection
 from yutto.types import SeasonId
-from yutto.utils.fetcher import ExecutionScope, Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 from yutto.validator import validate_batch_selection
@@ -79,7 +80,7 @@ def test_selection_validation_raises_structured_argument_errors():
 async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.MonkeyPatch):
     rendered_errors: list[str] = []
 
-    async def reject_login(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+    async def reject_login(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return False
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", reject_login)
@@ -104,10 +105,10 @@ async def test_manager_raises_login_error_without_rendering(monkeypatch: pytest.
 async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatch: pytest.MonkeyPatch):
     rendered_errors: list[str] = []
 
-    async def accept_login(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+    async def accept_login(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return True
 
-    async def reject_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+    async def reject_url(scope: ExecutionScope, url: str):
         raise httpx.InvalidURL("invalid")
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", accept_login)
@@ -131,10 +132,10 @@ async def test_manager_raises_url_errors_without_rendering_or_network(monkeypatc
 @pytest.mark.processor
 @as_sync
 async def test_manager_reports_unmatched_url_as_structured_error(monkeypatch: pytest.MonkeyPatch):
-    async def accept_login(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+    async def accept_login(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return True
 
-    async def keep_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+    async def keep_url(scope: ExecutionScope, url: str):
         return Success(url)
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", accept_login)
@@ -186,10 +187,10 @@ async def test_single_extractors_raise_when_episode_is_missing(
     list_getter_name: str,
     url: str,
 ):
-    async def get_season(ctx: FetcherContext, client: httpx.AsyncClient, episode_id: Any) -> SeasonId:
+    async def get_season(scope: ExecutionScope, episode_id: Any) -> SeasonId:
         return SeasonId("1")
 
-    async def get_empty_list(ctx: FetcherContext, client: httpx.AsyncClient, season_id: SeasonId):
+    async def get_empty_list(scope: ExecutionScope, season_id: SeasonId):
         return {"title": "空列表", "pages": []}
 
     monkeypatch.setattr(module, "get_season_id_by_episode_id", get_season)
@@ -200,8 +201,7 @@ async def test_single_extractors_raise_when_episode_is_missing(
 
     with pytest.raises(EpisodeNotFoundError) as exc_info:
         await extractor.extract(
-            FetcherContext(),
-            cast("httpx.AsyncClient", object()),
+            ExecutionScope(cast("httpx.AsyncClient", object())),
             EMPTY_EXTRACTOR_OPTIONS,
         )
 

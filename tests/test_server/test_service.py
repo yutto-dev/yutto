@@ -204,11 +204,10 @@ bili_jct = "csrf-value"
     )
 
     async with policy.build_scope_factory().open(request) as scope:
-        assert scope.proxy is None
-        assert scope.trust_env is False
-        assert scope.fetch_workers == 3
-        assert scope.cookies.get("SESSDATA") == "session%2Cvalue"
-        assert scope.cookies.get("bili_jct") == "csrf-value"
+        assert scope.client.trust_env is False
+        assert scope.fetch_limiter._value == 3
+        assert scope.client.cookies.get("SESSDATA") == "session%2Cvalue"
+        assert scope.client.cookies.get("bili_jct") == "csrf-value"
 
 
 @as_sync
@@ -242,19 +241,17 @@ bili_jct = "csrf-value"
         policy.build_scope_factory().open(request) as server_scope,
     ):
         assert (
-            cli_scope.proxy,
-            cli_scope.trust_env,
-            cli_scope.fetch_workers,
-            cli_scope.download_workers,
-            cli_scope.cookies.get("SESSDATA"),
-            cli_scope.cookies.get("bili_jct"),
+            cli_scope.client.trust_env,
+            cli_scope.fetch_limiter._value,
+            cli_scope.download_limiter._value,
+            cli_scope.client.cookies.get("SESSDATA"),
+            cli_scope.client.cookies.get("bili_jct"),
         ) == (
-            server_scope.proxy,
-            server_scope.trust_env,
-            server_scope.fetch_workers,
-            server_scope.download_workers,
-            server_scope.cookies.get("SESSDATA"),
-            server_scope.cookies.get("bili_jct"),
+            server_scope.client.trust_env,
+            server_scope.fetch_limiter._value,
+            server_scope.download_limiter._value,
+            server_scope.client.cookies.get("SESSDATA"),
+            server_scope.client.cookies.get("bili_jct"),
         )
 
 

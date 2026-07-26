@@ -33,10 +33,8 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Protocol
 
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.types import AudioUrlMeta, DownloaderOptions, EpisodeData, VideoUrlMeta
-    from yutto.utils.fetcher import FetcherContext
     from yutto.utils.metadata import ChapterInfoData
 
     class _DownloadBuffer(Protocol):
@@ -150,8 +148,7 @@ async def _run_download_lifecycle(
 
 
 async def download_video_and_audio(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     video: VideoUrlMeta | None,
     video_path: Path,
     audio: AudioUrlMeta | None,
@@ -167,7 +164,7 @@ async def download_video_and_audio(
     mirrors_filter = create_mirrors_filter(options["banned_mirrors_pattern"])
 
     async def get_size(url: str) -> int | None:
-        return unwrap_fetch_result(await Fetcher.get_size(ctx, client, url))
+        return unwrap_fetch_result(await Fetcher.get_size(scope, url))
 
     defer_download_file = make_coroutine_factory(Fetcher.download_file_with_offset)
     defer_progress = make_coroutine_factory(show_progress)
@@ -182,8 +179,7 @@ async def download_video_and_audio(
             sizes[0] = vsize
             video_coroutine_factories: list[Callable[[], Coroutine[Any, Any, None]]] = [
                 defer_download_file(
-                    ctx,
-                    client,
+                    scope,
                     video["url"],
                     mirrors_filter(video["mirrors"]),
                     vbuf,
@@ -203,8 +199,7 @@ async def download_video_and_audio(
             sizes[1] = asize
             audio_coroutine_factories: list[Callable[[], Coroutine[Any, Any, None]]] = [
                 defer_download_file(
-                    ctx,
-                    client,
+                    scope,
                     audio["url"],
                     mirrors_filter(audio["mirrors"]),
                     abuf,
@@ -381,8 +376,7 @@ def resolve_path(base_output_dir: Path, base_tmp_dir: Path, path: Path) -> tuple
 
 
 async def process_download(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     episode_data: EpisodeData,
     options: DownloaderOptions,
 ) -> ItemResult:
@@ -557,7 +551,7 @@ async def process_download(
 
     # 下载视频 / 音频
     emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=filename))
-    await download_video_and_audio(ctx, client, video, video_path, audio, audio_path, options)
+    await download_video_and_audio(scope, video, video_path, audio, audio_path, options)
 
     # 合并视频 / 音频
     emit_download_event(DownloadStageChanged(name=DownloadStage.POSTPROCESSING, item=filename))

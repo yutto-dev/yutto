@@ -31,8 +31,8 @@ if TYPE_CHECKING:
     import argparse
 
     from yutto.auth import AuthInfo
+    from yutto.core.execution import ExecutionScope
     from yutto.core.request import DownloadRequest
-    from yutto.utils.fetcher import ExecutionScope
 
 
 def main():
@@ -101,7 +101,7 @@ async def run_download(
 
 
 async def announce_cli_auth(scope: ExecutionScope, _request: DownloadRequest) -> None:
-    if scope.cookies.get("SESSDATA") is None:
+    if scope.client.cookies.get("SESSDATA") is None:
         Logger.info(
             "未提供登录认证信息，无法下载高清视频、字幕等资源哦～请通过 `--auth` 参数提供认证信息，或者先使用 `yutto auth login` 登录存储认证信息后再下载～"
         )

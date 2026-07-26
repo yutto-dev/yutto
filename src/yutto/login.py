@@ -12,7 +12,7 @@ from yutto.api.user_info import USER_INFO_API, parse_user_info, user_info_matche
 from yutto.auth import AuthInfo, remove_auth, resolve_auth, resolve_auth_file, save_auth, validate_profile
 from yutto.exceptions import ErrorCode
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import FetcherContext, create_sync_client
+from yutto.utils.fetcher import cookies_from_auth, create_sync_client, resolve_proxy
 
 if TYPE_CHECKING:
     from yutto.types import UserInfo
@@ -28,15 +28,14 @@ QR_STATUS_CONFIRMED = 0
 
 
 def run_login(args: Any):
-    ctx = FetcherContext()
     try:
-        ctx.set_proxy(args.proxy)
+        proxy, trust_env = resolve_proxy(args.proxy)
         validate_profile(args.auth_profile)
     except ValueError as e:
         Logger.error(str(e))
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    with create_sync_client(proxy=ctx.proxy, trust_env=ctx.trust_env, timeout=10, verify=True) as client:
+    with create_sync_client(proxy=proxy, trust_env=trust_env, timeout=10, verify=True) as client:
         qr_login_url, qr_key = generate_qr_login(client)
         show_qr_code(qr_login_url, args.mode)
         Logger.info("请使用哔哩哔哩 App 扫码并确认登录")
@@ -49,7 +48,7 @@ def run_login(args: Any):
     auth_file = resolve_auth_file(args)
     save_auth(auth_file, args.auth_profile, sessdata, bili_jct)
     auth = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct)
-    if validate_saved_auth(auth, proxy=ctx.proxy, trust_env=ctx.trust_env):
+    if validate_saved_auth(auth, proxy=proxy, trust_env=trust_env):
         Logger.info(
             f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）"
         )
@@ -60,9 +59,8 @@ def run_login(args: Any):
 
 
 def run_auth_status(args: Any):
-    ctx = FetcherContext()
     try:
-        ctx.set_proxy(args.proxy)
+        proxy, trust_env = resolve_proxy(args.proxy)
         auth = resolve_auth(args)
     except ValueError as e:
         Logger.error(str(e))
@@ -73,7 +71,7 @@ def run_auth_status(args: Any):
         sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
 
     try:
-        user_info = fetch_authenticated_user_info(auth, proxy=ctx.proxy, trust_env=ctx.trust_env)
+        user_info = fetch_authenticated_user_info(auth, proxy=proxy, trust_env=trust_env)
     except Exception as e:
         Logger.error(f"登录状态检查失败：{e}")
         sys.exit(ErrorCode.HTTP_STATUS_ERROR.value)
@@ -249,9 +247,8 @@ def get_cookie_value(cookies: httpx.Cookies, name: str) -> str | None:
 
 
 def fetch_authenticated_user_info(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> UserInfo:
-    ctx = FetcherContext(proxy=proxy, trust_env=trust_env)
-    ctx.set_auth_info(auth)
-    with create_sync_client(cookies=ctx.cookies, proxy=ctx.proxy, trust_env=ctx.trust_env, verify=True) as client:
+    cookies = cookies_from_auth(auth)
+    with create_sync_client(cookies=cookies, proxy=proxy, trust_env=trust_env, verify=True) as client:
         return parse_user_info(request_json(client, USER_INFO_API, params={}))
 
 

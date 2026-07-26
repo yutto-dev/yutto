@@ -9,7 +9,7 @@ import pytest
 from returns.result import Success
 
 import yutto.download_manager as download_manager_module
-from yutto.core.execution import RequestExecutionScopeFactory
+from yutto.core.execution import ExecutionScope, RequestExecutionScopeFactory
 from yutto.core.request import DownloadRequest
 from yutto.core.result import DownloadResult, ItemResult, ItemState
 from yutto.download_manager import (
@@ -22,7 +22,7 @@ from yutto.exceptions import NotLoginError, WrongArgumentError
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.types import AId, CId, ResolvableEpisode
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import ExecutionScope, Fetcher, FetcherContext
+from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 from yutto.utils.time import TIME_FULL_FMT
@@ -145,8 +145,7 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
 
         async def __call__(
             self,
-            ctx: FetcherContext,
-            client: httpx.AsyncClient,
+            scope: ExecutionScope,
             options: ExtractorOptions,
         ) -> ExtractorResolveOutcome:
             captured_extractor_options.update(options)
@@ -156,16 +155,15 @@ async def test_process_request_preserves_extractor_and_downloader_option_mapping
 
             return ResolveOutcome(items=(ResolvableEpisode(info=episode["info"], resolve_data=resolve_episode),))
 
-    async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+    async def fake_validate_user_info(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         validation_requirements.append(requirements)
         return True
 
-    async def fake_get_redirected_url(ctx: FetcherContext, client: httpx.AsyncClient, url: str):
+    async def fake_get_redirected_url(scope: ExecutionScope, url: str):
         return Success(url)
 
     async def fake_process_download(
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         episode_data: EpisodeData,
         options: DownloaderOptions,
     ) -> ItemResult:
@@ -278,12 +276,11 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
     ) -> ExtractorResolveOutcome:
         return ResolveOutcome(items=episodes)
 
-    async def fake_validate_user_info(ctx: FetcherContext, requirements: dict[str, bool]) -> bool:
+    async def fake_validate_user_info(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         return next(validation_results)
 
     async def fake_process_download(
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         episode_data: EpisodeData,
         options: DownloaderOptions,
     ) -> ItemResult:
@@ -368,14 +365,14 @@ async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
     assert first_scope is not second_scope
     assert first_scope.client is not second_scope.client
     assert first_scope.client.is_closed and second_scope.client.is_closed
-    assert (first_scope.proxy, first_scope.trust_env) == (None, False)
-    assert (second_scope.proxy, second_scope.trust_env) == (None, True)
-    assert (first_scope.fetch_workers, first_scope.download_workers) == (2, 3)
-    assert (second_scope.fetch_workers, second_scope.download_workers) == (5, 7)
-    assert first_scope.fetch_semaphore is not second_scope.fetch_semaphore
-    assert first_scope.download_semaphore is not second_scope.download_semaphore
-    assert first_scope.cookies.get("SESSDATA") == "first%2Csession"
-    assert second_scope.cookies.get("SESSDATA") == "second%2Csession"
+    assert first_scope.fetch_limiter._value == 2
+    assert first_scope.download_limiter._value == 3
+    assert second_scope.fetch_limiter._value == 5
+    assert second_scope.download_limiter._value == 7
+    assert first_scope.fetch_limiter is not second_scope.fetch_limiter
+    assert first_scope.download_limiter is not second_scope.download_limiter
+    assert first_scope.client.cookies.get("SESSDATA") == "first%2Csession"
+    assert second_scope.client.cookies.get("SESSDATA") == "second%2Csession"
     assert result == DownloadResult(
         items=(
             ItemResult(state=ItemState.DONE, output_path=Path("same/video.mp4")),

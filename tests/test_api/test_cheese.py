@@ -9,8 +9,9 @@ from yutto.api.cheese import (
     get_cheese_playurl,
     get_season_id_by_episode_id,
 )
+from yutto.core.execution import ExecutionScope
 from yutto.types import AId, CId, EpisodeId, SeasonId
-from yutto.utils.fetcher import FetcherContext, create_client
+from yutto.utils.fetcher import create_client
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
@@ -22,9 +23,9 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("episode_id", [EpisodeId("6945"), EpisodeId("6902")])
 async def test_get_season_id_by_episode_id(episode_id: EpisodeId):
     season_id_excepted = SeasonId("298")
-    ctx = FetcherContext()
     async with create_client() as client:
-        season_id = await get_season_id_by_episode_id(ctx, client, episode_id)
+        scope = ExecutionScope(client)
+        season_id = await get_season_id_by_episode_id(scope, episode_id)
         assert season_id == season_id_excepted
 
 
@@ -32,9 +33,9 @@ async def test_get_season_id_by_episode_id(episode_id: EpisodeId):
 @as_sync
 async def test_get_cheese_title():
     season_id = SeasonId("298")
-    ctx = FetcherContext()
     async with create_client() as client:
-        cheese_list = await get_cheese_list(ctx, client, season_id)
+        scope = ExecutionScope(client)
+        cheese_list = await get_cheese_list(scope, season_id)
         title = cheese_list["title"]
         assert title == "林超：给年轻人的跨学科通识课"
 
@@ -43,9 +44,9 @@ async def test_get_cheese_title():
 @as_sync
 async def test_get_cheese_list():
     season_id = SeasonId("298")
-    ctx = FetcherContext()
     async with create_client() as client:
-        cheese_list = (await get_cheese_list(ctx, client, season_id))["pages"]
+        scope = ExecutionScope(client)
+        cheese_list = (await get_cheese_list(scope, season_id))["pages"]
         assert cheese_list[0]["id"] == 1
         assert cheese_list[0]["name"] == "【先导片】给年轻人的跨学科通识课"
         assert cheese_list[0]["cid"] == CId("344779477")
@@ -62,11 +63,9 @@ async def test_get_cheese_playurl():
     avid = AId("545852212")
     episode_id = EpisodeId("6902")
     cid = CId("344779477")
-    ctx = FetcherContext()
     async with create_client() as client:
-        playlist: tuple[list[VideoUrlMeta], list[AudioUrlMeta]] = await get_cheese_playurl(
-            ctx, client, avid, episode_id, cid
-        )
+        scope = ExecutionScope(client)
+        playlist: tuple[list[VideoUrlMeta], list[AudioUrlMeta]] = await get_cheese_playurl(scope, avid, episode_id, cid)
         assert len(playlist[0]) > 0
         assert len(playlist[1]) > 0
 

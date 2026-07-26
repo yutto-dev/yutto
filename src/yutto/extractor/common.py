@@ -32,8 +32,6 @@ from yutto.utils.fetcher import Fetcher
 from yutto.utils.metadata import MetaData, attach_chapter_info
 
 if TYPE_CHECKING:
-    import httpx
-
     from yutto.api.bangumi import (
         BangumiListItem,
     )
@@ -41,11 +39,11 @@ if TYPE_CHECKING:
     from yutto.api.ugc_video import (
         UgcVideoListItem,
     )
+    from yutto.core.execution import ExecutionScope
     from yutto.path_templates import (
         PathTemplateVariableDict,
     )
     from yutto.types import AvId, EpisodeId, ExtractorOptions
-    from yutto.utils.fetcher import FetcherContext
 
 
 def _get_display_fields_from_metadata(metadata: MetaData | None) -> tuple[str, str, list[str]]:
@@ -96,8 +94,7 @@ def build_bangumi_info(
 
 
 async def extract_bangumi_data(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     info: EpisodeInfo,
     bangumi_info: BangumiListItem,
     options: ExtractorOptions,
@@ -108,21 +105,19 @@ async def extract_bangumi_data(
         if bangumi_info["is_preview"]:
             Logger.warning(f"视频（{format_ids(avid, cid)}）是预览视频（疑似未登录或非大会员用户）")
         videos, audios = (
-            await get_bangumi_playurl(ctx, client, avid, cid)
+            await get_bangumi_playurl(scope, avid, cid)
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )
-        subtitles = await get_bangumi_subtitles(ctx, client, avid, cid) if options["require_subtitle"] else []
+        subtitles = await get_bangumi_subtitles(scope, avid, cid) if options["require_subtitle"] else []
         danmaku = (
-            await get_danmaku(ctx, client, cid, avid, options["danmaku_format"])
+            await get_danmaku(scope, cid, avid, options["danmaku_format"])
             if options["require_danmaku"]
             else EmptyDanmakuData
         )
         metadata = bangumi_info["metadata"] if options["require_metadata"] else None
         cover_data = (
-            (await Fetcher.fetch_bin(ctx, client, info["cover_url"])).value_or(None)
-            if options["require_cover"]
-            else None
+            (await Fetcher.fetch_bin(scope, info["cover_url"])).value_or(None) if options["require_cover"] else None
         )
         return EpisodeData(
             info=info,
@@ -140,8 +135,7 @@ async def extract_bangumi_data(
 
 
 def make_bangumi_episode(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     bangumi_info: BangumiListItem,
     options: ExtractorOptions,
     subpath_variables: PathTemplateVariableDict,
@@ -150,7 +144,7 @@ def make_bangumi_episode(
     info = build_bangumi_info(bangumi_info, options, subpath_variables, auto_subpath_template)
     return ResolvableEpisode(
         info=info,
-        resolve_data=make_coroutine_factory(extract_bangumi_data)(ctx, client, info, bangumi_info, options),
+        resolve_data=make_coroutine_factory(extract_bangumi_data)(scope, info, bangumi_info, options),
     )
 
 
@@ -193,8 +187,7 @@ def build_cheese_info(
 
 
 async def extract_cheese_data(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     episode_id: EpisodeId,
     info: EpisodeInfo,
     cheese_info: CheeseListItem,
@@ -204,21 +197,19 @@ async def extract_cheese_data(
         avid = info["avid"]
         cid = info["cid"]
         videos, audios = (
-            await get_cheese_playurl(ctx, client, avid, episode_id, cid)
+            await get_cheese_playurl(scope, avid, episode_id, cid)
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )
-        subtitles = await get_cheese_subtitles(ctx, client, avid, cid) if options["require_subtitle"] else []
+        subtitles = await get_cheese_subtitles(scope, avid, cid) if options["require_subtitle"] else []
         danmaku = (
-            await get_danmaku(ctx, client, cid, avid, options["danmaku_format"])
+            await get_danmaku(scope, cid, avid, options["danmaku_format"])
             if options["require_danmaku"]
             else EmptyDanmakuData
         )
         metadata = cheese_info["metadata"] if options["require_metadata"] else None
         cover_data = (
-            (await Fetcher.fetch_bin(ctx, client, info["cover_url"])).value_or(None)
-            if options["require_cover"]
-            else None
+            (await Fetcher.fetch_bin(scope, info["cover_url"])).value_or(None) if options["require_cover"] else None
         )
         return EpisodeData(
             info=info,
@@ -236,8 +227,7 @@ async def extract_cheese_data(
 
 
 def make_cheese_episode(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     episode_id: EpisodeId,
     cheese_info: CheeseListItem,
     options: ExtractorOptions,
@@ -247,7 +237,7 @@ def make_cheese_episode(
     info = build_cheese_info(cheese_info, options, subpath_variables, auto_subpath_template)
     return ResolvableEpisode(
         info=info,
-        resolve_data=make_coroutine_factory(extract_cheese_data)(ctx, client, episode_id, info, cheese_info, options),
+        resolve_data=make_coroutine_factory(extract_cheese_data)(scope, episode_id, info, cheese_info, options),
     )
 
 
@@ -299,8 +289,7 @@ def build_ugc_video_info(
 
 
 async def extract_ugc_video_data(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     info: EpisodeInfo,
     ugc_video_info: UgcVideoListItem,
     options: ExtractorOptions,
@@ -309,16 +298,14 @@ async def extract_ugc_video_data(
         avid = info["avid"]
         cid = info["cid"]
         videos, audios = (
-            await get_ugc_video_playurl(ctx, client, avid, cid, options["ai_translation_language"])
+            await get_ugc_video_playurl(scope, avid, cid, options["ai_translation_language"])
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )
-        subtitles = await get_ugc_video_subtitles(ctx, client, avid, cid) if options["require_subtitle"] else []
-        chapter_info_data = (
-            await get_ugc_video_chapters(ctx, client, avid, cid) if options["require_chapter_info"] else []
-        )
+        subtitles = await get_ugc_video_subtitles(scope, avid, cid) if options["require_subtitle"] else []
+        chapter_info_data = await get_ugc_video_chapters(scope, avid, cid) if options["require_chapter_info"] else []
         danmaku = (
-            await get_danmaku(ctx, client, cid, avid, options["danmaku_format"])
+            await get_danmaku(scope, cid, avid, options["danmaku_format"])
             if options["require_danmaku"]
             else EmptyDanmakuData
         )
@@ -326,9 +313,7 @@ async def extract_ugc_video_data(
         if metadata and chapter_info_data:
             attach_chapter_info(metadata, chapter_info_data)
         cover_data = (
-            (await Fetcher.fetch_bin(ctx, client, info["cover_url"])).value_or(None)
-            if options["require_cover"]
-            else None
+            (await Fetcher.fetch_bin(scope, info["cover_url"])).value_or(None) if options["require_cover"] else None
         )
         return EpisodeData(
             info=info,
@@ -346,8 +331,7 @@ async def extract_ugc_video_data(
 
 
 def make_ugc_video_episode(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     avid: AvId,
     ugc_video_info: UgcVideoListItem,
     options: ExtractorOptions,
@@ -358,5 +342,5 @@ def make_ugc_video_episode(
     info = build_ugc_video_info(avid, ugc_video_info, options, subpath_variables, auto_subpath_template, display_group)
     return ResolvableEpisode(
         info=info,
-        resolve_data=make_coroutine_factory(extract_ugc_video_data)(ctx, client, info, ugc_video_info, options),
+        resolve_data=make_coroutine_factory(extract_ugc_video_data)(scope, info, ugc_video_info, options),
     )

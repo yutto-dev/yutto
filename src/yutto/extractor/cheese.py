@@ -18,11 +18,9 @@ from yutto.types import EpisodeId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import ExtractorOptions
-    from yutto.utils.fetcher import FetcherContext
 
 
 class CheeseExtractor(SingleExtractor):
@@ -52,12 +50,11 @@ class CheeseExtractor(SingleExtractor):
 
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
     ) -> ExtractorResolveOutcome:
-        season_id = await get_season_id_by_episode_id(ctx, client, self.episode_id)
-        cheese_list = await get_cheese_list(ctx, client, season_id)
+        season_id = await get_season_id_by_episode_id(scope, self.episode_id)
+        cheese_list = await get_cheese_list(scope, season_id)
         Logger.custom(cheese_list["title"], Badge("课程", fore="black", back="cyan"))
         try:
             for cheese_item in cheese_list["pages"]:
@@ -70,8 +67,7 @@ class CheeseExtractor(SingleExtractor):
             return ResolveOutcome(
                 items=(
                     make_cheese_episode(
-                        ctx,
-                        client,
+                        scope,
                         self.episode_id,
                         cheese_list_item,
                         options,

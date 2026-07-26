@@ -13,13 +13,11 @@ from yutto.types import MId
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
-    import httpx
-
     from yutto.api.ugc_video import UgcVideoList
+    from yutto.core.execution import ExecutionScope
     from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
     from yutto.extractor.utils.batch import IndexedResolveItem
     from yutto.types import ExtractorOptions, ResolvableEpisode
-    from yutto.utils.fetcher import FetcherContext
 
 
 class UserAllUgcVideosExtractor(BatchExtractor):
@@ -38,19 +36,17 @@ class UserAllUgcVideosExtractor(BatchExtractor):
 
     async def extract(
         self,
-        ctx: FetcherContext,
-        client: httpx.AsyncClient,
+        scope: ExecutionScope,
         options: ExtractorOptions,
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
-        username = await get_user_name(ctx, client, self.mid)
+        username = await get_user_name(scope, self.mid)
         Logger.custom(username, Badge("UP 主投稿视频", fore="black", back="cyan"))
 
         publication_time_filter = options["publication_time_filter"]
         avids = await get_user_space_all_videos_avids(
-            ctx,
-            client,
+            scope,
             self.mid,
             pubdate_filter=publication_time_filter.matches,
             stop_before_timestamp=publication_time_filter.start_timestamp,
@@ -65,8 +61,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
             built: list[ResolvableEpisode] = []
             for ugc_video_item in ugc_video_list["pages"]:
                 episode = make_ugc_video_episode(
-                    ctx,
-                    client,
+                    scope,
                     ugc_video_item["avid"],
                     ugc_video_item,
                     options,
@@ -85,8 +80,7 @@ class UserAllUgcVideosExtractor(BatchExtractor):
             episodes_by_index[index] = built
 
         batch_outcome = await resolve_ugc_video_lists(
-            ctx,
-            client,
+            scope,
             avids,
             publication_time_filter=publication_time_filter,
             on_resolved=build_episodes,

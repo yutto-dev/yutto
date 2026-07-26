@@ -13,11 +13,9 @@ from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    import httpx
-
+    from yutto.core.execution import ExecutionScope
     from yutto.exceptions import YuttoBaseException
     from yutto.types import AvId
-    from yutto.utils.fetcher import FetcherContext
     from yutto.utils.filter import PublicationTimeFilter
 
 T = TypeVar("T")
@@ -44,8 +42,7 @@ class _FilteredResolveItem:
 
 
 async def resolve_ugc_video_lists(
-    ctx: FetcherContext,
-    client: httpx.AsyncClient,
+    scope: ExecutionScope,
     avids: list[AvId],
     *,
     publication_time_filter: PublicationTimeFilter,
@@ -53,7 +50,7 @@ async def resolve_ugc_video_lists(
 ) -> ResolveOutcome[IndexedResolveItem[UgcVideoList], IndexedResolveFailure]:
     """并发解析一批视频的分 P 列表，结果顺序与 avids 一致
 
-    并发度由 ctx 中已有的 fetch semaphore 控制（Fetcher 的每个请求都会经过 ctx.fetch_guard()），
+    并发度由 scope 中已有的 fetch semaphore 控制（Fetcher 的每个请求都会经过 scope.fetch_guard()），
     这里无需额外限流；时间过滤项不进入 outcome，预期失败则显式保留输入位置和来源，
     不会中断整批解析。
 
@@ -71,13 +68,13 @@ async def resolve_ugc_video_lists(
         index: int, avid: AvId
     ) -> IndexedResolveItem[UgcVideoList] | IndexedResolveFailure | _FilteredResolveItem:
         try:
-            ugc_video_list = await get_ugc_video_list(ctx, client, avid)
+            ugc_video_list = await get_ugc_video_list(scope, avid)
             if not publication_time_filter.matches(ugc_video_list["pubdate"]):
                 Logger.debug(f"因为发布时间为 {ugc_video_list['pubdate']}，跳过 {ugc_video_list['title']}")
                 return _FilteredResolveItem(index=index, source=avid)
             # 在使用 SESSDATA 时，如果不去事先 touch 一下视频链接的话，是无法获取 episode_data 的
             # 至于为什么前面那俩（投稿视频页和番剧页）不需要额外 touch，因为在 get_redirected_url 阶段连接过了呀
-            unwrap_fetch_result(await Fetcher.touch_url(ctx, client, avid.to_url()))
+            unwrap_fetch_result(await Fetcher.touch_url(scope, avid.to_url()))
             return IndexedResolveItem(index=index, source=avid, value=ugc_video_list)
         except (NotFoundError, NoAccessPermissionError) as e:
             Logger.error(e.message)

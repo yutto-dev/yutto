@@ -14,16 +14,13 @@ from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from httpx import AsyncClient
-
+    from yutto.core.execution import ExecutionScope
     from yutto.types import AvId, MId, SeriesId
-    from yutto.utils.fetcher import FetcherContext
 
 
 # 个人空间·全部
 async def get_user_space_all_videos_avids(
-    ctx: FetcherContext,
-    client: AsyncClient,
+    scope: ExecutionScope,
     mid: MId,
     *,
     pubdate_filter: Callable[[int], bool] | None = None,
@@ -36,7 +33,7 @@ async def get_user_space_all_videos_avids(
     pn = 1
     total = 1
     all_avid: list[AvId] = []
-    wbi_img = await get_wbi_img(ctx, client)
+    wbi_img = await get_wbi_img(scope)
     while pn <= total:
         params = {
             "mid": mid,
@@ -46,7 +43,7 @@ async def get_user_space_all_videos_avids(
             "order": "pubdate",
         }
         params = encode_wbi(params, wbi_img)
-        match await Fetcher.fetch_json(ctx, client, space_videos_api, params=params):
+        match await Fetcher.fetch_json(scope, space_videos_api, params=params):
             case Success(json_data):
                 match _parse_user_space_videos_page(json_data, ps):
                     case Success((total, video_infos)):
@@ -96,13 +93,13 @@ def _should_stop_user_space_pagination(video_infos: list[dict[str, Any]], stop_b
 
 
 # 个人空间·用户名
-async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> str:
-    wbi_img = await get_wbi_img(ctx, client)
+async def get_user_name(scope: ExecutionScope, mid: MId) -> str:
+    wbi_img = await get_wbi_img(scope)
     params = {"mid": mid}
     params = encode_wbi(params, wbi_img)
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
-    unwrap_fetch_result(await Fetcher.touch_url(ctx, client, "https://www.bilibili.com"))
-    match await Fetcher.fetch_json(ctx, client, space_info_api, params=params):
+    unwrap_fetch_result(await Fetcher.touch_url(scope, "https://www.bilibili.com"))
+    match await Fetcher.fetch_json(scope, space_info_api, params=params):
         case Success({"code": 0, "data": {"name": username}}):
             return str(username)
         case Success({"code": -404}):
@@ -119,30 +116,29 @@ async def get_user_name(ctx: FetcherContext, client: AsyncClient, mid: MId) -> s
 
 
 # 个人空间·收藏夹·信息
-async def get_favourite_info(ctx: FetcherContext, client: AsyncClient, fid: FId) -> FavouriteMetaData:
+async def get_favourite_info(scope: ExecutionScope, fid: FId) -> FavouriteMetaData:
     api = "https://api.bilibili.com/x/v3/fav/folder/info?media_id={fid}"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api.format(fid=fid)))
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(fid=fid)))
     data = json_data["data"]
     return FavouriteMetaData(title=data["title"], fid=FId(str(data["id"])))
 
 
 # 个人空间·收藏夹·avid
-async def get_favourite_avids(ctx: FetcherContext, client: AsyncClient, fid: FId) -> list[AvId]:
+async def get_favourite_avids(scope: ExecutionScope, fid: FId) -> list[AvId]:
     api = "https://api.bilibili.com/x/v3/fav/resource/ids?media_id={fid}"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api.format(fid=fid)))
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(fid=fid)))
     return [BvId(video_info["bvid"]) for video_info in json_data["data"]]
 
 
 # 个人空间·收藏夹·条目（含标题和分 p 数量）
-async def get_favourite_items(ctx: FetcherContext, client: AsyncClient, fid: FId) -> list[FavouriteVideoData]:
+async def get_favourite_items(scope: ExecutionScope, fid: FId) -> list[FavouriteVideoData]:
     """获取收藏夹中所有视频的元数据，包含 B 站侧标题和分 p 数量。
 
     相比 get_favourite_avids，此接口通过分页列表 API 拉取完整标题，
     可用于区分单分 p / 多分 p 视频，以及使用人工标题替换机器生成的文件名。
 
     Args:
-        ctx: 请求上下文，含 Cookie 和代理配置。
-        client: httpx 异步客户端。
+        scope: 当前请求的执行上下文。
         fid: 收藏夹 ID。
 
     Returns:
@@ -154,7 +150,7 @@ async def get_favourite_items(ctx: FetcherContext, client: AsyncClient, fid: FId
     favourite_items: list[FavouriteVideoData] = []
 
     while True:
-        json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api.format(fid=fid, pn=pn, ps=ps)))
+        json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(fid=fid, pn=pn, ps=ps)))
         data = cast("dict[str, Any]", json_data["data"])
         medias = cast("list[dict[str, Any]]", data["medias"] or [])
         # 仅保留正常视频（type=2），过滤已失效条目（bvid 为空）
@@ -182,16 +178,16 @@ async def get_favourite_items(ctx: FetcherContext, client: AsyncClient, fid: FId
 
 
 # 个人空间·收藏夹·全部
-async def get_all_favourites(ctx: FetcherContext, client: AsyncClient, mid: MId) -> list[FavouriteMetaData]:
+async def get_all_favourites(scope: ExecutionScope, mid: MId) -> list[FavouriteMetaData]:
     api = "https://api.bilibili.com/x/v3/fav/folder/created/list-all?up_mid={mid}"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api.format(mid=mid)))
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(mid=mid)))
     if not json_data["data"]:
         return []
     return [FavouriteMetaData(title=data["title"], fid=FId(str(data["id"]))) for data in json_data["data"]["list"]]
 
 
 # 个人空间·视频列表·avid
-async def get_medialist_avids(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId, mid: MId) -> list[AvId]:
+async def get_medialist_avids(scope: ExecutionScope, series_id: SeriesId, mid: MId) -> list[AvId]:
     api = "https://api.bilibili.com/x/series/archives?mid={mid}&series_id={series_id}&only_normal=true&pn={pn}&ps={ps}"
     ps = 30
     pn = 1
@@ -200,7 +196,7 @@ async def get_medialist_avids(ctx: FetcherContext, client: AsyncClient, series_i
 
     while pn <= total:
         url = api.format(series_id=series_id, mid=mid, ps=ps, pn=pn)
-        json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, url))
+        json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, url))
         total = math.ceil(json_data["data"]["page"]["total"] / ps)
         pn += 1
         all_avid += [BvId(video_info["bvid"]) for video_info in json_data["data"]["archives"]]
@@ -208,16 +204,16 @@ async def get_medialist_avids(ctx: FetcherContext, client: AsyncClient, series_i
 
 
 # 个人空间·视频列表·标题
-async def get_medialist_title(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId) -> str:
+async def get_medialist_title(scope: ExecutionScope, series_id: SeriesId) -> str:
     api = "https://api.bilibili.com/x/v1/medialist/info?type=5&biz_id={series_id}"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id)))
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(series_id=series_id)))
     return json_data["data"]["title"]
 
 
 # 个人空间·稍后再看
-async def get_watch_later_avids(ctx: FetcherContext, client: AsyncClient) -> list[AvId]:
+async def get_watch_later_avids(scope: ExecutionScope) -> list[AvId]:
     api = "https://api.bilibili.com/x/v2/history/toview/web"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api))
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api))
     if json_data["code"] in [-101, -400]:
         raise NotLoginError("账号未登录，无法获取稍后再看列表哦~ Ծ‸Ծ")
     # TODO: 处理其他code不为0的异常

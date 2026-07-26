@@ -43,13 +43,12 @@ from yutto.validator import validate_batch_selection
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from yutto.core.execution import ExecutionScopeFactory
+    from yutto.core.execution import ExecutionScope, ExecutionScopeFactory
     from yutto.core.request import DanmakuRequestOptions, DownloadRequest
     from yutto.exceptions import YuttoBaseException
     from yutto.extractor._abc import EpisodeListedCallback
     from yutto.extractor.outcome import ResolveOutcome
     from yutto.types import EpisodeInfo, ResolvableEpisode
-    from yutto.utils.fetcher import ExecutionScope
 
 
 def show_batch_episode_title(
@@ -281,7 +280,6 @@ class DownloadManager:
 
             previous_result = await process_download(
                 scope,
-                scope.client,
                 episode_data,
                 {
                     "output_dir": request.output.directory,
@@ -366,7 +364,7 @@ class DownloadManager:
             raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
         # 重定向到可识别的 url
         try:
-            url = unwrap_fetch_result(await Fetcher.get_redirected_url(scope, scope.client, url))
+            url = unwrap_fetch_result(await Fetcher.get_redirected_url(scope, url))
         except httpx.InvalidURL:
             raise WrongUrlError(f"无效的 url({url})～请检查一下链接是否正确～") from None
         except httpx.UnsupportedProtocol:
@@ -396,9 +394,9 @@ class DownloadManager:
                     publication_time_filter=publication_time_filter,
                 )
                 if isinstance(extractor, BatchExtractor):
-                    download_list = await extractor(scope, scope.client, extractor_options, on_item=on_item)
+                    download_list = await extractor(scope, extractor_options, on_item=on_item)
                 else:
-                    download_list = await extractor(scope, scope.client, extractor_options)
+                    download_list = await extractor(scope, extractor_options)
                 break
         else:
             if request.scope.batch:

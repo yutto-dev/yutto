@@ -8,7 +8,8 @@ import httpx
 import pytest
 from returns.result import Failure, Success
 
-from yutto.utils.fetcher import Fetcher, FetcherContext, create_client, create_sync_client, resolve_proxy
+from yutto.core.execution import ExecutionScope
+from yutto.utils.fetcher import Fetcher, create_client, create_sync_client, resolve_proxy
 from yutto.utils.functional import as_sync
 
 
@@ -32,15 +33,6 @@ def test_resolve_proxy_auto_uses_system_proxy():
 
 def test_resolve_proxy_supports_socks5():
     assert resolve_proxy("socks5://127.0.0.1:1080") == ("socks5://127.0.0.1:1080", False)
-
-
-def test_fetcher_context_set_proxy_reuses_shared_rules():
-    ctx = FetcherContext()
-
-    ctx.set_proxy("https://127.0.0.1:7890")
-
-    assert ctx.proxy == "https://127.0.0.1:7890"
-    assert not ctx.trust_env
 
 
 def test_resolve_proxy_rejects_invalid_scheme():
@@ -91,7 +83,8 @@ class _StatusClient:
 
 @as_sync
 async def test_fetch_bin_keeps_non_success_status_as_success_none():
-    match await Fetcher.fetch_bin(FetcherContext(), cast("Any", _StatusClient(404)), "https://example.com"):
+    scope = ExecutionScope(cast("Any", _StatusClient(404)))
+    match await Fetcher.fetch_bin(scope, "https://example.com"):
         case Success(None):
             pass
         case result:
@@ -100,7 +93,8 @@ async def test_fetch_bin_keeps_non_success_status_as_success_none():
 
 @as_sync
 async def test_fetch_json_retries_non_success_status():
-    match await Fetcher.fetch_json(FetcherContext(), cast("Any", _StatusClient(404)), "https://example.com"):
+    scope = ExecutionScope(cast("Any", _StatusClient(404)))
+    match await Fetcher.fetch_json(scope, "https://example.com"):
         case Failure(error):
             assert error.message == "超出最大重试次数！"
         case result:
@@ -109,7 +103,8 @@ async def test_fetch_json_retries_non_success_status():
 
 @as_sync
 async def test_get_redirected_url_keeps_non_success_status_as_url():
-    match await Fetcher.get_redirected_url(FetcherContext(), cast("Any", _StatusClient(404)), "https://example.com"):
+    scope = ExecutionScope(cast("Any", _StatusClient(404)))
+    match await Fetcher.get_redirected_url(scope, "https://example.com"):
         case Success(url):
             assert url == "https://example.com"
         case result:
@@ -118,7 +113,8 @@ async def test_get_redirected_url_keeps_non_success_status_as_url():
 
 @as_sync
 async def test_touch_url_keeps_non_success_status_as_success_none():
-    match await Fetcher.touch_url(FetcherContext(), cast("Any", _StatusClient(404)), "https://example.com"):
+    scope = ExecutionScope(cast("Any", _StatusClient(404)))
+    match await Fetcher.touch_url(scope, "https://example.com"):
         case Success(None):
             pass
         case result:
@@ -127,7 +123,7 @@ async def test_touch_url_keeps_non_success_status_as_success_none():
 
 @pytest.mark.processor
 @as_sync
-async def test_touch_url_cache_is_scoped_to_context_and_client():
+async def test_touch_url_cache_is_scoped_to_execution_scope():
     class CountingClient(_StatusClient):
         def __init__(self):
             super().__init__(204)
@@ -139,16 +135,11 @@ async def test_touch_url_cache_is_scoped_to_context_and_client():
 
     first_client = CountingClient()
     second_client = CountingClient()
-    first_context = FetcherContext()
-    second_context = FetcherContext()
+    first_scope = ExecutionScope(cast("Any", first_client))
+    second_scope = ExecutionScope(cast("Any", second_client))
 
-    assert isinstance(await Fetcher.touch_url(first_context, cast("Any", first_client), "https://example.com"), Success)
-    assert isinstance(await Fetcher.touch_url(first_context, cast("Any", first_client), "https://example.com"), Success)
-    assert isinstance(
-        await Fetcher.touch_url(second_context, cast("Any", first_client), "https://example.com"), Success
-    )
-    assert isinstance(
-        await Fetcher.touch_url(second_context, cast("Any", second_client), "https://example.com"), Success
-    )
-    assert first_client.calls == 2
+    assert isinstance(await Fetcher.touch_url(first_scope, "https://example.com"), Success)
+    assert isinstance(await Fetcher.touch_url(first_scope, "https://example.com"), Success)
+    assert isinstance(await Fetcher.touch_url(second_scope, "https://example.com"), Success)
+    assert first_client.calls == 1
     assert second_client.calls == 1

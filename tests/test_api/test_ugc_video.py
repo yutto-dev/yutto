@@ -8,8 +8,9 @@ from yutto.api.ugc_video import (
     get_ugc_video_playurl,
     get_ugc_video_subtitles,
 )
+from yutto.core.execution import ExecutionScope
 from yutto.types import AId, BvId, CId, EpisodeId
-from yutto.utils.fetcher import FetcherContext, create_client
+from yutto.utils.fetcher import create_client
 from yutto.utils.functional import as_sync
 
 
@@ -21,9 +22,9 @@ async def test_get_ugc_video_info():
     aid = AId("84271171")
     avid = bvid
     episode_id = EpisodeId("300998")
-    ctx = FetcherContext()
     async with create_client() as client:
-        video_info = await get_ugc_video_info(ctx, client, avid=avid)
+        scope = ExecutionScope(client)
+        video_info = await get_ugc_video_info(scope, avid=avid)
         assert video_info["avid"] == aid or video_info["avid"] == bvid
         assert video_info["aid"] == aid
         assert video_info["bvid"] == bvid
@@ -37,9 +38,9 @@ async def test_get_ugc_video_info():
 @as_sync
 async def test_get_ugc_video_title():
     avid = BvId("BV1vZ4y1M7mQ")
-    ctx = FetcherContext()
     async with create_client() as client:
-        title = (await get_ugc_video_list(ctx, client, avid))["title"]
+        scope = ExecutionScope(client)
+        title = (await get_ugc_video_list(scope, avid))["title"]
         assert title == "用 bilili 下载 B 站视频"
 
 
@@ -47,9 +48,9 @@ async def test_get_ugc_video_title():
 @as_sync
 async def test_get_ugc_video_list():
     avid = BvId("BV1vZ4y1M7mQ")
-    ctx = FetcherContext()
     async with create_client() as client:
-        ugc_video_list = (await get_ugc_video_list(ctx, client, avid))["pages"]
+        scope = ExecutionScope(client)
+        ugc_video_list = (await get_ugc_video_list(scope, avid))["pages"]
         assert ugc_video_list[0]["id"] == 1
         assert ugc_video_list[0]["name"] == "bilili 特性以及使用方法简单介绍"
         assert ugc_video_list[0]["cid"] == CId("222190584")
@@ -71,9 +72,9 @@ async def test_get_ugc_video_list():
 async def test_get_ugc_video_playurl():
     avid = BvId("BV1vZ4y1M7mQ")
     cid = CId("222190584")
-    ctx = FetcherContext()
     async with create_client() as client:
-        playlist = await get_ugc_video_playurl(ctx, client, avid, cid)
+        scope = ExecutionScope(client)
+        playlist = await get_ugc_video_playurl(scope, avid, cid)
         assert len(playlist[0]) > 0
         assert len(playlist[1]) > 0
 
@@ -86,8 +87,8 @@ async def test_get_ugc_video_playurl():
 async def test_get_ugc_video_subtitles():
     avid = BvId("BV1Ra411A7kN")
     cid = CId("253246252")
-    ctx = FetcherContext()
     async with create_client() as client:
-        subtitles = await get_ugc_video_subtitles(ctx, client, avid=avid, cid=cid)
+        scope = ExecutionScope(client)
+        subtitles = await get_ugc_video_subtitles(scope, avid=avid, cid=cid)
         assert len(subtitles) > 0
         assert len(subtitles[0]["lines"]) > 0

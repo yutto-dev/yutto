@@ -8,10 +8,8 @@ from yutto.types import BvId
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
 if TYPE_CHECKING:
-    from httpx import AsyncClient
-
+    from yutto.core.execution import ExecutionScope
     from yutto.types import AvId, MId, SeriesId
-    from yutto.utils.fetcher import FetcherContext
 
 
 class CollectionDetailsItem(TypedDict):
@@ -25,12 +23,10 @@ class CollectionDetails(TypedDict):
     pages: list[CollectionDetailsItem]
 
 
-async def get_collection_details(
-    ctx: FetcherContext, client: AsyncClient, series_id: SeriesId, mid: MId
-) -> CollectionDetails:
+async def get_collection_details(scope: ExecutionScope, series_id: SeriesId, mid: MId) -> CollectionDetails:
     title, avids = await asyncio.gather(
-        _get_collection_title(ctx, client, series_id),
-        _get_collection_avids(ctx, client, series_id, mid),
+        _get_collection_title(scope, series_id),
+        _get_collection_avids(scope, series_id, mid),
     )
     return CollectionDetails(
         title=title,
@@ -45,7 +41,7 @@ async def get_collection_details(
     )
 
 
-async def _get_collection_avids(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId, mid: MId) -> list[AvId]:
+async def _get_collection_avids(scope: ExecutionScope, series_id: SeriesId, mid: MId) -> list[AvId]:
     api = "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
     ps = 30
     pn = 1
@@ -54,14 +50,14 @@ async def _get_collection_avids(ctx: FetcherContext, client: AsyncClient, series
 
     while pn <= total:
         space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn, mid=mid)
-        json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, space_videos_url))
+        json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, space_videos_url))
         total = math.ceil(json_data["data"]["page"]["total"] / ps)
         pn += 1
         all_avid += [BvId(archives["bvid"]) for archives in json_data["data"]["archives"]]
     return all_avid
 
 
-async def _get_collection_title(ctx: FetcherContext, client: AsyncClient, series_id: SeriesId) -> str:
+async def _get_collection_title(scope: ExecutionScope, series_id: SeriesId) -> str:
     api = "https://api.bilibili.com/x/v1/medialist/info?type=8&biz_id={series_id}"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(ctx, client, api.format(series_id=series_id)))
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(series_id=series_id)))
     return json_data["data"]["title"]
