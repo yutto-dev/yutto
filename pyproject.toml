@@ -121,5 +121,5 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 "setup.py" = ["I"]
 
 [build-system]
-requires = ["uv_build>=0.11.0,<0.12.0"]
+requires = ["uv_build>=0.12.1,<0.13.0"]
 build-backend = "uv_build"
