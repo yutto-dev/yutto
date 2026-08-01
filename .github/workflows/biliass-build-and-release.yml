@@ -55,7 +55,9 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.14 3.14t'
+          args: >-
+            --release --out dist --interpreter '3.14 3.14t'
+            --no-default-features --features abi3
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
@@ -64,7 +66,9 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter 3.15t
+          args: >-
+            --release --out dist --interpreter 3.15t
+            --no-default-features --features abi3t
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
@@ -98,7 +102,9 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.14 3.14t'
+          args: >-
+            --release --out dist --interpreter '3.14 3.14t'
+            --no-default-features --features abi3
           sccache: "true"
           manylinux: musllinux_1_2
           working-directory: packages/biliass
@@ -107,7 +113,9 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter 3.15t
+          args: >-
+            --release --out dist --interpreter 3.15t
+            --no-default-features --features abi3t
           sccache: "true"
           manylinux: musllinux_1_2
           working-directory: packages/biliass
@@ -142,6 +150,7 @@ jobs:
           args: >-
             --release --out dist --interpreter
             ${{ steps.setup-python.outputs.python-path }}
+            --no-default-features --features abi3
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
@@ -157,7 +166,11 @@ jobs:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
-        python-version: ["3.14t", "3.15t"]
+        python:
+          - version: "3.14t"
+            features: --no-default-features --features abi3
+          - version: "3.15t"
+            features: --no-default-features --features abi3t
         platform:
           - runner: windows-latest
             target: x64
@@ -168,7 +181,7 @@ jobs:
       - id: setup-python
         uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python.version }}
           architecture: ${{ matrix.platform.target }}
           allow-prereleases: true
       - name: Build free-threaded-compatible wheel
@@ -179,12 +192,13 @@ jobs:
           args: >-
             --release --out dist --interpreter
             ${{ steps.setup-python.outputs.python-path }}
+            ${{ matrix.python.features }}
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-windows-free-threaded-${{ matrix.python-version }}-${{ matrix.platform.target }}
+          name: wheels-windows-free-threaded-${{ matrix.python.version }}-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
   macos:
@@ -207,7 +221,9 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter '3.14 3.14t'
+          args: >-
+            --release --out dist --interpreter '3.14 3.14t'
+            --no-default-features --features abi3
           sccache: "true"
           working-directory: packages/biliass
       - name: Build abi3t wheels
@@ -215,7 +231,9 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --interpreter 3.15t
+          args: >-
+            --release --out dist --interpreter 3.15t
+            --no-default-features --features abi3t
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
