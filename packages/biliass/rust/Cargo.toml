@@ -24,7 +24,7 @@ rustc-hash = "2.0.0"
 [features]
 default = ["abi3"]
 abi3 = ["pyo3/abi3-py311"]
-abi3t = ["pyo3/abi3-py315", "pyo3/abi3t-py315"]
+abi3t = ["pyo3/abi3t-py315"]
 
 [build-dependencies]
 prost-build = "0.14.4"
