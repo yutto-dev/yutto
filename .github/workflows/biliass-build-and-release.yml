@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MATURIN_ACTION_VERSION: v1.12.6
+  MATURIN_ACTION_VERSION: v1.14.1
 
 jobs:
   linux:
@@ -50,12 +50,21 @@ jobs:
         with:
           python-version: 3.x
           allow-prereleases: true
-      - name: Build wheels
+      - name: Build abi3 and Python 3.14t wheels
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
+          sccache: "true"
+          manylinux: auto
+          working-directory: packages/biliass
+      - name: Build abi3t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter 3.15t --features abi3t
           sccache: "true"
           manylinux: auto
           working-directory: packages/biliass
@@ -84,12 +93,21 @@ jobs:
         with:
           python-version: 3.x
           allow-prereleases: true
-      - name: Build wheels
+      - name: Build abi3 and Python 3.14t wheels
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
+          sccache: "true"
+          manylinux: musllinux_1_2
+          working-directory: packages/biliass
+      - name: Build abi3t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter 3.15t --features abi3t
           sccache: "true"
           manylinux: musllinux_1_2
           working-directory: packages/biliass
@@ -116,7 +134,7 @@ jobs:
           python-version: "3.14"
           architecture: ${{ matrix.platform.target }}
           allow-prereleases: true
-      - name: Build wheels
+      - name: Build abi3 wheel
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
@@ -132,14 +150,14 @@ jobs:
           name: wheels-windows-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
-  # Python 3.13 standard and free-threaded versions cannot be
-  # available at the same time on Windows machines, so we
-  # split it into two jobs.
+  # Standard and free-threaded Python installations cannot be available at the
+  # same time on Windows machines, so we split them into two jobs.
   # https://github.com/Quansight-Labs/setup-python/issues/5
   windows-free-threaded:
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
+        python-version: ["3.14t", "3.15t"]
         platform:
           - runner: windows-latest
             target: x64
@@ -150,10 +168,11 @@ jobs:
       - id: setup-python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.14t"
+          python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.platform.target }}
           allow-prereleases: true
-      - name: Build wheels
+      - name: Build Python 3.14t wheel
+        if: ${{ matrix.python-version == '3.14t' }}
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
@@ -163,10 +182,22 @@ jobs:
             ${{ steps.setup-python.outputs.python-path }}
           sccache: "true"
           working-directory: packages/biliass
+      - name: Build abi3t wheel
+        if: ${{ matrix.python-version == '3.15t' }}
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
+            --features abi3t
+          sccache: "true"
+          working-directory: packages/biliass
       - name: Upload wheels
         uses: actions/upload-artifact@v7
         with:
-          name: wheels-windows-free-threaded-${{ matrix.python-versions }}-${{ matrix.platform.target }}
+          name: wheels-windows-free-threaded-${{ matrix.python-version }}-${{ matrix.platform.target }}
           path: packages/biliass/dist
 
   macos:
@@ -184,12 +215,20 @@ jobs:
         with:
           python-version: 3.x
           allow-prereleases: true
-      - name: Build wheels
+      - name: Build abi3 and Python 3.14t wheels
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --out dist --interpreter '3.14 3.14t'
+          sccache: "true"
+          working-directory: packages/biliass
+      - name: Build abi3t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter 3.15t --features abi3t
           sccache: "true"
           working-directory: packages/biliass
       - name: Upload wheels
