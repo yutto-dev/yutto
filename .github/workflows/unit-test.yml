@@ -47,7 +47,7 @@ jobs:
           just ci-test ${{ matrix.python-version }}
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@v5
         if: ${{ matrix.python-version == '3.14' && github.event_name != 'merge_group' && !github.event.repository.fork }}
         with:
           mode: simulation
