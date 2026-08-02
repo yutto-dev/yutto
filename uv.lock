@@ -673,6 +673,11 @@ dependencies = [
     { name = "websockets" },
 ]
 
+[package.optional-dependencies]
+rust = [
+    { name = "yutto-core" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -682,6 +687,7 @@ dev = [
     { name = "syrupy" },
     { name = "ty" },
     { name = "typos" },
+    { name = "yutto-core" },
 ]
 
 [package.metadata]
@@ -696,7 +702,9 @@ requires-dist = [
     { name = "segno", specifier = ">=1.6.6" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "websockets", specifier = ">=17,<18" },
+    { name = "yutto-core", marker = "extra == 'rust'", editable = "packages/yutto-core" },
 ]
+provides-extras = ["rust"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -707,9 +715,10 @@ dev = [
     { name = "syrupy", specifier = ">=5.5.3" },
     { name = "ty", specifier = ">=0.0.65" },
     { name = "typos", specifier = ">=1.48.0" },
+    { name = "yutto-core", editable = "packages/yutto-core" },
 ]
 
 [[package]]
 name = "yutto-core"
-version = "0.0.0"
-source = { virtual = "packages/yutto-core" }
+version = "0.1.0"
+source = { editable = "packages/yutto-core" }

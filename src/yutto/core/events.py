@@ -44,8 +44,9 @@ class DownloadProgress:
     speed_per_second: float
     phase: DownloadStage = DownloadStage.DOWNLOADING
     unit: Literal["bytes"] = "bytes"
-    # CLI-local congestion telemetry; intentionally excluded from the v1 task event payload.
-    buffered_blocks: int = 0
+    # CLI-local buffer telemetry; intentionally excluded from the v1 task event payload.
+    buffered_bytes: int = 0
+    is_congested: bool = False
 
 
 @dataclass(frozen=True, slots=True)

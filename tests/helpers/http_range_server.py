@@ -5,6 +5,7 @@ import time
 from collections import deque
 from dataclasses import InitVar, dataclass, field
 from enum import StrEnum
+from hashlib import sha256
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Event, Lock, Thread
 from typing import TYPE_CHECKING, Any
@@ -46,6 +47,7 @@ class LocalRangeServer:
     barrier_timeout: float = 2
     requests: list[RecordedRangeRequest] = field(default_factory=list, init=False)
     completed_requests: list[RecordedRangeRequest] = field(default_factory=list, init=False)
+    etag: str = field(init=False)
     _faults: dict[RangeBounds, deque[RangeFault]] = field(default_factory=dict, init=False)
     _completed_ranges: dict[RangeBounds, Event] = field(default_factory=dict, init=False)
     _lock: Lock = field(default_factory=Lock, init=False)
@@ -53,6 +55,7 @@ class LocalRangeServer:
     _thread: Thread | None = field(default=None, init=False)
 
     def __post_init__(self, faults: Iterable[RangeFaultSpec] | None) -> None:
+        self.etag = f'"{sha256(self.payload).hexdigest()}"'
         for expected_range, fault in faults or ():
             self._faults.setdefault(expected_range, deque()).append(fault)
 
@@ -157,8 +160,8 @@ class LocalRangeServer:
         )
         return requested_range
 
-    @staticmethod
     def _write_response(
+        self,
         handler: BaseHTTPRequestHandler,
         status: int,
         body: bytes,
@@ -169,6 +172,7 @@ class LocalRangeServer:
         handler.send_response(status)
         handler.send_header("Content-Length", str(len(body)))
         handler.send_header("Connection", "close")
+        handler.send_header("ETag", self.etag)
         if content_range is not None:
             handler.send_header("Content-Range", content_range)
         handler.end_headers()

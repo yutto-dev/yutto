@@ -22,16 +22,40 @@ if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
 
-def _render_bar(data: float, color: Color, width: int) -> str:
-    length = width * min(max(data, 0), 1)
-    whole = int(length)
-    if whole == width:
-        return "━" * width
-    symbol = "╸━"[int((length - whole) * 2)]
-    return colored_string("━" * whole + symbol, fore=color) + colored_string(
-        "━" * (width - whole - 1),
-        fore=RGBColor(64, 64, 64),
-    )
+def _render_bar(
+    committed: int,
+    buffered: int,
+    total: int,
+    committed_color: Color,
+    buffered_color: Color,
+    width: int,
+) -> str:
+    committed = min(max(committed, 0), total)
+    buffered = min(max(buffered, 0), total - committed)
+    received = committed + buffered
+
+    half_width = width * 2
+    committed_units = min(half_width, (half_width * committed + total - 1) // total)
+    received_units = min(half_width, (half_width * received + total - 1) // total)
+
+    remaining_color = RGBColor(64, 64, 64)
+    runs: list[tuple[str, Color]] = []
+    for cell in range(width):
+        cell_start = cell * 2
+        received_in_cell = min(2, max(0, received_units - cell_start))
+        if received_in_cell == 0:
+            glyph, color = "━", remaining_color
+        else:
+            glyph = "━" if received_in_cell == 2 else "╸"
+            committed_in_cell = min(received_in_cell, max(0, committed_units - cell_start))
+            color = committed_color if committed_in_cell > 0 else buffered_color
+
+        if runs and runs[-1][1] == color:
+            runs[-1] = (runs[-1][0] + glyph, color)
+        else:
+            runs.append((glyph, color))
+
+    return "".join(colored_string(glyphs, fore=color) for glyphs, color in runs)
 
 
 class CliApplicationEventRenderer:
@@ -95,8 +119,6 @@ class CliApplicationEventRenderer:
             case DownloadStageChanged():
                 self._progress_active = False
             case DownloadProgress() as progress:
-                if progress.buffered_blocks > 2048:
-                    Logger.debug(f"number blocks in buffer: {progress.buffered_blocks}")
                 if self.progress_enabled:
                     self._progress_active = True
                     self._render_progress(progress)
@@ -107,11 +129,20 @@ class CliApplicationEventRenderer:
 
     def _render_progress(self, progress: DownloadProgress) -> None:
         is_fast = progress.speed_per_second >= 8 * 1024 * 1024
-        is_congested = progress.buffered_blocks > 2048
-        bar_color: Color = "red" if is_congested else ("green" if is_fast else "cyan")
+        committed_color: Color = "green" if is_fast else "cyan"
+        buffered_color: Color = "red" if progress.is_congested else "yellow"
+        buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
+        committed_bytes = progress.current - buffered_bytes
         bar_width = min(get_terminal_size()[0] - 40, 50)
         bar = (
-            _render_bar(progress.current / progress.total, bar_color, bar_width)
+            _render_bar(
+                committed_bytes,
+                buffered_bytes,
+                progress.total,
+                committed_color,
+                buffered_color,
+                bar_width,
+            )
             if bar_width >= 10 and progress.total > 0
             else ""
         )

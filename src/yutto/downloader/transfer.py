@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from yutto.core.events import DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event, emit_download_report
-from yutto.downloader.progressbar import show_progress
+from yutto.downloader.progressbar import show_native_progress, show_progress
 from yutto.exceptions import MaxRetryError
 from yutto.utils.asynclib import NoSuccessfulResultError, make_coroutine_factory, race_for_first_success
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
@@ -26,10 +26,8 @@ if TYPE_CHECKING:
         async def close(self) -> None: ...
 
 
-def slice_blocks(start: int, total_size: int | None, block_size: int | None = None) -> list[tuple[int, int | None]]:
+def slice_blocks(start: int, total_size: int, block_size: int | None = None) -> list[tuple[int, int]]:
     """Generate the (offset, byte count) ranges used by parallel downloads."""
-    if total_size is None:
-        return [(0, None)]
     assert start <= total_size, f"起始地址（{start}）大于总地址（{total_size}）"
     remaining = total_size - start
     if remaining == 0:
@@ -53,9 +51,12 @@ def create_mirrors_filter(banned_mirrors_pattern: str | None) -> Callable[[list[
     return mirrors_filter
 
 
-async def _probe_media_size(scope: ExecutionScope, url: str, mirrors: Iterable[str]) -> int | None:
-    async def probe(candidate: str) -> int | None:
-        return unwrap_fetch_result(await Fetcher.get_size(scope, candidate))
+async def _probe_media_size(scope: ExecutionScope, url: str, mirrors: Iterable[str]) -> int:
+    async def probe(candidate: str) -> int:
+        size = unwrap_fetch_result(await Fetcher.get_size(scope, candidate))
+        if size is None:
+            raise MaxRetryError("媒体大小探测未返回长度")
+        return size
 
     create_probe = make_coroutine_factory(probe)
     try:
@@ -98,9 +99,17 @@ async def _run_download_lifecycle(
 
 
 async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) -> None:
+    """Download media with the backend selected explicitly by the plan."""
+    if plan.download_backend == "rust":
+        await _download_video_and_audio_rust(scope, plan)
+    else:
+        await _download_video_and_audio_python(scope, plan)
+
+
+async def _download_video_and_audio_python(scope: ExecutionScope, plan: DownloadPlan) -> None:
     """Download the media inputs described by a plan."""
     buffers: list[AsyncFileBuffer | None] = [None, None]
-    sizes: list[int | None] = [None, None]
+    sizes: list[int] = []
     coroutine_factories_list: list[list[Callable[[], Coroutine[Any, Any, None]]]] = []
     lifecycle_started = False
     mirrors_filter = create_mirrors_filter(plan.banned_mirrors_pattern)
@@ -119,10 +128,10 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             )
             video_buffer = await AsyncFileBuffer.open(
                 plan.paths.video,
-                overwrite=plan.overwrite or video_size is None,
+                overwrite=plan.overwrite,
             )
             buffers[0] = video_buffer
-            sizes[0] = video_size
+            sizes.append(video_size)
             coroutine_factories_list.append(
                 [
                     defer_download_file(
@@ -149,10 +158,10 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             )
             audio_buffer = await AsyncFileBuffer.open(
                 plan.paths.audio,
-                overwrite=plan.overwrite or audio_size is None,
+                overwrite=plan.overwrite,
             )
             buffers[1] = audio_buffer
-            sizes[1] = audio_size
+            sizes.append(audio_size)
             coroutine_factories_list.append(
                 [
                     defer_download_file(
@@ -173,9 +182,7 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
 
         coroutine_factories = list(xmerge(*coroutine_factories_list))
         media_buffers = filter_none_values(buffers)
-        known_sizes = filter_none_values(sizes)
-        if len(known_sizes) == len(media_buffers):
-            coroutine_factories.insert(0, defer_progress(media_buffers, sum(known_sizes)))
+        coroutine_factories.insert(0, defer_progress(media_buffers, sum(sizes)))
         lifecycle_started = True
         await _run_download_lifecycle(coroutine_factories, media_buffers)
         emit_download_report("下载完成！")
@@ -183,6 +190,73 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
         if not lifecycle_started:
             for buffer in filter_none_values(buffers):
                 await buffer.close()
+
+
+async def _download_video_and_audio_rust(scope: ExecutionScope, plan: DownloadPlan) -> None:
+    try:
+        from yutto_core import start_transfer, wait_for_transfer
+    except ImportError as error:
+        raise RuntimeError("Rust 下载后端不可用，请安装带有 yutto-core 的 yutto 后再重试") from error
+
+    handles = []
+    wait_tasks: list[asyncio.Task[int]] = []
+    progress_task: asyncio.Task[None] | None = None
+    sizes: list[int] = []
+    mirrors_filter = create_mirrors_filter(plan.banned_mirrors_pattern)
+
+    emit_download_event(DownloadStageChanged(name=DownloadStage.DOWNLOADING, item=plan.item))
+    emit_download_report("开始下载……")
+    try:
+        for stream, target in (
+            (plan.video, plan.paths.video),
+            (plan.audio, plan.paths.audio),
+        ):
+            if stream is None:
+                continue
+            mirrors = mirrors_filter(list(stream.mirrors))
+            size = await _probe_media_size(scope, stream.url, mirrors)
+            sizes.append(size)
+            handle = start_transfer(
+                [stream.url, *mirrors],
+                target,
+                size,
+                overwrite=plan.overwrite,
+                headers=_native_http_headers(scope),
+                proxy=scope.proxy,
+                use_system_proxy=scope.trust_env,
+                # The current httpx media path is configured with verify=False.
+                accept_invalid_certs=True,
+                workers=scope.download_workers,
+                block_size=plan.block_size,
+            )
+            handles.append(handle)
+
+        wait_tasks = [asyncio.create_task(wait_for_transfer(handle, poll_interval=0.05)) for handle in handles]
+        if handles:
+            progress_task = asyncio.create_task(show_native_progress(handles, sum(sizes)))
+        await asyncio.gather(*wait_tasks)
+        if progress_task is not None:
+            await progress_task
+        emit_download_report("下载完成！")
+    finally:
+        for handle in handles:
+            if not handle.done():
+                handle.cancel()
+        for task in wait_tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*wait_tasks, return_exceptions=True)
+        if progress_task is not None and not progress_task.done():
+            progress_task.cancel()
+            await asyncio.gather(progress_task, return_exceptions=True)
+
+
+def _native_http_headers(scope: ExecutionScope) -> dict[str, str]:
+    headers = dict(scope.client.headers.multi_items())
+    cookies = "; ".join(f"{cookie.name}={cookie.value}" for cookie in scope.client.cookies.jar)
+    if cookies:
+        headers["cookie"] = cookies
+    return headers
 
 
 def cleanup_temporary_media(plan: DownloadPlan) -> None:
