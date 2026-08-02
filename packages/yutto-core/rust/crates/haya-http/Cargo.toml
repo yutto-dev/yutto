@@ -1,23 +1,22 @@
 [package]
-name = "haya"
+name = "haya-http"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 license = "MIT OR Apache-2.0"
-description = "A bounded, resilient, multi-source asynchronous downloader core"
+description = "Reqwest HTTP Range source adapter for Haya"
 readme = "README.md"
-keywords = ["async", "download", "resumable", "http", "multi-source"]
+keywords = ["async", "download", "http", "range", "reqwest"]
 categories = ["asynchronous", "network-programming"]
 publish = ["crates-io"]
 
 [dependencies]
 async-trait.workspace = true
-bytes.workspace = true
 futures-util.workspace = true
-thiserror.workspace = true
-tokio.workspace = true
-tokio-util.workspace = true
+haya = { version = "0.0.1", path = "../haya" }
+reqwest.workspace = true
 
 [dev-dependencies]
 tempfile = "3.23.0"
+tokio.workspace = true
