@@ -25,6 +25,9 @@ lint:
 build:
   uv build
 
+build-yutto-core:
+  uv build --package yutto-core
+
 release:
   @echo 'Tagging v{{VERSION}}...'
   git tag "v{{VERSION}}"

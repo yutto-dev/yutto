@@ -3,6 +3,7 @@ name = "yutto-core"
 version = "0.1.0"
 description = "Rust core for yutto"
 requires-python = ">=3.11"
+license = "GPL-3.0-only"
 dependencies = []
 
 [tool.maturin]

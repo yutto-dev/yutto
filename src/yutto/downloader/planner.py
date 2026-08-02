@@ -101,7 +101,6 @@ class DownloadPlan:
     attach_hvc1_tag: bool
     requires_audio_transcode_notice: bool
     overwrite: bool
-    download_backend: str
     block_size: int
     banned_mirrors_pattern: str | None
     resources: DownloadResources
@@ -200,7 +199,6 @@ class DownloadPlanner:
                 audio_meta is not None and audio_save_codec not in {requested_audio_save_codec, "copy"}
             ),
             overwrite=request.output.overwrite,
-            download_backend=request.network.download_backend,
             block_size=request.network.block_size_bytes,
             banned_mirrors_pattern=request.network.banned_mirrors_pattern,
             resources=resources,

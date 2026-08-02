@@ -326,11 +326,10 @@ async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
     assert first_scope.client is not second_scope.client
     assert first_scope.client.is_closed and second_scope.client.is_closed
     assert first_scope.fetch_limiter._value == 2
-    assert first_scope.download_limiter._value == 3
+    assert first_scope.download_workers == 3
     assert second_scope.fetch_limiter._value == 5
-    assert second_scope.download_limiter._value == 7
+    assert second_scope.download_workers == 7
     assert first_scope.fetch_limiter is not second_scope.fetch_limiter
-    assert first_scope.download_limiter is not second_scope.download_limiter
     assert first_scope.client.cookies.get("SESSDATA") == "first%2Csession"
     assert second_scope.client.cookies.get("SESSDATA") == "second%2Csession"
     assert result == DownloadResult(

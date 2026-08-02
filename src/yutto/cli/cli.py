@@ -213,12 +213,6 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         help="分块下载时各块大小，单位为 MiB，默认为 0.5MiB",
     )
     group_basic.add_argument(
-        "--download-backend",
-        default=settings.basic.download_backend,
-        choices=["python", "rust"],
-        help="媒体下载后端（rust 为实验性后端）",
-    )
-    group_basic.add_argument(
         "-w", "--overwrite", default=settings.basic.overwrite, action="store_true", help="强制覆盖已下载内容"
     )
     group_basic.add_argument(

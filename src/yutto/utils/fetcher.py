@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import random
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from urllib.parse import quote, unquote, urlparse
 
-import h2.exceptions
 import httpx
 from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
@@ -20,7 +18,6 @@ if TYPE_CHECKING:
 
     from yutto.auth import AuthInfo
     from yutto.core.execution import ExecutionScope
-    from yutto.utils.file_buffer import AsyncFileBuffer
 
 RetT = TypeVar("RetT")
 InputT = ParamSpec("InputT")
@@ -202,77 +199,6 @@ class Fetcher:
             emit_download_report(f"Touch url: {url}", level=ReportLevel.DEBUG)
             await scope.client.get(url)
             scope.touched_urls.add(url)
-
-    @staticmethod
-    async def download_file_with_offset(
-        scope: ExecutionScope,
-        url: str,
-        mirrors: list[str],
-        file_buffer: AsyncFileBuffer,
-        offset: int,
-        size: int | None,
-    ) -> None:
-        async with scope.download_guard():
-            emit_download_report(
-                f"Start download (offset {offset}, number of mirrors {len(mirrors)}) {url}",
-                level=ReportLevel.DEBUG,
-            )
-            done = False
-            headers = scope.client.headers.copy()
-            url_pool = [url] + mirrors
-            block_offset = 0
-            while not done:
-                try:
-                    url = random.choice(url_pool)
-                    request_offset = offset + block_offset
-                    headers["Range"] = "bytes={}-{}".format(
-                        request_offset, offset + size - 1 if size is not None else ""
-                    )
-                    async with scope.client.stream(
-                        "GET",
-                        url,
-                        headers=headers,
-                        timeout=httpx.Timeout(7, connect=3),
-                    ) as resp:
-                        if size is None and request_offset > 0 and resp.status_code == 200:
-                            # The origin ignored our retry Range and returned the whole
-                            # representation. Unknown-size transfers have one writer, so
-                            # restarting it is safe; appending here would duplicate the prefix.
-                            await file_buffer.restart()
-                            offset = 0
-                            block_offset = 0
-                        # 如果直接用 1KiB 的话，会产生大量的块，需要消耗大量的 CPU 资源来维持顺序，
-                        # 而使用 1MiB 以上或者不使用流式下载方式时，由于分块太大，
-                        # 导致进度条显示的实时速度并不准，波动太大，用户体验不佳，
-                        # 因此取两者折中
-                        async for chunk in resp.aiter_bytes(2**16):
-                            await file_buffer.write(chunk, offset + block_offset)
-                            block_offset += len(chunk)
-                    # TODO: 是否需要校验总大小
-                    done = True
-
-                except httpx.TimeoutException:
-                    emit_download_report(
-                        f"文件 {file_buffer.file_path} 下载超时，尝试重新连接...",
-                        level=ReportLevel.WARNING,
-                    )
-                    emit_download_report(f"超时链接：{url}", level=ReportLevel.DEBUG)
-                except (httpx.HTTPError, h2.exceptions.H2Error) as e:
-                    await asyncio.sleep(0.5)
-                    error_type = e.__class__.__name__
-                    emit_download_report(
-                        f"文件 {file_buffer.file_path} 下载出错（{error_type}），尝试重新连接...",
-                        level=ReportLevel.WARNING,
-                    )
-                    emit_download_report(f"超时链接：{url}", level=ReportLevel.DEBUG)
-                except ValueError as e:
-                    # 由于 httpx 经常出现此问题，暂时捕获该问题
-                    if "semaphore released too many times" not in str(e):
-                        raise e
-                    emit_download_report(
-                        f"文件 {file_buffer.file_path} 下载出错（{e}），尝试重新连接...",
-                        level=ReportLevel.WARNING,
-                    )
 
 
 def _client_kwargs(

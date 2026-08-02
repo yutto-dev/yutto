@@ -27,7 +27,6 @@ class ExecutionScope:
 
     client: AsyncClient
     fetch_limiter: asyncio.Semaphore
-    download_limiter: asyncio.Semaphore
     download_workers: int
     proxy: str | None
     trust_env: bool
@@ -50,7 +49,6 @@ class ExecutionScope:
             raise ValueError("download_workers must be at least 1")
         self.client = client
         self.fetch_limiter = asyncio.Semaphore(fetch_workers)
-        self.download_limiter = asyncio.Semaphore(download_workers)
         self.download_workers = download_workers
         self.proxy = proxy
         self.trust_env = trust_env
@@ -61,11 +59,6 @@ class ExecutionScope:
     @asynccontextmanager
     async def fetch_guard(self):
         async with self.fetch_limiter:
-            yield
-
-    @asynccontextmanager
-    async def download_guard(self):
-        async with self.download_limiter:
             yield
 
 

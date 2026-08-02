@@ -30,6 +30,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.architecture }}
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install just
         uses: extractions/setup-just@v4
         env:
@@ -76,15 +79,14 @@ jobs:
         working-directory: packages/biliass/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
-      - name: Format Haya workspace with rustfmt
+      - name: Format yutto-core with rustfmt
         working-directory: packages/yutto-core/rust
         run: |
           cargo fmt --all -- --check
-      - name: Lint Haya workspace with clippy
+      - name: Lint yutto-core with clippy
         working-directory: packages/yutto-core/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
-
   lint-and-fmt-docs:
     name: Lint and Format (Docs)
     runs-on: ubuntu-latest

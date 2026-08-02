@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from typing import Any, cast
 
 import pytest
@@ -40,25 +39,6 @@ def test_execution_scope_rejects_non_positive_workers(
 
 
 @as_sync
-async def test_execution_scope_download_guard_limits_concurrency():
-    scope = ExecutionScope(cast("Any", object()), download_workers=2)
-    running = 0
-    max_running = 0
-
-    async def work() -> None:
-        nonlocal running, max_running
-        async with scope.download_guard():
-            running += 1
-            max_running = max(max_running, running)
-            await asyncio.sleep(0)
-            running -= 1
-
-    await asyncio.gather(*(work() for _ in range(8)))
-
-    assert max_running == 2
-
-
-@as_sync
 async def test_scope_factory_opens_fresh_clients_limiters_and_caches():
     factory = RequestExecutionScopeFactory()
     request = make_request()
@@ -66,7 +46,7 @@ async def test_scope_factory_opens_fresh_clients_limiters_and_caches():
     async with factory.open(request) as first_scope:
         first_client = first_scope.client
         first_fetch_limiter = first_scope.fetch_limiter
-        first_download_limiter = first_scope.download_limiter
+        assert first_scope.download_workers == 8
         first_scope.user_info_cache = UserInfo(vip_status=True, is_login=True)
         first_scope.wbi_img_cache = {"img_key": "img", "sub_key": "sub"}
         first_scope.touched_urls.add("https://example.com")
@@ -76,7 +56,7 @@ async def test_scope_factory_opens_fresh_clients_limiters_and_caches():
     async with factory.open(request) as second_scope:
         assert second_scope.client is not first_client
         assert second_scope.fetch_limiter is not first_fetch_limiter
-        assert second_scope.download_limiter is not first_download_limiter
+        assert second_scope.download_workers == 8
         assert second_scope.user_info_cache is None
         assert second_scope.wbi_img_cache is None
         assert second_scope.touched_urls == set()

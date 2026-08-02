@@ -31,6 +31,9 @@ jobs:
           architecture: ${{ matrix.architecture }}
           allow-prereleases: true
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install tools
         run: |
           sudo apt update

@@ -661,7 +661,6 @@ name = "yutto"
 version = "2.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aiofiles" },
     { name = "biliass" },
     { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "dict2xml" },
@@ -671,15 +670,12 @@ dependencies = [
     { name = "segno" },
     { name = "typing-extensions" },
     { name = "websockets" },
-]
-
-[package.optional-dependencies]
-rust = [
     { name = "yutto-core" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "aiofiles" },
     { name = "pytest" },
     { name = "pytest-codspeed" },
     { name = "pytest-rerunfailures" },
@@ -687,12 +683,10 @@ dev = [
     { name = "syrupy" },
     { name = "ty" },
     { name = "typos" },
-    { name = "yutto-core" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "biliass", editable = "packages/biliass" },
     { name = "colorama", marker = "sys_platform == 'win32'", specifier = ">=0.4.6" },
     { name = "dict2xml", specifier = ">=1.7.8" },
@@ -702,12 +696,12 @@ requires-dist = [
     { name = "segno", specifier = ">=1.6.6" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "websockets", specifier = ">=17,<18" },
-    { name = "yutto-core", marker = "extra == 'rust'", editable = "packages/yutto-core" },
+    { name = "yutto-core", editable = "packages/yutto-core" },
 ]
-provides-extras = ["rust"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "aiofiles", specifier = ">=25.1.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-codspeed", specifier = ">=5.0.3" },
     { name = "pytest-rerunfailures", specifier = ">=16.4" },
@@ -715,7 +709,6 @@ dev = [
     { name = "syrupy", specifier = ">=5.5.3" },
     { name = "ty", specifier = ">=0.0.65" },
     { name = "typos", specifier = ">=1.48.0" },
-    { name = "yutto-core", editable = "packages/yutto-core" },
 ]
 
 [[package]]

@@ -68,7 +68,6 @@ def download_request_from_namespace(args: argparse.Namespace) -> DownloadRequest
             "metadata_format_premiered": args.metadata_format_premiered,
         },
         "network": {
-            "download_backend": args.download_backend,
             "proxy": args.proxy,
             "fetch_workers": args.fetch_workers,
             "download_workers": args.num_workers,
@@ -161,7 +160,6 @@ def _download_request_defaults_from_settings(settings: YuttoSettings) -> dict[st
             "metadata_format_premiered": settings.basic.metadata_format_premiered,
         },
         "network": {
-            "download_backend": settings.basic.download_backend,
             "proxy": settings.basic.proxy,
             "fetch_workers": settings.basic.fetch_workers,
             "download_workers": settings.basic.num_workers,
