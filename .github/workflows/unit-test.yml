@@ -52,3 +52,17 @@ jobs:
         with:
           mode: simulation
           run: uv run -p ${{ matrix.python-version }} pytest --codspeed
+
+  unit-test-yutto-core:
+    name: yutto-core Rust unit test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run unit tests
+        working-directory: packages/yutto-core/rust
+        run: cargo test --all-targets --all-features

@@ -76,6 +76,14 @@ jobs:
         working-directory: packages/biliass/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
+      - name: Format Haya workspace with rustfmt
+        working-directory: packages/yutto-core/rust
+        run: |
+          cargo fmt --all -- --check
+      - name: Lint Haya workspace with clippy
+        working-directory: packages/yutto-core/rust
+        run: |
+          cargo clippy --all-targets --all-features -- -D warnings
 
   lint-and-fmt-docs:
     name: Lint and Format (Docs)

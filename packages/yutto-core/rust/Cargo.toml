@@ -1,0 +1,18 @@
+[workspace]
+members = ["crates/haya"]
+resolver = "3"
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.85"
+repository = "https://github.com/yutto-dev/yutto"
+license = "GPL-3.0-only"
+
+[workspace.dependencies]
+async-trait = "0.1.89"
+bytes = "1.10.1"
+futures-util = "0.3.31"
+thiserror = "2.0.17"
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tokio-util = { version = "0.7.17", features = ["rt"] }
