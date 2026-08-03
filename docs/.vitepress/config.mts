@@ -132,7 +132,7 @@ export default defineConfig({
 
   markdown: {
     image: {
-      lazyLoading: true,
+      lazyLoad: true,
     },
     config(md) {
       md.use(groupIconMdPlugin)
