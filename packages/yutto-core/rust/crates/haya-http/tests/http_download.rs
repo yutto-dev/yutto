@@ -172,6 +172,7 @@ fn spec(expected_size: u64) -> DownloadSpec {
         workers: 3,
         max_attempts: 2,
         source_cooldown: Duration::from_millis(1),
+        attempt_timeout: Duration::from_secs(1),
     }
 }
 
