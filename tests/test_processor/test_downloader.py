@@ -14,7 +14,12 @@ from yutto.core.execution import ExecutionScope
 from yutto.core.operation import bind_download_event_sink
 from yutto.downloader.planner import DownloadPlanner
 from yutto.downloader.progressbar import show_native_progress
-from yutto.downloader.transfer import _probe_media_size, download_video_and_audio, slice_blocks
+from yutto.downloader.transfer import (
+    _allocate_native_worker_batches,
+    _probe_media_size,
+    download_video_and_audio,
+    slice_blocks,
+)
 from yutto.exceptions import MaxRetryError
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional import as_sync
@@ -50,6 +55,7 @@ class RecordingEventSink:
 @pytest.mark.parametrize(
     ("start", "total_size", "block_size", "expected"),
     [
+        (7, None, 512, [(0, None)]),
         (7, 20, None, [(7, 13)]),
         (20, 20, None, []),
         (7, 21, 5, [(7, 5), (12, 5), (17, 4)]),
@@ -57,9 +63,9 @@ class RecordingEventSink:
 )
 def test_slice_blocks_handles_resume_offsets(
     start: int,
-    total_size: int,
+    total_size: int | None,
     block_size: int | None,
-    expected: list[tuple[int, int]],
+    expected: list[tuple[int, int | None]],
 ):
     assert slice_blocks(start, total_size, block_size) == expected
 
@@ -165,8 +171,66 @@ async def test_probe_media_size_rejects_a_source_without_a_known_length(monkeypa
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
     async with httpx.AsyncClient() as client:
+        assert await _probe_media_size(ExecutionScope(client), "primary", []) is None
         with pytest.raises(MaxRetryError, match="未返回长度"):
-            await _probe_media_size(ExecutionScope(client), "primary", [])
+            await _probe_media_size(ExecutionScope(client), "primary", [], require_known=True)
+
+
+@as_sync
+async def test_unknown_size_restarts_fragment_and_http_200_retry(tmp_path):
+    payload = b"A" * (64 * 1024) + b"B" * (64 * 1024)
+    download_attempts = 0
+    range_headers: list[str] = []
+
+    class InterruptAfterFirstChunk(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield payload[: 64 * 1024]
+            raise httpx.ReadTimeout("interrupted")
+
+    def ignore_range(request: httpx.Request) -> httpx.Response:
+        nonlocal download_attempts
+        range_header = request.headers["Range"]
+        range_headers.append(range_header)
+        if range_header == "bytes=0-1":
+            return httpx.Response(200, content=payload)
+        download_attempts += 1
+        if download_attempts == 1:
+            return httpx.Response(200, stream=InterruptAfterFirstChunk())
+        return httpx.Response(200, content=payload)
+
+    episode = make_resource_only_episode()
+    episode["audios"] = [
+        {
+            "url": "https://example.test/audio",
+            "mirrors": [],
+            "codec": "mp4a",
+            "width": 0,
+            "height": 0,
+            "quality": 30280,
+        }
+    ]
+    plan = DownloadPlanner().plan(episode, make_request(tmp_path, audio=True))
+    plan.paths.temporary_dir.mkdir(parents=True)
+    plan.paths.audio.write_bytes(payload[: 64 * 1024])
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(ignore_range)) as client:
+        await download_video_and_audio(ExecutionScope(client), plan)
+
+    assert range_headers == ["bytes=0-1", "bytes=0-", f"bytes={64 * 1024}-"]
+    assert plan.paths.audio.read_bytes() == payload
+
+
+@pytest.mark.parametrize(
+    ("workers", "transfers", "expected"),
+    [
+        (8, 2, [[4, 4]]),
+        (3, 2, [[2, 1]]),
+        (1, 2, [[1], [1]]),
+    ],
+)
+def test_native_worker_budget_is_global(workers: int, transfers: int, expected: list[list[int]]):
+    assert _allocate_native_worker_batches(workers, transfers) == expected
+    assert all(sum(batch) <= workers for batch in expected)
 
 
 @as_sync
@@ -461,7 +525,11 @@ async def test_rust_backend_maps_mirrors_headers_cookies_proxy_and_workers(
     )
     plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
 
-    async with httpx.AsyncClient(headers={"X-Test": "value"}, cookies={"SESSDATA": "secret"}) as client:
+    cookies = httpx.Cookies()
+    cookies.set("PRIMARY", "primary-secret", domain="primary.example", path="/media")
+    cookies.set("MIRROR", "mirror-secret", domain="mirror.example", path="/media")
+    cookies.set("WRONG_PATH", "wrong-secret", domain="primary.example", path="/private")
+    async with httpx.AsyncClient(headers={"X-Test": "value"}, cookies=cookies) as client:
         await download_video_and_audio(
             ExecutionScope(
                 client,
@@ -479,8 +547,88 @@ async def test_rust_backend_maps_mirrors_headers_cookies_proxy_and_workers(
     assert args[0] == ["https://primary.example/media", "https://mirror.example/media"]
     assert args[2] == 123
     assert kwargs["headers"]["x-test"] == "value"
-    assert kwargs["headers"]["cookie"] == "SESSDATA=secret"
+    assert "cookie" not in kwargs["headers"]
+    assert kwargs["source_headers"] == [
+        {"cookie": "PRIMARY=primary-secret"},
+        {"cookie": "MIRROR=mirror-secret"},
+    ]
     assert kwargs["proxy"] == "socks5://127.0.0.1:1080"
     assert kwargs["use_system_proxy"] is False
     assert kwargs["workers"] == 3
     assert kwargs["block_size"] == 64 * 1024
+
+
+@as_sync
+async def test_rust_backend_reaps_a_started_handle_when_later_setup_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    import yutto_core
+
+    class Handle:
+        def __init__(self) -> None:
+            self.cancelled = False
+            self.reaped = False
+
+        def done(self) -> bool:
+            return self.reaped
+
+        def cancel(self) -> None:
+            self.cancelled = True
+
+    handle = Handle()
+    starts = 0
+
+    async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
+        return Success(123)
+
+    async def wait_for_transfer(started_handle: Handle, **_kwargs: object) -> int:
+        while not started_handle.cancelled:
+            await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        started_handle.reaped = True
+        raise RuntimeError("cancelled")
+
+    def start_transfer(*_args: object, **_kwargs: object) -> Handle:
+        nonlocal starts
+        starts += 1
+        if starts == 2:
+            raise RuntimeError("second setup failed")
+        return handle
+
+    monkeypatch.setattr(Fetcher, "get_size", get_size)
+    monkeypatch.setattr(yutto_core, "start_transfer", start_transfer)
+    monkeypatch.setattr(yutto_core, "wait_for_transfer", wait_for_transfer)
+
+    episode = make_resource_only_episode()
+    episode["videos"] = [
+        {
+            "url": "https://video.example/media",
+            "mirrors": [],
+            "codec": "avc",
+            "width": 1920,
+            "height": 1080,
+            "quality": 80,
+        }
+    ]
+    episode["audios"] = [
+        {
+            "url": "https://audio.example/media",
+            "mirrors": [],
+            "codec": "mp4a",
+            "width": 0,
+            "height": 0,
+            "quality": 30280,
+        }
+    ]
+    base_request = make_request(tmp_path, video=True, audio=True)
+    request_data = base_request.model_dump()
+    request_data["network"]["download_backend"] = "rust"
+    plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
+
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(RuntimeError, match="second setup failed"):
+            await download_video_and_audio(ExecutionScope(client, download_workers=2), plan)
+
+    assert handle.cancelled
+    assert handle.reaped

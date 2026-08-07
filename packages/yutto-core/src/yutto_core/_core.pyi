@@ -29,6 +29,7 @@ def start_transfer(
     *,
     overwrite: bool = ...,
     headers: dict[str, str] | None = ...,
+    source_headers: list[dict[str, str]] | None = ...,
     proxy: str | None = ...,
     use_system_proxy: bool = ...,
     accept_invalid_certs: bool = ...,

@@ -122,13 +122,14 @@ impl ProgressSink for StateProgress {
 
 #[allow(clippy::too_many_arguments)]
 #[pyfunction]
-#[pyo3(signature = (sources, target, expected_size, *, overwrite=false, headers=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, workers=8, block_size=524288))]
+#[pyo3(signature = (sources, target, expected_size, *, overwrite=false, headers=None, source_headers=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, workers=8, block_size=524288))]
 fn start_transfer(
     sources: Vec<String>,
     target: PathBuf,
     expected_size: u64,
     overwrite: bool,
     headers: Option<HashMap<String, String>>,
+    source_headers: Option<Vec<HashMap<String, String>>>,
     proxy: Option<String>,
     use_system_proxy: bool,
     accept_invalid_certs: bool,
@@ -143,6 +144,12 @@ fn start_transfer(
     }
     if block_size == 0 {
         return Err(PyValueError::new_err("block_size must be at least 1"));
+    }
+    let source_headers = source_headers.unwrap_or_else(|| vec![HashMap::new(); sources.len()]);
+    if source_headers.len() != sources.len() {
+        return Err(PyValueError::new_err(
+            "source_headers must contain one entry per source",
+        ));
     }
     let spec = transfer_spec(expected_size, workers, block_size);
 
@@ -166,6 +173,7 @@ fn start_transfer(
             target,
             overwrite,
             headers: headers.unwrap_or_default(),
+            source_headers,
             proxy,
             use_system_proxy,
             accept_invalid_certs,
@@ -196,6 +204,7 @@ struct TransferArgs {
     target: PathBuf,
     overwrite: bool,
     headers: HashMap<String, String>,
+    source_headers: Vec<HashMap<String, String>>,
     proxy: Option<String>,
     use_system_proxy: bool,
     accept_invalid_certs: bool,
@@ -214,13 +223,14 @@ async fn run_transfer(args: TransferArgs) -> Result<u64, String> {
     let sources = args
         .sources
         .into_iter()
-        .map(|source| {
+        .zip(args.source_headers)
+        .map(|(source, headers)| {
             let url =
                 Url::parse(&source).map_err(|error| format!("invalid source URL: {error}"))?;
             Ok(Arc::new(HttpRangeSource::new(
                 client.clone(),
                 url,
-                HeaderMap::new(),
+                build_headers(headers)?,
                 args.spec.expected_size,
             )) as Arc<dyn haya::RangeSource>)
         })
@@ -275,14 +285,7 @@ fn build_client(
     use_system_proxy: bool,
     accept_invalid_certs: bool,
 ) -> Result<Client, String> {
-    let mut default_headers = HeaderMap::new();
-    for (name, value) in headers {
-        let name = HeaderName::from_bytes(name.as_bytes())
-            .map_err(|error| format!("invalid HTTP header name {name:?}: {error}"))?;
-        let value = HeaderValue::from_str(&value)
-            .map_err(|error| format!("invalid HTTP header value: {error}"))?;
-        default_headers.insert(name, value);
-    }
+    let default_headers = build_headers(headers)?;
 
     let mut builder = Client::builder()
         .no_gzip()
@@ -291,8 +294,7 @@ fn build_client(
         .no_zstd()
         .default_headers(default_headers)
         .danger_accept_invalid_certs(accept_invalid_certs)
-        .connect_timeout(Duration::from_secs(3))
-        .timeout(Duration::from_secs(7));
+        .connect_timeout(Duration::from_secs(3));
     if !use_system_proxy {
         builder = builder.no_proxy();
     }
@@ -300,6 +302,18 @@ fn build_client(
         builder = builder.proxy(Proxy::all(&proxy).map_err(|error| error.to_string())?);
     }
     builder.build().map_err(|error| error.to_string())
+}
+
+fn build_headers(headers: HashMap<String, String>) -> Result<HeaderMap, String> {
+    let mut result = HeaderMap::new();
+    for (name, value) in headers {
+        let name = HeaderName::from_bytes(name.as_bytes())
+            .map_err(|error| format!("invalid HTTP header name {name:?}: {error}"))?;
+        let value = HeaderValue::from_str(&value)
+            .map_err(|error| format!("invalid HTTP header value: {error}"))?;
+        result.insert(name, value);
+    }
+    Ok(result)
 }
 
 fn runtime() -> PyResult<&'static Runtime> {
