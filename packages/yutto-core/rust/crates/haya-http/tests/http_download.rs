@@ -20,6 +20,7 @@ enum Behavior {
     Normal,
     IgnoreRange,
     WrongRange,
+    Disconnect,
 }
 
 struct FaultServer {
@@ -107,6 +108,10 @@ async fn serve_connection(
         .lock()
         .expect("request lock poisoned")
         .push(range.unwrap_or("<none>").to_owned());
+
+    if matches!(behavior, Behavior::Disconnect) {
+        return;
+    }
 
     if matches!(behavior, Behavior::IgnoreRange) {
         write_response(&mut socket, "200 OK", &[], &payload).await;
@@ -276,4 +281,22 @@ async fn rejects_a_conflicting_content_range_total() {
         result,
         Err(error) if error.kind == SourceErrorKind::Protocol
     ));
+}
+
+#[tokio::test]
+async fn redacts_the_url_from_transport_errors() {
+    let server = FaultServer::spawn(payload(4096), Behavior::Disconnect).await;
+    let mut url = server.url.clone();
+    url.set_query(Some("token=secret"));
+    let source = HttpRangeSource::new(Client::new(), url, HeaderMap::new(), 4096);
+    let error = match source
+        .open(haya::ByteRange::new(0, 1024).expect("range"))
+        .await
+    {
+        Ok(_) => panic!("disconnected response must fail"),
+        Err(error) => error,
+    };
+
+    assert!(!error.message.contains("secret"));
+    assert!(!error.message.contains(server.url.as_str()));
 }

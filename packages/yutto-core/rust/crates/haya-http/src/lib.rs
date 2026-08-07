@@ -212,7 +212,7 @@ fn classify_reqwest_error(error: reqwest::Error) -> SourceError {
     } else {
         SourceErrorKind::Other
     };
-    SourceError::new(kind, error.to_string())
+    SourceError::new(kind, error.without_url().to_string())
 }
 
 fn status_error(status: StatusCode) -> SourceError {

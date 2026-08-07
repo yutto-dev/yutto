@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         HeaderMap::new(),
         size,
     ));
-    let sink = Arc::new(FileSink::open(output, FileOpenMode::ResumeFromLength).await?);
+    let sink = Arc::new(FileSink::open(output, FileOpenMode::Overwrite).await?);
     let report = Downloader::new(DownloadSpec::new(size), vec![source], sink)?
         .run()
         .await?;
