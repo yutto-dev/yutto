@@ -178,10 +178,27 @@ impl Downloader {
                 return self.fail_after_flush(DownloadError::Stalled).await;
             }
 
-            let completed = tokio::select! {
-                biased;
-                _ = self.cancellation.cancelled() => return self.cancelled().await,
-                result = in_flight.next() => result.ok_or(DownloadError::Stalled)?,
+            let cooldown_ready_at = if !queue.is_empty() && in_flight.len() < self.spec.workers {
+                pool.next_ready_at()
+            } else {
+                None
+            };
+            let completed = if let Some(ready_at) = cooldown_ready_at {
+                tokio::select! {
+                    biased;
+                    _ = self.cancellation.cancelled() => return self.cancelled().await,
+                    result = in_flight.next() => Some(result.ok_or(DownloadError::Stalled)?),
+                    _ = tokio::time::sleep_until(ready_at) => None,
+                }
+            } else {
+                tokio::select! {
+                    biased;
+                    _ = self.cancellation.cancelled() => return self.cancelled().await,
+                    result = in_flight.next() => Some(result.ok_or(DownloadError::Stalled)?),
+                }
+            };
+            let Some(completed) = completed else {
+                continue;
             };
 
             match completed.result {

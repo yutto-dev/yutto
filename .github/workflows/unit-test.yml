@@ -68,3 +68,24 @@ jobs:
       - name: Run unit tests
         working-directory: packages/yutto-core/rust
         run: cargo test --all-targets --all-features
+
+  unit-test-yutto-core-msrv:
+    name: yutto-core Rust 1.85 compatibility
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Rust 1.85 toolchain
+        uses: dtolnay/rust-toolchain@1.85.0
+        with:
+          components: clippy
+
+      - name: Check MSRV compatibility
+        working-directory: packages/yutto-core/rust
+        run: |
+          cargo check --locked --all-targets --all-features
+          cargo clippy --locked --all-targets --all-features -- -D warnings
+          cargo test --locked --all-targets --all-features

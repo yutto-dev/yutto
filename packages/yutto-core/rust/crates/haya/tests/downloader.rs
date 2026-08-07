@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
@@ -78,6 +78,7 @@ struct MemorySource {
     delays: HashMap<u64, Duration>,
     requests: Mutex<Vec<ByteRange>>,
     pending: bool,
+    pending_starts: HashSet<u64>,
     pending_stream: bool,
     always_empty_stream: bool,
     extra_byte: bool,
@@ -94,6 +95,7 @@ impl MemorySource {
             delays: HashMap::new(),
             requests: Mutex::new(Vec::new()),
             pending: false,
+            pending_starts: HashSet::new(),
             pending_stream: false,
             always_empty_stream: false,
             extra_byte: false,
@@ -112,7 +114,7 @@ impl RangeSource for MemorySource {
             .lock()
             .expect("request lock poisoned")
             .push(range);
-        if self.pending {
+        if self.pending || self.pending_starts.contains(&range.start) {
             std::future::pending::<()>().await;
         }
         if let Some(delay) = self.delays.get(&range.start) {
@@ -371,6 +373,53 @@ async fn waits_for_a_failed_source_cooldown() {
             .count(),
         2
     );
+}
+
+#[tokio::test]
+async fn cooldown_expiry_wakes_an_idle_worker_while_a_sibling_is_pending() {
+    let expected = payload(2 * 1024);
+    let mut source = MemorySource::new(expected.clone());
+    source.failures.get_mut().expect("failure map").insert(0, 1);
+    source.failure_kinds.insert(0, SourceErrorKind::Transport);
+    source.pending_starts.insert(1024);
+    let source = Arc::new(source);
+    let cancellation = CancellationToken::new();
+    let mut download_spec = spec(expected.len() as u64, 1024);
+    download_spec.block_size = 1024;
+    download_spec.workers = 2;
+    download_spec.source_cooldown = Duration::from_millis(20);
+    download_spec.attempt_timeout = Duration::from_secs(1);
+    let downloader = Downloader::new(
+        download_spec,
+        vec![source.clone()],
+        Arc::new(MemorySink::default()),
+    )
+    .expect("valid downloader")
+    .with_cancellation_token(cancellation.clone());
+
+    let task = tokio::spawn(downloader.run());
+    tokio::time::timeout(Duration::from_millis(250), async {
+        loop {
+            if source
+                .requests()
+                .iter()
+                .filter(|range| range.start == 0)
+                .count()
+                >= 2
+            {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(1)).await;
+        }
+    })
+    .await
+    .expect("cooldown expiry schedules the retry");
+
+    cancellation.cancel();
+    assert!(matches!(
+        task.await.expect("task joins"),
+        Err(DownloadError::Cancelled)
+    ));
 }
 
 #[tokio::test]
