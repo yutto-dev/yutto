@@ -725,30 +725,24 @@ origin        = resume_offset
 ### 15.1 Snapshot
 
 ```rust
-pub struct TransferSnapshot {
-    pub accepted_bytes: u64,
-    pub network_bytes: u64,
-    pub buffered_bytes: u64,
+pub struct DownloadSnapshot {
+    pub received_bytes: u64,
     pub committed_bytes: u64,
-    pub expected_bytes: Option<u64>,
-    pub active_attempts: usize,
     pub buffered_pages: usize,
-    pub blocking_offset: u64,
-    pub blocker_attempts: u32,
-    pub useful_speed: f64,
-    pub network_speed: f64,
+    pub window_saturated: bool,
+    pub in_flight: usize,
 }
 ```
 
 定义：
 
-- `accepted_bytes`：首次通过校验并被核心接受的唯一资源字节，包含 committed 和尚未连续提交的数据，不因 retry/hedge 重复累计；
-- `network_bytes`：所有 attempt 实际收到的物理字节，包含 retry、hedge 和随后被丢弃的重复流量；
-- `buffered_bytes`：当前 ordered window 中 Ready 的数据；
+- `received_bytes`：本次会话中完整接收并被核心接受的唯一资源字节，包含 committed 和尚未连续提交的数据，不重复累计 retry，也不包含失败 attempt 已接收的部分物理流量；
 - `committed_bytes`：已经顺序写入 sink 的总字节；
-- `blocking_offset`：当前最前缺口。
+- `buffered_pages`：当前 ordered window 中 Ready 的 page 数；
+- `window_saturated`：当前 lookahead window 已被占满，上游即将或已经受到 backpressure；
+- `in_flight`：正在执行的 Range attempt 数。
 
-`accepted_bytes` 在总长度已知时不得超过 `expected_bytes`；`network_bytes` 可以因为 retry/hedge 超过资源大小。不得用单一 `written + buffered` 值同时代表网络进度、物理流量和可恢复进度。
+`received_bytes` 是资源进度而非网络物理流量指标，在总长度已知时不得超过本次会话仍需下载的资源字节数。
 
 ### 15.2 Event
 

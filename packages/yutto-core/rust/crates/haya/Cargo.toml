@@ -1,0 +1,20 @@
+[package]
+name = "haya"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license = "MIT OR Apache-2.0"
+description = "A bounded, resilient, multi-source asynchronous downloader core"
+readme = "README.md"
+keywords = ["async", "download", "resumable", "http", "multi-source"]
+categories = ["asynchronous", "network-programming"]
+publish = ["crates-io"]
+
+[dependencies]
+async-trait.workspace = true
+bytes.workspace = true
+futures-util.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true

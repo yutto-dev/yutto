@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 members = [
     "biliass",
     "yutto",
+    "yutto-core",
 ]
 
 [[package]]
@@ -707,3 +708,8 @@ dev = [
     { name = "ty", specifier = ">=0.0.65" },
     { name = "typos", specifier = ">=1.48.0" },
 ]
+
+[[package]]
+name = "yutto-core"
+version = "0.0.0"
+source = { virtual = "packages/yutto-core" }
