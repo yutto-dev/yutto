@@ -317,13 +317,13 @@ fn insert_range(
     ring: &mut OrderedBuffer,
     page_size: usize,
     range: ByteRange,
-    bytes: Bytes,
+    mut bytes: Bytes,
 ) -> Result<(), DownloadError> {
-    for (index, data) in bytes.chunks(page_size).enumerate() {
-        let offset = range
-            .start
-            .saturating_add(index.saturating_mul(page_size) as u64);
-        ring.insert(offset, Bytes::copy_from_slice(data))?;
+    let mut offset = range.start;
+    while !bytes.is_empty() {
+        let page_len = bytes.len().min(page_size);
+        ring.insert(offset, bytes.split_to(page_len))?;
+        offset = offset.saturating_add(page_len as u64);
     }
     Ok(())
 }
@@ -341,4 +341,28 @@ fn split_range(range: ByteRange, page_size: usize) -> Option<(ByteRange, ByteRan
         ByteRange::new(range.start, middle).ok()?,
         ByteRange::new(middle, range.end).ok()?,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn inserts_pages_without_copying_the_completed_block() {
+        let mut ring = OrderedBuffer::new(0, 4, 2).expect("valid ring");
+        let bytes = Bytes::from_static(b"abcdefgh");
+        let block_start = bytes.as_ptr();
+
+        insert_range(
+            &mut ring,
+            4,
+            ByteRange::new(0, 8).expect("valid range"),
+            bytes,
+        )
+        .expect("range fits");
+
+        let pages = ring.pop_contiguous();
+        assert_eq!(pages[0].1.as_ptr(), block_start);
+        assert_eq!(pages[1].1.as_ptr(), block_start.wrapping_add(4));
+    }
 }
