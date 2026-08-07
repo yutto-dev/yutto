@@ -72,12 +72,14 @@ impl CommitSink for MemorySink {
 struct MemorySource {
     payload: Bytes,
     failures: Mutex<HashMap<u64, usize>>,
+    body_failures: Mutex<HashMap<u64, usize>>,
     failure_kinds: HashMap<u64, SourceErrorKind>,
     fail_above: Option<u64>,
     delays: HashMap<u64, Duration>,
     requests: Mutex<Vec<ByteRange>>,
     pending: bool,
     pending_stream: bool,
+    always_empty_stream: bool,
     extra_byte: bool,
 }
 
@@ -86,12 +88,14 @@ impl MemorySource {
         Self {
             payload,
             failures: Mutex::new(HashMap::new()),
+            body_failures: Mutex::new(HashMap::new()),
             failure_kinds: HashMap::new(),
             fail_above: None,
             delays: HashMap::new(),
             requests: Mutex::new(Vec::new()),
             pending: false,
             pending_stream: false,
+            always_empty_stream: false,
             extra_byte: false,
         }
     }
@@ -140,9 +144,30 @@ impl RangeSource for MemorySource {
         if self.pending_stream {
             return Ok(Box::pin(stream::pending()));
         }
+        if self.always_empty_stream {
+            return Ok(Box::pin(stream::repeat(Ok(Bytes::new()))));
+        }
 
         let start = range.start.min(self.payload.len() as u64) as usize;
         let end = range.end.min(self.payload.len() as u64) as usize;
+        if let Some(remaining) = self
+            .body_failures
+            .lock()
+            .expect("body failure lock poisoned")
+            .get_mut(&range.start)
+        {
+            if *remaining > 0 {
+                *remaining -= 1;
+                let middle = start + (end - start).div_ceil(2);
+                return Ok(Box::pin(stream::iter([
+                    Ok(self.payload.slice(start..middle)),
+                    Err(SourceError::new(
+                        SourceErrorKind::Transport,
+                        "injected body failure",
+                    )),
+                ])));
+            }
+        }
         let mut bytes = self.payload.slice(start..end).to_vec();
         if self.extra_byte {
             bytes.push(0xff);
@@ -226,6 +251,51 @@ async fn times_out_a_pending_response_body() {
     source.pending_stream = true;
 
     assert_pending_attempt_times_out(source).await;
+}
+
+#[tokio::test]
+async fn times_out_an_always_ready_empty_response_body() {
+    let mut source = MemorySource::new(payload(1024));
+    source.always_empty_stream = true;
+
+    assert_pending_attempt_times_out(source).await;
+}
+
+#[tokio::test]
+async fn excludes_a_failed_partial_body_from_received_bytes() {
+    let expected = payload(1024);
+    let mut source = MemorySource::new(expected.clone());
+    source
+        .body_failures
+        .get_mut()
+        .expect("body failure map")
+        .insert(0, 1);
+    let source = Arc::new(source);
+    let progress = Arc::new(RecordedProgress::default());
+    let mut download_spec = spec(expected.len() as u64, 1024);
+    download_spec.workers = 1;
+
+    let report = Downloader::new(
+        download_spec,
+        vec![source.clone()],
+        Arc::new(MemorySink::default()),
+    )
+    .expect("valid downloader")
+    .with_progress_sink(progress.clone())
+    .run()
+    .await
+    .expect("retry succeeds");
+
+    assert_eq!(source.requests().len(), 2);
+    assert_eq!(report.received_bytes, expected.len() as u64);
+    assert!(
+        progress
+            .snapshots
+            .lock()
+            .expect("progress lock poisoned")
+            .iter()
+            .all(|snapshot| snapshot.received_bytes <= expected.len() as u64)
+    );
 }
 
 #[tokio::test]

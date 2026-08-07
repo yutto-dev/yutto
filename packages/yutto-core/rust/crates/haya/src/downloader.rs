@@ -309,6 +309,10 @@ async fn fetch_exact(source: SharedSource, range: ByteRange) -> Result<Bytes, So
     let mut body = BytesMut::with_capacity(expected);
     while let Some(chunk) = stream.next().await {
         let bytes = chunk?;
+        if bytes.is_empty() {
+            tokio::task::yield_now().await;
+            continue;
+        }
         if body.len().saturating_add(bytes.len()) > expected {
             return Err(SourceError::new(
                 SourceErrorKind::Protocol,
