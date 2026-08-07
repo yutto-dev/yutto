@@ -56,11 +56,12 @@ impl FaultServer {
         }
     }
 
-    fn source(&self) -> Arc<HttpRangeSource> {
+    fn source(&self, expected_size: u64) -> Arc<HttpRangeSource> {
         Arc::new(HttpRangeSource::new(
             Client::new(),
             self.url.clone(),
             HeaderMap::new(),
+            expected_size,
         ))
     }
 
@@ -198,7 +199,7 @@ async fn downloads_to_a_file_and_resumes_from_an_unaligned_length() {
 
     let report = Downloader::new(
         spec(expected.len() as u64),
-        vec![server.source()],
+        vec![server.source(expected.len() as u64)],
         sink.clone(),
     )
     .expect("valid downloader")
@@ -232,7 +233,10 @@ async fn switches_to_a_mirror_after_wrong_content_range() {
 
     Downloader::new(
         spec(expected.len() as u64),
-        vec![bad.source(), good.source()],
+        vec![
+            bad.source(expected.len() as u64),
+            good.source(expected.len() as u64),
+        ],
         sink.clone(),
     )
     .expect("valid downloader")
@@ -250,7 +254,21 @@ async fn switches_to_a_mirror_after_wrong_content_range() {
 async fn rejects_servers_that_ignore_range_requests() {
     let server = FaultServer::spawn(payload(4096), Behavior::IgnoreRange).await;
     let result = server
-        .source()
+        .source(4096)
+        .open(haya::ByteRange::new(0, 1024).expect("range"))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(error) if error.kind == SourceErrorKind::Protocol
+    ));
+}
+
+#[tokio::test]
+async fn rejects_a_conflicting_content_range_total() {
+    let server = FaultServer::spawn(payload(4096), Behavior::Normal).await;
+    let result = server
+        .source(8192)
         .open(haya::ByteRange::new(0, 1024).expect("range"))
         .await;
 

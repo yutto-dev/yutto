@@ -3,25 +3,43 @@ use futures_util::StreamExt;
 use haya::{ByteRange, ByteStream, RangeSource, SourceError, SourceErrorKind};
 use reqwest::{
     Client, Request, StatusCode, Url,
-    header::{ACCEPT_ENCODING, CONTENT_RANGE, HeaderMap, HeaderValue, IF_RANGE, RANGE},
+    header::{
+        ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_RANGE, HeaderMap, HeaderValue, IF_RANGE, RANGE,
+    },
 };
 
 pub struct HttpRangeSource {
     client: Client,
     url: Url,
     headers: HeaderMap,
+    expected_size: u64,
 }
 
 impl HttpRangeSource {
-    pub fn new(client: Client, url: Url, headers: HeaderMap) -> Self {
+    /// Creates a source for one known-size resource.
+    ///
+    /// The client's default headers must not contain `If-Range`: reqwest adds
+    /// missing default headers when executing a request, after this adapter has
+    /// deliberately stripped any per-source `If-Range` value.
+    pub fn new(client: Client, url: Url, headers: HeaderMap, expected_size: u64) -> Self {
         Self {
             client,
             url,
             headers,
+            expected_size,
         }
     }
 
     fn request(&self, range: ByteRange) -> Result<Request, SourceError> {
+        if range.start >= range.end || range.end > self.expected_size {
+            return Err(SourceError::new(
+                SourceErrorKind::Protocol,
+                format!(
+                    "range {range:?} is outside resource size {}",
+                    self.expected_size
+                ),
+            ));
+        }
         let mut request = self
             .client
             .get(self.url.clone())
@@ -42,6 +60,8 @@ impl HttpRangeSource {
                 },
             )?,
         );
+        // This removes per-source values. Client defaults are applied later by
+        // reqwest and are therefore excluded by `new`'s documented precondition.
         request.headers_mut().remove(IF_RANGE);
         Ok(request)
     }
@@ -59,6 +79,7 @@ impl RangeSource for HttpRangeSource {
             return Err(status_error(response.status()));
         }
 
+        validate_content_encoding(response.headers())?;
         let content_range = satisfied_content_range(response.headers())?;
         if content_range.start != range.start || content_range.end.checked_add(1) != Some(range.end)
         {
@@ -71,6 +92,18 @@ impl RangeSource for HttpRangeSource {
                     content_range
                         .total
                         .map_or_else(|| "*".into(), |total| total.to_string())
+                ),
+            ));
+        }
+        if let Some(total) = content_range
+            .total
+            .filter(|total| *total != self.expected_size)
+        {
+            return Err(SourceError::new(
+                SourceErrorKind::Protocol,
+                format!(
+                    "expected resource size {}, got Content-Range total {}",
+                    self.expected_size, total
                 ),
             ));
         }
@@ -103,12 +136,19 @@ fn satisfied_content_range(headers: &HeaderMap) -> Result<ContentRange, SourceEr
                 format!("Content-Range is not valid ASCII: {error}"),
             )
         })?;
-    let value = value.strip_prefix("bytes ").ok_or_else(|| {
+    let (unit, value) = value.split_once(' ').ok_or_else(|| {
         SourceError::new(
             SourceErrorKind::Protocol,
             format!("unsupported Content-Range unit: {value}"),
         )
     })?;
+    if !unit.eq_ignore_ascii_case("bytes") {
+        return Err(SourceError::new(
+            SourceErrorKind::Protocol,
+            format!("unsupported Content-Range unit: {unit}"),
+        ));
+    }
+    let value = value.trim_start();
     let (range, total) = value.split_once('/').ok_or_else(|| {
         SourceError::new(
             SourceErrorKind::Protocol,
@@ -133,6 +173,26 @@ fn satisfied_content_range(headers: &HeaderMap) -> Result<ContentRange, SourceEr
         ));
     }
     Ok(ContentRange { start, end, total })
+}
+
+fn validate_content_encoding(headers: &HeaderMap) -> Result<(), SourceError> {
+    for value in headers.get_all(CONTENT_ENCODING) {
+        let value = value.to_str().map_err(|error| {
+            SourceError::new(
+                SourceErrorKind::Protocol,
+                format!("Content-Encoding is not valid ASCII: {error}"),
+            )
+        })?;
+        for coding in value.split(',').map(str::trim) {
+            if !coding.eq_ignore_ascii_case("identity") {
+                return Err(SourceError::new(
+                    SourceErrorKind::Protocol,
+                    format!("unsupported Content-Encoding: {coding}"),
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn parse_number(value: &str, field: &str) -> Result<u64, SourceError> {
@@ -171,10 +231,10 @@ fn status_error(status: StatusCode) -> SourceError {
 mod tests {
     use reqwest::{
         Client, Url,
-        header::{ACCEPT_ENCODING, CONTENT_RANGE, HeaderMap, IF_RANGE, RANGE},
+        header::{ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_RANGE, HeaderMap, IF_RANGE, RANGE},
     };
 
-    use super::{HttpRangeSource, satisfied_content_range};
+    use super::{HttpRangeSource, satisfied_content_range, validate_content_encoding};
     use haya::ByteRange;
 
     #[test]
@@ -182,7 +242,6 @@ mod tests {
         let mut default_headers = HeaderMap::new();
         default_headers.append(ACCEPT_ENCODING, "gzip".parse().expect("header"));
         default_headers.append(RANGE, "bytes=7-".parse().expect("header"));
-        default_headers.append(IF_RANGE, "stale-default".parse().expect("header"));
         let client = Client::builder()
             .default_headers(default_headers)
             .build()
@@ -195,6 +254,7 @@ mod tests {
             client,
             Url::parse("https://example.test/media").expect("URL"),
             source_headers,
+            9,
         );
 
         let request = source
@@ -213,10 +273,36 @@ mod tests {
     }
 
     #[test]
+    fn rejects_ranges_outside_the_known_resource() {
+        let source = HttpRangeSource::new(
+            Client::new(),
+            Url::parse("https://example.test/media").expect("URL"),
+            HeaderMap::new(),
+            9,
+        );
+
+        assert!(source.request(ByteRange { start: 0, end: 0 }).is_err());
+        assert!(source.request(ByteRange { start: 8, end: 10 }).is_err());
+    }
+
+    #[test]
     fn parses_satisfied_content_ranges() {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_RANGE, "bytes 2-5/9".parse().expect("header"));
         let parsed = satisfied_content_range(&headers).expect("valid range");
         assert_eq!((parsed.start, parsed.end, parsed.total), (2, 5, Some(9)));
+
+        headers.insert(CONTENT_RANGE, "Bytes 2-5/9".parse().expect("header"));
+        assert!(satisfied_content_range(&headers).is_ok());
+    }
+
+    #[test]
+    fn rejects_non_identity_content_encoding() {
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_ENCODING, "gzip".parse().expect("header"));
+        assert!(validate_content_encoding(&headers).is_err());
+
+        headers.insert(CONTENT_ENCODING, "identity".parse().expect("header"));
+        assert!(validate_content_encoding(&headers).is_ok());
     }
 }
