@@ -376,6 +376,25 @@ async fn waits_for_a_failed_source_cooldown() {
 }
 
 #[tokio::test]
+async fn rejects_a_cooldown_that_cannot_fit_in_an_instant() {
+    let expected = payload(1024);
+    let mut source = MemorySource::new(expected);
+    source.fail_above = Some(0);
+    let sink = Arc::new(MemorySink::default());
+    let mut download_spec = spec(1024, 1024);
+    download_spec.workers = 1;
+    download_spec.source_cooldown = Duration::MAX;
+
+    let result = Downloader::new(download_spec, vec![Arc::new(source)], sink.clone())
+        .expect("spec validation succeeds")
+        .run()
+        .await;
+
+    assert!(matches!(result, Err(DownloadError::InvalidSpec(_))));
+    assert_eq!(sink.flushes.load(Ordering::Relaxed), 1);
+}
+
+#[tokio::test]
 async fn cooldown_expiry_wakes_an_idle_worker_while_a_sibling_is_pending() {
     let expected = payload(2 * 1024);
     let mut source = MemorySource::new(expected.clone());
@@ -477,6 +496,36 @@ async fn bounds_started_requests_to_the_fixed_window() {
             .expect("progress lock poisoned")
             .iter()
             .any(|snapshot| snapshot.window_saturated)
+    );
+}
+
+#[tokio::test]
+async fn marks_a_fully_reserved_window_saturated_before_all_ranges_start() {
+    let expected = payload(8 * 1024);
+    let progress = Arc::new(RecordedProgress::default());
+    let mut download_spec = spec(expected.len() as u64, 1024);
+    download_spec.block_size = 1024;
+    download_spec.workers = 2;
+
+    Downloader::new(
+        download_spec,
+        vec![Arc::new(MemorySource::new(expected))],
+        Arc::new(MemorySink::default()),
+    )
+    .expect("valid downloader")
+    .with_progress_sink(progress.clone())
+    .run()
+    .await
+    .expect("download succeeds");
+
+    assert!(
+        progress
+            .snapshots
+            .lock()
+            .expect("progress lock poisoned")
+            .first()
+            .expect("initial snapshot")
+            .window_saturated
     );
 }
 

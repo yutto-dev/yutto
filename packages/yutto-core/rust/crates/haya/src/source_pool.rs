@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use tokio::time::Instant;
 
-use crate::{SourceError, source::SharedSource};
+use crate::{DownloadError, SourceError, source::SharedSource};
 
 #[derive(Debug)]
 struct Health {
@@ -59,16 +59,19 @@ impl SourcePool {
         }
     }
 
-    pub fn record_failure(&mut self, id: usize, error: &SourceError) {
+    pub fn record_failure(&mut self, id: usize, error: &SourceError) -> Result<(), DownloadError> {
         let health = &mut self.health[id];
         health.in_flight = health.in_flight.saturating_sub(1);
         health.failures += 1;
         if error.retryable() {
             let multiplier = health.failures.min(8) as u32;
-            health.ready_at = Instant::now() + self.cooldown.saturating_mul(multiplier);
+            health.ready_at = Instant::now()
+                .checked_add(self.cooldown.saturating_mul(multiplier))
+                .ok_or_else(|| DownloadError::InvalidSpec("source_cooldown is too large".into()))?;
         } else {
             health.disabled = true;
         }
+        Ok(())
     }
 
     pub fn has_usable(&self) -> bool {
@@ -105,7 +108,8 @@ mod tests {
         pool.record_failure(
             0,
             &SourceError::new(SourceErrorKind::Timeout, "injected timeout"),
-        );
+        )
+        .expect("cooldown fits in an instant");
         let ready_at = pool.health[0].ready_at;
         pool.record_success(0);
 

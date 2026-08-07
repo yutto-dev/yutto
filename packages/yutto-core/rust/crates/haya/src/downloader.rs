@@ -94,7 +94,6 @@ impl Downloader {
         let mut in_flight: FuturesUnordered<BoxFuture<'static, AttemptResult>> =
             FuturesUnordered::new();
         let mut next_offset = origin;
-        let mut furthest_started = origin;
         let mut committed = origin;
         let mut received = 0_u64;
         let mut attempts = 0_usize;
@@ -120,7 +119,6 @@ impl Downloader {
                     break;
                 };
                 attempts += 1;
-                furthest_started = furthest_started.max(work.range.end);
                 let attempt_timeout = self.spec.attempt_timeout;
                 in_flight.push(
                     async move {
@@ -145,14 +143,7 @@ impl Downloader {
                 );
             }
 
-            self.publish_progress(
-                received,
-                committed,
-                &ring,
-                next_offset,
-                furthest_started,
-                in_flight.len(),
-            );
+            self.publish_progress(received, committed, &ring, next_offset, in_flight.len());
 
             if committed == expected {
                 self.sink.close().await?;
@@ -215,7 +206,9 @@ impl Downloader {
                     }
                 }
                 Err(error) => {
-                    pool.record_failure(completed.source, &error);
+                    if let Err(config_error) = pool.record_failure(completed.source, &error) {
+                        return self.fail_after_flush(config_error).await;
+                    }
                     let attempt = completed.work.attempts + 1;
                     if !pool.has_usable() {
                         return self
@@ -254,14 +247,7 @@ impl Downloader {
                 }
             }
 
-            self.publish_progress(
-                received,
-                committed,
-                &ring,
-                next_offset,
-                furthest_started,
-                in_flight.len(),
-            );
+            self.publish_progress(received, committed, &ring, next_offset, in_flight.len());
         }
     }
 
@@ -296,7 +282,6 @@ impl Downloader {
         committed: u64,
         ring: &OrderedBuffer,
         next_offset: u64,
-        furthest_started: u64,
         in_flight: usize,
     ) {
         self.progress.update(DownloadSnapshot {
@@ -304,7 +289,7 @@ impl Downloader {
             committed_bytes: committed,
             buffered_pages: ring.ready_pages(),
             window_saturated: next_offset < self.spec.expected_size
-                && furthest_started >= ring.window_end_offset(),
+                && next_offset >= ring.window_end_offset(),
             in_flight,
         });
     }
