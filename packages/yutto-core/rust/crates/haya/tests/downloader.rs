@@ -21,6 +21,7 @@ struct MemorySink {
     bytes: Mutex<Vec<u8>>,
     flushes: AtomicUsize,
     closes: AtomicUsize,
+    fail_at: Option<u64>,
 }
 
 impl MemorySink {
@@ -43,6 +44,9 @@ impl CommitSink for MemorySink {
     }
 
     async fn append(&self, offset: u64, data: Bytes) -> Result<(), SinkError> {
+        if self.fail_at == Some(offset) {
+            return Err(SinkError::new("injected append failure"));
+        }
         let mut bytes = self.bytes.lock().expect("sink lock poisoned");
         if bytes.len() as u64 != offset {
             return Err(SinkError::new(format!(
@@ -513,6 +517,31 @@ async fn flushes_the_committed_prefix_before_retry_exhaustion() {
         .await;
 
     assert!(matches!(result, Err(DownloadError::RetryExhausted { .. })));
+    assert_eq!(sink.bytes(), expected.slice(..1024));
+    assert_eq!(sink.flushes.load(Ordering::Relaxed), 1);
+    assert_eq!(sink.closes.load(Ordering::Relaxed), 0);
+}
+
+#[tokio::test]
+async fn flushes_the_committed_prefix_after_an_append_failure() {
+    let expected = payload(2 * 1024);
+    let sink = Arc::new(MemorySink {
+        fail_at: Some(1024),
+        ..MemorySink::default()
+    });
+    let mut download_spec = spec(expected.len() as u64, 1024);
+    download_spec.workers = 1;
+
+    let result = Downloader::new(
+        download_spec,
+        vec![Arc::new(MemorySource::new(expected.clone()))],
+        sink.clone(),
+    )
+    .expect("valid downloader")
+    .run()
+    .await;
+
+    assert!(matches!(result, Err(DownloadError::Sink(_))));
     assert_eq!(sink.bytes(), expected.slice(..1024));
     assert_eq!(sink.flushes.load(Ordering::Relaxed), 1);
     assert_eq!(sink.closes.load(Ordering::Relaxed), 0);

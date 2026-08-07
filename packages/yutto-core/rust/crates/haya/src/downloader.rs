@@ -191,7 +191,9 @@ impl Downloader {
                     insert_range(&mut ring, self.spec.page_size, completed.work.range, bytes)?;
                     for (offset, data) in ring.pop_contiguous() {
                         let end = offset.saturating_add(data.len() as u64);
-                        self.sink.append(offset, data).await?;
+                        if let Err(error) = self.sink.append(offset, data).await {
+                            return self.fail_after_flush(error.into()).await;
+                        }
                         committed = end;
                     }
                 }
