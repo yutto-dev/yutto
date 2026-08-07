@@ -26,7 +26,7 @@ pub struct FileSink {
 }
 
 struct FileState {
-    file: File,
+    file: Option<File>,
     committed: u64,
     closed: bool,
 }
@@ -58,7 +58,7 @@ impl FileSink {
 
         Ok(Self {
             state: Mutex::new(FileState {
-                file,
+                file: Some(file),
                 committed,
                 closed: false,
             }),
@@ -83,23 +83,32 @@ impl CommitSink for FileSink {
                 state.committed
             )));
         }
+        let file = state
+            .file
+            .as_mut()
+            .ok_or_else(|| SinkError::new("cannot append to a closed file sink"))?;
         let write_result = async {
-            state.file.write_all(&data).await?;
+            file.write_all(&data).await?;
             // Tokio may report the buffered write's OS error only when the
             // in-flight blocking operation is polled again.
-            state.file.flush().await
+            file.flush().await
         }
         .await;
         if let Err(write_error) = write_result {
             let committed = state.committed;
+            let file = state
+                .file
+                .as_mut()
+                .expect("an open sink retains its file until close");
             let rollback = async {
-                state.file.set_len(committed).await?;
-                state.file.seek(SeekFrom::Start(committed)).await?;
+                file.set_len(committed).await?;
+                file.seek(SeekFrom::Start(committed)).await?;
                 Ok::<_, std::io::Error>(())
             }
             .await;
             if let Err(rollback_error) = rollback {
                 state.closed = true;
+                state.file.take();
                 return Err(SinkError::new(format!(
                     "failed to write output file: {write_error}; failed to restore committed offset {committed}, so the sink was closed: {rollback_error}"
                 )));
@@ -114,21 +123,25 @@ impl CommitSink for FileSink {
 
     async fn flush(&self) -> Result<(), SinkError> {
         let mut state = self.state.lock().await;
-        state
-            .file
-            .flush()
+        let Some(file) = state.file.as_mut() else {
+            return Ok(());
+        };
+        file.flush()
             .await
             .map_err(|error| SinkError::new(format!("failed to flush output file: {error}")))
     }
 
     async fn close(&self) -> Result<(), SinkError> {
         let mut state = self.state.lock().await;
-        state
-            .file
-            .flush()
+        let Some(file) = state.file.as_mut() else {
+            state.closed = true;
+            return Ok(());
+        };
+        file.flush()
             .await
             .map_err(|error| SinkError::new(format!("failed to flush output file: {error}")))?;
         state.closed = true;
+        state.file.take();
         Ok(())
     }
 }
@@ -146,7 +159,7 @@ mod tests {
             .expect("open read-only file");
         let sink = FileSink {
             state: Mutex::new(FileState {
-                file: File::from_std(read_only),
+                file: Some(File::from_std(read_only)),
                 committed: 0,
                 closed: false,
             }),
@@ -162,5 +175,19 @@ mod tests {
             .await
             .expect_err("poisoned sink rejects reuse");
         assert_eq!(second.message, "cannot append to a closed file sink");
+    }
+
+    #[tokio::test]
+    async fn close_releases_the_file_handle() {
+        let temporary = tempfile::NamedTempFile::new().expect("temporary file");
+        let sink = FileSink::open(temporary.path(), FileOpenMode::Overwrite)
+            .await
+            .expect("open file sink");
+
+        sink.close().await.expect("close file sink");
+
+        let state = sink.state.lock().await;
+        assert!(state.closed);
+        assert!(state.file.is_none());
     }
 }
