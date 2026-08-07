@@ -121,9 +121,20 @@ impl Downloader {
                 };
                 attempts += 1;
                 furthest_started = furthest_started.max(work.range.end);
+                let attempt_timeout = self.spec.attempt_timeout;
                 in_flight.push(
                     async move {
-                        let result = fetch_exact(range_source, work.range).await;
+                        let result = tokio::time::timeout(
+                            attempt_timeout,
+                            fetch_exact(range_source, work.range),
+                        )
+                        .await
+                        .unwrap_or_else(|_| {
+                            Err(SourceError::new(
+                                SourceErrorKind::Timeout,
+                                format!("range attempt timed out after {attempt_timeout:?}"),
+                            ))
+                        });
                         AttemptResult {
                             work,
                             source,

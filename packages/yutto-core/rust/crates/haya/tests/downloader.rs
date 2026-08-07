@@ -73,6 +73,7 @@ struct MemorySource {
     delays: HashMap<u64, Duration>,
     requests: Mutex<Vec<ByteRange>>,
     pending: bool,
+    pending_stream: bool,
     extra_byte: bool,
 }
 
@@ -86,6 +87,7 @@ impl MemorySource {
             delays: HashMap::new(),
             requests: Mutex::new(Vec::new()),
             pending: false,
+            pending_stream: false,
             extra_byte: false,
         }
     }
@@ -130,6 +132,9 @@ impl RangeSource for MemorySource {
                 SourceErrorKind::Timeout,
                 "range is deliberately too large",
             ));
+        }
+        if self.pending_stream {
+            return Ok(Box::pin(stream::pending()));
         }
 
         let start = range.start.min(self.payload.len() as u64) as usize;
@@ -177,7 +182,46 @@ fn spec(expected_size: u64, page_size: usize) -> DownloadSpec {
         workers: 3,
         max_attempts: 3,
         source_cooldown: Duration::from_millis(1),
+        attempt_timeout: Duration::from_secs(1),
     }
+}
+
+async fn assert_pending_attempt_times_out(source: MemorySource) {
+    let mut download_spec = spec(1024, 1024);
+    download_spec.workers = 1;
+    download_spec.max_attempts = 1;
+    download_spec.attempt_timeout = Duration::from_millis(10);
+
+    let result = Downloader::new(
+        download_spec,
+        vec![Arc::new(source)],
+        Arc::new(MemorySink::default()),
+    )
+    .expect("valid downloader")
+    .run()
+    .await;
+
+    assert!(matches!(
+        result,
+        Err(DownloadError::RetryExhausted { last_error, .. })
+            if last_error.kind == SourceErrorKind::Timeout
+    ));
+}
+
+#[tokio::test]
+async fn times_out_a_pending_source_open() {
+    let mut source = MemorySource::new(payload(1024));
+    source.pending = true;
+
+    assert_pending_attempt_times_out(source).await;
+}
+
+#[tokio::test]
+async fn times_out_a_pending_response_body() {
+    let mut source = MemorySource::new(payload(1024));
+    source.pending_stream = true;
+
+    assert_pending_attempt_times_out(source).await;
 }
 
 #[tokio::test]

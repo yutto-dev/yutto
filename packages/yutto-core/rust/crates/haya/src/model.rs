@@ -32,6 +32,7 @@ pub struct DownloadSpec {
     pub workers: usize,
     pub max_attempts: usize,
     pub source_cooldown: Duration,
+    pub attempt_timeout: Duration,
 }
 
 impl DownloadSpec {
@@ -50,6 +51,7 @@ impl DownloadSpec {
             workers: Self::DEFAULT_WORKERS,
             max_attempts: Self::DEFAULT_MAX_ATTEMPTS,
             source_cooldown: Duration::from_millis(250),
+            attempt_timeout: Duration::from_secs(30),
         }
     }
 
@@ -77,6 +79,11 @@ impl DownloadSpec {
         if self.max_attempts == 0 {
             return Err(DownloadError::InvalidSpec(
                 "max_attempts must be positive".into(),
+            ));
+        }
+        if self.attempt_timeout.is_zero() {
+            return Err(DownloadError::InvalidSpec(
+                "attempt_timeout must be positive".into(),
             ));
         }
 
