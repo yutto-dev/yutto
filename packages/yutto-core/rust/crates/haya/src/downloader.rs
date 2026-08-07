@@ -203,6 +203,9 @@ impl Downloader {
                             return self.fail_after_flush(error.into()).await;
                         }
                         committed = end;
+                        if self.cancellation.is_cancelled() {
+                            return self.cancelled().await;
+                        }
                     }
                 }
                 Err(error) => {

@@ -22,6 +22,7 @@ struct MemorySink {
     flushes: AtomicUsize,
     closes: AtomicUsize,
     fail_at: Option<u64>,
+    cancel_on_append: Option<CancellationToken>,
 }
 
 impl MemorySink {
@@ -55,6 +56,9 @@ impl CommitSink for MemorySink {
             )));
         }
         bytes.extend_from_slice(&data);
+        if let Some(cancellation) = &self.cancel_on_append {
+            cancellation.cancel();
+        }
         Ok(())
     }
 
@@ -738,6 +742,31 @@ async fn cancellation_flushes_the_sink() {
         task.await.expect("task joins"),
         Err(DownloadError::Cancelled)
     ));
+    assert_eq!(sink.flushes.load(Ordering::Relaxed), 1);
+    assert_eq!(sink.closes.load(Ordering::Relaxed), 0);
+}
+
+#[tokio::test]
+async fn cancellation_between_appends_stops_before_the_next_page() {
+    let expected = payload(2 * 1024);
+    let cancellation = CancellationToken::new();
+    let sink = Arc::new(MemorySink {
+        cancel_on_append: Some(cancellation.clone()),
+        ..MemorySink::default()
+    });
+
+    let result = Downloader::new(
+        spec(expected.len() as u64, 1024),
+        vec![Arc::new(MemorySource::new(expected.clone()))],
+        sink.clone(),
+    )
+    .expect("valid downloader")
+    .with_cancellation_token(cancellation)
+    .run()
+    .await;
+
+    assert!(matches!(result, Err(DownloadError::Cancelled)));
+    assert_eq!(sink.bytes(), expected.slice(..1024));
     assert_eq!(sink.flushes.load(Ordering::Relaxed), 1);
     assert_eq!(sink.closes.load(Ordering::Relaxed), 0);
 }
