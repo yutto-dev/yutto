@@ -2,6 +2,7 @@ mod buffer;
 mod downloader;
 mod error;
 mod event;
+pub mod file;
 mod model;
 mod sink;
 mod source;
