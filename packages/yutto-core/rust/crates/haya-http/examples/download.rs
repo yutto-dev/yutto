@@ -22,12 +22,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_str()
         .ok_or("SIZE must be valid UTF-8")?
         .parse::<u64>()?;
-    let source = Arc::new(HttpRangeSource::new(
-        Client::new(),
-        url,
-        HeaderMap::new(),
-        size,
-    ));
+    let client = Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .no_zstd()
+        .build()?;
+    let source = Arc::new(HttpRangeSource::new(client, url, HeaderMap::new(), size));
     let sink = Arc::new(FileSink::open(output, FileOpenMode::Overwrite).await?);
     let report = Downloader::new(DownloadSpec::new(size), vec![source], sink)?
         .run()
