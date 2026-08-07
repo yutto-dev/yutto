@@ -17,6 +17,7 @@ from yutto.downloader.progressbar import show_native_progress
 from yutto.downloader.transfer import (
     _allocate_native_worker_batches,
     _probe_media_size,
+    _wait_for_native_transfers,
     download_video_and_audio,
     slice_blocks,
 )
@@ -231,6 +232,18 @@ async def test_unknown_size_restarts_fragment_and_http_200_retry(tmp_path):
 def test_native_worker_budget_is_global(workers: int, transfers: int, expected: list[list[int]]):
     assert _allocate_native_worker_batches(workers, transfers) == expected
     assert all(sum(batch) <= workers for batch in expected)
+
+
+@as_sync
+async def test_native_transfer_failure_uses_the_existing_cli_error_boundary():
+    async def fail() -> int:
+        raise RuntimeError("all sources exhausted")
+
+    task = asyncio.create_task(fail())
+    with pytest.raises(MaxRetryError, match="媒体下载失败：all sources exhausted") as failure:
+        await _wait_for_native_transfers([task])
+
+    assert isinstance(failure.value.__cause__, RuntimeError)
 
 
 @as_sync

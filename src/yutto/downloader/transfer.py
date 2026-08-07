@@ -255,7 +255,7 @@ async def _download_video_and_audio_rust(scope: ExecutionScope, plan: DownloadPl
                 batch_tasks.append(wait_task)
 
             progress_task = asyncio.create_task(show_native_progress(handles, total_size))
-            await asyncio.gather(*batch_tasks)
+            await _wait_for_native_transfers(batch_tasks)
             await progress_task
             progress_task = None
         emit_download_report("下载完成！")
@@ -281,6 +281,13 @@ def _allocate_native_worker_batches(total_workers: int, transfer_count: int) -> 
         batches.append([workers_per_transfer + (index < extra_workers) for index in range(batch_size)])
         remaining -= batch_size
     return batches
+
+
+async def _wait_for_native_transfers(wait_tasks: Iterable[asyncio.Task[int]]) -> None:
+    try:
+        await asyncio.gather(*wait_tasks)
+    except RuntimeError as error:
+        raise MaxRetryError(f"媒体下载失败：{error}") from error
 
 
 async def _cancel_and_reap_native_transfers(handles: Iterable[Any], wait_tasks: Iterable[asyncio.Task[int]]) -> None:
