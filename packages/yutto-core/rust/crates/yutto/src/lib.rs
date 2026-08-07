@@ -217,10 +217,12 @@ async fn run_transfer(args: TransferArgs) -> Result<u64, String> {
         .map(|source| {
             let url =
                 Url::parse(&source).map_err(|error| format!("invalid source URL: {error}"))?;
-            Ok(
-                Arc::new(HttpRangeSource::new(client.clone(), url, HeaderMap::new()))
-                    as Arc<dyn haya::RangeSource>,
-            )
+            Ok(Arc::new(HttpRangeSource::new(
+                client.clone(),
+                url,
+                HeaderMap::new(),
+                args.spec.expected_size,
+            )) as Arc<dyn haya::RangeSource>)
         })
         .collect::<Result<Vec<_>, String>>()?;
     let mode = if args.overwrite {
