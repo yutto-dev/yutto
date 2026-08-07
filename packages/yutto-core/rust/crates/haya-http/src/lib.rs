@@ -124,18 +124,22 @@ struct ContentRange {
 }
 
 fn satisfied_content_range(headers: &HeaderMap) -> Result<ContentRange, SourceError> {
-    let value = headers
-        .get(CONTENT_RANGE)
-        .ok_or_else(|| {
-            SourceError::new(SourceErrorKind::Protocol, "response has no Content-Range")
-        })?
-        .to_str()
-        .map_err(|error| {
-            SourceError::new(
-                SourceErrorKind::Protocol,
-                format!("Content-Range is not valid ASCII: {error}"),
-            )
-        })?;
+    let mut values = headers.get_all(CONTENT_RANGE).iter();
+    let value = values.next().ok_or_else(|| {
+        SourceError::new(SourceErrorKind::Protocol, "response has no Content-Range")
+    })?;
+    if values.next().is_some() {
+        return Err(SourceError::new(
+            SourceErrorKind::Protocol,
+            "response has multiple Content-Range fields",
+        ));
+    }
+    let value = value.to_str().map_err(|error| {
+        SourceError::new(
+            SourceErrorKind::Protocol,
+            format!("Content-Range is not valid ASCII: {error}"),
+        )
+    })?;
     let (unit, value) = value.split_once(' ').ok_or_else(|| {
         SourceError::new(
             SourceErrorKind::Protocol,
@@ -294,6 +298,9 @@ mod tests {
 
         headers.insert(CONTENT_RANGE, "Bytes 2-5/9".parse().expect("header"));
         assert!(satisfied_content_range(&headers).is_ok());
+
+        headers.append(CONTENT_RANGE, "bytes 2-5/9".parse().expect("header"));
+        assert!(satisfied_content_range(&headers).is_err());
     }
 
     #[test]

@@ -29,6 +29,7 @@ struct FileState {
     file: Option<File>,
     committed: u64,
     closed: bool,
+    poisoned: bool,
 }
 
 impl FileSink {
@@ -61,6 +62,7 @@ impl FileSink {
                 file: Some(file),
                 committed,
                 closed: false,
+                poisoned: false,
             }),
         })
     }
@@ -69,7 +71,11 @@ impl FileSink {
 #[async_trait]
 impl CommitSink for FileSink {
     async fn committed_offset(&self) -> Result<u64, SinkError> {
-        Ok(self.state.lock().await.committed)
+        let state = self.state.lock().await;
+        if state.poisoned {
+            return Err(cancelled_append_error());
+        }
+        Ok(state.committed)
     }
 
     async fn append(&self, offset: u64, data: Bytes) -> Result<(), SinkError> {
@@ -77,16 +83,17 @@ impl CommitSink for FileSink {
         if state.closed {
             return Err(SinkError::new("cannot append to a closed file sink"));
         }
+        if state.poisoned {
+            return Err(cancelled_append_error());
+        }
         if offset != state.committed {
             return Err(SinkError::new(format!(
                 "append at {offset}, committed offset is {}",
                 state.committed
             )));
         }
-        let file = state
-            .file
-            .as_mut()
-            .ok_or_else(|| SinkError::new("cannot append to a closed file sink"))?;
+        state.poisoned = true;
+        let file = state.file.as_mut().expect("an open sink retains its file");
         let write_result = async {
             file.write_all(&data).await?;
             // Tokio may report the buffered write's OS error only when the
@@ -113,16 +120,21 @@ impl CommitSink for FileSink {
                     "failed to write output file: {write_error}; failed to restore committed offset {committed}, so the sink was closed: {rollback_error}"
                 )));
             }
+            state.poisoned = false;
             return Err(SinkError::new(format!(
                 "failed to write output file: {write_error}"
             )));
         }
         state.committed += data.len() as u64;
+        state.poisoned = false;
         Ok(())
     }
 
     async fn flush(&self) -> Result<(), SinkError> {
         let mut state = self.state.lock().await;
+        if state.poisoned {
+            return Err(cancelled_append_error());
+        }
         let Some(file) = state.file.as_mut() else {
             return Ok(());
         };
@@ -133,6 +145,11 @@ impl CommitSink for FileSink {
 
     async fn close(&self) -> Result<(), SinkError> {
         let mut state = self.state.lock().await;
+        if state.poisoned {
+            state.closed = true;
+            state.file.take();
+            return Err(cancelled_append_error());
+        }
         let Some(file) = state.file.as_mut() else {
             state.closed = true;
             return Ok(());
@@ -144,6 +161,10 @@ impl CommitSink for FileSink {
         state.file.take();
         Ok(())
     }
+}
+
+fn cancelled_append_error() -> SinkError {
+    SinkError::new("file sink is unusable because an append was cancelled")
 }
 
 #[cfg(test)]
@@ -162,6 +183,7 @@ mod tests {
                 file: Some(File::from_std(read_only)),
                 committed: 0,
                 closed: false,
+                poisoned: false,
             }),
         };
 
@@ -189,5 +211,27 @@ mod tests {
         let state = sink.state.lock().await;
         assert!(state.closed);
         assert!(state.file.is_none());
+    }
+
+    #[tokio::test]
+    async fn rejects_reuse_after_an_append_future_is_dropped() {
+        use std::{future::Future, task::Context};
+
+        use futures_util::task::noop_waker_ref;
+
+        let temporary = tempfile::NamedTempFile::new().expect("temporary file");
+        let sink = FileSink::open(temporary.path(), FileOpenMode::Overwrite)
+            .await
+            .expect("open file sink");
+        let mut append = Box::pin(sink.append(0, Bytes::from(vec![0; 16 * 1024 * 1024])));
+        let mut context = Context::from_waker(noop_waker_ref());
+
+        assert!(append.as_mut().poll(&mut context).is_pending());
+        drop(append);
+
+        assert!(sink.committed_offset().await.is_err());
+        assert!(sink.append(0, Bytes::from_static(b"tail")).await.is_err());
+        assert!(sink.close().await.is_err());
+        assert!(sink.state.lock().await.file.is_none());
     }
 }
