@@ -285,6 +285,10 @@ fn build_client(
     }
 
     let mut builder = Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .no_zstd()
         .default_headers(default_headers)
         .danger_accept_invalid_certs(accept_invalid_certs)
         .connect_timeout(Duration::from_secs(3))
