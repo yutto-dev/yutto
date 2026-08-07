@@ -6,6 +6,8 @@ It sends exact Range requests, validates partial responses, streams response byt
 
 The injected client's default headers must not contain `If-Range`; the adapter deliberately strips any per-source `If-Range` value.
 
+The client must be built with reqwest's `no_gzip`, `no_brotli`, `no_deflate`, and `no_zstd` methods so Cargo feature unification cannot enable automatic response decompression before `haya-http` validates the wire encoding.
+
 The public API is experimental and may change between `0.0.x` releases.
 
 ## License

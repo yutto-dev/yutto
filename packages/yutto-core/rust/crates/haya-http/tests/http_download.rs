@@ -21,6 +21,7 @@ enum Behavior {
     IgnoreRange,
     WrongRange,
     Disconnect,
+    GzipEncoding,
 }
 
 struct FaultServer {
@@ -129,6 +130,25 @@ async fn serve_connection(
         start
     };
     let content_range = format!("bytes {content_start}-{}/{}", end - 1, payload.len());
+    if matches!(behavior, Behavior::GzipEncoding) {
+        const GZIP_1024_ZEROS: &[u8] = &[
+            0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x63, 0x60, 0x18, 0x05,
+            0xa3, 0x60, 0x14, 0x8c, 0x54, 0x00, 0x00, 0x2e, 0xaf, 0xb5, 0xef, 0x00, 0x04, 0x00,
+            0x00,
+        ];
+        assert_eq!(payload.len(), 1024);
+        write_response(
+            &mut socket,
+            "206 Partial Content",
+            &[
+                ("Content-Range", content_range),
+                ("Content-Encoding", "gzip".to_owned()),
+            ],
+            GZIP_1024_ZEROS,
+        )
+        .await;
+        return;
+    }
     write_response(
         &mut socket,
         "206 Partial Content",
@@ -274,6 +294,28 @@ async fn rejects_a_conflicting_content_range_total() {
     let server = FaultServer::spawn(payload(4096), Behavior::Normal).await;
     let result = server
         .source(8192)
+        .open(haya::ByteRange::new(0, 1024).expect("range"))
+        .await;
+
+    assert!(matches!(
+        result,
+        Err(error) if error.kind == SourceErrorKind::Protocol
+    ));
+}
+
+#[tokio::test]
+async fn rejects_encoded_ranges_when_reqwest_decoders_are_available() {
+    let server = FaultServer::spawn(vec![0; 1024], Behavior::GzipEncoding).await;
+    let client = Client::builder()
+        .no_gzip()
+        .no_brotli()
+        .no_deflate()
+        .no_zstd()
+        .build()
+        .expect("range client");
+    let source = HttpRangeSource::new(client, server.url.clone(), HeaderMap::new(), 1024);
+
+    let result = source
         .open(haya::ByteRange::new(0, 1024).expect("range"))
         .await;
 

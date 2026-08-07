@@ -18,5 +18,6 @@ haya = { version = "0.0.1", path = "../haya" }
 reqwest.workspace = true
 
 [dev-dependencies]
+reqwest = { workspace = true, features = ["gzip"] }
 tempfile = "3.23.0"
 tokio.workspace = true

@@ -21,6 +21,11 @@ impl HttpRangeSource {
     /// The client's default headers must not contain `If-Range`: reqwest adds
     /// missing default headers when executing a request, after this adapter has
     /// deliberately stripped any per-source `If-Range` value.
+    ///
+    /// The client must also be built with `no_gzip`, `no_brotli`, `no_deflate`,
+    /// and `no_zstd`. Cargo feature unification can otherwise enable reqwest's
+    /// automatic response decompression before this adapter validates the wire
+    /// encoding.
     pub fn new(client: Client, url: Url, headers: HeaderMap, expected_size: u64) -> Self {
         Self {
             client,
