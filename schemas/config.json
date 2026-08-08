@@ -36,6 +36,12 @@
           "title": "Num Workers",
           "type": "integer"
         },
+        "jobs": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "title": "Jobs",
+          "type": "integer"
+        },
         "fetch_workers": {
           "default": 8,
           "exclusiveMinimum": 0,
@@ -416,6 +422,7 @@
       "$ref": "#/$defs/YuttoBasicSettings",
       "default": {
         "num_workers": 8,
+        "jobs": 1,
         "fetch_workers": 8,
         "video_quality": 127,
         "audio_quality": 30251,

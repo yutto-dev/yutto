@@ -12,7 +12,15 @@ aside: true
 - 配置项 `basic.num_workers`
 - 默认值 `8`
 
-我使用协程来实现并发下载，本参数限制的是最大的并发 Worker 数量。
+本参数限制的是单个音视频的最大并发数。
+
+## 同时下载的音视频数量 <Badge text="Experimental" type="warning" />
+
+- 参数 `-j` 或 `--jobs`
+- 配置项 `basic.jobs`
+- 默认值 `1`
+
+本参数限制同时处理的音视频数量，适用于 URL 列表和批量来源中的多个分集。`--jobs` 控制音视频级并发，`--num-workers` 控制每个视频内部的分块下载 worker；例如 `-j 3 -n 8` 最多会同时处理 3 个视频，每个视频最多使用 8 个下载 worker。
 
 ## 批量解析最大并行请求数量
 
