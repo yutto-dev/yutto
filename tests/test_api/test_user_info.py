@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any, cast
 
 import pytest
@@ -79,6 +80,29 @@ async def test_validate_user_info_reuses_execution_scope_session_and_cache(monke
 
 @pytest.mark.processor
 @as_sync
+async def test_concurrent_user_info_reads_share_one_fetch(monkeypatch: pytest.MonkeyPatch):
+    calls = 0
+
+    async def fake_fetch_json(scope, url):
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0)
+        return Success({"data": {"vipStatus": 1, "isLogin": True}})
+
+    monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
+    scope = ExecutionScope(cast("Any", object()))
+
+    results = await asyncio.gather(get_user_info(scope), get_user_info(scope))
+
+    assert results == [
+        {"vip_status": True, "is_login": True},
+        {"vip_status": True, "is_login": True},
+    ]
+    assert calls == 1
+
+
+@pytest.mark.processor
+@as_sync
 async def test_wbi_cache_is_scoped_to_execution_scope(monkeypatch: pytest.MonkeyPatch):
     responses = iter(
         [
@@ -124,3 +148,35 @@ async def test_wbi_cache_is_scoped_to_execution_scope(monkeypatch: pytest.Monkey
         "sub_key": "second-sub",
     }
     assert calls == 2
+
+
+@pytest.mark.processor
+@as_sync
+async def test_concurrent_wbi_reads_share_one_fetch(monkeypatch: pytest.MonkeyPatch):
+    calls = 0
+
+    async def fake_fetch_json(scope, url):
+        nonlocal calls
+        calls += 1
+        await asyncio.sleep(0)
+        return Success(
+            {
+                "data": {
+                    "wbi_img": {
+                        "img_url": "https://example.com/img.png",
+                        "sub_url": "https://example.com/sub.png",
+                    }
+                }
+            }
+        )
+
+    monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
+    scope = ExecutionScope(cast("Any", object()))
+
+    results = await asyncio.gather(get_wbi_img(scope), get_wbi_img(scope))
+
+    assert results == [
+        {"img_key": "img", "sub_key": "sub"},
+        {"img_key": "img", "sub_key": "sub"},
+    ]
+    assert calls == 1

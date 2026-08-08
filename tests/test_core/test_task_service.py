@@ -111,7 +111,7 @@ async def test_download_events_are_noop_outside_application_context():
             ("stage", {"name": "preparing", "item": "video"}),
         ),
         (
-            DownloadProgress(current=1, total=2, speed_per_second=3.0, buffered_bytes=1),
+            DownloadProgress(current=1, total=2, speed_per_second=3.0, buffered_bytes=1, item="video"),
             (
                 "progress",
                 {
@@ -120,6 +120,7 @@ async def test_download_events_are_noop_outside_application_context():
                     "total": 2,
                     "speed_per_second": 3.0,
                     "unit": "bytes",
+                    "item": "video",
                 },
             ),
         ),
