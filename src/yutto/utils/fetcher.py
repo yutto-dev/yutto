@@ -2,20 +2,20 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from urllib.parse import quote, unquote, urlparse
 
-import httpx
 from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
 from yutto_core import (
     HttpError,
     HttpTimeoutError,
     InvalidUrlError,
-    NativeSession,
     SessionClosedError,
     UnsupportedProtocolError,
+    YuttoSession,
 )
 
 from yutto.core.operation import ReportLevel, emit_download_report
@@ -89,7 +89,6 @@ DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
     "Referer": "https://www.bilibili.com",
 }
-DEFAULT_COOKIES = httpx.Cookies()
 SUPPORTED_PROXY_SCHEMES = frozenset({"http", "https", "socks5", "socks5h"})
 
 
@@ -105,15 +104,15 @@ def resolve_proxy(proxy: str) -> tuple[str | None, bool]:
     return proxy, False
 
 
-def cookies_from_auth(auth_info: AuthInfo | None) -> httpx.Cookies:
-    cookies = httpx.Cookies()
+def cookies_from_auth(auth_info: AuthInfo | None) -> dict[str, str]:
+    cookies: dict[str, str] = {}
     if auth_info is None:
         return cookies
     # 先解码后编码是防止获取到的 SESSDATA 是已经解码后的（包含「,」）
     # 而番剧无法使用解码后的 SESSDATA
-    cookies.set("SESSDATA", quote(unquote(auth_info["SESSDATA"])))
+    cookies["SESSDATA"] = quote(unquote(auth_info["SESSDATA"]))
     if auth_info["bili_jct"]:
-        cookies.set("bili_jct", auth_info["bili_jct"])
+        cookies["bili_jct"] = auth_info["bili_jct"]
     return cookies
 
 
@@ -230,44 +229,26 @@ def _query_value(value: Any) -> str:
     return str(value)
 
 
-def _sync_client_kwargs(
-    *,
-    headers: dict[str, str],
-    cookies: httpx.Cookies,
-    trust_env: bool,
-    proxy: str | None,
-    timeout: int | httpx.Timeout,
-    http2: bool,
-    verify: bool,
-) -> dict[str, Any]:
-    return {
-        "headers": headers,
-        "cookies": cookies,
-        "trust_env": trust_env,
-        "proxy": proxy,
-        "timeout": timeout,
-        "follow_redirects": True,
-        "http2": http2,
-        "verify": verify,
-    }
-
-
 @asynccontextmanager
 async def create_client(
-    headers: dict[str, str] = DEFAULT_HEADERS,
-    cookies: httpx.Cookies = DEFAULT_COOKIES,
+    headers: Mapping[str, str] | None = DEFAULT_HEADERS,
+    cookies: Mapping[str, str] | None = None,
     trust_env: bool = DEFAULT_TRUST_ENV,
     proxy: str | None = DEFAULT_PROXY,
     timeout: float = 5,
     *,
     verify: bool = False,
-) -> AsyncIterator[NativeSession]:
-    session = NativeSession(
-        headers=dict(headers),
-        cookies=dict(cookies),
+) -> AsyncIterator[YuttoSession]:
+    ca_cert_file = os.environ.get("SSL_CERT_FILE") if trust_env and verify else None
+    ca_cert_dir = os.environ.get("SSL_CERT_DIR") if trust_env and verify and not ca_cert_file else None
+    session = YuttoSession(
+        headers=dict(headers or {}),
+        cookies=dict(cookies or {}),
         proxy=proxy,
         use_system_proxy=trust_env,
         accept_invalid_certs=not verify,
+        ca_cert_file=ca_cert_file,
+        ca_cert_dir=ca_cert_dir,
         read_timeout=timeout,
         connect_timeout=timeout,
     )
@@ -275,27 +256,3 @@ async def create_client(
         yield session
     finally:
         session.close()
-
-
-def create_sync_client(
-    headers: dict[str, str] = DEFAULT_HEADERS,
-    cookies: httpx.Cookies = DEFAULT_COOKIES,
-    trust_env: bool = DEFAULT_TRUST_ENV,
-    proxy: str | None = DEFAULT_PROXY,
-    timeout: int | httpx.Timeout = 5,
-    *,
-    http2: bool = True,
-    verify: bool = False,
-) -> httpx.Client:
-    client = httpx.Client(
-        **_sync_client_kwargs(
-            headers=headers,
-            cookies=cookies,
-            trust_env=trust_env,
-            proxy=proxy,
-            timeout=timeout,
-            http2=http2,
-            verify=verify,
-        )
-    )
-    return client

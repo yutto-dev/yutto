@@ -6,9 +6,9 @@ import pytest
 from yutto_core import (
     HttpStatusError,
     InvalidUrlError,
-    NativeSession,
     SessionClosedError,
     UnsupportedProtocolError,
+    YuttoSession,
     wait_for_transfer,
 )
 
@@ -19,9 +19,9 @@ pytestmark = pytest.mark.processor
 
 
 @as_sync
-async def test_native_session_get_exposes_response_and_typed_errors():
+async def test_yutto_session_get_exposes_response_and_typed_errors():
     with LocalRangeServer(b"payload") as server:
-        session = NativeSession(use_system_proxy=False)
+        session = YuttoSession(use_system_proxy=False)
         response = await session.get(server.url, params=[("query", "a b")])
         missing = await session.get(server.url, headers={"Range": "bytes=99-100"})
 
@@ -42,8 +42,8 @@ async def test_native_session_get_exposes_response_and_typed_errors():
 
 
 @as_sync
-async def test_native_session_close_is_idempotent_and_rejects_new_work(tmp_path):
-    session = NativeSession(use_system_proxy=False)
+async def test_yutto_session_close_is_idempotent_and_rejects_new_work(tmp_path):
+    session = YuttoSession(use_system_proxy=False)
 
     session.close()
     session.close()
@@ -56,10 +56,10 @@ async def test_native_session_close_is_idempotent_and_rejects_new_work(tmp_path)
 
 
 @as_sync
-async def test_native_session_get_propagates_asyncio_cancellation():
+async def test_yutto_session_get_propagates_asyncio_cancellation():
     payload = b"payload"
     with LocalRangeServer(payload, delays={(0, len(payload) - 1): 0.2}) as server:
-        session = NativeSession(use_system_proxy=False)
+        session = YuttoSession(use_system_proxy=False)
         future = asyncio.ensure_future(session.get(server.url, headers={"Range": f"bytes=0-{len(payload) - 1}"}))
         while not server.requests:
             await asyncio.sleep(0)
@@ -69,12 +69,12 @@ async def test_native_session_get_propagates_asyncio_cancellation():
 
 
 @as_sync
-async def test_native_session_starts_a_transfer_with_its_client(tmp_path):
+async def test_yutto_session_starts_a_transfer_with_its_client(tmp_path):
     payload = b"native transfer"
     target = tmp_path / "media"
 
     with LocalRangeServer(payload) as server:
-        session = NativeSession(use_system_proxy=False)
+        session = YuttoSession(use_system_proxy=False)
         handle = session.start_transfer([server.url], target, len(payload), overwrite=True)
         committed = await wait_for_transfer(handle, poll_interval=0)
 

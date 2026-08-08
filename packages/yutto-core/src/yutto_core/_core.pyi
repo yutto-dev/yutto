@@ -43,7 +43,7 @@ class TransferHandle:
     def snapshot(self) -> TransferSnapshot: ...
     def result(self) -> int: ...
 
-class NativeSession:
+class YuttoSession:
     def __init__(
         self,
         *,
@@ -52,6 +52,8 @@ class NativeSession:
         proxy: str | None = ...,
         use_system_proxy: bool = ...,
         accept_invalid_certs: bool = ...,
+        ca_cert_file: str | Path | None = ...,
+        ca_cert_dir: str | Path | None = ...,
         read_timeout: float = ...,
         connect_timeout: float = ...,
     ) -> None: ...

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
     from contextlib import AbstractAsyncContextManager
 
-    from yutto_core import NativeSession
+    from yutto_core import YuttoSession
 
     from yutto.auth import AuthInfo
     from yutto.core.request import DownloadRequest
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class ExecutionScope:
     """Runtime resources owned by one request execution."""
 
-    session: NativeSession
+    session: YuttoSession
     fetch_limiter: asyncio.Semaphore
     download_workers: int
     user_info_cache: UserInfo | None
@@ -34,7 +34,7 @@ class ExecutionScope:
 
     def __init__(
         self,
-        session: NativeSession,
+        session: YuttoSession,
         *,
         fetch_workers: int = DEFAULT_FETCH_WORKERS,
         download_workers: int = DEFAULT_FETCH_WORKERS,
