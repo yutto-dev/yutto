@@ -11,6 +11,7 @@ from yutto.cli.request_adapter import download_request_parser_from_settings
 from yutto.core.application import YuttoApplication
 from yutto.core.task_service import DownloadTaskService, ResolveTaskService
 from yutto.download_manager import DownloadManager
+from yutto.downloader.path_leases import DownloadPathLeasePool
 from yutto.runtime import TaskCapacityPool, monotonic_seq_allocator
 from yutto.server.service import ServerPolicy, ServerPolicyOptions
 from yutto.server.websocket import WebSocketServerOptions, YuttoWebSocketServer
@@ -113,16 +114,25 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
     # 维持 v1 契约：`seq` 全局递增可去重、`--task-limit` 是两类任务的总量
     event_seq_allocator = monotonic_seq_allocator()
     task_capacity = TaskCapacityPool(args.task_limit)
+    path_leases = DownloadPathLeasePool()
+
+    def build_download_application(
+        factory: ExecutionScopeFactory,
+        event_sink: DownloadEventSink,
+    ) -> YuttoApplication:
+        return _build_download_application(factory, event_sink, path_leases=path_leases)
+
     task_service = DownloadTaskService(
         scope_factory,
-        _build_download_application,
+        build_download_application,
         task_limit=args.task_limit,
+        worker_count=args.jobs,
         seq_allocator=event_seq_allocator,
         capacity_pool=task_capacity,
     )
     resolve_service = ResolveTaskService(
         scope_factory,
-        _build_download_application,
+        build_download_application,
         task_limit=args.task_limit,
         seq_allocator=event_seq_allocator,
         capacity_pool=task_capacity,
@@ -144,8 +154,10 @@ def build_server(args: argparse.Namespace, token: str, *, ffmpeg: FFmpeg | None 
 def _build_download_application(
     scope_factory: ExecutionScopeFactory,
     event_sink: DownloadEventSink,
+    *,
+    path_leases: DownloadPathLeasePool | None = None,
 ) -> YuttoApplication:
-    manager = DownloadManager()
+    manager = DownloadManager(path_leases=path_leases)
     return YuttoApplication(
         scope_factory,
         workflow=manager,

@@ -34,7 +34,7 @@ class ResolveApplication(Protocol):
 
 
 class DownloadTaskService:
-    """Run frontend-independent download requests through a single-worker runtime."""
+    """Run frontend-independent download requests through a bounded worker runtime."""
 
     def __init__(
         self,
@@ -43,6 +43,7 @@ class DownloadTaskService:
         *,
         replay_limit: int = 100,
         task_limit: int = 256,
+        worker_count: int = 1,
         task_id_factory: Callable[[], str] | None = None,
         seq_allocator: Callable[[], int] | None = None,
         capacity_pool: TaskCapacityPool | None = None,
@@ -51,7 +52,7 @@ class DownloadTaskService:
         self._application_factory = application_factory
         self.runtime = TaskRuntime[DownloadRequest, DownloadResult](
             self._run,
-            worker_count=1,
+            worker_count=worker_count,
             replay_limit=replay_limit,
             task_limit=task_limit,
             task_id_factory=task_id_factory,
