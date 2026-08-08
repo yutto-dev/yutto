@@ -12,9 +12,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Protocol
 
-    from yutto.utils.file_buffer import AsyncFileBuffer
-
-    class NativeTransferSnapshot(Protocol):
+    class TransferSnapshot(Protocol):
         @property
         def origin_bytes(self) -> int: ...
 
@@ -27,45 +25,16 @@ if TYPE_CHECKING:
         @property
         def window_saturated(self) -> bool: ...
 
-    class NativeTransferHandle(Protocol):
+    class TransferHandle(Protocol):
         def done(self) -> bool: ...
 
-        def snapshot(self) -> NativeTransferSnapshot: ...
+        def snapshot(self) -> TransferSnapshot: ...
 
 
 SMOOTHING_WINDOW_SIZE = 10
 
 
-async def show_progress(file_buffers: list[AsyncFileBuffer], total_size: int):
-    t: float = time.time()
-    size: int = sum([file_buffer.written_size for file_buffer in file_buffers])
-    time_with_size_window = deque([(t, size)], maxlen=SMOOTHING_WINDOW_SIZE)
-    while True:
-        size_in_buffer: int = sum(
-            [sum([len(chunk.data) for chunk in file_buffer.buffer]) for file_buffer in file_buffers]
-        )
-        size_written: int = sum([file_buffer.written_size for file_buffer in file_buffers])
-
-        t_now = time.time()
-        size_now = size_written + size_in_buffer
-        time_with_size_window.append((t_now, size_now))
-        speed = (size_now - time_with_size_window[0][1]) / (t_now - time_with_size_window[0][0] + 10**-6)
-        emit_download_event(
-            DownloadProgress(
-                current=size_now,
-                total=total_size,
-                speed_per_second=speed,
-                buffered_bytes=size_in_buffer,
-            )
-        )
-
-        t, size = t_now, size_now
-        await asyncio.sleep(0.25)
-        if total_size == size:
-            break
-
-
-async def show_native_progress(handles: Sequence[NativeTransferHandle], total_size: int) -> None:
+async def show_progress(handles: Sequence[TransferHandle], total_size: int) -> None:
     t = time.time()
     transferred = sum(
         max(0, snapshot.received_bytes - snapshot.origin_bytes)

@@ -6,16 +6,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import pytest
-from returns.result import Success
 
 import yutto.downloader.executor as executor_module
-import yutto.downloader.transfer as transfer_module
 from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState, ResolvedItem
 from yutto.downloader.downloader import process_download
 from yutto.downloader.media_muxer import MediaMuxer
-from yutto.downloader.planner import DownloadPlanner
 from yutto.exceptions import PostprocessingError
 from yutto.types import AId, CId
 from yutto.utils.danmaku import write_danmaku
@@ -28,7 +25,6 @@ if TYPE_CHECKING:
     from yutto.media.codec import AudioCodec
     from yutto.types import AudioUrlMeta, EpisodeData
     from yutto.utils.danmaku import DanmakuData, DanmakuOptions
-    from yutto.utils.file_buffer import AsyncFileBuffer
 
 pytestmark = pytest.mark.processor
 
@@ -125,57 +121,6 @@ def make_media_episode() -> EpisodeData:
     episode["audios"] = [make_audio()]
     episode["chapter_info_data"] = [{"start": 0, "end": 1, "content": "chapter"}]
     return episode
-
-
-@as_sync
-async def test_download_cancellation_closes_buffer(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-):
-    download_started = asyncio.Event()
-    download_cancelled = asyncio.Event()
-    buffer_closed = asyncio.Event()
-
-    async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
-        return Success(1)
-
-    async def download_file(*_args: object, **_kwargs: object) -> None:
-        download_started.set()
-        try:
-            await asyncio.Event().wait()
-        finally:
-            download_cancelled.set()
-
-    async def show_progress(*_args: object, **_kwargs: object) -> None:
-        await asyncio.Event().wait()
-
-    original_close = transfer_module.AsyncFileBuffer.close
-
-    async def close_buffer(buffer: AsyncFileBuffer) -> None:
-        await original_close(buffer)
-        buffer_closed.set()
-
-    monkeypatch.setattr(transfer_module.Fetcher, "get_size", get_size)
-    monkeypatch.setattr(transfer_module.Fetcher, "download_file_with_offset", download_file)
-    monkeypatch.setattr(transfer_module, "show_progress", show_progress)
-    monkeypatch.setattr(transfer_module.AsyncFileBuffer, "close", close_buffer)
-
-    plan = DownloadPlanner().plan(make_media_episode(), make_request(tmp_path, audio=True))
-    plan.paths.temporary_dir.mkdir(parents=True)
-    task = asyncio.create_task(
-        transfer_module.download_video_and_audio(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
-            plan,
-        )
-    )
-    await download_started.wait()
-
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
-
-    assert download_cancelled.is_set()
-    assert buffer_closed.is_set()
 
 
 @pytest.mark.parametrize("cancelled", [False, True], ids=["failure", "cancellation"])

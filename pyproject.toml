@@ -21,7 +21,6 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-  "aiofiles>=25.1.0",
   "biliass==2.5.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
   "typing-extensions>=4.15.0",
@@ -31,10 +30,8 @@ dependencies = [
   "returns>=0.26.0",
   "segno>=1.6.6",
   "websockets>=17,<18",
+  "yutto-core==0.1.0",
 ]
-
-[project.optional-dependencies]
-rust = ["yutto-core==0.1.0"]
 
 [project.urls]
 Homepage = "https://github.com/yutto-dev/yutto"
@@ -47,6 +44,7 @@ yutto = "yutto.__main__:main"
 
 [dependency-groups]
 dev = [
+  "aiofiles>=25.1.0",
   "ty>=0.0.65",
   "ruff>=0.16.1",
   "typos>=1.48.0",
@@ -54,7 +52,6 @@ dev = [
   "pytest-rerunfailures>=16.4",
   "syrupy>=5.5.3",
   "pytest-codspeed>=5.0.3",
-  "yutto-core==0.1.0",
 ]
 
 [tool.uv.sources]

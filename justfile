@@ -2,6 +2,7 @@ set positional-arguments
 
 VERSION := `uv run scripts/get-version.py src/yutto/__version__.py`
 BILIASS_VERSION := `uv run scripts/get-version.py packages/biliass/src/biliass/__version__.py`
+YUTTO_CORE_VERSION := `uv version --package yutto-core --short`
 DOCKER_NAME := "siguremo/yutto"
 
 run *ARGS:
@@ -24,6 +25,15 @@ lint:
 
 build:
   uv build
+
+build-yutto-core:
+  uv build --package yutto-core
+
+release-yutto-core:
+  @echo 'Tagging yutto-core@{{YUTTO_CORE_VERSION}}...'
+  git tag "yutto-core@{{YUTTO_CORE_VERSION}}"
+  @echo 'Push to GitHub to trigger publish process...'
+  git push --tags
 
 release:
   @echo 'Tagging v{{VERSION}}...'

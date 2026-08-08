@@ -261,13 +261,13 @@ bili_jct = "csrf-value"
         assert (
             cli_scope.client.trust_env,
             cli_scope.fetch_limiter._value,
-            cli_scope.download_limiter._value,
+            cli_scope.download_workers,
             cli_scope.client.cookies.get("SESSDATA"),
             cli_scope.client.cookies.get("bili_jct"),
         ) == (
             server_scope.client.trust_env,
             server_scope.fetch_limiter._value,
-            server_scope.download_limiter._value,
+            server_scope.download_workers,
             server_scope.client.cookies.get("SESSDATA"),
             server_scope.client.cookies.get("bili_jct"),
         )

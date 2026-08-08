@@ -24,6 +24,9 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install just
         uses: extractions/setup-just@v4
         env:

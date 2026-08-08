@@ -33,6 +33,9 @@ jobs:
           architecture: ${{ matrix.architecture }}
           allow-prereleases: true
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install just
         uses: extractions/setup-just@v4
         env:

@@ -46,6 +46,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             packages/biliass/rust/target/
+            packages/yutto-core/rust/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install tools

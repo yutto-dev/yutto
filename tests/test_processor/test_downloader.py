@@ -1,29 +1,27 @@
 from __future__ import annotations
 
 import asyncio
-import sys
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import httpx
 import pytest
 from returns.result import Failure, Success
 
+import yutto.downloader.transfer as transfer_module
 from tests.helpers.http_range_server import LocalRangeServer, RangeFault
 from tests.test_processor.test_download_result import make_request, make_resource_only_episode
 from yutto.core.events import DownloadEvent, DownloadProgress
 from yutto.core.execution import ExecutionScope
 from yutto.core.operation import bind_download_event_sink
-from yutto.downloader.planner import DownloadPlan, DownloadPlanner
-from yutto.downloader.progressbar import show_native_progress
+from yutto.downloader.planner import DownloadPlanner
+from yutto.downloader.progressbar import show_progress
 from yutto.downloader.transfer import (
     _allocate_native_worker_batches,
-    _download_video_and_audio_rust,
     _probe_media_size,
     _wait_for_native_transfers,
     download_video_and_audio,
-    slice_blocks,
 )
-from yutto.exceptions import MaxRetryError, WrongArgumentError
+from yutto.exceptions import MaxRetryError
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional import as_sync
 
@@ -32,14 +30,6 @@ if TYPE_CHECKING:
     from typing import Any
 
 pytestmark = pytest.mark.processor
-
-
-@as_sync
-async def test_missing_rust_backend_is_reported_as_a_cli_error(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setitem(sys.modules, "yutto_core", None)
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(WrongArgumentError, match=r"请安装 yutto\[rust\]"):
-            await _download_video_and_audio_rust(ExecutionScope(client), cast("DownloadPlan", None))
 
 
 @as_sync
@@ -61,24 +51,6 @@ class RecordingEventSink:
 
     def emit(self, event: DownloadEvent) -> None:
         self.events.append(event)
-
-
-@pytest.mark.parametrize(
-    ("start", "total_size", "block_size", "expected"),
-    [
-        (7, None, 512, [(0, None)]),
-        (7, 20, None, [(7, 13)]),
-        (20, 20, None, []),
-        (7, 21, 5, [(7, 5), (12, 5), (17, 4)]),
-    ],
-)
-def test_slice_blocks_handles_resume_offsets(
-    start: int,
-    total_size: int | None,
-    block_size: int | None,
-    expected: list[tuple[int, int | None]],
-):
-    assert slice_blocks(start, total_size, block_size) == expected
 
 
 @as_sync
@@ -110,7 +82,7 @@ async def test_native_resume_progress_does_not_count_existing_bytes_as_speed():
 
     sink = RecordingEventSink()
     with bind_download_event_sink(sink):
-        await show_native_progress([Handle()], page_size * 2)
+        await show_progress([Handle()], page_size * 2)
 
     assert sink.events == [
         DownloadProgress(
@@ -144,7 +116,7 @@ async def test_native_progress_uses_only_window_saturation_signal(window_saturat
 
     sink = RecordingEventSink()
     with bind_download_event_sink(sink):
-        await show_native_progress([Handle()], 8 * page_size)
+        await show_progress([Handle()], 8 * page_size)
 
     assert len(sink.events) == 1
     assert isinstance(sink.events[0], DownloadProgress)
@@ -182,53 +154,8 @@ async def test_probe_media_size_rejects_a_source_without_a_known_length(monkeypa
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
     async with httpx.AsyncClient() as client:
-        assert await _probe_media_size(ExecutionScope(client), "primary", []) is None
         with pytest.raises(MaxRetryError, match="未返回长度"):
-            await _probe_media_size(ExecutionScope(client), "primary", [], require_known=True)
-
-
-@as_sync
-async def test_unknown_size_restarts_fragment_and_http_200_retry(tmp_path):
-    payload = b"A" * (64 * 1024) + b"B" * (64 * 1024)
-    download_attempts = 0
-    range_headers: list[str] = []
-
-    class InterruptAfterFirstChunk(httpx.AsyncByteStream):
-        async def __aiter__(self):
-            yield payload[: 64 * 1024]
-            raise httpx.ReadTimeout("interrupted")
-
-    def ignore_range(request: httpx.Request) -> httpx.Response:
-        nonlocal download_attempts
-        range_header = request.headers["Range"]
-        range_headers.append(range_header)
-        if range_header == "bytes=0-1":
-            return httpx.Response(200, content=payload)
-        download_attempts += 1
-        if download_attempts == 1:
-            return httpx.Response(200, stream=InterruptAfterFirstChunk())
-        return httpx.Response(200, content=payload)
-
-    episode = make_resource_only_episode()
-    episode["audios"] = [
-        {
-            "url": "https://example.test/audio",
-            "mirrors": [],
-            "codec": "mp4a",
-            "width": 0,
-            "height": 0,
-            "quality": 30280,
-        }
-    ]
-    plan = DownloadPlanner().plan(episode, make_request(tmp_path, audio=True))
-    plan.paths.temporary_dir.mkdir(parents=True)
-    plan.paths.audio.write_bytes(payload[: 64 * 1024])
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(ignore_range)) as client:
-        await download_video_and_audio(ExecutionScope(client), plan)
-
-    assert range_headers == ["bytes=0-1", "bytes=0-", f"bytes={64 * 1024}-"]
-    assert plan.paths.audio.read_bytes() == payload
+            await _probe_media_size(ExecutionScope(client), "primary", [])
 
 
 @pytest.mark.parametrize(
@@ -329,83 +256,7 @@ async def test_out_of_order_ranges_commit_an_exact_contiguous_file(tmp_path):
 
 
 @as_sync
-async def test_cancellation_keeps_only_the_committed_contiguous_prefix(tmp_path):
-    page_size = 64 * 1024
-    committed_prefix = b"A" * page_size
-    payload = b"A" * page_size + b"B" * page_size + b"C" * page_size
-    prefix_committed = asyncio.Event()
-    later_range_buffered = asyncio.Event()
-
-    class BlockingFirstRange(httpx.AsyncByteStream):
-        async def __aiter__(self):
-            yield committed_prefix
-            prefix_committed.set()
-            await asyncio.Event().wait()
-
-    class ObservableRange(httpx.AsyncByteStream):
-        async def __aiter__(self):
-            yield payload[2 * page_size :]
-            later_range_buffered.set()
-
-    def handle_range(request: httpx.Request) -> httpx.Response:
-        range_header = request.headers["Range"]
-        if range_header == "bytes=0-1":
-            return httpx.Response(
-                206,
-                content=payload[:2],
-                headers={"Content-Range": f"bytes 0-1/{len(payload)}"},
-            )
-        if range_header == f"bytes=0-{2 * page_size - 1}":
-            return httpx.Response(
-                206,
-                stream=BlockingFirstRange(),
-                headers={"Content-Range": f"bytes 0-{2 * page_size - 1}/{len(payload)}"},
-            )
-        if range_header == f"bytes={2 * page_size}-{3 * page_size - 1}":
-            return httpx.Response(
-                206,
-                stream=ObservableRange(),
-                headers={"Content-Range": (f"bytes {2 * page_size}-{3 * page_size - 1}/{len(payload)}")},
-            )
-        raise AssertionError(f"unexpected Range: {range_header}")
-
-    episode = make_resource_only_episode()
-    episode["audios"] = [
-        {
-            "url": "https://example.test/audio",
-            "mirrors": [],
-            "codec": "mp4a",
-            "width": 0,
-            "height": 0,
-            "quality": 30280,
-        }
-    ]
-    base_request = make_request(tmp_path, audio=True)
-    request_data = base_request.model_dump()
-    request_data["network"]["block_size_bytes"] = 2 * page_size
-    plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
-    plan.paths.temporary_dir.mkdir(parents=True)
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handle_range)) as client:
-        task = asyncio.create_task(download_video_and_audio(ExecutionScope(client), plan))
-        try:
-            await asyncio.wait_for(
-                asyncio.gather(prefix_committed.wait(), later_range_buffered.wait()),
-                timeout=2,
-            )
-            task.cancel()
-            with pytest.raises(asyncio.CancelledError):
-                await task
-        finally:
-            if not task.done():
-                task.cancel()
-                await asyncio.gather(task, return_exceptions=True)
-
-    assert plan.paths.audio.read_bytes() == committed_prefix
-
-
-@as_sync
-async def test_explicit_rust_backend_resumes_with_native_transfer(tmp_path):
+async def test_native_transfer_resumes_by_default(tmp_path):
     page_size = 64 * 1024
     payload = b"A" * page_size + b"B" * page_size + b"C" * 17
     episode = make_resource_only_episode()
@@ -423,7 +274,6 @@ async def test_explicit_rust_backend_resumes_with_native_transfer(tmp_path):
         ]
         base_request = make_request(tmp_path, audio=True)
         request_data = base_request.model_dump()
-        request_data["network"]["download_backend"] = "rust"
         request = type(base_request).model_validate(request_data)
         plan = DownloadPlanner().plan(episode, request)
         plan.paths.temporary_dir.mkdir(parents=True)
@@ -459,7 +309,6 @@ async def test_cancelling_rust_backend_stops_the_native_transfer(tmp_path):
         ]
         base_request = make_request(tmp_path, audio=True)
         request_data = base_request.model_dump()
-        request_data["network"]["download_backend"] = "rust"
         request_data["network"]["block_size_bytes"] = page_size
         plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
         plan.paths.temporary_dir.mkdir(parents=True)
@@ -481,12 +330,10 @@ async def test_cancelling_rust_backend_stops_the_native_transfer(tmp_path):
 
 
 @as_sync
-async def test_rust_backend_maps_mirrors_headers_cookies_proxy_and_workers(
+async def test_native_transfer_maps_mirrors_headers_cookies_proxy_and_workers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    import yutto_core
-
     captured: dict[str, Any] = {}
 
     class Snapshot:
@@ -511,17 +358,13 @@ async def test_rust_backend_maps_mirrors_headers_cookies_proxy_and_workers(
     async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
         return Success(123)
 
-    async def legacy_download(*_args: object, **_kwargs: object) -> None:
-        raise AssertionError("Rust backend must not fall back to the Python downloader")
-
     def start_transfer(*args: object, **kwargs: object) -> Handle:
         captured["args"] = args
         captured["kwargs"] = kwargs
         return Handle()
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
-    monkeypatch.setattr(Fetcher, "download_file_with_offset", legacy_download)
-    monkeypatch.setattr(yutto_core, "start_transfer", start_transfer)
+    monkeypatch.setattr(transfer_module, "start_transfer", start_transfer)
 
     episode = make_resource_only_episode()
     episode["audios"] = [
@@ -541,7 +384,6 @@ async def test_rust_backend_maps_mirrors_headers_cookies_proxy_and_workers(
     request_data = base_request.model_dump()
     request_data["network"].update(
         {
-            "download_backend": "rust",
             "banned_mirrors_pattern": "blocked",
             "block_size_bytes": 64 * 1024,
         }
@@ -586,8 +428,6 @@ async def test_rust_backend_reaps_a_started_handle_when_later_setup_fails(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    import yutto_core
-
     class Handle:
         def __init__(self) -> None:
             self.cancelled = False
@@ -620,8 +460,8 @@ async def test_rust_backend_reaps_a_started_handle_when_later_setup_fails(
         return handle
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
-    monkeypatch.setattr(yutto_core, "start_transfer", start_transfer)
-    monkeypatch.setattr(yutto_core, "wait_for_transfer", wait_for_transfer)
+    monkeypatch.setattr(transfer_module, "start_transfer", start_transfer)
+    monkeypatch.setattr(transfer_module, "wait_for_transfer", wait_for_transfer)
 
     episode = make_resource_only_episode()
     episode["videos"] = [
@@ -646,7 +486,6 @@ async def test_rust_backend_reaps_a_started_handle_when_later_setup_fails(
     ]
     base_request = make_request(tmp_path, video=True, audio=True)
     request_data = base_request.model_dump()
-    request_data["network"]["download_backend"] = "rust"
     plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
 
     async with httpx.AsyncClient() as client:

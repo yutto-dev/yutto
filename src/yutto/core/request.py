@@ -111,7 +111,6 @@ class OutputRequestOptions(_RequestModel):
 class NetworkRequestOptions(_RequestModel):
     """Network access and transfer concurrency preferences."""
 
-    download_backend: Literal["python", "rust"] = "python"
     proxy: str = "auto"
     fetch_workers: int = 8
     download_workers: int = 8

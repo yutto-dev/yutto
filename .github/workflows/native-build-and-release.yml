@@ -1,0 +1,314 @@
+name: Build and release native Python distributions
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Python package directory containing pyproject.toml
+        required: true
+        type: string
+      artifact-prefix:
+        description: Prefix used for uploaded distribution artifacts
+        required: true
+        type: string
+      release-ref-prefix:
+        description: Git ref prefix used to identify package release tags
+        required: true
+        type: string
+      manylinux-aarch64:
+        description: manylinux baseline for aarch64 wheels
+        required: false
+        type: string
+        default: auto
+
+permissions:
+  contents: read
+
+env:
+  MATURIN_ACTION_VERSION: v1.14.1
+
+jobs:
+  linux:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+            manylinux: auto
+          - runner: ubuntu-latest
+            target: x86
+            manylinux: auto
+          - runner: ubuntu-latest
+            target: aarch64
+            manylinux: ${{ inputs.manylinux-aarch64 }}
+          - runner: ubuntu-latest
+            target: armv7
+            manylinux: auto
+          - runner: ubuntu-latest
+            target: s390x
+            manylinux: auto
+          - runner: ubuntu-latest
+            target: ppc64le
+            manylinux: auto
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+          allow-prereleases: true
+      - name: Build abi3 and Python 3.14t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter '3.14 3.14t'
+          sccache: "true"
+          manylinux: ${{ matrix.platform.manylinux }}
+          working-directory: ${{ inputs.working-directory }}
+      - name: Build abi3t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter 3.15t --features abi3t
+          sccache: "true"
+          manylinux: ${{ matrix.platform.manylinux }}
+          working-directory: ${{ inputs.working-directory }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-prefix }}-linux-${{ matrix.platform.target }}
+          path: ${{ inputs.working-directory }}/dist
+
+  musllinux:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+          - runner: ubuntu-latest
+            target: x86
+          - runner: ubuntu-latest
+            target: aarch64
+          - runner: ubuntu-latest
+            target: armv7
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+          allow-prereleases: true
+      - name: Build abi3 and Python 3.14t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter '3.14 3.14t'
+          sccache: "true"
+          manylinux: musllinux_1_2
+          working-directory: ${{ inputs.working-directory }}
+      - name: Build abi3t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter 3.15t --features abi3t
+          sccache: "true"
+          manylinux: musllinux_1_2
+          working-directory: ${{ inputs.working-directory }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-prefix }}-musllinux-${{ matrix.platform.target }}
+          path: ${{ inputs.working-directory }}/dist
+
+  windows:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x64
+          - runner: windows-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup-python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          architecture: ${{ matrix.platform.target }}
+          allow-prereleases: true
+      - name: Build abi3 wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
+          sccache: "true"
+          working-directory: ${{ inputs.working-directory }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-prefix }}-windows-${{ matrix.platform.target }}
+          path: ${{ inputs.working-directory }}/dist
+
+  # Standard and free-threaded Python installations cannot be available at the
+  # same time on Windows machines, so we split them into two jobs.
+  # https://github.com/Quansight-Labs/setup-python/issues/5
+  windows-free-threaded:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        python-version: ["3.14t", "3.15t"]
+        platform:
+          - runner: windows-latest
+            target: x64
+          - runner: windows-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup-python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ matrix.platform.target }}
+          allow-prereleases: true
+      - name: Build Python 3.14t wheel
+        if: ${{ matrix.python-version == '3.14t' }}
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
+          sccache: "true"
+          working-directory: ${{ inputs.working-directory }}
+      - name: Build abi3t wheel
+        if: ${{ matrix.python-version == '3.15t' }}
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: >-
+            --release --out dist --interpreter
+            ${{ steps.setup-python.outputs.python-path }}
+            --features abi3t
+          sccache: "true"
+          working-directory: ${{ inputs.working-directory }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-prefix }}-windows-free-threaded-${{ matrix.python-version }}-${{ matrix.platform.target }}
+          path: ${{ inputs.working-directory }}/dist
+
+  macos:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: macos-15-intel
+            target: x86_64
+          - runner: macos-15
+            target: aarch64
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+          allow-prereleases: true
+      - name: Build abi3 and Python 3.14t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter '3.14 3.14t'
+          sccache: "true"
+          working-directory: ${{ inputs.working-directory }}
+      - name: Build abi3t wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --interpreter 3.15t --features abi3t
+          sccache: "true"
+          working-directory: ${{ inputs.working-directory }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-prefix }}-macos-${{ matrix.platform.target }}
+          path: ${{ inputs.working-directory }}/dist
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_ACTION_VERSION }}
+          command: sdist
+          args: --out dist
+          working-directory: ${{ inputs.working-directory }}
+      - name: Upload sdist
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact-prefix }}-sdist
+          path: ${{ inputs.working-directory }}/dist
+
+  publish-pypi:
+    runs-on: ubuntu-latest
+    name: Publish to PyPI
+    if: ${{ startsWith(github.ref, inputs.release-ref-prefix) }}
+    needs:
+      - linux
+      - musllinux
+      - windows
+      - windows-free-threaded
+      - macos
+      - sdist
+    permissions:
+      id-token: write
+    steps:
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ inputs.artifact-prefix }}-*
+          merge-multiple: true
+          path: dist/
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+      - name: Publish release distributions to PyPI
+        run: uv publish -v
+
+  publish-release:
+    runs-on: ubuntu-latest
+    name: Publish to GitHub
+    if: ${{ startsWith(github.ref, inputs.release-ref-prefix) }}
+    needs:
+      - linux
+      - musllinux
+      - windows
+      - windows-free-threaded
+      - macos
+      - sdist
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ inputs.artifact-prefix }}-*
+          merge-multiple: true
+          path: dist/
+      - name: Publish GitHub release draft
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          files: dist/*
