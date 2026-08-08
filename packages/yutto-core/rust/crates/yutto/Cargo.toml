@@ -23,6 +23,7 @@ haya-http = { version = "0.0.1", path = "../haya-http" }
 pyo3 = "0.29.0"
 pyo3-async-runtimes = { version = "0.29.0", features = ["tokio-runtime"] }
 reqwest.workspace = true
+rustls.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true

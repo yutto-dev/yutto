@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_str()
         .ok_or("SIZE must be valid UTF-8")?
         .parse::<u64>()?;
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let client = Client::builder()
         .no_gzip()
         .no_brotli()

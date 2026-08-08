@@ -122,6 +122,8 @@ impl Session {
             ));
         }
 
+        let _ = rustls::crypto::ring::default_provider().install_default();
+
         let mut default_headers = build_headers(config.headers)?;
         default_headers
             .entry(ACCEPT_ENCODING)
