@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -8,6 +9,7 @@ from typing import cast
 import pytest
 from pydantic import BaseModel
 
+import yutto.core.execution as execution_module
 from yutto.auth import load_auth
 from yutto.core.events import DownloadItemListed
 from yutto.core.execution import RequestExecutionScopeFactory
@@ -203,7 +205,10 @@ def test_options_reject_non_positive_worker_limits(tmp_path: Path, field: str):
 
 
 @as_sync
-async def test_scope_factory_applies_request_network_and_selected_auth_profile(tmp_path: Path):
+async def test_scope_factory_applies_request_network_and_selected_auth_profile(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
     policy = make_policy(tmp_path, max_fetch_workers=4)
     policy.options.auth_file.write_text(
         """
@@ -220,12 +225,22 @@ bili_jct = "csrf-value"
         access={"auth_profile": "work"},
         network={"proxy": "no", "fetch_workers": 3},
     )
+    captured: dict[str, object] = {}
+    create_client = execution_module.create_client
+
+    @asynccontextmanager
+    async def capture_client(**kwargs):
+        captured.update(kwargs)
+        async with create_client(**kwargs) as session:
+            yield session
+
+    monkeypatch.setattr(execution_module, "create_client", capture_client)
 
     async with policy.build_scope_factory().open(request) as scope:
-        assert scope.client.trust_env is False
+        assert captured["trust_env"] is False
         assert scope.fetch_limiter._value == 3
-        assert scope.client.cookies.get("SESSDATA") == "session%2Cvalue"
-        assert scope.client.cookies.get("bili_jct") == "csrf-value"
+        assert scope.session.cookie("SESSDATA") == "session%2Cvalue"
+        assert scope.session.cookie("bili_jct") == "csrf-value"
 
 
 @as_sync
@@ -259,17 +274,15 @@ bili_jct = "csrf-value"
         policy.build_scope_factory().open(request) as server_scope,
     ):
         assert (
-            cli_scope.client.trust_env,
             cli_scope.fetch_limiter._value,
             cli_scope.download_workers,
-            cli_scope.client.cookies.get("SESSDATA"),
-            cli_scope.client.cookies.get("bili_jct"),
+            cli_scope.session.cookie("SESSDATA"),
+            cli_scope.session.cookie("bili_jct"),
         ) == (
-            server_scope.client.trust_env,
             server_scope.fetch_limiter._value,
             server_scope.download_workers,
-            server_scope.client.cookies.get("SESSDATA"),
-            server_scope.client.cookies.get("bili_jct"),
+            server_scope.session.cookie("SESSDATA"),
+            server_scope.session.cookie("bili_jct"),
         )
 
 

@@ -76,18 +76,3 @@ class NativeSession:
         workers: int = ...,
         block_size: int = ...,
     ) -> TransferHandle: ...
-
-def start_transfer(
-    sources: list[str],
-    target: str | Path,
-    expected_size: int,
-    *,
-    overwrite: bool = ...,
-    headers: dict[str, str] | None = ...,
-    source_headers: list[dict[str, str]] | None = ...,
-    proxy: str | None = ...,
-    use_system_proxy: bool = ...,
-    accept_invalid_certs: bool = ...,
-    workers: int = ...,
-    block_size: int = ...,
-) -> TransferHandle: ...

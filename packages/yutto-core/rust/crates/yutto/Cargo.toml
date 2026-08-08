@@ -17,6 +17,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bytes.workspace = true
+flate2.workspace = true
 haya = { version = "0.0.1", path = "../haya" }
 haya-http = { version = "0.0.1", path = "../haya-http" }
 pyo3 = "0.29.0"

@@ -19,7 +19,7 @@ use pyo3::{
 use reqwest::{Client, Url};
 use tokio_util::sync::CancellationToken;
 
-use crate::session::{Response, Session, SessionConfig, SessionError, build_headers};
+use crate::session::{Response, Session, SessionConfig, SessionError};
 
 pub mod session;
 
@@ -181,7 +181,6 @@ impl NativeSession {
             target,
             expected_size,
             overwrite,
-            None,
             workers,
             block_size,
         )
@@ -253,51 +252,12 @@ impl ProgressSink for StateProgress {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-#[pyfunction]
-#[pyo3(signature = (sources, target, expected_size, *, overwrite=false, headers=None, source_headers=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, workers=8, block_size=524288))]
-fn start_transfer(
-    sources: Vec<String>,
-    target: PathBuf,
-    expected_size: u64,
-    overwrite: bool,
-    headers: Option<HashMap<String, String>>,
-    source_headers: Option<Vec<HashMap<String, String>>>,
-    proxy: Option<String>,
-    use_system_proxy: bool,
-    accept_invalid_certs: bool,
-    workers: usize,
-    block_size: usize,
-) -> PyResult<TransferHandle> {
-    let session = Session::new(SessionConfig {
-        headers: headers.unwrap_or_default(),
-        proxy,
-        use_system_proxy,
-        accept_invalid_certs,
-        connect_timeout: Duration::from_secs(3),
-        ..SessionConfig::default()
-    })
-    .map_err(session_error_to_py)?;
-    start_transfer_with_session(
-        &session,
-        sources,
-        target,
-        expected_size,
-        overwrite,
-        source_headers,
-        workers,
-        block_size,
-    )
-}
-
-#[allow(clippy::too_many_arguments)]
 fn start_transfer_with_session(
     session: &Session,
     sources: Vec<String>,
     target: PathBuf,
     expected_size: u64,
     overwrite: bool,
-    source_headers: Option<Vec<HashMap<String, String>>>,
     workers: usize,
     block_size: usize,
 ) -> PyResult<TransferHandle> {
@@ -309,12 +269,6 @@ fn start_transfer_with_session(
     }
     if block_size == 0 {
         return Err(PyValueError::new_err("block_size must be at least 1"));
-    }
-    let source_headers = source_headers.unwrap_or_else(|| vec![HashMap::new(); sources.len()]);
-    if source_headers.len() != sources.len() {
-        return Err(PyValueError::new_err(
-            "source_headers must contain one entry per source",
-        ));
     }
     let spec = transfer_spec(expected_size, workers, block_size);
     let client = session.client().map_err(session_error_to_py)?;
@@ -338,7 +292,6 @@ fn start_transfer_with_session(
             sources,
             target,
             overwrite,
-            source_headers,
             spec,
             cancellation: task_cancellation.clone(),
             state: task_state.clone(),
@@ -366,7 +319,6 @@ struct TransferArgs {
     sources: Vec<String>,
     target: PathBuf,
     overwrite: bool,
-    source_headers: Vec<HashMap<String, String>>,
     spec: DownloadSpec,
     cancellation: CancellationToken,
     state: Arc<Mutex<TransferState>>,
@@ -376,14 +328,13 @@ async fn run_transfer(args: TransferArgs) -> Result<u64, String> {
     let sources = args
         .sources
         .into_iter()
-        .zip(args.source_headers)
-        .map(|(source, headers)| {
+        .map(|source| {
             let url =
                 Url::parse(&source).map_err(|error| format!("invalid source URL: {error}"))?;
             Ok(Arc::new(HttpRangeSource::new(
                 args.client.clone(),
                 url,
-                build_headers(headers).map_err(|error| error.to_string())?,
+                Default::default(),
                 args.spec.expected_size,
             )) as Arc<dyn haya::RangeSource>)
         })
@@ -481,7 +432,6 @@ fn yutto(module: &Bound<'_, PyModule>) -> PyResult<()> {
         "SessionClosedError",
         module.py().get_type::<SessionClosedError>(),
     )?;
-    module.add_function(wrap_pyfunction!(start_transfer, module)?)?;
     Ok(())
 }
 

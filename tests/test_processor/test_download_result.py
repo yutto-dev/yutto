@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -19,8 +19,6 @@ from yutto.utils.danmaku import write_danmaku
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    import httpx
-
     from yutto.downloader.planner import DownloadPlan
     from yutto.media.codec import AudioCodec
     from yutto.types import AudioUrlMeta, EpisodeData
@@ -148,7 +146,7 @@ async def test_interrupted_mux_keeps_resume_inputs(
     monkeypatch.setattr(executor_module, "MediaMuxer", lambda: muxer)
     execution = asyncio.create_task(
         process_download(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
+            ExecutionScope(cast("Any", object())),
             make_media_episode(),
             make_request(tmp_path, audio=True),
         )
@@ -175,7 +173,7 @@ async def test_interrupted_mux_keeps_resume_inputs(
 @as_sync
 async def test_resource_only_download_returns_final_artifacts_without_temporary_files(tmp_path: Path):
     result = await process_download(
-        ExecutionScope(cast("httpx.AsyncClient", object())),
+        ExecutionScope(cast("Any", object())),
         make_resource_only_episode(),
         make_request(tmp_path),
     )
@@ -207,7 +205,7 @@ async def test_existing_media_returns_artifacts_and_cleans_temporary_resources(t
     subtitle_path.write_text("stale subtitle")
 
     result = await process_download(
-        ExecutionScope(cast("httpx.AsyncClient", object())),
+        ExecutionScope(cast("Any", object())),
         episode,
         make_request(tmp_path, audio=True),
     )
@@ -246,7 +244,7 @@ async def test_missing_requested_audio_does_not_clean_uncreated_video_file(tmp_p
     episode["cover_data"] = None
 
     result = await process_download(
-        ExecutionScope(cast("httpx.AsyncClient", object())),
+        ExecutionScope(cast("Any", object())),
         episode,
         make_request(tmp_path, audio=True, save_cover=False),
     )

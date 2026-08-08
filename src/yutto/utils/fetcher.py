@@ -1,20 +1,28 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from urllib.parse import quote, unquote, urlparse
 
 import httpx
 from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
+from yutto_core import (
+    HttpError,
+    HttpTimeoutError,
+    InvalidUrlError,
+    NativeSession,
+    SessionClosedError,
+    UnsupportedProtocolError,
+)
 
 from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import MaxRetryError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Mapping
-
-    from httpx import AsyncClient
+    from collections.abc import AsyncIterator, Callable, Coroutine, Mapping
 
     from yutto.auth import AuthInfo
     from yutto.core.execution import ExecutionScope
@@ -42,14 +50,16 @@ class MaxRetry:
             while retry:
                 try:
                     return Success(await connect_once(*args, **kwargs))
-                except httpx.TimeoutException:
+                except SessionClosedError:
+                    raise
+                except HttpTimeoutError:
                     emit_download_report(
                         f"抓取超时，正在重试，剩余 {retry - 1} 次",
                         level=ReportLevel.WARNING,
                     )
-                except (httpx.InvalidURL, httpx.UnsupportedProtocol) as e:
+                except (InvalidUrlError, UnsupportedProtocolError) as e:
                     raise e
-                except httpx.HTTPError as e:
+                except HttpError as e:
                     await asyncio.sleep(0.5)
                     error_type = e.__class__.__name__
                     emit_download_report(
@@ -115,14 +125,14 @@ class Fetcher:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
-        encoding: str | None = None,  # TODO(SigureMo): Support this
+        encoding: str | None = None,
     ) -> str | None:
         async with scope.fetch_guard():
             emit_download_report(f"Fetch text: {url}", level=ReportLevel.DEBUG)
-            resp = await scope.client.get(url, params=params)
+            resp = await scope.session.get(url, params=_query_params(params))
             if not resp.is_success:
                 return None
-            return resp.text
+            return resp.body.decode(encoding or "utf-8", errors="replace")
 
     @staticmethod
     @MaxRetry(2)
@@ -134,10 +144,10 @@ class Fetcher:
     ) -> bytes | None:
         async with scope.fetch_guard():
             emit_download_report(f"Fetch bin: {url}", level=ReportLevel.DEBUG)
-            resp = await scope.client.get(url, params=params)
+            resp = await scope.session.get(url, params=_query_params(params))
             if not resp.is_success:
                 return None
-            return resp.read()
+            return resp.body
 
     @staticmethod
     @MaxRetry(2)
@@ -149,10 +159,10 @@ class Fetcher:
     ) -> Any:
         async with scope.fetch_guard():
             emit_download_report(f"Fetch json: {url}", level=ReportLevel.DEBUG)
-            resp = await scope.client.get(url, params=params)
+            resp = await scope.session.get(url, params=_query_params(params))
             if not resp.is_success:
                 resp.raise_for_status()
-            return resp.json()
+            return json.loads(resp.body)
 
     @staticmethod
     @MaxRetry(2)
@@ -161,8 +171,8 @@ class Fetcher:
         # 为 SEO 的搜索引擎链接、甚至有的 av、BV 链接实际上是番剧页面，一一列举实在太麻烦，而且最后一种
         # 情况需要在 av、BV 解析一部分信息后才能知道是否是番剧页面，处理起来非常麻烦（bilili 就是这么做的）
         async with scope.fetch_guard():
-            resp = await scope.client.get(url)
-            redirected_url = str(resp.url)
+            resp = await scope.session.get(url)
+            redirected_url = resp.url
             if redirected_url == url:
                 emit_download_report(f"Get redircted url: {url}", level=ReportLevel.DEBUG)
             else:
@@ -176,14 +186,15 @@ class Fetcher:
     @MaxRetry(2)
     async def get_size(scope: ExecutionScope, url: str) -> int | None:
         async with scope.fetch_guard():
-            headers = scope.client.headers.copy()
-            headers["Range"] = "bytes=0-1"
-            resp = await scope.client.get(
+            resp = await scope.session.get(
                 url,
-                headers=headers,
+                headers={"Range": "bytes=0-1"},
             )
             if resp.status_code == 206:
-                size = int(resp.headers["Content-Range"].split("/")[-1])
+                content_range = resp.header("Content-Range")
+                if content_range is None:
+                    return None
+                size = int(content_range.split("/")[-1])
                 emit_download_report(f"Get size: {url} {size}", level=ReportLevel.DEBUG)
                 return size
             else:
@@ -197,11 +208,29 @@ class Fetcher:
             return
         async with scope.fetch_guard():
             emit_download_report(f"Touch url: {url}", level=ReportLevel.DEBUG)
-            await scope.client.get(url)
+            await scope.session.get(url)
             scope.touched_urls.add(url)
 
 
-def _client_kwargs(
+def _query_params(params: Mapping[str, Any] | None) -> list[tuple[str, str]] | None:
+    if params is None:
+        return None
+    result = []
+    for key, value in params.items():
+        values = value if isinstance(value, (list, tuple)) else (value,)
+        result.extend((str(key), _query_value(item)) for item in values)
+    return result
+
+
+def _query_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
+
+
+def _sync_client_kwargs(
     *,
     headers: dict[str, str],
     cookies: httpx.Cookies,
@@ -223,28 +252,29 @@ def _client_kwargs(
     }
 
 
-def create_client(
+@asynccontextmanager
+async def create_client(
     headers: dict[str, str] = DEFAULT_HEADERS,
     cookies: httpx.Cookies = DEFAULT_COOKIES,
     trust_env: bool = DEFAULT_TRUST_ENV,
     proxy: str | None = DEFAULT_PROXY,
-    timeout: int | httpx.Timeout = 5,
+    timeout: float = 5,
     *,
-    http2: bool = True,
     verify: bool = False,
-) -> AsyncClient:
-    client = httpx.AsyncClient(
-        **_client_kwargs(
-            headers=headers,
-            cookies=cookies,
-            trust_env=trust_env,
-            proxy=proxy,
-            timeout=timeout,
-            http2=http2,
-            verify=verify,
-        )
+) -> AsyncIterator[NativeSession]:
+    session = NativeSession(
+        headers=dict(headers),
+        cookies=dict(cookies),
+        proxy=proxy,
+        use_system_proxy=trust_env,
+        accept_invalid_certs=not verify,
+        read_timeout=timeout,
+        connect_timeout=timeout,
     )
-    return client
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def create_sync_client(
@@ -258,7 +288,7 @@ def create_sync_client(
     verify: bool = False,
 ) -> httpx.Client:
     client = httpx.Client(
-        **_client_kwargs(
+        **_sync_client_kwargs(
             headers=headers,
             cookies=cookies,
             trust_env=trust_env,

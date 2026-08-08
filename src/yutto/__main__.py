@@ -44,8 +44,8 @@ class _CliAuthAnnouncer:
 
     async def __call__(self, scope: ExecutionScope, request: DownloadRequest) -> None:
         credentials = (
-            scope.client.cookies.get("SESSDATA"),
-            scope.client.cookies.get("bili_jct"),
+            scope.session.cookie("SESSDATA"),
+            scope.session.cookie("bili_jct"),
         )
         if credentials in self._announced_credentials:
             return
@@ -129,7 +129,7 @@ async def run_download(
 
 
 async def announce_cli_auth(scope: ExecutionScope, _request: DownloadRequest) -> None:
-    if scope.client.cookies.get("SESSDATA") is None:
+    if scope.session.cookie("SESSDATA") is None:
         Logger.info(
             "未提供登录认证信息，无法下载高清视频、字幕等资源哦～请通过 `--auth` 参数提供认证信息，或者先使用 `yutto auth login` 登录存储认证信息后再下载～"
         )

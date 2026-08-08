@@ -4,9 +4,9 @@ import asyncio
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 
-import httpx
 import pytest
 from returns.result import Success
+from yutto_core import InvalidUrlError
 
 import yutto.__main__ as main_module
 import yutto.download_manager as download_manager_module
@@ -84,7 +84,7 @@ async def test_manager_raises_login_error(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(download_manager_module, "validate_user_info", reject_login)
     with pytest.raises(NotLoginError) as exc_info:
         await DownloadManager().process_request(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
+            ExecutionScope(cast("Any", object())),
             make_request(),
         )
 
@@ -102,13 +102,13 @@ async def test_manager_raises_url_errors_without_network(monkeypatch: pytest.Mon
         return True
 
     async def reject_url(scope: ExecutionScope, url: str):
-        raise httpx.InvalidURL("invalid")
+        raise InvalidUrlError("invalid")
 
     monkeypatch.setattr(download_manager_module, "validate_user_info", accept_login)
     monkeypatch.setattr(Fetcher, "get_redirected_url", reject_url)
     with pytest.raises(WrongUrlError) as exc_info:
         await DownloadManager().process_request(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
+            ExecutionScope(cast("Any", object())),
             make_request("not-a-url"),
         )
 
@@ -133,7 +133,7 @@ async def test_manager_reports_unmatched_url_as_structured_error(monkeypatch: py
 
     with pytest.raises(WrongUrlError) as exc_info:
         await DownloadManager().process_request(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
+            ExecutionScope(cast("Any", object())),
             make_request("https://example.com/unsupported"),
         )
 
@@ -190,7 +190,7 @@ async def test_single_extractors_raise_when_episode_is_missing(
 
     with pytest.raises(EpisodeNotFoundError) as exc_info:
         await extractor.extract(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
+            ExecutionScope(cast("Any", object())),
             EMPTY_EXTRACTOR_OPTIONS,
         )
 

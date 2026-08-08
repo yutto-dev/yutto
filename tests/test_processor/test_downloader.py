@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
-import httpx
 import pytest
 from returns.result import Failure, Success
 
@@ -22,12 +21,11 @@ from yutto.downloader.transfer import (
     download_video_and_audio,
 )
 from yutto.exceptions import MaxRetryError
-from yutto.utils.fetcher import Fetcher
+from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any
 
 pytestmark = pytest.mark.processor
 
@@ -35,14 +33,14 @@ pytestmark = pytest.mark.processor
 @as_sync
 async def test_local_range_server_targets_faults_and_closes_connections():
     with LocalRangeServer(b"payload", faults=[((2, 3), RangeFault.IGNORE)]) as server:
-        async with httpx.AsyncClient(http2=False) as client:
-            probe = await client.get(server.url, headers={"Range": "bytes=0-1"})
-            faulted = await client.get(server.url, headers={"Range": "bytes=2-3"})
+        async with create_client(trust_env=False) as session:
+            probe = await session.get(server.url, headers={"Range": "bytes=0-1"})
+            faulted = await session.get(server.url, headers={"Range": "bytes=2-3"})
 
     assert probe.status_code == 206
     assert faulted.status_code == 200
-    assert probe.headers["Connection"] == "close"
-    assert faulted.headers["Connection"] == "close"
+    assert probe.header("Connection") == "close"
+    assert faulted.header("Connection") == "close"
 
 
 class RecordingEventSink:
@@ -135,12 +133,11 @@ async def test_probe_media_size_preserves_probe_failures(monkeypatch: pytest.Mon
         return Failure(failures[url])
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
-    async with httpx.AsyncClient() as client:
-        scope = ExecutionScope(client)
-        with pytest.raises(MaxRetryError) as single_failure:
-            await _probe_media_size(scope, "primary", [])
-        with pytest.raises(MaxRetryError) as multiple_failure:
-            await _probe_media_size(scope, "primary", ["mirror"])
+    scope = ExecutionScope(cast("Any", object()))
+    with pytest.raises(MaxRetryError) as single_failure:
+        await _probe_media_size(scope, "primary", [])
+    with pytest.raises(MaxRetryError) as multiple_failure:
+        await _probe_media_size(scope, "primary", ["mirror"])
 
     assert single_failure.value is failures["primary"]
     assert isinstance(multiple_failure.value.__cause__, ExceptionGroup)
@@ -153,9 +150,8 @@ async def test_probe_media_size_rejects_a_source_without_a_known_length(monkeypa
         return Success(None)
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(MaxRetryError, match="未返回长度"):
-            await _probe_media_size(ExecutionScope(client), "primary", [])
+    with pytest.raises(MaxRetryError, match="未返回长度"):
+        await _probe_media_size(ExecutionScope(cast("Any", object())), "primary", [])
 
 
 @pytest.mark.parametrize(
@@ -205,8 +201,8 @@ async def test_known_size_resume_uses_existing_contiguous_prefix(tmp_path):
         plan.paths.temporary_dir.mkdir(parents=True)
         plan.paths.audio.write_bytes(payload[:resume_offset])
 
-        async with httpx.AsyncClient(http2=False) as client:
-            await download_video_and_audio(ExecutionScope(client), plan)
+        async with create_client(trust_env=False) as session:
+            await download_video_and_audio(ExecutionScope(session), plan)
 
     assert [request.range_header for request in server.requests] == [
         "bytes=0-1",
@@ -242,8 +238,8 @@ async def test_out_of_order_ranges_commit_an_exact_contiguous_file(tmp_path):
         plan = DownloadPlanner().plan(episode, request)
         plan.paths.temporary_dir.mkdir(parents=True)
 
-        async with httpx.AsyncClient(http2=False) as client:
-            await download_video_and_audio(ExecutionScope(client), plan)
+        async with create_client(trust_env=False) as session:
+            await download_video_and_audio(ExecutionScope(session), plan)
 
     assert plan.paths.audio.read_bytes() == payload
     assert plan.paths.audio.stat().st_size == len(payload)
@@ -279,8 +275,8 @@ async def test_native_transfer_resumes_by_default(tmp_path):
         plan.paths.temporary_dir.mkdir(parents=True)
         plan.paths.audio.write_bytes(payload[:page_size])
 
-        async with httpx.AsyncClient(http2=False) as client:
-            await download_video_and_audio(ExecutionScope(client), plan)
+        async with create_client(trust_env=False) as session:
+            await download_video_and_audio(ExecutionScope(session), plan)
 
     assert plan.paths.audio.read_bytes() == payload
     range_headers = [request.range_header for request in server.requests]
@@ -314,8 +310,8 @@ async def test_cancelling_rust_backend_stops_the_native_transfer(tmp_path):
         plan.paths.temporary_dir.mkdir(parents=True)
         plan.paths.audio.write_bytes(payload[:page_size])
 
-        async with httpx.AsyncClient(http2=False) as client:
-            task = asyncio.create_task(download_video_and_audio(ExecutionScope(client), plan))
+        async with create_client(trust_env=False) as session:
+            task = asyncio.create_task(download_video_and_audio(ExecutionScope(session), plan))
             async with asyncio.timeout(2):
                 while not any(request.range_header == later_range for request in server.completed_requests):
                     await asyncio.sleep(0.01)
@@ -330,7 +326,7 @@ async def test_cancelling_rust_backend_stops_the_native_transfer(tmp_path):
 
 
 @as_sync
-async def test_native_transfer_maps_mirrors_headers_cookies_proxy_and_workers(
+async def test_native_transfer_reuses_the_scope_session_and_maps_workers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
@@ -358,13 +354,13 @@ async def test_native_transfer_maps_mirrors_headers_cookies_proxy_and_workers(
     async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
         return Success(123)
 
-    def start_transfer(*args: object, **kwargs: object) -> Handle:
-        captured["args"] = args
-        captured["kwargs"] = kwargs
-        return Handle()
+    class FakeSession:
+        def start_transfer(self, *args: object, **kwargs: object) -> Handle:
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return Handle()
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
-    monkeypatch.setattr(transfer_module, "start_transfer", start_transfer)
 
     episode = make_resource_only_episode()
     episode["audios"] = [
@@ -390,20 +386,11 @@ async def test_native_transfer_maps_mirrors_headers_cookies_proxy_and_workers(
     )
     plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
 
-    cookies = httpx.Cookies()
-    cookies.set("PRIMARY", "primary-secret", domain="primary.example", path="/media")
-    cookies.set("MIRROR", "mirror-secret", domain="mirror.example", path="/media")
-    cookies.set("WRONG_PATH", "wrong-secret", domain="primary.example", path="/private")
-    async with httpx.AsyncClient(headers={"X-Test": "value"}, cookies=cookies) as client:
-        await download_video_and_audio(
-            ExecutionScope(
-                client,
-                download_workers=3,
-                proxy="socks5://127.0.0.1:1080",
-                trust_env=False,
-            ),
-            plan,
-        )
+    session = FakeSession()
+    await download_video_and_audio(
+        ExecutionScope(cast("Any", session), download_workers=3),
+        plan,
+    )
 
     args = captured["args"]
     kwargs = captured["kwargs"]
@@ -411,14 +398,6 @@ async def test_native_transfer_maps_mirrors_headers_cookies_proxy_and_workers(
     assert isinstance(kwargs, dict)
     assert args[0] == ["https://primary.example/media", "https://mirror.example/media"]
     assert args[2] == 123
-    assert kwargs["headers"]["x-test"] == "value"
-    assert "cookie" not in kwargs["headers"]
-    assert kwargs["source_headers"] == [
-        {"cookie": "PRIMARY=primary-secret"},
-        {"cookie": "MIRROR=mirror-secret"},
-    ]
-    assert kwargs["proxy"] == "socks5://127.0.0.1:1080"
-    assert kwargs["use_system_proxy"] is False
     assert kwargs["workers"] == 3
     assert kwargs["block_size"] == 64 * 1024
 
@@ -452,15 +431,15 @@ async def test_rust_backend_reaps_a_started_handle_when_later_setup_fails(
         started_handle.reaped = True
         raise RuntimeError("cancelled")
 
-    def start_transfer(*_args: object, **_kwargs: object) -> Handle:
-        nonlocal starts
-        starts += 1
-        if starts == 2:
-            raise RuntimeError("second setup failed")
-        return handle
+    class FakeSession:
+        def start_transfer(self, *_args: object, **_kwargs: object) -> Handle:
+            nonlocal starts
+            starts += 1
+            if starts == 2:
+                raise RuntimeError("second setup failed")
+            return handle
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
-    monkeypatch.setattr(transfer_module, "start_transfer", start_transfer)
     monkeypatch.setattr(transfer_module, "wait_for_transfer", wait_for_transfer)
 
     episode = make_resource_only_episode()
@@ -488,9 +467,11 @@ async def test_rust_backend_reaps_a_started_handle_when_later_setup_fails(
     request_data = base_request.model_dump()
     plan = DownloadPlanner().plan(episode, type(base_request).model_validate(request_data))
 
-    async with httpx.AsyncClient() as client:
-        with pytest.raises(RuntimeError, match="second setup failed"):
-            await download_video_and_audio(ExecutionScope(client, download_workers=2), plan)
+    with pytest.raises(RuntimeError, match="second setup failed"):
+        await download_video_and_audio(
+            ExecutionScope(cast("Any", FakeSession()), download_workers=2),
+            plan,
+        )
 
     assert handle.cancelled
     assert handle.reaped

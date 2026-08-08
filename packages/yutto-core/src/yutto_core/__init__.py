@@ -15,7 +15,6 @@ from yutto_core._core import (
     TransferHandle,
     TransferSnapshot,
     UnsupportedProtocolError,
-    start_transfer,
 )
 
 if TYPE_CHECKING:
@@ -33,7 +32,6 @@ __all__ = [
     "TransferHandle",
     "TransferSnapshot",
     "UnsupportedProtocolError",
-    "start_transfer",
     "wait_for_transfer",
 ]
 
