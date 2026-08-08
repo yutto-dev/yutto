@@ -19,5 +19,5 @@ reqwest.workspace = true
 
 [dev-dependencies]
 reqwest = { workspace = true, features = ["gzip"] }
-tempfile = "3.23.0"
+tempfile = "3.27.0"
 tokio.workspace = true
