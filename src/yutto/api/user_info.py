@@ -40,9 +40,11 @@ def parse_user_info(res_json: dict[str, Any]) -> UserInfo:
 async def get_user_info(scope: ExecutionScope) -> UserInfo:
     if scope.user_info_cache is not None:
         return scope.user_info_cache
-    res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, USER_INFO_API))
-    scope.user_info_cache = parse_user_info(res_json)
-    return scope.user_info_cache
+    async with scope.user_info_lock:
+        if scope.user_info_cache is None:
+            res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, USER_INFO_API))
+            scope.user_info_cache = parse_user_info(res_json)
+        return scope.user_info_cache
 
 
 def user_info_matches(user_info: UserInfo, check_option: UserInfo) -> bool:
@@ -68,16 +70,18 @@ async def validate_user_info(scope: ExecutionScope, check_option: UserInfo) -> b
 async def get_wbi_img(scope: ExecutionScope) -> WbiImg:
     if scope.wbi_img_cache is not None:
         return cast("WbiImg", scope.wbi_img_cache)
-    res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, USER_INFO_API))
-    wbi_img: WbiImg = {
-        "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
-        "sub_key": _get_key_from_url(res_json["data"]["wbi_img"]["sub_url"]),
-    }
-    scope.wbi_img_cache = {
-        "img_key": wbi_img["img_key"],
-        "sub_key": wbi_img["sub_key"],
-    }
-    return wbi_img
+    async with scope.wbi_img_lock:
+        if scope.wbi_img_cache is None:
+            res_json = unwrap_fetch_result(await Fetcher.fetch_json(scope, USER_INFO_API))
+            wbi_img: WbiImg = {
+                "img_key": _get_key_from_url(res_json["data"]["wbi_img"]["img_url"]),
+                "sub_key": _get_key_from_url(res_json["data"]["wbi_img"]["sub_url"]),
+            }
+            scope.wbi_img_cache = {
+                "img_key": wbi_img["img_key"],
+                "sub_key": wbi_img["sub_key"],
+            }
+        return cast("WbiImg", scope.wbi_img_cache)
 
 
 def _get_key_from_url(url: str) -> str:

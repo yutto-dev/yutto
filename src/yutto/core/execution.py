@@ -28,7 +28,9 @@ class ExecutionScope:
     fetch_limiter: asyncio.Semaphore
     download_workers: int
     user_info_cache: UserInfo | None
+    user_info_lock: asyncio.Lock
     wbi_img_cache: Mapping[str, str] | None
+    wbi_img_lock: asyncio.Lock
     touched_urls: set[str]
 
     def __init__(
@@ -46,7 +48,9 @@ class ExecutionScope:
         self.fetch_limiter = asyncio.Semaphore(fetch_workers)
         self.download_workers = download_workers
         self.user_info_cache = None
+        self.user_info_lock = asyncio.Lock()
         self.wbi_img_cache = None
+        self.wbi_img_lock = asyncio.Lock()
         self.touched_urls = set()
 
     @asynccontextmanager
