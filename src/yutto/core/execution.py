@@ -15,8 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
     from contextlib import AbstractAsyncContextManager
 
-    from yutto_core import YuttoSession
-
+    from yutto._native import YuttoSession
     from yutto.auth import AuthInfo
     from yutto.core.request import DownloadRequest
     from yutto.types import UserInfo

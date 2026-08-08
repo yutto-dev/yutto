@@ -9,7 +9,8 @@ from urllib.parse import quote, unquote, urlparse
 
 from returns.result import Failure, Result, Success
 from typing_extensions import ParamSpec
-from yutto_core import (
+
+from yutto._native import (
     HttpError,
     HttpTimeoutError,
     InvalidUrlError,
@@ -17,7 +18,6 @@ from yutto_core import (
     UnsupportedProtocolError,
     YuttoSession,
 )
-
 from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import MaxRetryError
 

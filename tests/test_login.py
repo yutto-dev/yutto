@@ -6,9 +6,9 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
-from yutto_core import HttpTransportError
 
 import yutto.login as login_module
+from yutto._native import HttpTransportError
 from yutto.api.user_info import USER_INFO_API
 from yutto.exceptions import ErrorCode
 from yutto.utils.functional import as_sync

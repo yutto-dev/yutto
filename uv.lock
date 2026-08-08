@@ -6,7 +6,6 @@ requires-python = ">=3.11"
 members = [
     "biliass",
     "yutto",
-    "yutto-core",
 ]
 
 [[package]]
@@ -543,7 +542,6 @@ dependencies = [
     { name = "segno" },
     { name = "typing-extensions" },
     { name = "websockets" },
-    { name = "yutto-core" },
 ]
 
 [package.dev-dependencies]
@@ -568,7 +566,6 @@ requires-dist = [
     { name = "segno", specifier = ">=1.6.6" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "websockets", specifier = ">=17,<18" },
-    { name = "yutto-core", editable = "packages/yutto-core" },
 ]
 
 [package.metadata.requires-dev]
@@ -582,8 +579,3 @@ dev = [
     { name = "ty", specifier = ">=0.0.69" },
     { name = "typos", specifier = ">=1.49.0" },
 ]
-
-[[package]]
-name = "yutto-core"
-version = "0.1.0"
-source = { editable = "packages/yutto-core" }

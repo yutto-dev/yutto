@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from yutto_core import (
+
+from tests.helpers.http_range_server import LocalRangeServer
+from yutto._native import (
     HttpStatusError,
     InvalidUrlError,
     SessionClosedError,
@@ -11,8 +13,6 @@ from yutto_core import (
     YuttoSession,
     wait_for_transfer,
 )
-
-from tests.helpers.http_range_server import LocalRangeServer
 from yutto.utils.functional import as_sync
 
 pytestmark = pytest.mark.processor

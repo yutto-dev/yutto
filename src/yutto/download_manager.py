@@ -6,8 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yutto_core import InvalidUrlError, UnsupportedProtocolError
-
+from yutto._native import InvalidUrlError, UnsupportedProtocolError
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
 from yutto.core.operation import ReportLevel, emit_download_event, emit_download_report
