@@ -3,12 +3,39 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from yutto_core._core import TransferHandle, TransferSnapshot, start_transfer
+from yutto_core._core import (
+    HttpError,
+    HttpStatusError,
+    HttpTimeoutError,
+    HttpTransportError,
+    InvalidUrlError,
+    NativeResponse,
+    NativeSession,
+    SessionClosedError,
+    TransferHandle,
+    TransferSnapshot,
+    UnsupportedProtocolError,
+    start_transfer,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-__all__ = ["TransferHandle", "TransferSnapshot", "start_transfer", "wait_for_transfer"]
+__all__ = [
+    "HttpError",
+    "HttpStatusError",
+    "HttpTimeoutError",
+    "HttpTransportError",
+    "InvalidUrlError",
+    "NativeResponse",
+    "NativeSession",
+    "SessionClosedError",
+    "TransferHandle",
+    "TransferSnapshot",
+    "UnsupportedProtocolError",
+    "start_transfer",
+    "wait_for_transfer",
+]
 
 
 async def wait_for_transfer(

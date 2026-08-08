@@ -13,7 +13,7 @@ license = "GPL-3.0-only"
 async-trait = "0.1.89"
 bytes = "1.10.1"
 futures-util = "0.3.31"
-reqwest = { version = "0.12.24", default-features = false, features = ["http2", "rustls-tls", "socks", "stream"] }
+reqwest = { version = "0.12.24", default-features = false, features = ["cookies", "http2", "rustls-tls", "socks", "stream"] }
 thiserror = "2.0.17"
 tokio = { version = "1.48.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "sync", "time"] }
 tokio-util = { version = "0.7.17", features = ["rt"] }

@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     path::PathBuf,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
@@ -11,17 +11,25 @@ use haya::{
 };
 use haya_http::HttpRangeSource;
 use pyo3::{
-    exceptions::{PyRuntimeError, PyValueError},
+    create_exception,
+    exceptions::{PyException, PyRuntimeError, PyValueError},
     prelude::*,
+    types::{PyAny, PyBytes},
 };
-use reqwest::{
-    Client, Proxy, Url,
-    header::{HeaderMap, HeaderName, HeaderValue},
-};
-use tokio::runtime::Runtime;
+use reqwest::{Client, Url};
 use tokio_util::sync::CancellationToken;
 
-static RUNTIME: OnceLock<Runtime> = OnceLock::new();
+use crate::session::{Response, Session, SessionConfig, SessionError, build_headers};
+
+pub mod session;
+
+create_exception!(yutto_core._core, HttpError, PyException);
+create_exception!(yutto_core._core, InvalidUrlError, HttpError);
+create_exception!(yutto_core._core, UnsupportedProtocolError, HttpError);
+create_exception!(yutto_core._core, HttpTimeoutError, HttpError);
+create_exception!(yutto_core._core, HttpTransportError, HttpError);
+create_exception!(yutto_core._core, HttpStatusError, HttpError);
+create_exception!(yutto_core._core, SessionClosedError, HttpError);
 
 #[derive(Clone, Debug)]
 enum TransferOutcome {
@@ -53,6 +61,131 @@ struct TransferSnapshot {
     buffered_pages: usize,
     window_saturated: bool,
     in_flight: usize,
+}
+
+#[pyclass(frozen, module = "yutto_core._core", skip_from_py_object)]
+struct NativeResponse {
+    response: Response,
+}
+
+#[pymethods]
+impl NativeResponse {
+    #[getter]
+    fn status_code(&self) -> u16 {
+        self.response.status.as_u16()
+    }
+
+    #[getter]
+    fn url(&self) -> &str {
+        self.response.url.as_str()
+    }
+
+    #[getter]
+    fn body<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        PyBytes::new(py, &self.response.body)
+    }
+
+    #[getter]
+    fn is_success(&self) -> bool {
+        self.response.is_success()
+    }
+
+    fn header(&self, name: &str) -> PyResult<Option<&str>> {
+        self.response.header(name).map_err(session_error_to_py)
+    }
+
+    fn raise_for_status(&self) -> PyResult<()> {
+        self.response
+            .error_for_status()
+            .map_err(session_error_to_py)
+    }
+}
+
+#[pyclass(frozen, module = "yutto_core._core")]
+struct NativeSession {
+    session: Session,
+}
+
+#[pymethods]
+impl NativeSession {
+    #[new]
+    #[pyo3(signature = (*, headers=None, cookies=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, read_timeout=5.0, connect_timeout=5.0))]
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        headers: Option<HashMap<String, String>>,
+        cookies: Option<HashMap<String, String>>,
+        proxy: Option<String>,
+        use_system_proxy: bool,
+        accept_invalid_certs: bool,
+        read_timeout: f64,
+        connect_timeout: f64,
+    ) -> PyResult<Self> {
+        let session = Session::new(SessionConfig {
+            headers: headers.unwrap_or_default(),
+            cookies: cookies.unwrap_or_default(),
+            proxy,
+            use_system_proxy,
+            accept_invalid_certs,
+            read_timeout: duration_from_seconds(read_timeout, "read_timeout")?,
+            connect_timeout: duration_from_seconds(connect_timeout, "connect_timeout")?,
+        })
+        .map_err(session_error_to_py)?;
+        Ok(Self { session })
+    }
+
+    #[pyo3(signature = (url, *, params=None, headers=None))]
+    fn get<'py>(
+        &self,
+        py: Python<'py>,
+        url: String,
+        params: Option<Vec<(String, String)>>,
+        headers: Option<HashMap<String, String>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let session = self.session.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            session
+                .get(url, params.unwrap_or_default(), headers.unwrap_or_default())
+                .await
+                .map(|response| NativeResponse { response })
+                .map_err(session_error_to_py)
+        })
+    }
+
+    #[pyo3(signature = (name, *, url="https://www.bilibili.com/"))]
+    fn cookie(&self, name: &str, url: &str) -> PyResult<Option<String>> {
+        self.session.cookie(name, url).map_err(session_error_to_py)
+    }
+
+    fn close(&self) {
+        self.session.close();
+    }
+
+    #[getter]
+    fn is_closed(&self) -> bool {
+        self.session.is_closed()
+    }
+
+    #[pyo3(signature = (sources, target, expected_size, *, overwrite=false, workers=8, block_size=524288))]
+    fn start_transfer(
+        &self,
+        sources: Vec<String>,
+        target: PathBuf,
+        expected_size: u64,
+        overwrite: bool,
+        workers: usize,
+        block_size: usize,
+    ) -> PyResult<TransferHandle> {
+        start_transfer_with_session(
+            &self.session,
+            sources,
+            target,
+            expected_size,
+            overwrite,
+            None,
+            workers,
+            block_size,
+        )
+    }
 }
 
 #[pyclass(module = "yutto_core._core")]
@@ -136,6 +269,38 @@ fn start_transfer(
     workers: usize,
     block_size: usize,
 ) -> PyResult<TransferHandle> {
+    let session = Session::new(SessionConfig {
+        headers: headers.unwrap_or_default(),
+        proxy,
+        use_system_proxy,
+        accept_invalid_certs,
+        connect_timeout: Duration::from_secs(3),
+        ..SessionConfig::default()
+    })
+    .map_err(session_error_to_py)?;
+    start_transfer_with_session(
+        &session,
+        sources,
+        target,
+        expected_size,
+        overwrite,
+        source_headers,
+        workers,
+        block_size,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn start_transfer_with_session(
+    session: &Session,
+    sources: Vec<String>,
+    target: PathBuf,
+    expected_size: u64,
+    overwrite: bool,
+    source_headers: Option<Vec<HashMap<String, String>>>,
+    workers: usize,
+    block_size: usize,
+) -> PyResult<TransferHandle> {
     if sources.is_empty() {
         return Err(PyValueError::new_err("at least one source is required"));
     }
@@ -152,8 +317,8 @@ fn start_transfer(
         ));
     }
     let spec = transfer_spec(expected_size, workers, block_size);
+    let client = session.client().map_err(session_error_to_py)?;
 
-    let runtime = runtime()?;
     let cancellation = CancellationToken::new();
     let task_cancellation = cancellation.clone();
     let state = Arc::new(Mutex::new(TransferState {
@@ -167,16 +332,13 @@ fn start_transfer(
         outcome: TransferOutcome::Running,
     }));
     let task_state = state.clone();
-    runtime.spawn(async move {
+    pyo3_async_runtimes::tokio::get_runtime().spawn(async move {
         let result = run_transfer(TransferArgs {
+            client,
             sources,
             target,
             overwrite,
-            headers: headers.unwrap_or_default(),
             source_headers,
-            proxy,
-            use_system_proxy,
-            accept_invalid_certs,
             spec,
             cancellation: task_cancellation.clone(),
             state: task_state.clone(),
@@ -200,26 +362,17 @@ fn start_transfer(
 }
 
 struct TransferArgs {
+    client: Client,
     sources: Vec<String>,
     target: PathBuf,
     overwrite: bool,
-    headers: HashMap<String, String>,
     source_headers: Vec<HashMap<String, String>>,
-    proxy: Option<String>,
-    use_system_proxy: bool,
-    accept_invalid_certs: bool,
     spec: DownloadSpec,
     cancellation: CancellationToken,
     state: Arc<Mutex<TransferState>>,
 }
 
 async fn run_transfer(args: TransferArgs) -> Result<u64, String> {
-    let client = build_client(
-        args.headers,
-        args.proxy,
-        args.use_system_proxy,
-        args.accept_invalid_certs,
-    )?;
     let sources = args
         .sources
         .into_iter()
@@ -228,9 +381,9 @@ async fn run_transfer(args: TransferArgs) -> Result<u64, String> {
             let url =
                 Url::parse(&source).map_err(|error| format!("invalid source URL: {error}"))?;
             Ok(Arc::new(HttpRangeSource::new(
-                client.clone(),
+                args.client.clone(),
                 url,
-                build_headers(headers)?,
+                build_headers(headers).map_err(|error| error.to_string())?,
                 args.spec.expected_size,
             )) as Arc<dyn haya::RangeSource>)
         })
@@ -279,58 +432,55 @@ fn transfer_spec(expected_size: u64, workers: usize, requested_block_size: usize
     spec
 }
 
-fn build_client(
-    headers: HashMap<String, String>,
-    proxy: Option<String>,
-    use_system_proxy: bool,
-    accept_invalid_certs: bool,
-) -> Result<Client, String> {
-    let default_headers = build_headers(headers)?;
-
-    let mut builder = Client::builder()
-        .no_gzip()
-        .no_brotli()
-        .no_deflate()
-        .no_zstd()
-        .default_headers(default_headers)
-        .danger_accept_invalid_certs(accept_invalid_certs)
-        .connect_timeout(Duration::from_secs(3));
-    if !use_system_proxy {
-        builder = builder.no_proxy();
+fn duration_from_seconds(value: f64, name: &str) -> PyResult<Duration> {
+    if !value.is_finite() || value <= 0.0 {
+        return Err(PyValueError::new_err(format!(
+            "{name} must be a positive finite number"
+        )));
     }
-    if let Some(proxy) = proxy {
-        builder = builder.proxy(Proxy::all(&proxy).map_err(|error| error.to_string())?);
-    }
-    builder.build().map_err(|error| error.to_string())
+    Duration::try_from_secs_f64(value)
+        .map_err(|error| PyValueError::new_err(format!("invalid {name}: {error}")))
 }
 
-fn build_headers(headers: HashMap<String, String>) -> Result<HeaderMap, String> {
-    let mut result = HeaderMap::new();
-    for (name, value) in headers {
-        let name = HeaderName::from_bytes(name.as_bytes())
-            .map_err(|error| format!("invalid HTTP header name {name:?}: {error}"))?;
-        let value = HeaderValue::from_str(&value)
-            .map_err(|error| format!("invalid HTTP header value: {error}"))?;
-        result.insert(name, value);
+fn session_error_to_py(error: SessionError) -> PyErr {
+    let message = error.to_string();
+    match error {
+        SessionError::InvalidUrl(_) => InvalidUrlError::new_err(message),
+        SessionError::UnsupportedProtocol(_) => UnsupportedProtocolError::new_err(message),
+        SessionError::Timeout(_) => HttpTimeoutError::new_err(message),
+        SessionError::Transport(_) => HttpTransportError::new_err(message),
+        SessionError::Status(_) => HttpStatusError::new_err(message),
+        SessionError::Closed => SessionClosedError::new_err(message),
+        SessionError::Configuration(_) => PyValueError::new_err(message),
     }
-    Ok(result)
-}
-
-fn runtime() -> PyResult<&'static Runtime> {
-    if let Some(runtime) = RUNTIME.get() {
-        return Ok(runtime);
-    }
-    let runtime = Runtime::new()
-        .map_err(|error| PyRuntimeError::new_err(format!("failed to start Tokio: {error}")))?;
-    let _ = RUNTIME.set(runtime);
-    Ok(RUNTIME.get().expect("Tokio runtime was initialized"))
 }
 
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_core")]
 fn yutto(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<NativeSession>()?;
+    module.add_class::<NativeResponse>()?;
     module.add_class::<TransferHandle>()?;
     module.add_class::<TransferSnapshot>()?;
+    module.add("HttpError", module.py().get_type::<HttpError>())?;
+    module.add("InvalidUrlError", module.py().get_type::<InvalidUrlError>())?;
+    module.add(
+        "UnsupportedProtocolError",
+        module.py().get_type::<UnsupportedProtocolError>(),
+    )?;
+    module.add(
+        "HttpTimeoutError",
+        module.py().get_type::<HttpTimeoutError>(),
+    )?;
+    module.add(
+        "HttpTransportError",
+        module.py().get_type::<HttpTransportError>(),
+    )?;
+    module.add("HttpStatusError", module.py().get_type::<HttpStatusError>())?;
+    module.add(
+        "SessionClosedError",
+        module.py().get_type::<SessionClosedError>(),
+    )?;
     module.add_function(wrap_pyfunction!(start_transfer, module)?)?;
     Ok(())
 }
