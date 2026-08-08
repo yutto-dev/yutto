@@ -137,7 +137,7 @@ def add_serve_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
         "-j",
         "--jobs",
         type=int,
-        default=1,
+        default=settings.basic.jobs,
         help="同时执行的下载任务数，默认为 1",
     )
 
@@ -147,6 +147,13 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     group_basic = parser.add_argument_group("basic", "基础参数")
     group_basic.add_argument(
         "-n", "--num-workers", type=int, default=settings.basic.num_workers, help="同时用于下载的最大 Worker 数"
+    )
+    group_basic.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=settings.basic.jobs,
+        help="同时下载的视频数量，默认为 1",
     )
     group_basic.add_argument(
         "--fetch-workers",

@@ -97,23 +97,50 @@ class _ResolvedItemsOutcome:
 
 
 class DownloadManager:
-    """Execute requests sequentially with one explicit scope per request."""
+    """Execute requests with bounded item concurrency and one explicit scope per request."""
 
-    def __init__(self, *, path_leases: DownloadPathLeasePool | None = None):
+    def __init__(self, *, jobs: int = 1, path_leases: DownloadPathLeasePool | None = None):
+        if jobs < 1:
+            raise ValueError("jobs must be at least 1")
+        self.jobs = jobs
         self.unique_path = create_unique_path_resolver()
         self.path_leases = path_leases or DownloadPathLeasePool()
+        self._request_limiter = asyncio.Semaphore(jobs)
+        self._item_limiter = asyncio.Semaphore(jobs)
 
     async def execute(
         self,
         scope_factory: ExecutionScopeFactory,
         requests: Sequence[DownloadRequest],
     ) -> DownloadResult:
-        """Run requests in order while keeping network state request-scoped."""
+        """Run requests with request-scoped network state and stable result ordering."""
+        if self.jobs > 1:
+            return await self._execute_concurrently(scope_factory, requests)
+
         items: list[ItemResult] = []
         for request in requests:
             async with scope_factory.open(request) as scope:
                 items.extend(await self.process_request(scope, request))
         return DownloadResult(items=tuple(items))
+
+    async def _execute_concurrently(
+        self,
+        scope_factory: ExecutionScopeFactory,
+        requests: Sequence[DownloadRequest],
+    ) -> DownloadResult:
+        results: list[tuple[ItemResult, ...] | None] = [None] * len(requests)
+
+        async def run_request(index: int, request: DownloadRequest) -> None:
+            async with self._request_limiter:
+                async with scope_factory.open(request) as scope:
+                    results[index] = await self.process_request(scope, request)
+
+        tasks = [
+            asyncio.create_task(run_request(index, request), name=f"yutto-request-{index}")
+            for index, request in enumerate(requests)
+        ]
+        await _gather_cancelling(tasks)
+        return DownloadResult(items=tuple(item for result in results if result is not None for item in result))
 
     async def execute_resolve(
         self,
@@ -205,6 +232,9 @@ class DownloadManager:
         outcome = await self.resolve_request(scope, request)
         download_list = outcome.items
 
+        if self.jobs > 1:
+            return await self._process_request_concurrently(scope, request, download_list)
+
         item_results: list[ItemResult] = []
         previous_result: ItemResult | None = None
         current_display_group: str | None = None
@@ -257,6 +287,88 @@ class DownloadManager:
             emit_download_report("", ReportLevel.PLAIN)
         emit_download_report("", ReportLevel.PLAIN)
         return tuple(item_results)
+
+    async def _process_request_concurrently(
+        self,
+        scope: ExecutionScope,
+        request: DownloadRequest,
+        download_list: Sequence[ResolvableEpisode],
+    ) -> tuple[ItemResult, ...]:
+        if not await validate_user_info(
+            scope,
+            {"is_login": request.access.login_strict, "vip_status": request.access.vip_strict},
+        ):
+            raise NotLoginError("启用了严格校验大会员或登录模式，请检查认证信息（--auth）或大会员状态！")
+
+        prepared: list[tuple[ResolvableEpisode, Path, str | None]] = []
+        current_display_group: str | None = None
+        for episode in download_list:
+            path = Path(self.unique_path(str(episode.info["path"])))
+            prepared.append((episode, path, current_display_group))
+            current_display_group = episode.info["listing"].display_group
+
+        if request.network.download_interval > 0 and len(prepared) > 1:
+            emit_download_report(f"并发任务启动间隔 {request.network.download_interval} 秒")
+
+        results: list[ItemResult | None] = [None] * len(prepared)
+        start_turns = [asyncio.Event() for _ in prepared]
+        if start_turns:
+            start_turns[0].set()
+
+        async def run_item(
+            index: int,
+            episode: ResolvableEpisode,
+            path: Path,
+            previous_display_group: str | None,
+        ) -> None:
+            if index > 0 and request.network.download_interval > 0:
+                await asyncio.sleep(index * request.network.download_interval)
+            async with self._item_limiter:
+                episode_data = await episode.resolve_data()
+                await start_turns[index].wait()
+                if episode_data is None:
+                    if index + 1 < len(start_turns):
+                        start_turns[index + 1].set()
+                    return
+                episode_data = ensure_unique_path(episode_data, lambda _path: str(path))
+                if request.output.enforce_directory_boundary:
+                    ensure_output_path_is_scoped(
+                        episode_data["info"]["path"],
+                        request.output.directory,
+                        request.output.temporary_directory or request.output.directory,
+                    )
+                if request.scope.batch:
+                    display_info: EpisodeInfo = {
+                        "listing": episode.info["listing"],
+                        "path": path,
+                    }
+                    show_batch_episode_title(
+                        display_info,
+                        index + 1,
+                        len(download_list),
+                        previous_display_group,
+                    )
+                # Event.set() 不会让出控制权，因此本任务会先进入 process_download、
+                # 输出“开始处理视频”，再在首次 await 时让下一条按序启动。
+                if index + 1 < len(start_turns):
+                    start_turns[index + 1].set()
+                results[index] = await process_download(
+                    scope,
+                    episode_data,
+                    request,
+                    path_leases=self.path_leases,
+                )
+
+        tasks = [
+            asyncio.create_task(
+                run_item(index, episode, path, previous_display_group),
+                name=f"yutto-item-{index}",
+            )
+            for index, (episode, path, previous_display_group) in enumerate(prepared)
+        ]
+        await _gather_cancelling(tasks)
+        emit_download_report("", ReportLevel.PLAIN)
+        return tuple(result for result in results if result is not None)
 
     async def resolve_request(
         self,
@@ -371,3 +483,13 @@ def ensure_output_path_is_scoped(path: Path, output_root: Path, temporary_root: 
     for root in (output_root.resolve(), temporary_root.resolve()):
         if not (root / path).resolve().is_relative_to(root):
             raise WrongArgumentError("解析后的输出路径超出了 server 配置的根目录")
+
+
+async def _gather_cancelling(tasks: Sequence[asyncio.Task[None]]) -> None:
+    try:
+        await asyncio.gather(*tasks)
+    except BaseException:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
