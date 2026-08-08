@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+import sys
+from typing import TYPE_CHECKING, cast
 
 import httpx
 import pytest
@@ -12,16 +13,17 @@ from tests.test_processor.test_download_result import make_request, make_resourc
 from yutto.core.events import DownloadEvent, DownloadProgress
 from yutto.core.execution import ExecutionScope
 from yutto.core.operation import bind_download_event_sink
-from yutto.downloader.planner import DownloadPlanner
+from yutto.downloader.planner import DownloadPlan, DownloadPlanner
 from yutto.downloader.progressbar import show_native_progress
 from yutto.downloader.transfer import (
     _allocate_native_worker_batches,
+    _download_video_and_audio_rust,
     _probe_media_size,
     _wait_for_native_transfers,
     download_video_and_audio,
     slice_blocks,
 )
-from yutto.exceptions import MaxRetryError
+from yutto.exceptions import MaxRetryError, WrongArgumentError
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.functional import as_sync
 
@@ -30,6 +32,14 @@ if TYPE_CHECKING:
     from typing import Any
 
 pytestmark = pytest.mark.processor
+
+
+@as_sync
+async def test_missing_rust_backend_is_reported_as_a_cli_error(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setitem(sys.modules, "yutto_core", None)
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(WrongArgumentError, match=r"请安装 yutto\[rust\]"):
+            await _download_video_and_audio_rust(ExecutionScope(client), cast("DownloadPlan", None))
 
 
 @as_sync

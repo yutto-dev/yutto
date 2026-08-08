@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from yutto.core.events import DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event, emit_download_report
 from yutto.downloader.progressbar import show_native_progress, show_progress
-from yutto.exceptions import MaxRetryError
+from yutto.exceptions import MaxRetryError, WrongArgumentError
 from yutto.utils.asynclib import NoSuccessfulResultError, make_coroutine_factory, race_for_first_success
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.file_buffer import AsyncFileBuffer
@@ -206,7 +206,7 @@ async def _download_video_and_audio_rust(scope: ExecutionScope, plan: DownloadPl
     try:
         from yutto_core import start_transfer, wait_for_transfer
     except ImportError as error:
-        raise RuntimeError("Rust 下载后端不可用，请安装带有 yutto-core 的 yutto 后再重试") from error
+        raise WrongArgumentError("Rust 下载后端不可用，请安装 yutto[rust] 后再重试") from error
 
     handles = []
     wait_tasks: list[asyncio.Task[int]] = []
