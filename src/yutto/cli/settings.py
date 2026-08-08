@@ -17,6 +17,7 @@ from yutto.utils.time import TIME_DATE_FMT
 
 class YuttoBasicSettings(BaseModel):
     num_workers: Annotated[int, Field(8, gt=0)]
+    jobs: Annotated[int, Field(1, gt=0)]
     fetch_workers: Annotated[int, Field(8, gt=0)]
     video_quality: Annotated[VideoQuality, Field(127)]
     audio_quality: Annotated[AudioQuality, Field(30251)]

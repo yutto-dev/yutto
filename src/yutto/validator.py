@@ -66,6 +66,10 @@ def validate_basic_arguments(args: argparse.Namespace):
         Logger.error(f"num_workers 参数值（{args.num_workers}）不满足要求哦（应为不小于 1 的整数）")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
+    if args.jobs < 1:
+        Logger.error(f"jobs 参数值（{args.jobs}）不满足要求哦（应为不小于 1 的整数）")
+        sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
+
     try:
         resolve_proxy(args.proxy)
     except ValueError as e:
