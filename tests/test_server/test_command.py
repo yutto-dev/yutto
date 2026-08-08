@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from types import SimpleNamespace
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -10,7 +11,10 @@ import yutto.server.command as server_command_module
 from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import ErrorCode
-from yutto.server.command import resolve_server_token
+from yutto.server.command import build_server, resolve_server_token
+
+if TYPE_CHECKING:
+    from yutto.core.task_service import DownloadTaskService
 
 pytestmark = pytest.mark.processor
 
@@ -21,6 +25,19 @@ def test_serve_is_an_explicit_subcommand():
     assert args.command == "serve"
     assert args.port == 12345
     assert args.allow_origin == ["https://ui.example"]
+    assert args.jobs == 1
+
+
+def test_serve_jobs_configures_download_runtime_workers():
+    args = cli().parse_args(["serve", "--jobs", "3"])
+
+    server = build_server(
+        args,
+        "token",
+        ffmpeg=cast("Any", SimpleNamespace(video_encodecs=(), audio_encodecs=())),
+    )
+
+    assert cast("DownloadTaskService", server._task_service).runtime.worker_count == 3
 
 
 def test_serve_io_error_is_rendered_without_traceback(monkeypatch: pytest.MonkeyPatch):
