@@ -106,6 +106,7 @@ class Logger:
     def print(cls, string: Any, *print_args: Any, **print_kwargs: Any):
         cls.status.clear()
         print(string, *print_args, **print_kwargs)
+        cls.status.next_tick()
 
     @classmethod
     def json(cls, obj: list[Any] | dict[str, Any], *print_args: Any, **print_kwargs: Any):
