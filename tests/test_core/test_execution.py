@@ -39,22 +39,22 @@ def test_execution_scope_rejects_non_positive_workers(
 
 
 @as_sync
-async def test_scope_factory_opens_fresh_clients_limiters_and_caches():
+async def test_scope_factory_opens_fresh_sessions_limiters_and_caches():
     factory = RequestExecutionScopeFactory()
     request = make_request()
 
     async with factory.open(request) as first_scope:
-        first_client = first_scope.client
+        first_session = first_scope.session
         first_fetch_limiter = first_scope.fetch_limiter
         assert first_scope.download_workers == 8
         first_scope.user_info_cache = UserInfo(vip_status=True, is_login=True)
         first_scope.wbi_img_cache = {"img_key": "img", "sub_key": "sub"}
         first_scope.touched_urls.add("https://example.com")
 
-    assert first_client.is_closed
+    assert first_session.is_closed
 
     async with factory.open(request) as second_scope:
-        assert second_scope.client is not first_client
+        assert second_scope.session is not first_session
         assert second_scope.fetch_limiter is not first_fetch_limiter
         assert second_scope.download_workers == 8
         assert second_scope.user_info_cache is None
@@ -63,11 +63,11 @@ async def test_scope_factory_opens_fresh_clients_limiters_and_caches():
 
 
 @as_sync
-async def test_scope_factory_closes_client_when_on_open_fails():
-    clients: list[Any] = []
+async def test_scope_factory_closes_session_when_on_open_fails():
+    sessions: list[Any] = []
 
     async def fail_on_open(scope: ExecutionScope, request: DownloadRequest) -> None:
-        clients.append(scope.client)
+        sessions.append(scope.session)
         raise RuntimeError("on_open failed")
 
     factory = RequestExecutionScopeFactory(on_open=fail_on_open)
@@ -76,8 +76,8 @@ async def test_scope_factory_closes_client_when_on_open_fails():
         async with factory.open(make_request()):
             pytest.fail("scope should not be yielded")
 
-    assert len(clients) == 1
-    assert clients[0].is_closed
+    assert len(sessions) == 1
+    assert sessions[0].is_closed
 
 
 @as_sync
@@ -99,8 +99,8 @@ async def test_cli_auth_announcer_deduplicates_effective_credentials(
     async def validate(scope: ExecutionScope, requirements: dict[str, bool]) -> bool:
         assert requirements == {"vip_status": True, "is_login": True}
         credentials = (
-            scope.client.cookies.get("SESSDATA"),
-            scope.client.cookies.get("bili_jct"),
+            scope.session.cookie("SESSDATA"),
+            scope.session.cookie("bili_jct"),
         )
         validation_calls.append(credentials)
         is_vip = credentials[0] == "member"

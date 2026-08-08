@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import httpx
+from yutto_core import InvalidUrlError, UnsupportedProtocolError
 
 from yutto.api.user_info import validate_user_info
 from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageChanged
@@ -309,9 +309,9 @@ class DownloadManager:
         # 重定向到可识别的 url
         try:
             url = unwrap_fetch_result(await Fetcher.get_redirected_url(scope, url))
-        except httpx.InvalidURL:
+        except InvalidUrlError:
             raise WrongUrlError(f"无效的 url({url})～请检查一下链接是否正确～") from None
-        except httpx.UnsupportedProtocol:
+        except UnsupportedProtocolError:
             error_text = f"无效的 url 协议（{url}）～请检查一下链接协议是否正确"
             if not request.scope.batch:
                 error_text += (

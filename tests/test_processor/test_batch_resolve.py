@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from returns.result import Failure, Success
@@ -15,7 +15,6 @@ from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    import httpx
     from returns.result import Result
 
     from yutto.api.ugc_video import UgcVideoList
@@ -31,8 +30,8 @@ def make_ugc_video_list(avid: AvId, pubdate: int = 1_600_000_000) -> UgcVideoLis
     }
 
 
-def make_fake_client() -> httpx.AsyncClient:
-    return cast("httpx.AsyncClient", object())
+def make_fake_session() -> Any:
+    return cast("Any", object())
 
 
 async def touch_url_ok(scope: ExecutionScope, url: str) -> Result[None, MaxRetryError]:
@@ -56,7 +55,7 @@ async def test_resolve_ugc_video_lists_preserves_order(monkeypatch: pytest.Monke
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", touch_url_ok)
 
-    scope = ExecutionScope(make_fake_client())
+    scope = ExecutionScope(make_fake_session())
     outcome = await resolve_ugc_video_lists(
         scope,
         avids,
@@ -94,7 +93,7 @@ async def test_resolve_ugc_video_lists_isolates_failures(monkeypatch: pytest.Mon
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
-    scope = ExecutionScope(make_fake_client())
+    scope = ExecutionScope(make_fake_session())
     outcome = await resolve_ugc_video_lists(
         scope,
         avids,
@@ -115,7 +114,7 @@ async def test_resolve_ugc_video_lists_bounded_by_fetch_semaphore(monkeypatch: p
     running = 0
     max_running = 0
 
-    scope = ExecutionScope(make_fake_client(), fetch_workers=fetch_workers)
+    scope = ExecutionScope(make_fake_session(), fetch_workers=fetch_workers)
 
     async def occupy_fetch_guard(active_scope: ExecutionScope) -> None:
         nonlocal running, max_running

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
     from contextlib import AbstractAsyncContextManager
 
-    from httpx import AsyncClient
+    from yutto_core import NativeSession
 
     from yutto.auth import AuthInfo
     from yutto.core.request import DownloadRequest
@@ -25,33 +25,27 @@ if TYPE_CHECKING:
 class ExecutionScope:
     """Runtime resources owned by one request execution."""
 
-    client: AsyncClient
+    session: NativeSession
     fetch_limiter: asyncio.Semaphore
     download_workers: int
-    proxy: str | None
-    trust_env: bool
     user_info_cache: UserInfo | None
     wbi_img_cache: Mapping[str, str] | None
     touched_urls: set[str]
 
     def __init__(
         self,
-        client: AsyncClient,
+        session: NativeSession,
         *,
         fetch_workers: int = DEFAULT_FETCH_WORKERS,
         download_workers: int = DEFAULT_FETCH_WORKERS,
-        proxy: str | None = None,
-        trust_env: bool = True,
     ):
         if fetch_workers < 1:
             raise ValueError("fetch_workers must be at least 1")
         if download_workers < 1:
             raise ValueError("download_workers must be at least 1")
-        self.client = client
+        self.session = session
         self.fetch_limiter = asyncio.Semaphore(fetch_workers)
         self.download_workers = download_workers
-        self.proxy = proxy
-        self.trust_env = trust_env
         self.user_info_cache = None
         self.wbi_img_cache = None
         self.touched_urls = set()
@@ -90,13 +84,11 @@ class RequestExecutionScopeFactory:
             cookies=cookies,
             trust_env=trust_env,
             proxy=proxy,
-        ) as client:
+        ) as session:
             scope = ExecutionScope(
-                client,
+                session,
                 fetch_workers=request.network.fetch_workers,
                 download_workers=request.network.download_workers,
-                proxy=proxy,
-                trust_env=trust_env,
             )
             if self._on_open is not None:
                 await self._on_open(scope, request)

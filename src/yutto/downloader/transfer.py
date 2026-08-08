@@ -4,7 +4,7 @@ import asyncio
 import re
 from typing import TYPE_CHECKING
 
-from yutto_core import start_transfer, wait_for_transfer
+from yutto_core import wait_for_transfer
 
 from yutto.core.events import DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event, emit_download_report
@@ -83,17 +83,11 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             for workers in worker_batch:
                 sources, target, size = prepared_transfers[completed_transfers]
                 completed_transfers += 1
-                handle = start_transfer(
+                handle = scope.session.start_transfer(
                     sources,
                     target,
                     size,
                     overwrite=plan.overwrite,
-                    headers=_native_http_headers(scope),
-                    source_headers=_native_source_headers(scope, sources),
-                    proxy=scope.proxy,
-                    use_system_proxy=scope.trust_env,
-                    # The existing request client disables certificate verification.
-                    accept_invalid_certs=True,
                     workers=workers,
                     block_size=plan.block_size,
                 )
@@ -143,20 +137,6 @@ async def _cancel_and_reap_native_transfers(handles: Iterable[Any], wait_tasks: 
         if not handle.done():
             handle.cancel()
     await asyncio.gather(*wait_tasks, return_exceptions=True)
-
-
-def _native_http_headers(scope: ExecutionScope) -> dict[str, str]:
-    headers = dict(scope.client.headers.multi_items())
-    headers.pop("cookie", None)
-    return headers
-
-
-def _native_source_headers(scope: ExecutionScope, sources: Iterable[str]) -> list[dict[str, str]]:
-    source_headers = []
-    for source in sources:
-        cookie = scope.client.build_request("GET", source).headers.get("cookie")
-        source_headers.append({"cookie": cookie} if cookie is not None else {})
-    return source_headers
 
 
 def cleanup_temporary_media(plan: DownloadPlan) -> None:

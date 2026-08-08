@@ -27,8 +27,6 @@ from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    import httpx
-
     from yutto.auth import AuthInfo
     from yutto.extractor._abc import ExtractorResolveOutcome
     from yutto.types import EpisodeData, ExtractorOptions
@@ -178,9 +176,9 @@ async def test_process_request_preserves_extractor_mapping_and_passes_download_r
     monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
 
     manager = DownloadManager()
-    client = cast("httpx.AsyncClient", object())
+    session = cast("Any", object())
     request = make_request(tmp_dir)
-    result = await manager.process_request(ExecutionScope(client), request)
+    result = await manager.process_request(ExecutionScope(session), request)
 
     assert validation_requirements == [
         {"is_login": False, "vip_status": False},
@@ -254,7 +252,7 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
 
     with pytest.raises(NotLoginError):
         await manager.process_request(
-            ExecutionScope(cast("httpx.AsyncClient", object())),
+            ExecutionScope(cast("Any", object())),
             make_request(None),
         )
 
@@ -323,15 +321,15 @@ async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
     ]
     first_scope, second_scope = (scope for scope, _, _ in manager.calls)
     assert first_scope is not second_scope
-    assert first_scope.client is not second_scope.client
-    assert first_scope.client.is_closed and second_scope.client.is_closed
+    assert first_scope.session is not second_scope.session
+    assert first_scope.session.is_closed and second_scope.session.is_closed
     assert first_scope.fetch_limiter._value == 2
     assert first_scope.download_workers == 3
     assert second_scope.fetch_limiter._value == 5
     assert second_scope.download_workers == 7
     assert first_scope.fetch_limiter is not second_scope.fetch_limiter
-    assert first_scope.client.cookies.get("SESSDATA") == "first%2Csession"
-    assert second_scope.client.cookies.get("SESSDATA") == "second%2Csession"
+    assert first_scope.session.cookie("SESSDATA") == "first%2Csession"
+    assert second_scope.session.cookie("SESSDATA") == "second%2Csession"
     assert result == DownloadResult(
         items=(
             ItemResult(state=ItemState.DONE, output_path=Path("same/video.mp4")),
@@ -341,7 +339,7 @@ async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
 
 
 @as_sync
-async def test_execute_stops_on_failure_and_closes_client():
+async def test_execute_stops_on_failure_and_closes_session():
     requests = [
         DownloadRequest.model_validate({"source": {"url": "BV1first"}}),
         DownloadRequest.model_validate({"source": {"url": "BV1second"}}),
@@ -351,14 +349,14 @@ async def test_execute_stops_on_failure_and_closes_client():
         def __init__(self) -> None:
             super().__init__()
             self.calls: list[str] = []
-            self.client: httpx.AsyncClient | None = None
+            self.session: Any = None
 
         async def process_request(
             self,
             scope: ExecutionScope,
             request: DownloadRequest,
         ) -> tuple[ItemResult, ...]:
-            self.client = scope.client
+            self.session = scope.session
             self.calls.append(request.source.url)
             raise WrongArgumentError("request failed")
 
@@ -367,11 +365,11 @@ async def test_execute_stops_on_failure_and_closes_client():
         await manager.execute(RequestExecutionScopeFactory(), requests)
 
     assert manager.calls == ["BV1first"]
-    assert manager.client is not None and manager.client.is_closed
+    assert manager.session is not None and manager.session.is_closed
 
 
 @as_sync
-async def test_execute_cancellation_closes_client():
+async def test_execute_cancellation_closes_session():
     started = asyncio.Event()
     release = asyncio.Event()
     request = DownloadRequest.model_validate({"source": {"url": "BV1cancel"}})
@@ -379,14 +377,14 @@ async def test_execute_cancellation_closes_client():
     class BlockingManager(DownloadManager):
         def __init__(self) -> None:
             super().__init__()
-            self.client: httpx.AsyncClient | None = None
+            self.session: Any = None
 
         async def process_request(
             self,
             scope: ExecutionScope,
             request: DownloadRequest,
         ) -> tuple[ItemResult, ...]:
-            self.client = scope.client
+            self.session = scope.session
             started.set()
             await release.wait()
             return ()
@@ -399,7 +397,7 @@ async def test_execute_cancellation_closes_client():
     with pytest.raises(asyncio.CancelledError):
         await execution
 
-    assert manager.client is not None and manager.client.is_closed
+    assert manager.session is not None and manager.session.is_closed
 
 
 @pytest.mark.processor

@@ -60,13 +60,13 @@ async def test_user_info_cache_is_scoped_to_execution_scope(monkeypatch: pytest.
 
 @pytest.mark.processor
 @as_sync
-async def test_validate_user_info_reuses_execution_scope_client_and_cache(monkeypatch: pytest.MonkeyPatch):
-    client = cast("Any", object())
-    scope = ExecutionScope(client)
-    clients: list[Any] = []
+async def test_validate_user_info_reuses_execution_scope_session_and_cache(monkeypatch: pytest.MonkeyPatch):
+    session = cast("Any", object())
+    scope = ExecutionScope(session)
+    sessions: list[Any] = []
 
     async def fake_fetch_json(active_scope, url):
-        clients.append(active_scope.client)
+        sessions.append(active_scope.session)
         return Success({"data": {"vipStatus": 1, "isLogin": True}})
 
     monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
@@ -74,7 +74,7 @@ async def test_validate_user_info_reuses_execution_scope_client_and_cache(monkey
     requirements = UserInfo(vip_status=True, is_login=True)
     assert await validate_user_info(scope, requirements)
     assert await validate_user_info(scope, requirements)
-    assert clients == [client]
+    assert sessions == [session]
 
 
 @pytest.mark.processor

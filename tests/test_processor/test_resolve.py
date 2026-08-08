@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from returns.result import Success
@@ -25,8 +25,6 @@ from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    import httpx
-
     from yutto.api.ugc_video import UgcVideoList
     from yutto.core.events import DownloadEvent
     from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
@@ -114,7 +112,7 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
 
     manager = DownloadManager()
     sink = RecordingEventSink()
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     request = DownloadRequest.model_validate({"source": {"url": "BV1baseline"}})
 
     with bind_download_event_sink(sink):
@@ -204,7 +202,7 @@ async def test_resolve_items_streams_explicit_items_without_duplicates(monkeypat
 
     manager = DownloadManager()
     sink = RecordingEventSink()
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     request = DownloadRequest.model_validate({"source": {"url": "BV1stream"}})
 
     with bind_download_event_sink(sink):
@@ -269,7 +267,7 @@ async def test_resolve_items_emits_each_equal_occurrence(monkeypatch: pytest.Mon
 
     manager = DownloadManager()
     sink = RecordingEventSink()
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     request = DownloadRequest.model_validate({"source": {"url": "BV1equal"}})
 
     with bind_download_event_sink(sink):
@@ -286,8 +284,8 @@ async def test_resolve_items_emits_each_equal_occurrence(monkeypatch: pytest.Mon
 
 
 class _FakeClientContext:
-    async def __aenter__(self) -> httpx.AsyncClient:
-        return cast("httpx.AsyncClient", object())
+    async def __aenter__(self) -> Any:
+        return cast("Any", object())
 
     async def __aexit__(self, *args: object) -> bool:
         return False
@@ -452,7 +450,7 @@ async def test_resolve_ugc_video_lists_reports_expected_failures(monkeypatch: py
     monkeypatch.setattr("yutto.extractor.utils.batch.get_ugc_video_list", fake_get_ugc_video_list)
     monkeypatch.setattr(Fetcher, "touch_url", fake_touch_url)
 
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     scope = ExecutionScope(client)
     outcome = await resolve_ugc_video_lists(
         scope,
@@ -485,7 +483,7 @@ async def test_resolve_ugc_video_lists_awaits_async_on_resolved(monkeypatch: pyt
         # 契约：回调是异步的，逐分集的让出由回调自身负责（内置提取器均如此）
         await asyncio.sleep(0)
 
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     scope = ExecutionScope(client)
     outcome = await resolve_ugc_video_lists(
         scope,
@@ -521,7 +519,7 @@ async def test_resolve_ugc_video_lists_cancels_siblings_on_fatal_error(monkeypat
     async def on_resolved(resolved: IndexedResolveItem[UgcVideoList]) -> None:
         calls.append(resolved.index)
 
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     scope = ExecutionScope(client)
     # 单个未预期异常直接抛原始异常（而非 ExceptionGroup），wire 错误类型保持稳定
     with pytest.raises(RuntimeError, match="boom"):
@@ -558,7 +556,7 @@ async def test_resolve_ugc_video_lists_cancels_workers_when_callback_fails(monke
     async def on_resolved(resolved: IndexedResolveItem[UgcVideoList]) -> None:
         raise RuntimeError("callback boom")
 
-    client = cast("httpx.AsyncClient", object())
+    client = cast("Any", object())
     scope = ExecutionScope(client)
     with pytest.raises(RuntimeError, match="callback boom"):
         await resolve_ugc_video_lists(
