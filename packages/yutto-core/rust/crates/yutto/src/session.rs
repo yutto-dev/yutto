@@ -126,6 +126,7 @@ impl Session {
             .no_brotli()
             .no_deflate()
             .no_zstd()
+            .referer(false)
             .default_headers(default_headers)
             .cookie_provider(cookies.clone())
             .danger_accept_invalid_certs(config.accept_invalid_certs)
@@ -250,23 +251,31 @@ fn classify_reqwest_error(error: reqwest::Error) -> SessionError {
 }
 
 fn decode_response_body(headers: &HeaderMap, body: Bytes) -> Result<Bytes, SessionError> {
-    let Some(encoding) = headers.get(CONTENT_ENCODING) else {
+    let encodings = headers
+        .get_all(CONTENT_ENCODING)
+        .iter()
+        .map(|encoding| {
+            encoding.to_str().map_err(|error| {
+                SessionError::Transport(format!("invalid Content-Encoding header: {error}"))
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if encodings.is_empty() {
         return Ok(body);
-    };
-    let encoding = encoding.to_str().map_err(|error| {
-        SessionError::Transport(format!("invalid Content-Encoding header: {error}"))
-    })?;
+    }
     let mut decoded = None;
-    for encoding in encoding.split(',').rev().map(str::trim) {
-        let input = decoded.as_deref().unwrap_or(body.as_ref());
-        let next = if encoding.eq_ignore_ascii_case("gzip") {
-            decode_reader(GzDecoder::new(input), "gzip")?
-        } else if encoding.eq_ignore_ascii_case("deflate") {
-            decode_deflate(input)?
-        } else {
-            continue;
-        };
-        decoded = Some(next);
+    for encodings in encodings.into_iter().rev() {
+        for encoding in encodings.split(',').rev().map(str::trim) {
+            let input = decoded.as_deref().unwrap_or(body.as_ref());
+            let next = if encoding.eq_ignore_ascii_case("gzip") {
+                decode_reader(GzDecoder::new(input), "gzip")?
+            } else if encoding.eq_ignore_ascii_case("deflate") {
+                decode_deflate(input)?
+            } else {
+                continue;
+            };
+            decoded = Some(next);
+        }
     }
     Ok(decoded.map_or(body, Bytes::from))
 }
@@ -396,6 +405,40 @@ mod tests {
         format!("http://{address}/resource")
     }
 
+    async fn serve_redirect_once() -> (String, oneshot::Receiver<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.expect("listener");
+        let address = listener.local_addr().expect("address");
+        let (request_sender, request_receiver) = oneshot::channel();
+        tokio::spawn(async move {
+            let (mut source, _) = listener.accept().await.expect("source connection");
+            let mut request = vec![0; 8192];
+            let _ = source.read(&mut request).await.expect("source request");
+            source
+                .write_all(
+                    b"HTTP/1.1 302 Found\r\nLocation: /destination\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                )
+                .await
+                .expect("redirect response");
+
+            let (mut destination, _) = listener.accept().await.expect("destination connection");
+            let length = destination
+                .read(&mut request)
+                .await
+                .expect("destination request");
+            let _ = request_sender.send(String::from_utf8_lossy(&request[..length]).into_owned());
+            destination
+                .write_all(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: 7\r\nConnection: close\r\n\r\npayload",
+                )
+                .await
+                .expect("destination response");
+        });
+        (
+            format!("http://{address}/source?token=secret"),
+            request_receiver,
+        )
+    }
+
     #[test]
     fn initial_cookies_are_available_across_hosts() {
         let store = SessionCookieStore::new(HashMap::from([("SESSDATA".into(), "secret".into())]))
@@ -465,6 +508,25 @@ mod tests {
                 payload.as_slice()
             );
         }
+    }
+
+    #[test]
+    fn response_body_decodes_repeated_content_encoding_fields() {
+        let payload = b"<i><d>danmaku</d></i>";
+        let mut deflate = ZlibEncoder::new(Vec::new(), Compression::default());
+        deflate.write_all(payload).expect("deflate input");
+        let mut gzip = GzEncoder::new(Vec::new(), Compression::default());
+        gzip.write_all(&deflate.finish().expect("deflate body"))
+            .expect("gzip input");
+        let mut headers = HeaderMap::new();
+        headers.append(CONTENT_ENCODING, HeaderValue::from_static("deflate"));
+        headers.append(CONTENT_ENCODING, HeaderValue::from_static("gzip"));
+
+        assert_eq!(
+            decode_response_body(&headers, gzip.finish().expect("gzip body").into())
+                .expect("decoded body"),
+            payload.as_slice()
+        );
     }
 
     #[test]
@@ -546,6 +608,27 @@ mod tests {
             session.cookie("token", &url).expect("cookie"),
             Some("updated".into())
         );
+    }
+
+    #[tokio::test]
+    async fn redirects_preserve_the_configured_referer() {
+        let (url, redirected_request) = serve_redirect_once().await;
+        let session = Session::new(SessionConfig {
+            headers: HashMap::from([("Referer".into(), "https://www.bilibili.com".into())]),
+            use_system_proxy: false,
+            ..SessionConfig::default()
+        })
+        .expect("session");
+
+        let response = session
+            .get(url, vec![], HashMap::new())
+            .await
+            .expect("redirected response");
+        let redirected_request = redirected_request.await.expect("redirected request");
+
+        assert_eq!(response.body, "payload");
+        assert!(redirected_request.contains("referer: https://www.bilibili.com\r\n"));
+        assert!(!redirected_request.contains("token=secret"));
     }
 
     #[tokio::test]
