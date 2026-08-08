@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import quote, unquote, urlparse
 
 from returns.result import Failure, Result, Success
@@ -76,9 +76,9 @@ class MaxRetry:
 def unwrap_fetch_result(result: Result[RetT, MaxRetryError]) -> RetT:
     match result:
         case Success(value):
-            return cast("RetT", value)
+            return value
         case Failure(error):
-            raise cast("MaxRetryError", error)
+            raise error
     raise AssertionError("无法解析响应结果")
 
 
