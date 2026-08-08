@@ -1675,6 +1675,7 @@ name = "yutto"
 version = "0.0.1"
 dependencies = [
  "bytes",
+ "flate2",
  "haya",
  "haya-http",
  "pyo3",

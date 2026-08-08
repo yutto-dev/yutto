@@ -12,6 +12,7 @@ license = "GPL-3.0-only"
 [workspace.dependencies]
 async-trait = "0.1.89"
 bytes = "1.10.1"
+flate2 = "1.1.9"
 futures-util = "0.3.31"
 reqwest = { version = "0.12.24", default-features = false, features = ["cookies", "http2", "rustls-tls", "socks", "stream"] }
 thiserror = "2.0.17"

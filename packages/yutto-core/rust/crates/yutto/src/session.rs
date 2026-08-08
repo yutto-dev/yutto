@@ -1,14 +1,16 @@
 use std::{
     collections::{BTreeMap, HashMap},
+    io::Read,
     sync::{Arc, Mutex},
     time::Duration,
 };
 
 use bytes::Bytes;
+use flate2::read::{DeflateDecoder, GzDecoder, ZlibDecoder};
 use reqwest::{
     Client, Proxy, StatusCode, Url,
     cookie::{CookieStore, Jar},
-    header::{HeaderMap, HeaderName, HeaderValue},
+    header::{ACCEPT_ENCODING, CONTENT_ENCODING, HeaderMap, HeaderName, HeaderValue},
 };
 use thiserror::Error;
 
@@ -114,7 +116,10 @@ impl Session {
             ));
         }
 
-        let default_headers = build_headers(config.headers)?;
+        let mut default_headers = build_headers(config.headers)?;
+        default_headers
+            .entry(ACCEPT_ENCODING)
+            .or_insert(HeaderValue::from_static("gzip, deflate"));
         let cookies = Arc::new(SessionCookieStore::new(config.cookies)?);
         let mut builder = Client::builder()
             .no_gzip()
@@ -164,6 +169,7 @@ impl Session {
         let url = response.url().clone();
         let headers = response.headers().clone();
         let body = response.bytes().await.map_err(classify_reqwest_error)?;
+        let body = decode_response_body(&headers, body)?;
         Ok(Response {
             status,
             url,
@@ -243,6 +249,43 @@ fn classify_reqwest_error(error: reqwest::Error) -> SessionError {
     }
 }
 
+fn decode_response_body(headers: &HeaderMap, body: Bytes) -> Result<Bytes, SessionError> {
+    let Some(encoding) = headers.get(CONTENT_ENCODING) else {
+        return Ok(body);
+    };
+    let encoding = encoding.to_str().map_err(|error| {
+        SessionError::Transport(format!("invalid Content-Encoding header: {error}"))
+    })?;
+    let mut decoded = None;
+    for encoding in encoding.split(',').rev().map(str::trim) {
+        let input = decoded.as_deref().unwrap_or(body.as_ref());
+        let next = if encoding.eq_ignore_ascii_case("gzip") {
+            decode_reader(GzDecoder::new(input), "gzip")?
+        } else if encoding.eq_ignore_ascii_case("deflate") {
+            decode_deflate(input)?
+        } else {
+            continue;
+        };
+        decoded = Some(next);
+    }
+    Ok(decoded.map_or(body, Bytes::from))
+}
+
+fn decode_deflate(body: &[u8]) -> Result<Vec<u8>, SessionError> {
+    decode_reader(ZlibDecoder::new(body), "deflate")
+        .or_else(|_| decode_reader(DeflateDecoder::new(body), "deflate"))
+}
+
+fn decode_reader(mut decoder: impl Read, encoding: &str) -> Result<Vec<u8>, SessionError> {
+    let mut decoded = Vec::new();
+    decoder.read_to_end(&mut decoded).map_err(|error| {
+        SessionError::Transport(format!(
+            "failed to decode {encoding} response body: {error}"
+        ))
+    })?;
+    Ok(decoded)
+}
+
 #[derive(Debug)]
 struct SessionCookieStore {
     jar: Jar,
@@ -296,31 +339,40 @@ impl CookieStore for SessionCookieStore {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, time::Duration};
+    use std::{collections::HashMap, io::Write, time::Duration};
 
-    use reqwest::{Url, cookie::CookieStore, header::HeaderValue};
+    use flate2::{
+        Compression,
+        write::{DeflateEncoder, GzEncoder, ZlibEncoder},
+    };
+    use reqwest::{
+        Url,
+        cookie::CookieStore,
+        header::{CONTENT_ENCODING, HeaderMap, HeaderValue},
+    };
     use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},
         net::TcpListener,
         sync::oneshot,
     };
 
-    use super::{Session, SessionConfig, SessionCookieStore, SessionError};
+    use super::{Session, SessionConfig, SessionCookieStore, SessionError, decode_response_body};
 
     async fn serve_once(
-        response: &'static str,
+        response: impl AsRef<[u8]>,
         delay: Duration,
     ) -> (String, oneshot::Receiver<String>) {
         let listener = TcpListener::bind("127.0.0.1:0").await.expect("listener");
         let address = listener.local_addr().expect("address");
         let (request_sender, request_receiver) = oneshot::channel();
+        let response = response.as_ref().to_vec();
         tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.expect("connection");
             let mut request = vec![0; 8192];
             let length = stream.read(&mut request).await.expect("request");
             let _ = request_sender.send(String::from_utf8_lossy(&request[..length]).into_owned());
             tokio::time::sleep(delay).await;
-            let _ = stream.write_all(response.as_bytes()).await;
+            let _ = stream.write_all(&response).await;
         });
         (format!("http://{address}/resource"), request_receiver)
     }
@@ -390,6 +442,73 @@ mod tests {
         assert!(matches!(session.client(), Err(SessionError::Closed)));
     }
 
+    #[test]
+    fn response_body_decodes_httpx_builtin_encodings() {
+        let payload = b"<i><d>danmaku</d></i>";
+        let mut gzip = GzEncoder::new(Vec::new(), Compression::default());
+        gzip.write_all(payload).expect("gzip input");
+        let mut zlib = ZlibEncoder::new(Vec::new(), Compression::default());
+        zlib.write_all(payload).expect("zlib input");
+        let mut deflate = DeflateEncoder::new(Vec::new(), Compression::default());
+        deflate.write_all(payload).expect("deflate input");
+
+        for (encoding, body) in [
+            ("gzip", gzip.finish().expect("gzip body")),
+            ("deflate", zlib.finish().expect("zlib body")),
+            ("deflate", deflate.finish().expect("deflate body")),
+        ] {
+            let mut headers = HeaderMap::new();
+            headers.insert(CONTENT_ENCODING, HeaderValue::from_static(encoding));
+
+            assert_eq!(
+                decode_response_body(&headers, body.into()).expect("decoded body"),
+                payload.as_slice()
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_compressed_body_is_a_transport_error() {
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_ENCODING, HeaderValue::from_static("gzip"));
+
+        assert!(matches!(
+            decode_response_body(&headers, b"not gzip".as_slice().into()),
+            Err(SessionError::Transport(_))
+        ));
+    }
+
+    #[tokio::test]
+    async fn get_decodes_compressed_response_body() {
+        let payload = b"<i><d>danmaku</d></i>";
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(payload).expect("gzip input");
+        let body = encoder.finish().expect("gzip body");
+        let mut wire_response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            body.len()
+        )
+        .into_bytes();
+        wire_response.extend(body);
+        let (url, _) = serve_once(wire_response, Duration::ZERO).await;
+        let session = Session::new(SessionConfig {
+            use_system_proxy: false,
+            ..SessionConfig::default()
+        })
+        .expect("session");
+
+        let response = session
+            .get(url, vec![], HashMap::new())
+            .await
+            .expect("response");
+
+        assert_eq!(response.body, payload.as_slice());
+        assert_eq!(
+            response.header("content-encoding").expect("header"),
+            Some("gzip")
+        );
+    }
+
     #[tokio::test]
     async fn get_returns_response_and_updates_the_shared_cookie_store() {
         let (url, request) = serve_once(
@@ -421,6 +540,7 @@ mod tests {
         assert!(request.starts_with("GET /resource?query=a+b HTTP/1.1\r\n"));
         assert!(request.contains("x-default: default\r\n"));
         assert!(request.contains("x-request: request\r\n"));
+        assert!(request.contains("accept-encoding: gzip, deflate\r\n"));
         assert!(request.contains("cookie: token=initial\r\n"));
         assert_eq!(
             session.cookie("token", &url).expect("cookie"),
