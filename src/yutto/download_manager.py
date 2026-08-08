@@ -12,6 +12,7 @@ from yutto.core.events import DownloadItemListed, DownloadStage, DownloadStageCh
 from yutto.core.operation import ReportLevel, emit_download_event, emit_download_report
 from yutto.core.result import DownloadResult, ItemResult, ResolvedItem, ResolveFailure, ResolveResult
 from yutto.downloader.downloader import process_download
+from yutto.downloader.path_leases import DownloadPathLeasePool
 from yutto.exceptions import NotLoginError, ResolveFailedError, WrongArgumentError, WrongUrlError
 from yutto.extractor import (
     BangumiBatchExtractor,
@@ -98,8 +99,9 @@ class _ResolvedItemsOutcome:
 class DownloadManager:
     """Execute requests sequentially with one explicit scope per request."""
 
-    def __init__(self):
+    def __init__(self, *, path_leases: DownloadPathLeasePool | None = None):
         self.unique_path = create_unique_path_resolver()
+        self.path_leases = path_leases or DownloadPathLeasePool()
 
     async def execute(
         self,
@@ -249,6 +251,7 @@ class DownloadManager:
                 scope,
                 episode_data,
                 request,
+                path_leases=self.path_leases,
             )
             item_results.append(previous_result)
             emit_download_report("", ReportLevel.PLAIN)
