@@ -79,12 +79,12 @@ jobs:
         working-directory: packages/biliass/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
-      - name: Format yutto-core with rustfmt
-        working-directory: packages/yutto-core/rust
+      - name: Format yutto Rust workspace with rustfmt
+        working-directory: rust
         run: |
           cargo fmt --all -- --check
-      - name: Lint yutto-core with clippy
-        working-directory: packages/yutto-core/rust
+      - name: Lint yutto Rust workspace with clippy
+        working-directory: rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
 

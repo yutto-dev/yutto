@@ -23,13 +23,13 @@ use crate::session::{Response, Session, SessionConfig, SessionError};
 
 pub mod session;
 
-create_exception!(yutto_core._core, HttpError, PyException);
-create_exception!(yutto_core._core, InvalidUrlError, HttpError);
-create_exception!(yutto_core._core, UnsupportedProtocolError, HttpError);
-create_exception!(yutto_core._core, HttpTimeoutError, HttpError);
-create_exception!(yutto_core._core, HttpTransportError, HttpError);
-create_exception!(yutto_core._core, HttpStatusError, HttpError);
-create_exception!(yutto_core._core, SessionClosedError, HttpError);
+create_exception!(yutto._core, HttpError, PyException);
+create_exception!(yutto._core, InvalidUrlError, HttpError);
+create_exception!(yutto._core, UnsupportedProtocolError, HttpError);
+create_exception!(yutto._core, HttpTimeoutError, HttpError);
+create_exception!(yutto._core, HttpTransportError, HttpError);
+create_exception!(yutto._core, HttpStatusError, HttpError);
+create_exception!(yutto._core, SessionClosedError, HttpError);
 
 #[derive(Clone, Debug)]
 enum TransferOutcome {
@@ -51,7 +51,7 @@ struct TransferState {
     outcome: TransferOutcome,
 }
 
-#[pyclass(frozen, get_all, module = "yutto_core._core", skip_from_py_object)]
+#[pyclass(frozen, get_all, module = "yutto._core", skip_from_py_object)]
 #[derive(Clone, Debug)]
 struct TransferSnapshot {
     expected_bytes: u64,
@@ -63,7 +63,7 @@ struct TransferSnapshot {
     in_flight: usize,
 }
 
-#[pyclass(frozen, module = "yutto_core._core", skip_from_py_object)]
+#[pyclass(frozen, module = "yutto._core", skip_from_py_object)]
 struct NativeResponse {
     response: Response,
 }
@@ -101,7 +101,7 @@ impl NativeResponse {
     }
 }
 
-#[pyclass(frozen, module = "yutto_core._core")]
+#[pyclass(frozen, module = "yutto._core")]
 struct YuttoSession {
     session: Session,
 }
@@ -191,7 +191,7 @@ impl YuttoSession {
     }
 }
 
-#[pyclass(module = "yutto_core._core")]
+#[pyclass(module = "yutto._core")]
 struct TransferHandle {
     state: Arc<Mutex<TransferState>>,
     cancellation: CancellationToken,

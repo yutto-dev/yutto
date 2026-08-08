@@ -4,8 +4,7 @@ import asyncio
 import re
 from typing import TYPE_CHECKING
 
-from yutto_core import wait_for_transfer
-
+from yutto._native import wait_for_transfer
 from yutto.core.events import DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event, emit_download_report
 from yutto.downloader.progressbar import show_progress

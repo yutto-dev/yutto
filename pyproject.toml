@@ -29,7 +29,6 @@ dependencies = [
   "returns>=0.26.0",
   "segno>=1.6.6",
   "websockets>=17,<18",
-  "yutto-core==0.1.0",
 ]
 
 [project.urls]
@@ -55,7 +54,6 @@ dev = [
 
 [tool.uv.sources]
 biliass = { workspace = true }
-yutto-core = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*"]
@@ -121,6 +119,12 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 [tool.ruff.lint.per-file-ignores]
 "setup.py" = ["I"]
 
+[tool.maturin]
+features = ["pyo3/extension-module"]
+manifest-path = "rust/crates/yutto/Cargo.toml"
+module-name = "yutto._core"
+python-source = "src"
+
 [build-system]
-requires = ["uv_build>=0.12.1,<0.13.0"]
-build-backend = "uv_build"
+requires = ["maturin>=1.14,<2.0"]
+build-backend = "maturin"

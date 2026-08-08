@@ -5,9 +5,9 @@ from typing import Any, cast
 
 import pytest
 from returns.result import Failure, Success
-from yutto_core import HttpStatusError, SessionClosedError
 
 import yutto.utils.fetcher as fetcher_module
+from yutto._native import HttpStatusError, SessionClosedError
 from yutto.core.execution import ExecutionScope
 from yutto.utils.fetcher import Fetcher, cookies_from_auth, create_client, resolve_proxy
 from yutto.utils.functional import as_sync

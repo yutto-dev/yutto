@@ -56,8 +56,8 @@ jobs:
           mode: simulation
           run: uv run -p ${{ matrix.python-version }} pytest --codspeed
 
-  unit-test-yutto-core:
-    name: yutto-core Rust unit test
+  unit-test-rust:
+    name: yutto Rust unit test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -69,11 +69,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run unit tests
-        working-directory: packages/yutto-core/rust
+        working-directory: rust
         run: cargo test --all-targets --all-features
 
-  unit-test-yutto-core-msrv:
-    name: yutto-core Rust 1.85 compatibility
+  unit-test-rust-msrv:
+    name: yutto Rust 1.85 compatibility
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,7 +87,7 @@ jobs:
           components: clippy
 
       - name: Check MSRV compatibility
-        working-directory: packages/yutto-core/rust
+        working-directory: rust
         run: |
           cargo check --locked --all-targets --all-features
           cargo clippy --locked --all-targets --all-features -- -D warnings

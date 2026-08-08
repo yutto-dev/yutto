@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from yutto_core._core import (
+from yutto._core import (
     HttpError,
     HttpStatusError,
     HttpTimeoutError,

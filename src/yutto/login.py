@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import parse_qs, unquote, urlparse
 
 import segno
-from yutto_core import HttpError
 
+from yutto._native import HttpError
 from yutto.api.user_info import USER_INFO_API, parse_user_info, user_info_matches
 from yutto.auth import AuthInfo, remove_auth, resolve_auth, resolve_auth_file, save_auth, validate_profile
 from yutto.exceptions import ErrorCode
@@ -19,8 +19,7 @@ from yutto.utils.fetcher import cookies_from_auth, create_client, resolve_proxy
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    from yutto_core import YuttoSession
-
+    from yutto._native import YuttoSession
     from yutto.types import UserInfo
 
 QR_GENERATE_API = "https://passport.bilibili.com/x/passport-login/web/qrcode/generate"

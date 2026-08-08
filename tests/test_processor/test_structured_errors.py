@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from returns.result import Success
-from yutto_core import InvalidUrlError
 
 import yutto.__main__ as main_module
 import yutto.download_manager as download_manager_module
 import yutto.extractor.bangumi as bangumi_module
 import yutto.extractor.cheese as cheese_module
+from yutto._native import InvalidUrlError
 from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
 from yutto.download_manager import DownloadManager
