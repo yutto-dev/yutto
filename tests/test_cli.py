@@ -18,7 +18,7 @@ from yutto.cli.cli import (
     handle_default_subcommand,
 )
 from yutto.cli.settings import YuttoSettings
-from yutto.core.events import DownloadProgress
+from yutto.core.events import DownloadProgress, DownloadStage, DownloadStageChanged
 from yutto.core.execution import RequestExecutionScopeFactory
 from yutto.core.operation import (
     ReportColor,
@@ -274,6 +274,30 @@ def test_progress_renderer_turns_only_buffered_segment_red(monkeypatch: pytest.M
     ]
 
 
+def test_progress_renderer_tracks_multiple_items_and_removes_completed_rows(monkeypatch: pytest.MonkeyPatch):
+    rendered: list[tuple[str, str]] = []
+    removed: list[str] = []
+    monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (100, 24))
+    monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda key, text: rendered.append((key, text)))
+    monkeypatch.setattr(renderer_module.Logger.status, "remove_line", removed.append)
+    monkeypatch.setattr(renderer_module.Logger.status, "next_tick", lambda: None)
+
+    renderer = renderer_module.CliApplicationEventRenderer()
+    renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item="视频一"))
+    renderer.emit(DownloadProgress(current=2, total=4, speed_per_second=5, item="视频二"))
+    renderer.emit(DownloadStageChanged(name=DownloadStage.POSTPROCESSING, item="视频一"))
+
+    assert [key for key, _ in rendered] == ["视频一", "视频二"]
+    assert "视频一" in rendered[0][1]
+    assert "视频二" in rendered[1][1]
+    assert removed == ["视频一"]
+
+
+def test_progress_labels_are_truncated_by_terminal_width():
+    assert renderer_module._truncate_label("short", 10) == "short"
+    assert renderer_module._truncate_label("一二三四五六", 7) == "一二三…"
+
+
 def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch: pytest.MonkeyPatch):
     output: list[tuple[str, object]] = []
 
@@ -289,7 +313,7 @@ def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch
         "custom",
         lambda message, badge: output.append(("badge", (message, badge.text))),
     )
-    monkeypatch.setattr(renderer_module.Logger.status, "clear", lambda: output.append(("cleared", True)))
+    monkeypatch.setattr(renderer_module.Logger.status, "reset", lambda: output.append(("cleared", True)))
     monkeypatch.setattr(renderer_module, "colored_string", lambda message, *, fore, **_: f"{fore}:{message}")
 
     emit_download_report("unbound")
