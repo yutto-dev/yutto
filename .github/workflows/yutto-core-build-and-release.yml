@@ -1,19 +1,20 @@
-name: Build and Release (biliass)
+name: Build and Release (yutto-core)
 
 on:
   push:
     tags:
-      - "biliass*" # Push events to matching biliass*, i.e. biliass@1.0.0
+      - "yutto-core@*"
     branches:
       - main
     paths:
-      - "packages/biliass/**"
-      - ".github/workflows/biliass-build-and-release.yml"
+      - "packages/yutto-core/**"
+      - ".github/workflows/yutto-core-build-and-release.yml"
       - ".github/workflows/native-build-and-release.yml"
   pull_request:
     paths:
-      - "packages/biliass/**"
-      - ".github/workflows/biliass-build-and-release.yml"
+      - "packages/yutto-core/**"
+      - "src/yutto/downloader/**"
+      - ".github/workflows/yutto-core-build-and-release.yml"
       - ".github/workflows/native-build-and-release.yml"
   merge_group:
   workflow_dispatch:
@@ -29,9 +30,9 @@ jobs:
   build-and-release:
     uses: ./.github/workflows/native-build-and-release.yml
     with:
-      working-directory: packages/biliass
-      artifact-prefix: wheels
-      release-ref-prefix: refs/tags/biliass
+      working-directory: packages/yutto-core
+      artifact-prefix: yutto-core
+      release-ref-prefix: refs/tags/yutto-core@
     permissions:
       contents: write
       id-token: write

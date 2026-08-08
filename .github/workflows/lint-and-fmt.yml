@@ -87,6 +87,7 @@ jobs:
         working-directory: packages/yutto-core/rust
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
+
   lint-and-fmt-docs:
     name: Lint and Format (Docs)
     runs-on: ubuntu-latest
