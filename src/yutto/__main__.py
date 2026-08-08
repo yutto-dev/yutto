@@ -18,7 +18,7 @@ from yutto.core.operation import bind_download_report_sink
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
-from yutto.login import run_auth_logout, run_auth_status, run_login
+from yutto.login import run_auth
 from yutto.utils.console.logger import Badge, Logger
 from yutto.utils.ffmpeg import FFmpegNotFoundError
 from yutto.utils.functional import as_sync
@@ -86,15 +86,7 @@ def main():
                     Logger.info("已终止下载，再次运行即可继续下载～")
                     sys.exit(ErrorCode.PAUSED_DOWNLOAD.value)
         case "auth":
-            match args.auth_command:
-                case "login":
-                    run_login(args)
-                case "logout":
-                    run_auth_logout(args)
-                case "status":
-                    run_auth_status(args)
-                case _:
-                    raise ValueError("Invalid auth command")
+            run_auth(args)
 
         case "serve":
             from yutto.server.command import run_server_command

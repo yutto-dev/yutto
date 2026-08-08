@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import ssl
-from typing import Any, Protocol, cast
+from types import MappingProxyType
+from typing import Any, cast
 
 import pytest
 from returns.result import Failure, Success
@@ -9,22 +9,8 @@ from yutto_core import HttpStatusError, SessionClosedError
 
 import yutto.utils.fetcher as fetcher_module
 from yutto.core.execution import ExecutionScope
-from yutto.utils.fetcher import Fetcher, create_client, create_sync_client, resolve_proxy
+from yutto.utils.fetcher import Fetcher, cookies_from_auth, create_client, resolve_proxy
 from yutto.utils.functional import as_sync
-
-
-class _HasSSLContext(Protocol):
-    _ssl_context: ssl.SSLContext
-
-
-class _HasPool(Protocol):
-    _pool: _HasSSLContext
-
-
-def _transport_ssl_context(transport: Any) -> ssl.SSLContext:
-    # Test helper: inspect httpx's private transport internals to assert TLS policy wiring.
-    # If httpx changes `_pool._ssl_context`, this assertion helper will need to be updated too.
-    return cast("_HasPool", transport)._pool._ssl_context
 
 
 def test_resolve_proxy_auto_uses_system_proxy():
@@ -67,26 +53,39 @@ async def test_create_client_keeps_download_tls_verification_disabled_and_closes
     assert captured["connect_timeout"] == 5
 
 
-def test_create_sync_client_follows_default_download_tls_policy():
-    client = create_sync_client()
-    try:
-        transport: Any = client._transport
-        ssl_context = _transport_ssl_context(transport)
-        assert ssl_context.verify_mode == ssl.CERT_NONE
-        assert not ssl_context.check_hostname
-    finally:
-        client.close()
+@as_sync
+async def test_create_client_accepts_read_only_mappings_and_none(monkeypatch: pytest.MonkeyPatch):
+    calls: list[dict[str, Any]] = []
+
+    class FakeNativeSession:
+        def __init__(self, **kwargs: Any):
+            calls.append(kwargs)
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, "NativeSession", FakeNativeSession)
+
+    async with create_client(
+        headers=MappingProxyType({"X-Test": "value"}),
+        cookies=MappingProxyType({"token": "secret"}),
+    ):
+        pass
+    async with create_client(headers=None, cookies=None):
+        pass
+
+    assert calls[0]["headers"] == {"X-Test": "value"}
+    assert calls[0]["cookies"] == {"token": "secret"}
+    assert calls[1]["headers"] == {}
+    assert calls[1]["cookies"] == {}
 
 
-def test_create_sync_client_can_enable_tls_verification():
-    client = create_sync_client(verify=True)
-    try:
-        transport: Any = client._transport
-        ssl_context = _transport_ssl_context(transport)
-        assert ssl_context.verify_mode == ssl.CERT_REQUIRED
-        assert ssl_context.check_hostname
-    finally:
-        client.close()
+def test_cookies_from_auth_returns_native_cookie_mapping():
+    assert cookies_from_auth(None) == {}
+    assert cookies_from_auth({"SESSDATA": "sess,data", "bili_jct": "csrf-token"}) == {
+        "SESSDATA": "sess%2Cdata",
+        "bili_jct": "csrf-token",
+    }
 
 
 class _StatusResponse:
@@ -113,7 +112,7 @@ class _StatusSession:
 
 
 @as_sync
-async def test_fetcher_preserves_httpx_query_parameter_encoding():
+async def test_fetcher_preserves_query_parameter_encoding():
     class QuerySession(_StatusSession):
         params: list[tuple[str, str]] | None = None
 

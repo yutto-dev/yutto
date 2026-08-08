@@ -1,20 +1,25 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import sys
 import time
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import parse_qs, unquote, urlparse
 
-import httpx
 import segno
+from yutto_core import HttpError
 
 from yutto.api.user_info import USER_INFO_API, parse_user_info, user_info_matches
 from yutto.auth import AuthInfo, remove_auth, resolve_auth, resolve_auth_file, save_auth, validate_profile
 from yutto.exceptions import ErrorCode
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.fetcher import cookies_from_auth, create_sync_client, resolve_proxy
+from yutto.utils.fetcher import cookies_from_auth, create_client, resolve_proxy
+from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
+    from yutto_core import NativeSession
+
     from yutto.types import UserInfo
 
 QR_GENERATE_API = "https://passport.bilibili.com/x/passport-login/web/qrcode/generate"
@@ -25,9 +30,29 @@ QR_STATUS_NOT_SCANNED = 86101
 QR_STATUS_SCANNED = 86090
 QR_STATUS_EXPIRED = 86038
 QR_STATUS_CONFIRMED = 0
+COOKIE_PROBE_URLS = (
+    "https://yutto.bilibili.com/",
+    "https://bilibili.com/",
+    "https://yutto.passport.bilibili.com/",
+    "https://passport.bilibili.com/",
+    "https://www.bilibili.com/",
+)
 
 
-def run_login(args: Any):
+@as_sync
+async def run_auth(args: Any) -> None:
+    match args.auth_command:
+        case "login":
+            await run_login(args)
+        case "logout":
+            run_auth_logout(args)
+        case "status":
+            await run_auth_status(args)
+        case _:
+            raise ValueError("Invalid auth command")
+
+
+async def run_login(args: Any) -> None:
     try:
         proxy, trust_env = resolve_proxy(args.proxy)
         validate_profile(args.auth_profile)
@@ -35,12 +60,17 @@ def run_login(args: Any):
         Logger.error(str(e))
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
-    with create_sync_client(proxy=proxy, trust_env=trust_env, timeout=10, verify=True) as client:
-        qr_login_url, qr_key = generate_qr_login(client)
+    async with create_client(proxy=proxy, trust_env=trust_env, timeout=10, verify=True) as session:
+        qr_login_url, qr_key = await generate_qr_login(session)
         show_qr_code(qr_login_url, args.mode)
         Logger.info("请使用哔哩哔哩 App 扫码并确认登录")
-        redirect_url = poll_qr_login(client, qr_key, timeout=args.timeout, poll_interval=args.poll_interval)
-        result_url, sessdata, bili_jct = complete_login(client, redirect_url)
+        redirect_url = await poll_qr_login(
+            session,
+            qr_key,
+            timeout=args.timeout,
+            poll_interval=args.poll_interval,
+        )
+        result_url, sessdata, bili_jct = await complete_login(session, redirect_url)
 
     if sessdata is None:
         raise ValueError("登录成功但未提取到 SESSDATA")
@@ -48,7 +78,7 @@ def run_login(args: Any):
     auth_file = resolve_auth_file(args)
     save_auth(auth_file, args.auth_profile, sessdata, bili_jct)
     auth = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct)
-    if validate_saved_auth(auth, proxy=proxy, trust_env=trust_env):
+    if await validate_saved_auth(auth, proxy=proxy, trust_env=trust_env):
         Logger.info(
             f"登录成功，已写入认证文件：{auth_file}（profile: {args.auth_profile}，url: {sanitize_url_for_log(result_url)}）"
         )
@@ -58,7 +88,7 @@ def run_login(args: Any):
         )
 
 
-def run_auth_status(args: Any):
+async def run_auth_status(args: Any) -> None:
     try:
         proxy, trust_env = resolve_proxy(args.proxy)
         auth = resolve_auth(args)
@@ -71,7 +101,7 @@ def run_auth_status(args: Any):
         sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
 
     try:
-        user_info = fetch_authenticated_user_info(auth, proxy=proxy, trust_env=trust_env)
+        user_info = await fetch_authenticated_user_info(auth, proxy=proxy, trust_env=trust_env)
     except Exception as e:
         Logger.error(f"登录状态检查失败：{e}")
         sys.exit(ErrorCode.HTTP_STATUS_ERROR.value)
@@ -88,7 +118,7 @@ def run_auth_status(args: Any):
     sys.exit(ErrorCode.NOT_LOGIN_ERROR.value)
 
 
-def run_auth_logout(args: Any):
+def run_auth_logout(args: Any) -> None:
     if getattr(args, "auth", ""):
         Logger.error("当前认证来源于 inline auth，请删除 `--auth` 参数或配置项 `auth.auth` 后再试。")
         sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
@@ -119,8 +149,8 @@ def sanitize_url_for_log(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}{path}"
 
 
-def generate_qr_login(client: httpx.Client) -> tuple[str, str]:
-    payload = request_json(client, QR_GENERATE_API, params={"source": "main-fe-header"})
+async def generate_qr_login(session: NativeSession) -> tuple[str, str]:
+    payload = await request_json(session, QR_GENERATE_API, params={"source": "main-fe-header"})
     code = payload.get("code")
     if not isinstance(code, int) or code != 0:
         raise ValueError(f"获取登录二维码失败：{payload}")
@@ -135,7 +165,7 @@ def generate_qr_login(client: httpx.Client) -> tuple[str, str]:
     return login_url, qrcode_key
 
 
-def show_qr_code(url: str, mode: str):
+def show_qr_code(url: str, mode: str) -> None:
     qr = segno.make(url)
     if mode == "web":
         try:
@@ -146,11 +176,21 @@ def show_qr_code(url: str, mode: str):
     qr.terminal(compact=True)
 
 
-def poll_qr_login(client: httpx.Client, qrcode_key: str, *, timeout: int, poll_interval: float) -> str:
+async def poll_qr_login(
+    session: NativeSession,
+    qrcode_key: str,
+    *,
+    timeout: int,
+    poll_interval: float,
+) -> str:
     deadline = time.monotonic() + timeout
     last_status: int | None = None
     while time.monotonic() < deadline:
-        payload = request_json(client, QR_POLL_API, params={"qrcode_key": qrcode_key, "source": "main-fe-header"})
+        payload = await request_json(
+            session,
+            QR_POLL_API,
+            params={"qrcode_key": qrcode_key, "source": "main-fe-header"},
+        )
         code = payload.get("code")
         if not isinstance(code, int) or code != 0:
             raise ValueError(f"轮询登录状态失败：{payload}")
@@ -178,14 +218,16 @@ def poll_qr_login(client: httpx.Client, qrcode_key: str, *, timeout: int, poll_i
                 raise ValueError(f"登录成功但未返回跳转链接：{payload}")
             return redirect_url
 
-        time.sleep(poll_interval)
+        if poll_interval < 0:
+            raise ValueError("poll_interval must be non-negative")
+        await asyncio.sleep(poll_interval)
     raise TimeoutError(f"登录超时（>{timeout} 秒），请重试")
 
 
-def request_json(client: httpx.Client, url: str, *, params: dict[str, str]) -> dict[str, Any]:
-    resp = client.get(url, params=params)
+async def request_json(session: NativeSession, url: str, *, params: dict[str, str]) -> dict[str, Any]:
+    resp = await session.get(url, params=list(params.items()))
     resp.raise_for_status()
-    payload_any = resp.json()
+    payload_any = json.loads(resp.body)
     if not isinstance(payload_any, dict):
         raise ValueError(f"接口返回 JSON 结构异常：{url}")
     return cast("dict[str, Any]", payload_any)
@@ -207,17 +249,17 @@ def extract_bili_jct(redirect_url: str) -> str | None:
     return unquote(values[0])
 
 
-def complete_login(client: httpx.Client, redirect_url: str) -> tuple[str, str | None, str | None]:
+async def complete_login(session: NativeSession, redirect_url: str) -> tuple[str, str | None, str | None]:
     # 登录成功后返回的 URL 需要真正请求一次，才能让 cookie jar 更新到最新值
     final_url = redirect_url
     try:
-        resp = client.get(redirect_url)
-        final_url = str(resp.url)
-    except httpx.HTTPError as e:
+        resp = await session.get(redirect_url)
+        final_url = resp.url
+    except HttpError as e:
         Logger.warning(f"请求登录确认 URL 失败，将尝试从返回 URL 提取 cookies：{e}")
 
-    sessdata = get_cookie_value(client.cookies, "SESSDATA")
-    bili_jct = get_cookie_value(client.cookies, "bili_jct")
+    sessdata = get_cookie_value(session, "SESSDATA")
+    bili_jct = get_cookie_value(session, "bili_jct")
 
     if not sessdata:
         sessdata = extract_sessdata(final_url) or extract_sessdata(redirect_url)
@@ -227,34 +269,35 @@ def complete_login(client: httpx.Client, redirect_url: str) -> tuple[str, str | 
     return final_url, sessdata, bili_jct
 
 
-def get_cookie_value(cookies: httpx.Cookies, name: str) -> str | None:
-    try:
-        return cookies.get(name)
-    except httpx.CookieConflict:
-        # 同名 cookie 可能存在于多个域名，优先取 bilibili 主域下的值
-        candidates: list[tuple[str, str]] = []
-        for cookie in cookies.jar:
-            if cookie.name == name and cookie.value is not None:
-                candidates.append((cookie.domain, cookie.value))
-        domain_priority = [".bilibili.com", "bilibili.com", ".passport.bilibili.com", "passport.bilibili.com"]
-        for target_domain in domain_priority:
-            for domain, value in candidates:
-                if domain == target_domain:
-                    return value
-        if candidates:
-            return candidates[0][1]
-        return None
+def get_cookie_value(session: NativeSession, name: str) -> str | None:
+    # 用只匹配目标 Domain/host-only cookie 的 URL 按旧优先级探测，
+    # 避免 NativeSession 需要暴露整个 cookie jar。
+    for url in COOKIE_PROBE_URLS:
+        if value := session.cookie(name, url=url):
+            return value
+    return None
 
 
-def fetch_authenticated_user_info(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> UserInfo:
+async def fetch_authenticated_user_info(
+    auth: AuthInfo,
+    *,
+    proxy: str | None,
+    trust_env: bool,
+) -> UserInfo:
     cookies = cookies_from_auth(auth)
-    with create_sync_client(cookies=cookies, proxy=proxy, trust_env=trust_env, verify=True) as client:
-        return parse_user_info(request_json(client, USER_INFO_API, params={}))
+    async with create_client(
+        cookies=cookies,
+        proxy=proxy,
+        trust_env=trust_env,
+        timeout=5,
+        verify=True,
+    ) as session:
+        return parse_user_info(await request_json(session, USER_INFO_API, params={}))
 
 
-def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> bool:
+async def validate_saved_auth(auth: AuthInfo, *, proxy: str | None, trust_env: bool) -> bool:
     try:
-        user_info = fetch_authenticated_user_info(auth, proxy=proxy, trust_env=trust_env)
+        user_info = await fetch_authenticated_user_info(auth, proxy=proxy, trust_env=trust_env)
         return user_info_matches(user_info, {"vip_status": False, "is_login": True})
     except Exception as e:
         Logger.warning(f"登录状态校验失败，将跳过校验：{e}")
