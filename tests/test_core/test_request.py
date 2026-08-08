@@ -38,6 +38,7 @@ def test_default_namespace_maps_to_grouped_core_request():
     assert request.stream.video_save_codec == "copy"
     assert request.output.directory == Path()
     assert request.network.block_size_bytes == 512 * 1024
+    assert request.network.download_backend == "python"
     assert request.danmaku.format == "ass"
 
 
@@ -170,6 +171,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "metadata_format_premiered": "%Y",
     }
     assert request.network.model_dump() == {
+        "download_backend": "python",
         "proxy": "no",
         "fetch_workers": 3,
         "download_workers": 4,
@@ -192,6 +194,12 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "block_colorful": True,
         "block_keyword_patterns": ["spoiler", "广告"],
     }
+
+
+def test_namespace_can_select_the_experimental_rust_backend():
+    request = download_request_from_namespace(parse_download_args(["BV1xx411c7mD", "--download-backend", "rust"]))
+
+    assert request.network.download_backend == "rust"
 
 
 def test_cli_and_secret_options_do_not_cross_core_boundary(tmp_path: Path):

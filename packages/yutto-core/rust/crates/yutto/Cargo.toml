@@ -1,0 +1,24 @@
+[package]
+name = "yutto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license = "GPL-3.0-only"
+description = "Rust download backend and Python bindings for yutto"
+readme = "README.md"
+keywords = ["async", "bilibili", "download", "video", "yutto"]
+categories = ["asynchronous", "multimedia::video", "network-programming"]
+publish = ["crates-io"]
+
+[lib]
+name = "yutto"
+crate-type = ["cdylib"]
+
+[dependencies]
+haya = { version = "0.0.1", path = "../haya" }
+haya-http = { version = "0.0.1", path = "../haya-http" }
+pyo3 = { version = "0.29.0", features = ["abi3-py311"] }
+reqwest.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true

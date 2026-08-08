@@ -30,6 +30,7 @@ class YuttoBasicSettings(BaseModel):
     ai_translation_language: Annotated[str | None, Field(None)]
     danmaku_format: Annotated[Literal["xml", "ass", "protobuf"], Field("ass")]
     block_size: Annotated[float, Field(0.5)]
+    download_backend: Annotated[Literal["python", "rust"], Field("python")]
     overwrite: Annotated[bool, Field(False)]
     proxy: Annotated[str, Field("auto")]
     dir: Annotated[str, Field("./")]
