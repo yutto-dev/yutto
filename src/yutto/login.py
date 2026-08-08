@@ -18,7 +18,7 @@ from yutto.utils.fetcher import cookies_from_auth, create_client, resolve_proxy
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
-    from yutto_core import NativeSession
+    from yutto_core import YuttoSession
 
     from yutto.types import UserInfo
 
@@ -149,7 +149,7 @@ def sanitize_url_for_log(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}{path}"
 
 
-async def generate_qr_login(session: NativeSession) -> tuple[str, str]:
+async def generate_qr_login(session: YuttoSession) -> tuple[str, str]:
     payload = await request_json(session, QR_GENERATE_API, params={"source": "main-fe-header"})
     code = payload.get("code")
     if not isinstance(code, int) or code != 0:
@@ -177,7 +177,7 @@ def show_qr_code(url: str, mode: str) -> None:
 
 
 async def poll_qr_login(
-    session: NativeSession,
+    session: YuttoSession,
     qrcode_key: str,
     *,
     timeout: int,
@@ -224,7 +224,7 @@ async def poll_qr_login(
     raise TimeoutError(f"登录超时（>{timeout} 秒），请重试")
 
 
-async def request_json(session: NativeSession, url: str, *, params: dict[str, str]) -> dict[str, Any]:
+async def request_json(session: YuttoSession, url: str, *, params: dict[str, str]) -> dict[str, Any]:
     resp = await session.get(url, params=list(params.items()))
     resp.raise_for_status()
     payload_any = json.loads(resp.body)
@@ -249,7 +249,7 @@ def extract_bili_jct(redirect_url: str) -> str | None:
     return unquote(values[0])
 
 
-async def complete_login(session: NativeSession, redirect_url: str) -> tuple[str, str | None, str | None]:
+async def complete_login(session: YuttoSession, redirect_url: str) -> tuple[str, str | None, str | None]:
     # 登录成功后返回的 URL 需要真正请求一次，才能让 cookie jar 更新到最新值
     final_url = redirect_url
     try:
@@ -269,9 +269,9 @@ async def complete_login(session: NativeSession, redirect_url: str) -> tuple[str
     return final_url, sessdata, bili_jct
 
 
-def get_cookie_value(session: NativeSession, name: str) -> str | None:
+def get_cookie_value(session: YuttoSession, name: str) -> str | None:
     # 用只匹配目标 Domain/host-only cookie 的 URL 按旧优先级探测，
-    # 避免 NativeSession 需要暴露整个 cookie jar。
+    # 避免 YuttoSession 需要暴露整个 cookie jar。
     for url in COOKIE_PROBE_URLS:
         if value := session.cookie(name, url=url):
             return value

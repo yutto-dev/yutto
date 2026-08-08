@@ -43,7 +43,7 @@ class TransferHandle:
     def snapshot(self) -> TransferSnapshot: ...
     def result(self) -> int: ...
 
-class NativeSession:
+class YuttoSession:
     def __init__(
         self,
         *,

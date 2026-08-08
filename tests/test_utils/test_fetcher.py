@@ -32,7 +32,7 @@ async def test_create_client_keeps_download_tls_verification_disabled_and_closes
 ):
     captured: dict[str, Any] = {}
 
-    class FakeNativeSession:
+    class FakeYuttoSession:
         is_closed = False
 
         def __init__(self, **kwargs: Any):
@@ -41,7 +41,7 @@ async def test_create_client_keeps_download_tls_verification_disabled_and_closes
         def close(self) -> None:
             self.is_closed = True
 
-    monkeypatch.setattr(fetcher_module, "NativeSession", FakeNativeSession)
+    monkeypatch.setattr(fetcher_module, "YuttoSession", FakeYuttoSession)
 
     async with create_client() as session:
         assert not session.is_closed
@@ -57,14 +57,14 @@ async def test_create_client_keeps_download_tls_verification_disabled_and_closes
 async def test_create_client_accepts_read_only_mappings_and_none(monkeypatch: pytest.MonkeyPatch):
     calls: list[dict[str, Any]] = []
 
-    class FakeNativeSession:
+    class FakeYuttoSession:
         def __init__(self, **kwargs: Any):
             calls.append(kwargs)
 
         def close(self) -> None:
             return None
 
-    monkeypatch.setattr(fetcher_module, "NativeSession", FakeNativeSession)
+    monkeypatch.setattr(fetcher_module, "YuttoSession", FakeYuttoSession)
 
     async with create_client(
         headers=MappingProxyType({"X-Test": "value"}),

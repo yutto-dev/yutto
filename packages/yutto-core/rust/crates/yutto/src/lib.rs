@@ -102,12 +102,12 @@ impl NativeResponse {
 }
 
 #[pyclass(frozen, module = "yutto_core._core")]
-struct NativeSession {
+struct YuttoSession {
     session: Session,
 }
 
 #[pymethods]
-impl NativeSession {
+impl YuttoSession {
     #[new]
     #[pyo3(signature = (*, headers=None, cookies=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, read_timeout=5.0, connect_timeout=5.0))]
     #[allow(clippy::too_many_arguments)]
@@ -409,7 +409,7 @@ fn session_error_to_py(error: SessionError) -> PyErr {
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_core")]
 fn yutto(module: &Bound<'_, PyModule>) -> PyResult<()> {
-    module.add_class::<NativeSession>()?;
+    module.add_class::<YuttoSession>()?;
     module.add_class::<NativeResponse>()?;
     module.add_class::<TransferHandle>()?;
     module.add_class::<TransferSnapshot>()?;

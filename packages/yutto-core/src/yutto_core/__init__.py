@@ -10,11 +10,11 @@ from yutto_core._core import (
     HttpTransportError,
     InvalidUrlError,
     NativeResponse,
-    NativeSession,
     SessionClosedError,
     TransferHandle,
     TransferSnapshot,
     UnsupportedProtocolError,
+    YuttoSession,
 )
 
 if TYPE_CHECKING:
@@ -27,11 +27,11 @@ __all__ = [
     "HttpTransportError",
     "InvalidUrlError",
     "NativeResponse",
-    "NativeSession",
     "SessionClosedError",
     "TransferHandle",
     "TransferSnapshot",
     "UnsupportedProtocolError",
+    "YuttoSession",
     "wait_for_transfer",
 ]
 

@@ -15,7 +15,7 @@ from yutto.utils.functional import as_sync
 
 
 @as_sync
-async def test_validate_saved_auth_uses_native_session_with_auth_cookies(monkeypatch: pytest.MonkeyPatch):
+async def test_validate_saved_auth_uses_yutto_session_with_auth_cookies(monkeypatch: pytest.MonkeyPatch):
     calls: dict[str, Any] = {}
     fake_session = object()
 
@@ -50,7 +50,7 @@ async def test_validate_saved_auth_uses_native_session_with_auth_cookies(monkeyp
 
 
 @as_sync
-async def test_run_login_reuses_one_verified_native_session(monkeypatch: pytest.MonkeyPatch):
+async def test_run_login_reuses_one_verified_yutto_session(monkeypatch: pytest.MonkeyPatch):
     calls: dict[str, Any] = {}
     sessions: list[object] = []
     fake_session = object()

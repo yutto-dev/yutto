@@ -12,9 +12,9 @@ from yutto_core import (
     HttpError,
     HttpTimeoutError,
     InvalidUrlError,
-    NativeSession,
     SessionClosedError,
     UnsupportedProtocolError,
+    YuttoSession,
 )
 
 from yutto.core.operation import ReportLevel, emit_download_report
@@ -237,8 +237,8 @@ async def create_client(
     timeout: float = 5,
     *,
     verify: bool = False,
-) -> AsyncIterator[NativeSession]:
-    session = NativeSession(
+) -> AsyncIterator[YuttoSession]:
+    session = YuttoSession(
         headers=dict(headers or {}),
         cookies=dict(cookies or {}),
         proxy=proxy,
