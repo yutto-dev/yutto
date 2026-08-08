@@ -1,6 +1,8 @@
 use std::{
     collections::{BTreeMap, HashMap},
+    fs,
     io::Read,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -8,7 +10,7 @@ use std::{
 use bytes::Bytes;
 use flate2::read::{DeflateDecoder, GzDecoder, ZlibDecoder};
 use reqwest::{
-    Client, Proxy, StatusCode, Url,
+    Certificate, Client, ClientBuilder, Proxy, StatusCode, Url,
     cookie::{CookieStore, Jar},
     header::{ACCEPT_ENCODING, CONTENT_ENCODING, HeaderMap, HeaderName, HeaderValue},
 };
@@ -41,6 +43,8 @@ pub struct SessionConfig {
     pub proxy: Option<String>,
     pub use_system_proxy: bool,
     pub accept_invalid_certs: bool,
+    pub ca_cert_file: Option<PathBuf>,
+    pub ca_cert_dir: Option<PathBuf>,
     pub read_timeout: Duration,
     pub connect_timeout: Duration,
 }
@@ -53,6 +57,8 @@ impl Default for SessionConfig {
             proxy: None,
             use_system_proxy: true,
             accept_invalid_certs: false,
+            ca_cert_file: None,
+            ca_cert_dir: None,
             read_timeout: DEFAULT_READ_TIMEOUT,
             connect_timeout: DEFAULT_CONNECT_TIMEOUT,
         }
@@ -132,6 +138,21 @@ impl Session {
             .danger_accept_invalid_certs(config.accept_invalid_certs)
             .read_timeout(config.read_timeout)
             .connect_timeout(config.connect_timeout);
+        if let Some(path) = config.ca_cert_file {
+            builder = add_root_certificates(builder, &path, true)?;
+        } else if let Some(path) = config.ca_cert_dir {
+            let entries = fs::read_dir(&path).map_err(|error| {
+                SessionError::Configuration(format!(
+                    "failed to read CA certificate directory {}: {error}",
+                    path.display()
+                ))
+            })?;
+            for entry in entries.flatten() {
+                if entry.path().is_file() {
+                    builder = add_root_certificates(builder, &entry.path(), false)?;
+                }
+            }
+        }
         if !config.use_system_proxy {
             builder = builder.no_proxy();
         }
@@ -217,6 +238,43 @@ impl Session {
             .clone()
             .ok_or(SessionError::Closed)
     }
+}
+
+fn add_root_certificates(
+    mut builder: ClientBuilder,
+    path: &Path,
+    required: bool,
+) -> Result<ClientBuilder, SessionError> {
+    let data = match fs::read(path) {
+        Ok(data) => data,
+        Err(_) if !required => return Ok(builder),
+        Err(error) => {
+            return Err(SessionError::Configuration(format!(
+                "failed to read CA certificate file {}: {error}",
+                path.display()
+            )));
+        }
+    };
+    let certificates = match Certificate::from_pem_bundle(&data) {
+        Ok(certificates) if !certificates.is_empty() => certificates,
+        Ok(_) | Err(_) if !required => return Ok(builder),
+        Ok(_) => {
+            return Err(SessionError::Configuration(format!(
+                "CA certificate file {} contains no certificates",
+                path.display()
+            )));
+        }
+        Err(error) => {
+            return Err(SessionError::Configuration(format!(
+                "failed to parse CA certificate file {}: {error}",
+                path.display()
+            )));
+        }
+    };
+    for certificate in certificates {
+        builder = builder.add_root_certificate(certificate);
+    }
+    Ok(builder)
 }
 
 pub(crate) fn build_headers(headers: HashMap<String, String>) -> Result<HeaderMap, SessionError> {
@@ -483,6 +541,26 @@ mod tests {
 
         assert!(session.is_closed());
         assert!(matches!(session.client(), Err(SessionError::Closed)));
+    }
+
+    #[test]
+    fn missing_custom_ca_paths_are_configuration_errors() {
+        let path = std::env::temp_dir().join(format!("missing-yutto-ca-{}", std::process::id()));
+        for config in [
+            SessionConfig {
+                ca_cert_file: Some(path.clone()),
+                ..SessionConfig::default()
+            },
+            SessionConfig {
+                ca_cert_dir: Some(path.clone()),
+                ..SessionConfig::default()
+            },
+        ] {
+            assert!(matches!(
+                Session::new(config),
+                Err(SessionError::Configuration(_))
+            ));
+        }
     }
 
     #[test]

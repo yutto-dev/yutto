@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 from urllib.parse import quote, unquote, urlparse
@@ -238,12 +239,16 @@ async def create_client(
     *,
     verify: bool = False,
 ) -> AsyncIterator[YuttoSession]:
+    ca_cert_file = os.environ.get("SSL_CERT_FILE") if trust_env and verify else None
+    ca_cert_dir = os.environ.get("SSL_CERT_DIR") if trust_env and verify and not ca_cert_file else None
     session = YuttoSession(
         headers=dict(headers or {}),
         cookies=dict(cookies or {}),
         proxy=proxy,
         use_system_proxy=trust_env,
         accept_invalid_certs=not verify,
+        ca_cert_file=ca_cert_file,
+        ca_cert_dir=ca_cert_dir,
         read_timeout=timeout,
         connect_timeout=timeout,
     )

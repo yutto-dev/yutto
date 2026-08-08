@@ -175,18 +175,15 @@ async def test_poll_qr_login_reports_status_changes_and_returns_redirect(monkeyp
 
 
 @as_sync
-async def test_poll_qr_login_rejects_negative_interval(monkeypatch: pytest.MonkeyPatch):
-    fake_session = object()
-
-    async def not_scanned(session: object, url: str, *, params: dict[str, str]) -> dict[str, Any]:
-        assert session is fake_session
-        assert url == login_module.QR_POLL_API
-        assert params == {"qrcode_key": "qr-key", "source": "main-fe-header"}
-        return {"code": 0, "data": {"code": login_module.QR_STATUS_NOT_SCANNED}}
-
-    monkeypatch.setattr(login_module, "request_json", not_scanned)
-    with pytest.raises(ValueError, match="poll_interval must be non-negative"):
-        await login_module.poll_qr_login(cast("Any", fake_session), "qr-key", timeout=10, poll_interval=-1)
+async def test_poll_qr_login_rejects_invalid_intervals():
+    for poll_interval in (-1, float("inf"), float("-inf"), float("nan")):
+        with pytest.raises(ValueError, match="poll_interval must be finite and non-negative"):
+            await login_module.poll_qr_login(
+                cast("Any", object()),
+                "qr-key",
+                timeout=10,
+                poll_interval=poll_interval,
+            )
 
 
 @as_sync

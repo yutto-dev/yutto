@@ -80,6 +80,37 @@ async def test_create_client_accepts_read_only_mappings_and_none(monkeypatch: py
     assert calls[1]["cookies"] == {}
 
 
+@as_sync
+async def test_create_client_preserves_environment_ca_settings(monkeypatch: pytest.MonkeyPatch):
+    calls: list[dict[str, Any]] = []
+
+    class FakeYuttoSession:
+        def __init__(self, **kwargs: Any):
+            calls.append(kwargs)
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, "YuttoSession", FakeYuttoSession)
+    monkeypatch.setenv("SSL_CERT_FILE", "/tmp/custom-ca.pem")
+    monkeypatch.setenv("SSL_CERT_DIR", "/tmp/custom-ca-directory")
+
+    async with create_client(trust_env=True, verify=True):
+        pass
+    monkeypatch.delenv("SSL_CERT_FILE")
+    async with create_client(trust_env=True, verify=True):
+        pass
+    async with create_client(trust_env=False, verify=True):
+        pass
+
+    assert calls[0]["ca_cert_file"] == "/tmp/custom-ca.pem"
+    assert calls[0]["ca_cert_dir"] is None
+    assert calls[1]["ca_cert_file"] is None
+    assert calls[1]["ca_cert_dir"] == "/tmp/custom-ca-directory"
+    assert calls[2]["ca_cert_file"] is None
+    assert calls[2]["ca_cert_dir"] is None
+
+
 def test_cookies_from_auth_returns_native_cookie_mapping():
     assert cookies_from_auth(None) == {}
     assert cookies_from_auth({"SESSDATA": "sess,data", "bili_jct": "csrf-token"}) == {

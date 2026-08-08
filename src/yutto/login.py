@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import sys
 import time
 from typing import TYPE_CHECKING, Any, cast
@@ -183,6 +184,9 @@ async def poll_qr_login(
     timeout: int,
     poll_interval: float,
 ) -> str:
+    if not math.isfinite(poll_interval) or poll_interval < 0:
+        raise ValueError("poll_interval must be finite and non-negative")
+
     deadline = time.monotonic() + timeout
     last_status: int | None = None
     while time.monotonic() < deadline:
@@ -218,8 +222,6 @@ async def poll_qr_login(
                 raise ValueError(f"登录成功但未返回跳转链接：{payload}")
             return redirect_url
 
-        if poll_interval < 0:
-            raise ValueError("poll_interval must be non-negative")
         await asyncio.sleep(poll_interval)
     raise TimeoutError(f"登录超时（>{timeout} 秒），请重试")
 

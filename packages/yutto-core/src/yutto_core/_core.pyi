@@ -52,6 +52,8 @@ class YuttoSession:
         proxy: str | None = ...,
         use_system_proxy: bool = ...,
         accept_invalid_certs: bool = ...,
+        ca_cert_file: str | Path | None = ...,
+        ca_cert_dir: str | Path | None = ...,
         read_timeout: float = ...,
         connect_timeout: float = ...,
     ) -> None: ...

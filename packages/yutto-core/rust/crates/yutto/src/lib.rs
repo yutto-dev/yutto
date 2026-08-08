@@ -109,7 +109,7 @@ struct YuttoSession {
 #[pymethods]
 impl YuttoSession {
     #[new]
-    #[pyo3(signature = (*, headers=None, cookies=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, read_timeout=5.0, connect_timeout=5.0))]
+    #[pyo3(signature = (*, headers=None, cookies=None, proxy=None, use_system_proxy=true, accept_invalid_certs=false, ca_cert_file=None, ca_cert_dir=None, read_timeout=5.0, connect_timeout=5.0))]
     #[allow(clippy::too_many_arguments)]
     fn new(
         headers: Option<HashMap<String, String>>,
@@ -117,6 +117,8 @@ impl YuttoSession {
         proxy: Option<String>,
         use_system_proxy: bool,
         accept_invalid_certs: bool,
+        ca_cert_file: Option<PathBuf>,
+        ca_cert_dir: Option<PathBuf>,
         read_timeout: f64,
         connect_timeout: f64,
     ) -> PyResult<Self> {
@@ -126,6 +128,8 @@ impl YuttoSession {
             proxy,
             use_system_proxy,
             accept_invalid_certs,
+            ca_cert_file,
+            ca_cert_dir,
             read_timeout: duration_from_seconds(read_timeout, "read_timeout")?,
             connect_timeout: duration_from_seconds(connect_timeout, "connect_timeout")?,
         })
