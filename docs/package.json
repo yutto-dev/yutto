@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/yutto-dev/yutto.git"
   },
-  "packageManager": "pnpm@11.18.0",
+  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
