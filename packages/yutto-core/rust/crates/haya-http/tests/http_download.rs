@@ -15,6 +15,10 @@ use tokio::{
     task::JoinHandle,
 };
 
+fn install_rustls_provider() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+}
+
 #[derive(Clone, Copy)]
 enum Behavior {
     Normal,
@@ -59,6 +63,7 @@ impl FaultServer {
     }
 
     fn source(&self, expected_size: u64) -> Arc<HttpRangeSource> {
+        install_rustls_provider();
         Arc::new(HttpRangeSource::new(
             Client::new(),
             self.url.clone(),
@@ -306,6 +311,7 @@ async fn rejects_a_conflicting_content_range_total() {
 #[tokio::test]
 async fn rejects_encoded_ranges_when_reqwest_decoders_are_available() {
     let server = FaultServer::spawn(vec![0; 1024], Behavior::GzipEncoding).await;
+    install_rustls_provider();
     let client = Client::builder()
         .no_gzip()
         .no_brotli()
@@ -328,6 +334,7 @@ async fn rejects_encoded_ranges_when_reqwest_decoders_are_available() {
 #[tokio::test]
 async fn redacts_the_url_from_transport_errors() {
     let server = FaultServer::spawn(payload(4096), Behavior::Disconnect).await;
+    install_rustls_provider();
     let mut url = server.url.clone();
     url.set_query(Some("token=secret"));
     let source = HttpRangeSource::new(Client::new(), url, HeaderMap::new(), 4096);

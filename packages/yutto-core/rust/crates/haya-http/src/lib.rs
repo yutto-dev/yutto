@@ -246,8 +246,13 @@ mod tests {
     use super::{HttpRangeSource, satisfied_content_range, validate_content_encoding};
     use haya::ByteRange;
 
+    fn install_rustls_provider() {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    }
+
     #[test]
     fn range_requests_replace_conflicting_headers() {
+        install_rustls_provider();
         let mut default_headers = HeaderMap::new();
         default_headers.append(ACCEPT_ENCODING, "gzip".parse().expect("header"));
         default_headers.append(RANGE, "bytes=7-".parse().expect("header"));
@@ -283,6 +288,7 @@ mod tests {
 
     #[test]
     fn rejects_ranges_outside_the_known_resource() {
+        install_rustls_provider();
         let source = HttpRangeSource::new(
             Client::new(),
             Url::parse("https://example.test/media").expect("URL"),
