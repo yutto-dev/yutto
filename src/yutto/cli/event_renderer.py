@@ -21,10 +21,10 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
-_PROGRESS_LABEL_WIDTH = 20
-_MIN_PROGRESS_BAR_WIDTH = 10
-_MIN_PROGRESS_LABEL_WIDTH = 10
-_PROGRESS_DETAILS_WIDTH = 40
+PROGRESS_BAR_MIN_WIDTH = 10
+PROGRESS_LABEL_MAX_WIDTH = 20
+PROGRESS_LABEL_MIN_WIDTH = 10
+PROGRESS_STATS_RESERVED_WIDTH = 40
 
 
 def _render_bar(
@@ -140,16 +140,16 @@ class CliApplicationEventRenderer:
         buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
         committed_bytes = progress.current - buffered_bytes
         terminal_width = get_terminal_size()[0]
-        available_width = max(0, terminal_width - _PROGRESS_DETAILS_WIDTH)
+        available_width = max(0, terminal_width - PROGRESS_STATS_RESERVED_WIDTH)
         if progress.item is None:
             label_prefix = ""
             bar_width = min(available_width, 50)
         else:
-            label_width = min(_PROGRESS_LABEL_WIDTH, max(0, available_width - 1))
+            label_width = min(PROGRESS_LABEL_MAX_WIDTH, max(0, available_width - 1))
             label_prefix = (
-                f"{_fit_label(progress.item, label_width)} " if label_width >= _MIN_PROGRESS_LABEL_WIDTH else ""
+                f"{_fit_label(progress.item, label_width)} " if label_width >= PROGRESS_LABEL_MIN_WIDTH else ""
             )
-            bar_width = min(max(0, available_width - _PROGRESS_LABEL_WIDTH - 1), 50)
+            bar_width = min(max(0, available_width - PROGRESS_LABEL_MAX_WIDTH - 1), 50)
         bar = (
             _render_bar(
                 committed_bytes,
@@ -159,7 +159,7 @@ class CliApplicationEventRenderer:
                 buffered_color,
                 bar_width,
             )
-            if bar_width >= _MIN_PROGRESS_BAR_WIDTH and progress.total > 0
+            if bar_width >= PROGRESS_BAR_MIN_WIDTH and progress.total > 0
             else ""
         )
         speed_color: Color = "green" if is_fast else "cyan"
