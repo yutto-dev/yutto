@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
 _PROGRESS_LABEL_WIDTH = 20
+_MIN_PROGRESS_LABEL_WIDTH = 10
 _PROGRESS_DETAILS_WIDTH = 40
 
 
@@ -144,7 +145,9 @@ class CliApplicationEventRenderer:
             bar_width = min(available_width, 50)
         else:
             label_width = min(_PROGRESS_LABEL_WIDTH, max(0, available_width - 1))
-            label_prefix = f"{_fit_label(progress.item, label_width)} " if label_width > 0 else ""
+            label_prefix = (
+                f"{_fit_label(progress.item, label_width)} " if label_width >= _MIN_PROGRESS_LABEL_WIDTH else ""
+            )
             bar_width = min(max(0, available_width - _PROGRESS_LABEL_WIDTH - 1), 50)
         bar = (
             _render_bar(

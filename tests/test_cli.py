@@ -340,7 +340,8 @@ def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: p
         (70, 20, 9),
         (61, 20, 0),
         (60, 19, 0),
-        (42, 1, 0),
+        (51, 10, 0),
+        (50, 0, 0),
         (41, 0, 0),
     ],
 )
@@ -359,12 +360,16 @@ def test_progress_renderer_compresses_bar_before_label(
         lambda *args: bar_widths.append(args[-1]) or "bar",
     )
     monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(text))
+    monkeypatch.setattr(renderer_module, "size_format", lambda _: "1234567890")
 
     renderer = renderer_module.CliApplicationEventRenderer()
     renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item="短标题"))
 
-    expected_label = f"{renderer_module._fit_label('短标题', expected_label_width)} " if expected_label_width else ""
-    assert rendered[0].startswith(expected_label)
+    if expected_label_width:
+        expected_label = f"{renderer_module._fit_label('短标题', expected_label_width)} "
+        assert rendered[0].startswith(expected_label)
+    else:
+        assert rendered[0].startswith("1234567890/")
     assert bar_widths == ([expected_bar_width] if expected_bar_width else [])
 
 
