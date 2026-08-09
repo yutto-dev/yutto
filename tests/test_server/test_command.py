@@ -49,7 +49,8 @@ def test_serve_configures_ffmpeg_path_at_command_boundary(monkeypatch: pytest.Mo
     recorded: list[str] = []
 
     class RecordingFFmpeg:
-        def setup_ffmpeg_path(self, ffmpeg_path: str) -> None:
+        @classmethod
+        def setup_ffmpeg_path(cls, ffmpeg_path: str) -> None:
             recorded.append(ffmpeg_path)
             raise RuntimeError("stop after recording")
 

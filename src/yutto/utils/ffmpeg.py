@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import operator
-import os
 import re
 import subprocess
 from functools import cached_property, reduce
@@ -14,27 +13,15 @@ from yutto.utils.functional import Singleton
 _TERMINATE_TIMEOUT_SECONDS = 3.0
 
 
-class FFmpegNotFoundError(Exception):
-    def __init__(self):
-        super().__init__("请配置正确的 FFmpeg 路径")
-
-
 class FFmpeg(metaclass=Singleton):
+    FFMPEG_PATH = "ffmpeg"
+
     def __init__(self):
-        self.path = "ffmpeg"
+        self.path = self.FFMPEG_PATH
 
     @classmethod
-    def setup_ffmpeg_path(cls, ffmpeg_path: str) -> None:
-        try:
-            if subprocess.run([ffmpeg_path], capture_output=True).returncode != 1:
-                raise FFmpegNotFoundError
-        except FileNotFoundError:
-            raise FFmpegNotFoundError from None
-
-        ffmpeg = cls()
-        ffmpeg.path = os.path.normpath(ffmpeg_path)
-        for property_name in ("version", "video_encodecs", "audio_encodecs"):
-            ffmpeg.__dict__.pop(property_name, None)
+    def setup_ffmpeg_path(cls, path: str) -> None:
+        cls.FFMPEG_PATH = path
 
     def exec(self, args: list[str]):
         cmd = [self.path]

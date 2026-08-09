@@ -20,7 +20,7 @@ from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
 from yutto.login import run_auth
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.ffmpeg import FFmpeg, FFmpegNotFoundError
+from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.functional import as_sync
 from yutto.validator import (
     hydrate_auth,
@@ -97,7 +97,7 @@ def main():
                     run_server_command(args)
             except KeyboardInterrupt:
                 Logger.info("yutto server 已停止")
-            except (FFmpegNotFoundError, OSError, ValueError) as e:
+            except (OSError, ValueError) as e:
                 Logger.error(str(e))
                 sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 
