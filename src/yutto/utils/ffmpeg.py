@@ -20,14 +20,21 @@ class FFmpegNotFoundError(Exception):
 
 
 class FFmpeg(metaclass=Singleton):
-    def __init__(self, ffmpeg_path: str = "ffmpeg"):
+    def __init__(self):
+        self.path = "ffmpeg"
+
+    @classmethod
+    def setup_ffmpeg_path(cls, ffmpeg_path: str) -> None:
         try:
             if subprocess.run([ffmpeg_path], capture_output=True).returncode != 1:
                 raise FFmpegNotFoundError
         except FileNotFoundError:
             raise FFmpegNotFoundError from None
 
-        self.path = os.path.normpath(ffmpeg_path)
+        ffmpeg = cls()
+        ffmpeg.path = os.path.normpath(ffmpeg_path)
+        for property_name in ("version", "video_encodecs", "audio_encodecs"):
+            ffmpeg.__dict__.pop(property_name, None)
 
     def exec(self, args: list[str]):
         cmd = [self.path]

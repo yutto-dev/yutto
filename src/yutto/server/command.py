@@ -169,7 +169,8 @@ def _build_download_application(
 @as_sync
 async def run_server_command(args: argparse.Namespace) -> None:
     # 与 download 子命令一样，在真正接收任务前确认 FFmpeg 可用。
-    ffmpeg = FFmpeg(args.ffmpeg_path)
+    ffmpeg = FFmpeg()
+    ffmpeg.setup_ffmpeg_path(args.ffmpeg_path)
     token = resolve_server_token(args.token_file)
     server = build_server(args, token.value, ffmpeg=ffmpeg)
     await server.start()

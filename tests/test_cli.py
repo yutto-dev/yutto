@@ -87,26 +87,37 @@ def test_download_parser_accepts_ffmpeg_path():
     )
 
 
-def test_download_passes_ffmpeg_path_to_ffmpeg(monkeypatch: pytest.MonkeyPatch):
-    recorded: dict[str, str] = {}
+def test_download_configures_ffmpeg_path_at_command_boundary(monkeypatch: pytest.MonkeyPatch):
+    recorded: list[str] = []
+    args = argparse.Namespace(
+        command="download",
+        no_progress=True,
+        no_color=False,
+        debug=False,
+        ffmpeg_path="/opt/ffmpeg/ffmpeg",
+    )
 
     class RecordingFFmpeg:
-        def __init__(self, ffmpeg_path: str = "ffmpeg") -> None:
-            recorded["path"] = ffmpeg_path
+        @classmethod
+        def setup_ffmpeg_path(cls, ffmpeg_path: str) -> None:
+            recorded.append(ffmpeg_path)
             raise RuntimeError("stop after recording")
 
-    monkeypatch.setattr(validator_module, "FFmpeg", RecordingFFmpeg)
-    args = make_download_parser().parse_args(["https://example.com", "--ffmpeg-path", "/opt/ffmpeg/ffmpeg"])
-    with pytest.raises(RuntimeError, match="stop after recording"):
-        validator_module.validate_basic_arguments(args)
+    monkeypatch.setattr(main_module, "cli", lambda: argparse.ArgumentParser())
+    monkeypatch.setattr(main_module.sys, "argv", ["yutto", "download"])
+    monkeypatch.setattr(argparse.ArgumentParser, "parse_args", lambda *_args: args)
+    monkeypatch.setattr(main_module, "FFmpeg", RecordingFFmpeg)
 
-    assert recorded["path"] == "/opt/ffmpeg/ffmpeg"
+    with pytest.raises(RuntimeError, match="stop after recording"):
+        main_module.main()
+
+    assert recorded == ["/opt/ffmpeg/ffmpeg"]
 
 
 def test_download_validation_rejects_non_positive_num_workers(monkeypatch: pytest.MonkeyPatch):
     args = make_download_parser().parse_args(["https://example.com", "--num-workers", "0"])
     errors: list[str] = []
-    monkeypatch.setattr(validator_module, "FFmpeg", lambda _path: object())
+    monkeypatch.setattr(validator_module, "FFmpeg", lambda: object())
     monkeypatch.setattr(validator_module.Logger, "error", errors.append)
 
     with pytest.raises(SystemExit) as exc_info:
@@ -121,7 +132,7 @@ def test_download_jobs_default_to_one_and_reject_non_positive_values(monkeypatch
     assert parser.parse_args(["https://example.com"]).jobs == 1
     args = parser.parse_args(["https://example.com", "--jobs", "0"])
     errors: list[str] = []
-    monkeypatch.setattr(validator_module, "FFmpeg", lambda _path: object())
+    monkeypatch.setattr(validator_module, "FFmpeg", lambda: object())
     monkeypatch.setattr(validator_module.Logger, "error", errors.append)
 
     with pytest.raises(SystemExit) as exc_info:

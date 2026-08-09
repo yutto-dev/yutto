@@ -15,8 +15,8 @@ from yutto.downloader.media_muxer import MediaMuxer
 from yutto.downloader.planner import DownloadPlan, DownloadPlanner, should_attach_hvc1_tag
 from yutto.exceptions import PostprocessingError
 from yutto.types import AId, CId
-from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
-from yutto.utils.functional import as_sync
+from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder, FFmpegNotFoundError
+from yutto.utils.functional import Singleton, as_sync
 
 if TYPE_CHECKING:
     from yutto.media.codec import VideoCodec
@@ -27,6 +27,53 @@ def make_ffmpeg(path: str) -> FFmpeg:
     ffmpeg = object.__new__(FFmpeg)
     ffmpeg.path = path
     return ffmpeg
+
+
+@pytest.fixture
+def reset_ffmpeg_singleton():
+    Singleton._instances.pop(FFmpeg, None)
+    yield
+    Singleton._instances.pop(FFmpeg, None)
+
+
+def test_setup_ffmpeg_path_reconfigures_existing_singleton_and_clears_caches(
+    monkeypatch: pytest.MonkeyPatch,
+    reset_ffmpeg_singleton: None,
+):
+    ffmpeg = FFmpeg()
+    ffmpeg.path = "first-ffmpeg"
+    ffmpeg.__dict__.update(version="first", video_encodecs=["h264"], audio_encodecs=["aac"])
+    monkeypatch.setattr(
+        ffmpeg_module.subprocess,
+        "run",
+        lambda args, capture_output: subprocess.CompletedProcess(args, 1),
+    )
+
+    FFmpeg.setup_ffmpeg_path("custom/../ffmpeg")
+
+    assert FFmpeg() is ffmpeg
+    assert ffmpeg.path == "ffmpeg"
+    assert {"version", "video_encodecs", "audio_encodecs"}.isdisjoint(ffmpeg.__dict__)
+
+
+def test_setup_ffmpeg_path_preserves_state_when_validation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    reset_ffmpeg_singleton: None,
+):
+    ffmpeg = FFmpeg()
+    ffmpeg.path = "first-ffmpeg"
+    ffmpeg.__dict__["version"] = "first"
+    monkeypatch.setattr(
+        ffmpeg_module.subprocess,
+        "run",
+        lambda _args, capture_output: (_ for _ in ()).throw(FileNotFoundError),
+    )
+
+    with pytest.raises(FFmpegNotFoundError):
+        FFmpeg.setup_ffmpeg_path("missing-ffmpeg")
+
+    assert ffmpeg.path == "first-ffmpeg"
+    assert ffmpeg.version == "first"
 
 
 def make_audio() -> AudioUrlMeta:

@@ -45,12 +45,12 @@ def test_serve_accepts_ffmpeg_path():
     assert cli().parse_args(["serve", "--ffmpeg-path", "/opt/ffmpeg/ffmpeg"]).ffmpeg_path == "/opt/ffmpeg/ffmpeg"
 
 
-def test_serve_passes_ffmpeg_path_to_ffmpeg(monkeypatch: pytest.MonkeyPatch):
-    recorded: dict[str, str] = {}
+def test_serve_configures_ffmpeg_path_at_command_boundary(monkeypatch: pytest.MonkeyPatch):
+    recorded: list[str] = []
 
     class RecordingFFmpeg:
-        def __init__(self, ffmpeg_path: str = "ffmpeg") -> None:
-            recorded["path"] = ffmpeg_path
+        def setup_ffmpeg_path(self, ffmpeg_path: str) -> None:
+            recorded.append(ffmpeg_path)
             raise RuntimeError("stop after recording")
 
     monkeypatch.setattr(server_command_module, "FFmpeg", RecordingFFmpeg)
@@ -58,7 +58,7 @@ def test_serve_passes_ffmpeg_path_to_ffmpeg(monkeypatch: pytest.MonkeyPatch):
     with pytest.raises(RuntimeError, match="stop after recording"):
         server_command_module.run_server_command(args)
 
-    assert recorded["path"] == "/opt/ffmpeg/ffmpeg"
+    assert recorded == ["/opt/ffmpeg/ffmpeg"]
 
 
 def test_serve_io_error_is_rendered_without_traceback(monkeypatch: pytest.MonkeyPatch):
