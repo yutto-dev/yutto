@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
 _PROGRESS_LABEL_WIDTH = 20
+_MIN_PROGRESS_BAR_WIDTH = 10
+_PROGRESS_DETAILS_WIDTH = 40
 
 
 def _render_bar(
@@ -136,8 +138,13 @@ class CliApplicationEventRenderer:
         buffered_color: Color = "red" if progress.is_congested else "yellow"
         buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
         committed_bytes = progress.current - buffered_bytes
-        label_prefix = f"{_fit_label(progress.item, _PROGRESS_LABEL_WIDTH)} " if progress.item is not None else ""
-        bar_width = min(get_terminal_size()[0] - 40 - get_string_width(label_prefix), 50)
+        terminal_width = get_terminal_size()[0]
+        label_width = min(
+            _PROGRESS_LABEL_WIDTH,
+            max(1, terminal_width - _PROGRESS_DETAILS_WIDTH - _MIN_PROGRESS_BAR_WIDTH - 1),
+        )
+        label_prefix = f"{_fit_label(progress.item, label_width)} " if progress.item is not None else ""
+        bar_width = min(terminal_width - _PROGRESS_DETAILS_WIDTH - get_string_width(label_prefix), 50)
         bar = (
             _render_bar(
                 committed_bytes,
@@ -147,7 +154,7 @@ class CliApplicationEventRenderer:
                 buffered_color,
                 bar_width,
             )
-            if bar_width >= 10 and progress.total > 0
+            if bar_width >= _MIN_PROGRESS_BAR_WIDTH and progress.total > 0
             else ""
         )
         speed_color: Color = "green" if is_fast else "cyan"
