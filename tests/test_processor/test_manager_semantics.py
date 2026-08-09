@@ -343,6 +343,223 @@ async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
 
 
 @as_sync
+async def test_execute_runs_requests_concurrently_and_preserves_result_order():
+    requests = [
+        DownloadRequest.model_validate({"source": {"url": "BV1first"}}),
+        DownloadRequest.model_validate({"source": {"url": "BV1second"}}),
+        DownloadRequest.model_validate({"source": {"url": "BV1third"}}),
+    ]
+    both_started = asyncio.Event()
+    release = asyncio.Event()
+    active = 0
+    max_active = 0
+
+    class ConcurrentManager(DownloadManager):
+        def __init__(self) -> None:
+            super().__init__(jobs=2)
+
+        async def process_request(
+            self,
+            scope: ExecutionScope,
+            request: DownloadRequest,
+        ) -> tuple[ItemResult, ...]:
+            nonlocal active, max_active
+            active += 1
+            max_active = max(max_active, active)
+            if active == 2:
+                both_started.set()
+            try:
+                await release.wait()
+                return (ItemResult(state=ItemState.DONE, output_path=Path(request.source.url)),)
+            finally:
+                active -= 1
+
+    manager = ConcurrentManager()
+    execution = asyncio.create_task(manager.execute(RequestExecutionScopeFactory(), requests))
+    await asyncio.wait_for(both_started.wait(), timeout=1)
+    release.set()
+
+    result = await execution
+
+    assert [item.output_path for item in result.items] == [
+        Path("BV1first"),
+        Path("BV1second"),
+        Path("BV1third"),
+    ]
+    assert max_active == 2
+
+
+@as_sync
+async def test_concurrent_execute_preserves_original_error_and_cancels_siblings():
+    requests = [
+        DownloadRequest.model_validate({"source": {"url": "BV1fail"}}),
+        DownloadRequest.model_validate({"source": {"url": "BV1blocked"}}),
+        DownloadRequest.model_validate({"source": {"url": "BV1must-not-start"}}),
+    ]
+    both_started = asyncio.Event()
+    sibling_cancelled = asyncio.Event()
+    started = 0
+    calls: list[str] = []
+
+    class FailingConcurrentManager(DownloadManager):
+        def __init__(self) -> None:
+            super().__init__(jobs=2)
+
+        async def process_request(
+            self,
+            scope: ExecutionScope,
+            request: DownloadRequest,
+        ) -> tuple[ItemResult, ...]:
+            nonlocal started
+            calls.append(request.source.url)
+            started += 1
+            if started == 2:
+                both_started.set()
+            await both_started.wait()
+            if request.source.url == "BV1fail":
+                raise WrongArgumentError("request failed")
+            try:
+                await asyncio.Event().wait()
+            finally:
+                sibling_cancelled.set()
+            return ()
+
+    with pytest.raises(WrongArgumentError, match="request failed"):
+        await FailingConcurrentManager().execute(RequestExecutionScopeFactory(), requests)
+
+    assert sibling_cancelled.is_set()
+    assert calls == ["BV1fail", "BV1blocked"]
+
+
+@as_sync
+async def test_process_request_runs_items_concurrently_and_preserves_result_order(monkeypatch: pytest.MonkeyPatch):
+    episode_data = [make_episode("series/first"), make_episode("series/second")]
+
+    async def resolve_episode(index: int) -> EpisodeData:
+        return episode_data[index]
+
+    episodes = tuple(
+        ResolvableEpisode(
+            info=item["info"],
+            resolve_data=lambda index=index: resolve_episode(index),
+        )
+        for index, item in enumerate(episode_data)
+    )
+    both_started = asyncio.Event()
+    release = asyncio.Event()
+    active = 0
+
+    async def fake_resolve_request(
+        scope: ExecutionScope,
+        request: DownloadRequest,
+    ) -> ExtractorResolveOutcome:
+        return ResolveOutcome(items=episodes)
+
+    async def fake_process_download(
+        scope: ExecutionScope,
+        item: EpisodeData,
+        request: DownloadRequest,
+        *,
+        path_leases: object,
+    ) -> ItemResult:
+        nonlocal active
+        active += 1
+        if active == 2:
+            both_started.set()
+        try:
+            await release.wait()
+            return ItemResult(state=ItemState.DONE, output_path=item["info"]["path"])
+        finally:
+            active -= 1
+
+    manager = DownloadManager(jobs=2)
+    monkeypatch.setattr(manager, "resolve_request", fake_resolve_request)
+    monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
+    execution = asyncio.create_task(manager.process_request(ExecutionScope(cast("Any", object())), make_request(None)))
+    await asyncio.wait_for(both_started.wait(), timeout=1)
+    release.set()
+
+    result = await execution
+
+    assert [item.output_path for item in result] == [Path("series/first"), Path("series/second")]
+
+
+@as_sync
+async def test_concurrent_batch_resolves_and_reports_item_only_when_it_starts(monkeypatch: pytest.MonkeyPatch):
+    episode_data = [make_episode(f"series/episode-{index}") for index in range(1, 4)]
+    first_resolution_started = asyncio.Event()
+    second_resolved = asyncio.Event()
+    release_first_resolution = asyncio.Event()
+
+    async def resolve_episode(index: int) -> EpisodeData:
+        if index == 0:
+            first_resolution_started.set()
+            await release_first_resolution.wait()
+        elif index == 1:
+            second_resolved.set()
+        return episode_data[index]
+
+    episodes = tuple(
+        ResolvableEpisode(
+            info=item["info"],
+            resolve_data=lambda index=index: resolve_episode(index),
+        )
+        for index, item in enumerate(episode_data)
+    )
+    first_jobs_started = asyncio.Event()
+    release = asyncio.Event()
+    active = 0
+    title_badges: list[str] = []
+
+    async def fake_resolve_request(
+        scope: ExecutionScope,
+        request: DownloadRequest,
+    ) -> ExtractorResolveOutcome:
+        return ResolveOutcome(items=episodes)
+
+    async def fake_process_download(
+        scope: ExecutionScope,
+        item: EpisodeData,
+        request: DownloadRequest,
+        *,
+        path_leases: object,
+    ) -> ItemResult:
+        nonlocal active
+        active += 1
+        if active == 2:
+            first_jobs_started.set()
+        try:
+            await release.wait()
+            return ItemResult(state=ItemState.DONE, output_path=item["info"]["path"])
+        finally:
+            active -= 1
+
+    def capture_report(message: str, _level: Any, badge: str | None, _color: Any) -> None:
+        if badge is not None and badge.startswith("["):
+            title_badges.append(badge)
+
+    request = make_request(None)
+    request = request.model_copy(update={"scope": request.scope.model_copy(update={"batch": True})})
+    manager = DownloadManager(jobs=2)
+    monkeypatch.setattr(manager, "resolve_request", fake_resolve_request)
+    monkeypatch.setattr(download_manager_module, "process_download", fake_process_download)
+
+    with bind_download_report_sink(capture_report):
+        execution = asyncio.create_task(manager.process_request(ExecutionScope(cast("Any", object())), request))
+        await asyncio.wait_for(first_resolution_started.wait(), timeout=1)
+        assert not second_resolved.is_set()
+        assert title_badges == []
+        release_first_resolution.set()
+        await asyncio.wait_for(first_jobs_started.wait(), timeout=1)
+        assert second_resolved.is_set()
+        assert title_badges == ["[1/3]", "[2/3]"]
+        release.set()
+        await execution
+
+    assert title_badges == ["[1/3]", "[2/3]", "[3/3]"]
+
+
+@as_sync
 async def test_execute_stops_on_failure_and_closes_session():
     requests = [
         DownloadRequest.model_validate({"source": {"url": "BV1first"}}),

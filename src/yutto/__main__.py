@@ -78,7 +78,7 @@ def main():
                         resolve_credentials,
                         on_open=_CliAuthAnnouncer(),
                     )
-                    run_download(scope_factory, requests, renderer)
+                    run_download(scope_factory, requests, renderer, jobs=args.jobs)
                 except YuttoBaseException as e:
                     Logger.error(e.message)
                     sys.exit(e.code.value)
@@ -109,11 +109,13 @@ async def run_download(
     scope_factory: ExecutionScopeFactory,
     requests: list[DownloadRequest],
     renderer: CliApplicationEventRenderer,
+    *,
+    jobs: int = 1,
 ):
     async with renderer:
         application = YuttoApplication(
             scope_factory,
-            workflow=DownloadManager(),
+            workflow=DownloadManager(jobs=jobs),
             event_sink=renderer,
         )
         with bind_download_report_sink(renderer.report):

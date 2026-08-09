@@ -90,6 +90,21 @@ def test_download_validation_rejects_non_positive_num_workers(monkeypatch: pytes
     assert errors == ["num_workers 参数值（0）不满足要求哦（应为不小于 1 的整数）"]
 
 
+def test_download_jobs_default_to_one_and_reject_non_positive_values(monkeypatch: pytest.MonkeyPatch):
+    parser = make_download_parser()
+    assert parser.parse_args(["https://example.com"]).jobs == 1
+    args = parser.parse_args(["https://example.com", "--jobs", "0"])
+    errors: list[str] = []
+    monkeypatch.setattr(validator_module, "FFmpeg", object)
+    monkeypatch.setattr(validator_module.Logger, "error", errors.append)
+
+    with pytest.raises(SystemExit) as exc_info:
+        validator_module.validate_basic_arguments(args)
+
+    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
+    assert errors == ["jobs 参数值（0）不满足要求哦（应为不小于 1 的整数）"]
+
+
 def test_login_parser_accepts_auth_file(tmp_path: Path):
     auth_file = tmp_path / "auth.toml"
 
