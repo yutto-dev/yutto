@@ -325,7 +325,7 @@ def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: p
     monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(text))
 
     renderer = renderer_module.CliApplicationEventRenderer()
-    for title in ("第94话 厉天行与皇帝", "第95话 皇帝“驾崩”", "第96话", "这是一个超过固定列宽的标题"):
+    for title in ("短标题", "中等长度标题", "这是一个普通长度标题", "这是一个超过固定列宽的占位标题"):
         renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item=title))
 
     assert bar_widths == [39, 39, 39, 39]
