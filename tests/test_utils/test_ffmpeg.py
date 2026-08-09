@@ -38,50 +38,21 @@ def reset_ffmpeg_singleton():
     Singleton._instances.pop(FFmpeg, None)
 
 
-def test_setup_ffmpeg_path_configures_first_instance(
-    monkeypatch: pytest.MonkeyPatch,
-    reset_ffmpeg_singleton: None,
-):
-    monkeypatch.setattr(
-        ffmpeg_module.subprocess,
-        "run",
-        lambda args, capture_output: subprocess.CompletedProcess(args, 1),
-    )
+def test_setup_ffmpeg_path_configures_first_instance(tmp_path: Path, reset_ffmpeg_singleton: None):
+    ffmpeg_path = tmp_path / "ffmpeg"
+    ffmpeg_path.touch()
 
-    FFmpeg.setup_ffmpeg_path("/opt/ffmpeg/ffmpeg")
+    FFmpeg.setup_ffmpeg_path(str(ffmpeg_path))
 
-    assert FFmpeg().path == "/opt/ffmpeg/ffmpeg"
-
-
-@pytest.mark.parametrize("returncode", [0, 2])
-def test_setup_ffmpeg_path_rejects_non_ffmpeg_executable(
-    monkeypatch: pytest.MonkeyPatch,
-    reset_ffmpeg_singleton: None,
-    returncode: int,
-):
-    monkeypatch.setattr(
-        ffmpeg_module.subprocess,
-        "run",
-        lambda args, capture_output: subprocess.CompletedProcess(args, returncode),
-    )
-
-    with pytest.raises(WrongArgumentError, match="请配置正确的 FFmpeg 路径"):
-        FFmpeg.setup_ffmpeg_path("not-ffmpeg")
-
-    assert FFmpeg.FFMPEG_PATH == "ffmpeg"
+    assert FFmpeg().path == str(ffmpeg_path)
 
 
 def test_setup_ffmpeg_path_rejects_missing_executable(
-    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     reset_ffmpeg_singleton: None,
 ):
-    def raise_file_not_found(_args: list[str], capture_output: bool) -> subprocess.CompletedProcess[bytes]:
-        raise FileNotFoundError
-
-    monkeypatch.setattr(ffmpeg_module.subprocess, "run", raise_file_not_found)
-
     with pytest.raises(WrongArgumentError, match="请配置正确的 FFmpeg 路径"):
-        FFmpeg.setup_ffmpeg_path("missing-ffmpeg")
+        FFmpeg.setup_ffmpeg_path(str(tmp_path / "missing-ffmpeg"))
 
     assert FFmpeg.FFMPEG_PATH == "ffmpeg"
 

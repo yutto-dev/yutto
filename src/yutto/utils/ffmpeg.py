@@ -22,11 +22,8 @@ class FFmpeg(metaclass=Singleton):
 
     @classmethod
     def setup_ffmpeg_path(cls, path: str) -> None:
-        try:
-            if subprocess.run([path], capture_output=True).returncode != 1:
-                raise WrongArgumentError("请配置正确的 FFmpeg 路径")
-        except FileNotFoundError:
-            raise WrongArgumentError("请配置正确的 FFmpeg 路径") from None
+        if path != "ffmpeg" and not Path(path).is_file():
+            raise WrongArgumentError("请配置正确的 FFmpeg 路径")
         cls.FFMPEG_PATH = path
 
     def exec(self, args: list[str]):
