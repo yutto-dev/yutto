@@ -15,7 +15,7 @@ from yutto.core.operation import ReportColor, ReportLevel
 from yutto.core.result import ItemSkipReason
 from yutto.utils.console.attributes import get_terminal_size
 from yutto.utils.console.colorful import RGBColor, colored_string
-from yutto.utils.console.formatter import size_format
+from yutto.utils.console.formatter import get_char_width, get_string_width, size_format
 from yutto.utils.console.logger import Badge, Logger
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ def _render_bar(
 class CliApplicationEventRenderer:
     def __init__(self, *, progress_enabled: bool = True):
         self.progress_enabled = progress_enabled
-        self._progress_active = False
+        self._progress_items: set[str] = set()
         self._spinner_task: asyncio.Task[None] | None = None
 
     async def __aenter__(self) -> Self:
@@ -73,11 +73,11 @@ class CliApplicationEventRenderer:
         if self._spinner_task is not None:
             self._spinner_task.cancel()
             await asyncio.gather(self._spinner_task, return_exceptions=True)
-        Logger.status.clear()
+        Logger.status.reset()
 
     async def _run_spinner(self) -> None:
         while True:
-            if not self._progress_active:
+            if not self._progress_items:
                 Logger.status.next_tick()
             await asyncio.sleep(1)
 
@@ -116,13 +116,14 @@ class CliApplicationEventRenderer:
                 Logger.info(f"列表里共检测到 {total} 项")
             case DownloadRequestQueued(url=url, index=index, total=total):
                 Logger.custom(f"列表项 {url}", Badge(f"[{index}/{total}]", fore="black", back="cyan"))
-            case DownloadStageChanged():
-                self._progress_active = False
+            case DownloadStageChanged(item=item):
+                self._finish_progress(item)
             case DownloadProgress() as progress:
                 if self.progress_enabled:
-                    self._progress_active = True
+                    self._progress_items.add(_progress_key(progress.item))
                     self._render_progress(progress)
             case DownloadItemSkipped(item=item, reason=ItemSkipReason.ALREADY_EXISTS):
+                self._finish_progress(item)
                 Logger.info(f"文件 {item} 已存在")
             case _:
                 pass
@@ -133,7 +134,9 @@ class CliApplicationEventRenderer:
         buffered_color: Color = "red" if progress.is_congested else "yellow"
         buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
         committed_bytes = progress.current - buffered_bytes
-        bar_width = min(get_terminal_size()[0] - 40, 50)
+        label = _truncate_label(progress.item, 20)
+        label_prefix = f"{label} " if label else ""
+        bar_width = min(get_terminal_size()[0] - 40 - get_string_width(label_prefix), 50)
         bar = (
             _render_bar(
                 committed_bytes,
@@ -149,15 +152,53 @@ class CliApplicationEventRenderer:
         speed_color: Color = "green" if is_fast else "cyan"
         speed_style: list[Style] | None = ["bold"] if is_fast else None
         speed_suffix = "/⚡" if is_fast else "/s"
-        Logger.status.set(
-            "{}{:>10}/{:>10} {:>12}  ".format(
-                bar + " " if bar else "",
-                size_format(progress.current),
-                size_format(progress.total),
-                colored_string(
-                    size_format(progress.speed_per_second) + speed_suffix,
-                    fore=speed_color,
-                    style=speed_style,
-                ),
-            )
+        rendered = "{}{}{:>10}/{:>10} {:>12}  ".format(
+            label_prefix,
+            bar + " " if bar else "",
+            size_format(progress.current),
+            size_format(progress.total),
+            colored_string(
+                size_format(progress.speed_per_second) + speed_suffix,
+                fore=speed_color,
+                style=speed_style,
+            ),
         )
+        if progress.item is None:
+            Logger.status.set(rendered)
+        else:
+            Logger.status.set_line(_progress_key(progress.item), rendered)
+
+    def _finish_progress(self, item: str | None) -> None:
+        if item is None:
+            return
+        key = _progress_key(item)
+        if key not in self._progress_items:
+            return
+        self._progress_items.remove(key)
+        if self.progress_enabled:
+            Logger.status.remove_line(key)
+            if not self._progress_items:
+                Logger.status.next_tick()
+
+
+def _progress_key(item: str | None) -> str:
+    return item or "__download__"
+
+
+def _truncate_label(item: str | None, max_width: int) -> str:
+    if item is None or max_width < 1:
+        return ""
+    if get_string_width(item) <= max_width:
+        return item
+
+    suffix = "…"
+    available = max_width - get_string_width(suffix)
+    current = 0
+    characters: list[str] = []
+    for character in item:
+        width = get_char_width(character)
+        if current + width > available:
+            break
+        characters.append(character)
+        current += width
+    return "".join(characters) + suffix
