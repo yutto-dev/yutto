@@ -40,6 +40,27 @@ def test_serve_jobs_configures_download_runtime_workers():
     assert cast("DownloadTaskService", server._task_service).runtime.worker_count == 3
 
 
+def test_serve_accepts_ffmpeg_path():
+    assert cli().parse_args(["serve"]).ffmpeg_path == "ffmpeg"
+    assert cli().parse_args(["serve", "--ffmpeg-path", "/opt/ffmpeg/ffmpeg"]).ffmpeg_path == "/opt/ffmpeg/ffmpeg"
+
+
+def test_serve_passes_ffmpeg_path_to_ffmpeg(monkeypatch: pytest.MonkeyPatch):
+    recorded: dict[str, str] = {}
+
+    class RecordingFFmpeg:
+        def __init__(self, ffmpeg_path: str = "ffmpeg") -> None:
+            recorded["path"] = ffmpeg_path
+            raise RuntimeError("stop after recording")
+
+    monkeypatch.setattr(server_command_module, "FFmpeg", RecordingFFmpeg)
+    args = cli().parse_args(["serve", "--ffmpeg-path", "/opt/ffmpeg/ffmpeg"])
+    with pytest.raises(RuntimeError, match="stop after recording"):
+        server_command_module.run_server_command(args)
+
+    assert recorded["path"] == "/opt/ffmpeg/ffmpeg"
+
+
 def test_serve_io_error_is_rendered_without_traceback(monkeypatch: pytest.MonkeyPatch):
     parser = SimpleNamespace(parse_args=lambda args: SimpleNamespace(command="serve"))
     rendered_errors: list[str] = []

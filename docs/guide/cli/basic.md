@@ -163,6 +163,13 @@ download_vcodec_priority = ["hevc", "avc", "av1"]
 
 :::
 
+## 指定 FFmpeg 路径
+
+- 参数 `--ffmpeg-path`
+- 默认值 `"ffmpeg"`
+
+FFmpeg 可执行文件路径。默认值 `"ffmpeg"` 表示按名从 `PATH` 解析；当 FFmpeg 不在 `PATH` 中时，可用本参数指定可执行文件的完整路径，如 `--ffmpeg-path /opt/ffmpeg/ffmpeg`。`yutto serve` 同样支持本参数。
+
 ## 启用 AI 原声翻译功能
 
 - 参数 `--ai-translation-language`
