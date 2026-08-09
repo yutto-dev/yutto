@@ -89,12 +89,12 @@ yutto serve \
 
 除 runtime 自己产生的 `state` 外，下载事件的 `kind` 包括：
 
-| `kind`             | `data`                                              | 含义                                       |
-| ------------------ | --------------------------------------------------- | ------------------------------------------ |
-| `stage`            | `{ name, item? }`                                   | 进入解析、资源写入、下载或后处理阶段       |
-| `progress`         | `{ phase, current, total, speed_per_second, unit }` | 音视频字节下载进度                         |
-| `item_skipped`     | `{ item, reason }`                                  | 条目因媒体已存在或没有请求到可用媒体流跳过 |
-| `artifact_created` | `{ item, path }`                                    | 本次任务生成了最终媒体文件                 |
+| `kind`             | `data`                                                     | 含义                                       |
+| ------------------ | ---------------------------------------------------------- | ------------------------------------------ |
+| `stage`            | `{ name, item? }`                                          | 进入解析、资源写入、下载或后处理阶段       |
+| `progress`         | `{ phase, current, total, speed_per_second, unit, item? }` | 音视频字节下载进度                         |
+| `item_skipped`     | `{ item, reason }`                                         | 条目因媒体已存在或没有请求到可用媒体流跳过 |
+| `artifact_created` | `{ item, path }`                                           | 本次任务生成了最终媒体文件                 |
 
 `stage.name` 目前可能为 `resolving`、`preparing`、`writing_resources`、`downloading` 或 `postprocessing`。`artifact_created` 只在本次新生成最终媒体文件时发送；其他 sidecar 产物通过完成结果获取。
 
@@ -134,7 +134,8 @@ yutto serve \
 
 ## 本地资源边界
 
-- 同一 server 进程默认一次只运行一个下载任务，其余任务排队。
+- 同一 server 进程默认一次只运行一个下载任务；可用 `-j/--jobs` 设置同时运行的下载任务数。
+- 指向相同最终文件或临时文件命名空间的任务即使并发提交也会串行执行，避免覆盖彼此的下载产物。
 - 解析任务运行在独立的单 worker runtime 中，一次只运行一个解析，但不会排在下载任务之后。
 - 请求中的 `output.directory` 和 `output.temporary_directory` 必须是相对路径，并分别限制在 `--download-root` 与 `--tmp-root` 内。
 - `output.subpath_template` 不能使用绝对路径或 `..` 逃逸根目录。

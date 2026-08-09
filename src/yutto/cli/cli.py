@@ -133,6 +133,13 @@ def add_serve_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
         default=256,
         help="保留的任务及排队任务总数上限",
     )
+    parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=1,
+        help="同时执行的下载任务数，默认为 1",
+    )
 
 
 def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):

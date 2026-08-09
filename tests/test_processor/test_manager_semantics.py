@@ -164,6 +164,8 @@ async def test_process_request_preserves_extractor_mapping_and_passes_download_r
         scope: ExecutionScope,
         episode_data: EpisodeData,
         request: DownloadRequest,
+        *,
+        path_leases: object,
     ) -> ItemResult:
         nonlocal captured_download_request
         assert episode_data is episode
@@ -242,6 +244,8 @@ async def test_process_request_does_not_create_unreached_episode_coroutines(monk
         scope: ExecutionScope,
         episode_data: EpisodeData,
         request: DownloadRequest,
+        *,
+        path_leases: object,
     ) -> ItemResult:
         return ItemResult(state=ItemState.DONE, output_path=episode_data["info"]["path"])
 
