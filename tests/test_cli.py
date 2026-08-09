@@ -337,7 +337,8 @@ def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: p
     ("terminal_width", "expected_label_width", "expected_bar_width"),
     [
         (100, 20, 39),
-        (70, 20, 9),
+        (71, 20, 10),
+        (70, 20, 0),
         (61, 20, 0),
         (60, 19, 0),
         (51, 10, 0),

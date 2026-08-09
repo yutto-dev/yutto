@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
 _PROGRESS_LABEL_WIDTH = 20
+_MIN_PROGRESS_BAR_WIDTH = 10
 _MIN_PROGRESS_LABEL_WIDTH = 10
 _PROGRESS_DETAILS_WIDTH = 40
 
@@ -158,7 +159,7 @@ class CliApplicationEventRenderer:
                 buffered_color,
                 bar_width,
             )
-            if bar_width > 0 and progress.total > 0
+            if bar_width >= _MIN_PROGRESS_BAR_WIDTH and progress.total > 0
             else ""
         )
         speed_color: Color = "green" if is_fast else "cyan"
