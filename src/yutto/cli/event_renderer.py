@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 PROGRESS_BAR_MIN_WIDTH = 10
 PROGRESS_LABEL_MAX_WIDTH = 20
 PROGRESS_LABEL_MIN_WIDTH = 10
-PROGRESS_SIZE_WIDTH = 13
-PROGRESS_SPEED_WIDTH = 15
+PROGRESS_SIZE_MIN_WIDTH = 10
+PROGRESS_SPEED_MIN_WIDTH = 12
 
 
 def _render_bar(
@@ -143,9 +143,9 @@ class CliApplicationEventRenderer:
         speed_color: Color = "green" if is_fast else "cyan"
         speed_style: list[Style] | None = ["bold"] if is_fast else None
         speed_suffix = "/⚡" if is_fast else "/s"
-        current_text = f"{size_format(progress.current):>{PROGRESS_SIZE_WIDTH}}"
-        total_text = f"{size_format(progress.total):>{PROGRESS_SIZE_WIDTH}}"
-        speed_text = f"{size_format(progress.speed_per_second) + speed_suffix:>{PROGRESS_SPEED_WIDTH}}"
+        current_text = f"{size_format(progress.current):>{PROGRESS_SIZE_MIN_WIDTH}}"
+        total_text = f"{size_format(progress.total):>{PROGRESS_SIZE_MIN_WIDTH}}"
+        speed_text = f"{size_format(progress.speed_per_second) + speed_suffix:>{PROGRESS_SPEED_MIN_WIDTH}}"
         stats_text = f"{current_text}/{total_text} {speed_text}  "
         rendered_stats = (
             f"{current_text}/{total_text} {colored_string(speed_text, fore=speed_color, style=speed_style)}  "
