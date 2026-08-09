@@ -20,7 +20,7 @@ from yutto.exceptions import ErrorCode, YuttoBaseException
 from yutto.input_parser import file_scheme_parser
 from yutto.login import run_auth
 from yutto.utils.console.logger import Badge, Logger
-from yutto.utils.ffmpeg import FFmpegNotFoundError
+from yutto.utils.ffmpeg import FFmpeg
 from yutto.utils.functional import as_sync
 from yutto.validator import (
     hydrate_auth,
@@ -64,6 +64,7 @@ def main():
             with bind_download_report_sink(renderer.report):
                 try:
                     initial_validation(args)
+                    FFmpeg.setup_ffmpeg_path(args.ffmpeg_path)
                     args_list = flatten_args(args, parser)
                     auth_list = [hydrate_auth(item) for item in args_list]
                     requests = [download_request_from_namespace(item) for item in args_list]
@@ -96,7 +97,10 @@ def main():
                     run_server_command(args)
             except KeyboardInterrupt:
                 Logger.info("yutto server 已停止")
-            except (FFmpegNotFoundError, OSError, ValueError) as e:
+            except YuttoBaseException as e:
+                Logger.error(e.message)
+                sys.exit(e.code.value)
+            except (OSError, ValueError) as e:
                 Logger.error(str(e))
                 sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)
 

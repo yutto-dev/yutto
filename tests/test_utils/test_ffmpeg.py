@@ -13,10 +13,10 @@ from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem
 from yutto.downloader.media_muxer import MediaMuxer
 from yutto.downloader.planner import DownloadPlan, DownloadPlanner, should_attach_hvc1_tag
-from yutto.exceptions import PostprocessingError
+from yutto.exceptions import PostprocessingError, WrongArgumentError
 from yutto.types import AId, CId
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
-from yutto.utils.functional import as_sync
+from yutto.utils.functional import Singleton, as_sync
 
 if TYPE_CHECKING:
     from yutto.media.codec import VideoCodec
@@ -27,6 +27,38 @@ def make_ffmpeg(path: str) -> FFmpeg:
     ffmpeg = object.__new__(FFmpeg)
     ffmpeg.path = path
     return ffmpeg
+
+
+@pytest.fixture
+def reset_ffmpeg_singleton():
+    original_path = FFmpeg.FFMPEG_PATH
+    Singleton._instances.pop(FFmpeg, None)
+    yield
+    FFmpeg.FFMPEG_PATH = original_path
+    Singleton._instances.pop(FFmpeg, None)
+
+
+def test_setup_ffmpeg_path_configures_first_instance(tmp_path: Path, reset_ffmpeg_singleton: None):
+    ffmpeg_path = tmp_path / "ffmpeg"
+    ffmpeg_path.touch()
+
+    FFmpeg.setup_ffmpeg_path(str(ffmpeg_path))
+
+    assert FFmpeg().path == str(ffmpeg_path)
+
+
+def test_setup_ffmpeg_path_rejects_missing_executable(
+    tmp_path: Path,
+    reset_ffmpeg_singleton: None,
+):
+    with pytest.raises(WrongArgumentError, match="请配置正确的 FFmpeg 路径"):
+        FFmpeg.setup_ffmpeg_path(str(tmp_path / "missing-ffmpeg"))
+
+    assert FFmpeg.FFMPEG_PATH == "ffmpeg"
+
+
+def test_ffmpeg_uses_default_path(reset_ffmpeg_singleton: None):
+    assert FFmpeg().path == "ffmpeg"
 
 
 def make_audio() -> AudioUrlMeta:

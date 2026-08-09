@@ -24,6 +24,12 @@ yutto serve \
   --allow-origin http://127.0.0.1:3000
 ```
 
+若 FFmpeg 不在 `PATH` 中，可用 `--ffmpeg-path` 指定可执行文件的完整路径（默认按名从 `PATH` 解析）；server 进程内的下载合并会复用该路径：
+
+```bash
+yutto serve --token-file ~/.config/yutto/server.token --ffmpeg-path /opt/ffmpeg/ffmpeg
+```
+
 ## 调用流程
 
 连接建立后，第一条消息必须调用 `server.authenticate`。Token 不放在 URL 中。

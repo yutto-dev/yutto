@@ -203,7 +203,9 @@ def configure_download_cli(
     *,
     replace_logger: bool = True,
 ) -> tuple[list[str], list[str]]:
-    parser = SimpleNamespace(parse_args=lambda args: SimpleNamespace(command="download", no_progress=True, jobs=1))
+    parser = SimpleNamespace(
+        parse_args=lambda args: SimpleNamespace(command="download", no_progress=True, jobs=1, ffmpeg_path="ffmpeg")
+    )
     rendered_errors: list[str] = []
     rendered_info: list[str] = []
 
@@ -219,6 +221,7 @@ def configure_download_cli(
     monkeypatch.setattr(main_module, "cli", lambda: parser)
     monkeypatch.setattr(main_module.sys, "argv", ["yutto", "BV1structured"])
     monkeypatch.setattr(main_module, "initial_validation", lambda args: None)
+    monkeypatch.setattr(main_module.FFmpeg, "setup_ffmpeg_path", lambda path: None)
     monkeypatch.setattr(main_module, "flatten_args", lambda args, parser: [args])
     monkeypatch.setattr(main_module, "hydrate_auth", lambda args: None)
     monkeypatch.setattr(main_module, "download_request_from_namespace", lambda args: make_request())

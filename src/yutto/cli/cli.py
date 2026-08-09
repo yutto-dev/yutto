@@ -84,6 +84,11 @@ def cli() -> argparse.ArgumentParser:
 def add_serve_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings) -> None:
     parser.set_defaults(server_settings=settings)
     parser.add_argument("--config", help="配置文件路径")
+    parser.add_argument(
+        "--ffmpeg-path",
+        default="ffmpeg",
+        help="FFmpeg 可执行文件路径，默认从 PATH 解析（`ffmpeg`）",
+    )
     parser.add_argument("--host", default="127.0.0.1", help="监听地址（仅允许本机回环地址）")
     parser.add_argument("--port", type=int, default=11223, help="监听端口，默认为 11223")
     parser.add_argument(
@@ -206,6 +211,11 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         default=settings.basic.output_format_audio_only,
         choices=["infer", "m4a", "aac", "mp3", "flac", "mp4", "mkv", "mov"],
         help="仅包含音频流时所使用的输出格式（infer 为自动推断）",
+    )
+    group_basic.add_argument(
+        "--ffmpeg-path",
+        default="ffmpeg",
+        help="FFmpeg 可执行文件路径，默认从 PATH 解析（`ffmpeg`）",
     )
     group_basic.add_argument(
         "--ai-translation-language",
