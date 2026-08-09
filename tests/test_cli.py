@@ -333,10 +333,26 @@ def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: p
     assert "…" in rendered[-1]
 
 
-def test_progress_renderer_preserves_bar_on_narrow_terminal(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    ("terminal_width", "expected_label_width", "expected_bar_width"),
+    [
+        (100, 20, 39),
+        (70, 20, 9),
+        (61, 20, 0),
+        (60, 19, 0),
+        (42, 1, 0),
+        (41, 0, 0),
+    ],
+)
+def test_progress_renderer_compresses_bar_before_label(
+    monkeypatch: pytest.MonkeyPatch,
+    terminal_width: int,
+    expected_label_width: int,
+    expected_bar_width: int,
+):
     rendered: list[str] = []
     bar_widths: list[int] = []
-    monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (70, 24))
+    monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (terminal_width, 24))
     monkeypatch.setattr(
         renderer_module,
         "_render_bar",
@@ -347,8 +363,9 @@ def test_progress_renderer_preserves_bar_on_narrow_terminal(monkeypatch: pytest.
     renderer = renderer_module.CliApplicationEventRenderer()
     renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item="短标题"))
 
-    assert bar_widths == [10]
-    assert "bar" in rendered[0]
+    expected_label = f"{renderer_module._fit_label('短标题', expected_label_width)} " if expected_label_width else ""
+    assert rendered[0].startswith(expected_label)
+    assert bar_widths == ([expected_bar_width] if expected_bar_width else [])
 
 
 def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch: pytest.MonkeyPatch):
