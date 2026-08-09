@@ -284,8 +284,8 @@ def test_progress_renderer_turns_only_buffered_segment_red(monkeypatch: pytest.M
     )
 
     assert rendered_bars == [
-        (512, 512, 2048, "cyan", "yellow", 40),
-        (512, 512, 2048, "cyan", "red", 40),
+        (512, 512, 2048, "cyan", "yellow", 34),
+        (512, 512, 2048, "cyan", "red", 34),
     ]
 
 
@@ -328,7 +328,7 @@ def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: p
     for title in ("短标题", "中等长度标题", "这是一个普通长度标题", "这是一个超过固定列宽的占位标题"):
         renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item=title))
 
-    assert bar_widths == [39, 39, 39, 39]
+    assert bar_widths == [33, 33, 33, 33]
     assert [renderer_module.get_string_width(line[: line.index("bar")]) for line in rendered] == [21, 21, 21, 21]
     assert "…" in rendered[-1]
 
@@ -336,14 +336,14 @@ def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: p
 @pytest.mark.parametrize(
     ("terminal_width", "expected_label_width", "expected_bar_width"),
     [
-        (100, 20, 39),
-        (71, 20, 10),
-        (70, 20, 0),
-        (61, 20, 0),
-        (60, 19, 0),
-        (51, 10, 0),
-        (50, 0, 0),
-        (41, 0, 0),
+        (100, 20, 33),
+        (77, 20, 10),
+        (76, 20, 0),
+        (66, 20, 0),
+        (65, 19, 0),
+        (56, 10, 0),
+        (55, 0, 0),
+        (46, 0, 0),
     ],
 )
 def test_progress_renderer_compresses_bar_before_label(
@@ -370,8 +370,29 @@ def test_progress_renderer_compresses_bar_before_label(
         expected_label = f"{renderer_module._fit_label('短标题', expected_label_width)} "
         assert rendered[0].startswith(expected_label)
     else:
-        assert rendered[0].startswith("1234567890/")
+        expected_stats = f"{'1234567890':>{renderer_module.PROGRESS_SIZE_WIDTH}}/"
+        assert rendered[0].startswith(expected_stats)
     assert bar_widths == ([expected_bar_width] if expected_bar_width else [])
+
+
+def test_progress_renderer_keeps_stats_width_fixed_across_rows(monkeypatch: pytest.MonkeyPatch):
+    rendered: list[str] = []
+    bar_widths: list[int] = []
+    monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (112, 24))
+    monkeypatch.setattr(
+        renderer_module,
+        "_render_bar",
+        lambda *args: bar_widths.append(args[-1]) or "━" * args[-1],
+    )
+    monkeypatch.setattr(renderer_module, "colored_string", lambda text, **_: text)
+    monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(text))
+
+    renderer = renderer_module.CliApplicationEventRenderer()
+    renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item="短标题"))
+    renderer.emit(DownloadProgress(current=1023, total=1023, speed_per_second=1023, item="另一个标题"))
+
+    assert bar_widths == [45, 45]
+    assert [renderer_module.get_string_width(line) for line in rendered] == [112, 112]
 
 
 def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch: pytest.MonkeyPatch):

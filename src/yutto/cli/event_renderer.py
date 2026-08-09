@@ -24,7 +24,8 @@ if TYPE_CHECKING:
 PROGRESS_BAR_MIN_WIDTH = 10
 PROGRESS_LABEL_MAX_WIDTH = 20
 PROGRESS_LABEL_MIN_WIDTH = 10
-PROGRESS_STATS_RESERVED_WIDTH = 40
+PROGRESS_SIZE_WIDTH = 13
+PROGRESS_SPEED_WIDTH = 15
 
 
 def _render_bar(
@@ -139,17 +140,27 @@ class CliApplicationEventRenderer:
         buffered_color: Color = "red" if progress.is_congested else "yellow"
         buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
         committed_bytes = progress.current - buffered_bytes
+        speed_color: Color = "green" if is_fast else "cyan"
+        speed_style: list[Style] | None = ["bold"] if is_fast else None
+        speed_suffix = "/⚡" if is_fast else "/s"
+        current_text = f"{size_format(progress.current):>{PROGRESS_SIZE_WIDTH}}"
+        total_text = f"{size_format(progress.total):>{PROGRESS_SIZE_WIDTH}}"
+        speed_text = f"{size_format(progress.speed_per_second) + speed_suffix:>{PROGRESS_SPEED_WIDTH}}"
+        stats_text = f"{current_text}/{total_text} {speed_text}  "
+        rendered_stats = (
+            f"{current_text}/{total_text} {colored_string(speed_text, fore=speed_color, style=speed_style)}  "
+        )
         terminal_width = get_terminal_size()[0]
-        available_width = max(0, terminal_width - PROGRESS_STATS_RESERVED_WIDTH)
+        available_width = max(0, terminal_width - get_string_width(stats_text))
         if progress.item is None:
             label_prefix = ""
-            bar_width = min(available_width, 50)
+            bar_width = min(max(0, available_width - 1), 50)
         else:
             label_width = min(PROGRESS_LABEL_MAX_WIDTH, max(0, available_width - 1))
             label_prefix = (
                 f"{_fit_label(progress.item, label_width)} " if label_width >= PROGRESS_LABEL_MIN_WIDTH else ""
             )
-            bar_width = min(max(0, available_width - PROGRESS_LABEL_MAX_WIDTH - 1), 50)
+            bar_width = min(max(0, available_width - PROGRESS_LABEL_MAX_WIDTH - 2), 50)
         bar = (
             _render_bar(
                 committed_bytes,
@@ -162,20 +173,7 @@ class CliApplicationEventRenderer:
             if bar_width >= PROGRESS_BAR_MIN_WIDTH and progress.total > 0
             else ""
         )
-        speed_color: Color = "green" if is_fast else "cyan"
-        speed_style: list[Style] | None = ["bold"] if is_fast else None
-        speed_suffix = "/⚡" if is_fast else "/s"
-        rendered = "{}{}{:>10}/{:>10} {:>12}  ".format(
-            label_prefix,
-            bar + " " if bar else "",
-            size_format(progress.current),
-            size_format(progress.total),
-            colored_string(
-                size_format(progress.speed_per_second) + speed_suffix,
-                fore=speed_color,
-                style=speed_style,
-            ),
-        )
+        rendered = f"{label_prefix}{bar + ' ' if bar else ''}{rendered_stats}"
         if progress.item is None:
             Logger.status.set(rendered)
         else:
