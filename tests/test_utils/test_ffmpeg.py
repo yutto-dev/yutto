@@ -13,7 +13,7 @@ from yutto.core.request import DownloadRequest
 from yutto.core.result import ResolvedItem
 from yutto.downloader.media_muxer import MediaMuxer
 from yutto.downloader.planner import DownloadPlan, DownloadPlanner, should_attach_hvc1_tag
-from yutto.exceptions import PostprocessingError
+from yutto.exceptions import PostprocessingError, WrongArgumentError
 from yutto.types import AId, CId
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
 from yutto.utils.functional import Singleton, as_sync
@@ -38,10 +38,52 @@ def reset_ffmpeg_singleton():
     Singleton._instances.pop(FFmpeg, None)
 
 
-def test_setup_ffmpeg_path_configures_first_instance(reset_ffmpeg_singleton: None):
+def test_setup_ffmpeg_path_configures_first_instance(
+    monkeypatch: pytest.MonkeyPatch,
+    reset_ffmpeg_singleton: None,
+):
+    monkeypatch.setattr(
+        ffmpeg_module.subprocess,
+        "run",
+        lambda args, capture_output: subprocess.CompletedProcess(args, 1),
+    )
+
     FFmpeg.setup_ffmpeg_path("/opt/ffmpeg/ffmpeg")
 
     assert FFmpeg().path == "/opt/ffmpeg/ffmpeg"
+
+
+@pytest.mark.parametrize("returncode", [0, 2])
+def test_setup_ffmpeg_path_rejects_non_ffmpeg_executable(
+    monkeypatch: pytest.MonkeyPatch,
+    reset_ffmpeg_singleton: None,
+    returncode: int,
+):
+    monkeypatch.setattr(
+        ffmpeg_module.subprocess,
+        "run",
+        lambda args, capture_output: subprocess.CompletedProcess(args, returncode),
+    )
+
+    with pytest.raises(WrongArgumentError, match="请配置正确的 FFmpeg 路径"):
+        FFmpeg.setup_ffmpeg_path("not-ffmpeg")
+
+    assert FFmpeg.FFMPEG_PATH == "ffmpeg"
+
+
+def test_setup_ffmpeg_path_rejects_missing_executable(
+    monkeypatch: pytest.MonkeyPatch,
+    reset_ffmpeg_singleton: None,
+):
+    def raise_file_not_found(_args: list[str], capture_output: bool) -> subprocess.CompletedProcess[bytes]:
+        raise FileNotFoundError
+
+    monkeypatch.setattr(ffmpeg_module.subprocess, "run", raise_file_not_found)
+
+    with pytest.raises(WrongArgumentError, match="请配置正确的 FFmpeg 路径"):
+        FFmpeg.setup_ffmpeg_path("missing-ffmpeg")
+
+    assert FFmpeg.FFMPEG_PATH == "ffmpeg"
 
 
 def test_ffmpeg_uses_default_path(reset_ffmpeg_singleton: None):

@@ -10,7 +10,7 @@ import yutto.__main__ as main_module
 import yutto.server.command as server_command_module
 from yutto.cli.cli import cli, handle_default_subcommand
 from yutto.core.operation import ReportLevel, emit_download_report
-from yutto.exceptions import ErrorCode
+from yutto.exceptions import ErrorCode, WrongArgumentError
 from yutto.server.command import build_server, resolve_server_token
 
 if TYPE_CHECKING:
@@ -62,7 +62,26 @@ def test_serve_configures_ffmpeg_path_at_command_boundary(monkeypatch: pytest.Mo
     assert recorded == ["/opt/ffmpeg/ffmpeg"]
 
 
-def test_serve_io_error_is_rendered_without_traceback(monkeypatch: pytest.MonkeyPatch):
+def test_serve_argument_error_is_rendered_without_traceback(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    parser = SimpleNamespace(parse_args=lambda args: SimpleNamespace(command="serve"))
+
+    def fail_server(args: object) -> None:
+        raise WrongArgumentError("请配置正确的 FFmpeg 路径")
+
+    monkeypatch.setattr(main_module, "cli", lambda: parser)
+    monkeypatch.setattr(main_module.sys, "argv", ["yutto", "serve"])
+    monkeypatch.setattr(server_command_module, "run_server_command", fail_server)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main_module.main()
+
+    captured = capsys.readouterr()
+    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
+    assert "请配置正确的 FFmpeg 路径" in captured.out
+    assert "Traceback" not in captured.out + captured.err
+
     parser = SimpleNamespace(parse_args=lambda args: SimpleNamespace(command="serve"))
     rendered_errors: list[str] = []
 

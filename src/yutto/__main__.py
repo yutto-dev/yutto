@@ -97,6 +97,9 @@ def main():
                     run_server_command(args)
             except KeyboardInterrupt:
                 Logger.info("yutto server 已停止")
+            except YuttoBaseException as e:
+                Logger.error(e.message)
+                sys.exit(e.code.value)
             except (OSError, ValueError) as e:
                 Logger.error(str(e))
                 sys.exit(ErrorCode.WRONG_ARGUMENT_ERROR.value)

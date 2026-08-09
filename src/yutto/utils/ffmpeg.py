@@ -8,6 +8,7 @@ from functools import cached_property, reduce
 from pathlib import Path
 
 from yutto.core.operation import ReportLevel, emit_download_report
+from yutto.exceptions import WrongArgumentError
 from yutto.utils.functional import Singleton
 
 _TERMINATE_TIMEOUT_SECONDS = 3.0
@@ -21,6 +22,11 @@ class FFmpeg(metaclass=Singleton):
 
     @classmethod
     def setup_ffmpeg_path(cls, path: str) -> None:
+        try:
+            if subprocess.run([path], capture_output=True).returncode != 1:
+                raise WrongArgumentError("请配置正确的 FFmpeg 路径")
+        except FileNotFoundError:
+            raise WrongArgumentError("请配置正确的 FFmpeg 路径") from None
         cls.FFMPEG_PATH = path
 
     def exec(self, args: list[str]):
