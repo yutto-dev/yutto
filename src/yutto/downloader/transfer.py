@@ -95,7 +95,7 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
                 wait_tasks.append(wait_task)
                 batch_tasks.append(wait_task)
 
-            progress_task = asyncio.create_task(show_progress(handles, total_size))
+            progress_task = asyncio.create_task(show_progress(handles, total_size, item=plan.item))
             await _wait_for_native_transfers(batch_tasks)
             await progress_task
             progress_task = None

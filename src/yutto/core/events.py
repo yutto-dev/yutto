@@ -47,6 +47,7 @@ class DownloadProgress:
     # CLI-local buffer telemetry; intentionally excluded from the v1 task event payload.
     buffered_bytes: int = 0
     is_congested: bool = False
+    item: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

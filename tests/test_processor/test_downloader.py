@@ -80,7 +80,7 @@ async def test_native_resume_progress_does_not_count_existing_bytes_as_speed():
 
     sink = RecordingEventSink()
     with bind_download_event_sink(sink):
-        await show_progress([Handle()], page_size * 2)
+        await show_progress([Handle()], page_size * 2, item="video")
 
     assert sink.events == [
         DownloadProgress(
@@ -88,6 +88,7 @@ async def test_native_resume_progress_does_not_count_existing_bytes_as_speed():
             total=page_size * 2,
             speed_per_second=0,
             buffered_bytes=0,
+            item="video",
         )
     ]
 

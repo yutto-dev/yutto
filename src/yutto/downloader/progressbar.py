@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 SMOOTHING_WINDOW_SIZE = 10
 
 
-async def show_progress(handles: Sequence[TransferHandle], total_size: int) -> None:
+async def show_progress(handles: Sequence[TransferHandle], total_size: int, *, item: str | None = None) -> None:
     t = time.time()
     transferred = sum(
         max(0, snapshot.received_bytes - snapshot.origin_bytes)
@@ -59,6 +59,7 @@ async def show_progress(handles: Sequence[TransferHandle], total_size: int) -> N
                 speed_per_second=speed,
                 buffered_bytes=buffered_bytes,
                 is_congested=any(snapshot.window_saturated for snapshot in snapshots),
+                item=item,
             )
         )
         if all(handle.done() for handle in handles):

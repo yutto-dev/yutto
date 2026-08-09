@@ -181,14 +181,24 @@ def _encode_runtime_event(event: DownloadEvent) -> tuple[str, dict[str, object]]
             if item is not None:
                 data["item"] = item
             return "stage", data
-        case DownloadProgress(current=current, total=total, speed_per_second=speed, phase=phase, unit=unit):
-            return "progress", {
+        case DownloadProgress(
+            current=current,
+            total=total,
+            speed_per_second=speed,
+            phase=phase,
+            unit=unit,
+            item=item,
+        ):
+            data: dict[str, object] = {
                 "phase": phase.value,
                 "current": current,
                 "total": total,
                 "speed_per_second": speed,
                 "unit": unit,
             }
+            if item is not None:
+                data["item"] = item
+            return "progress", data
         case DownloadItemSkipped(item=item, reason=reason):
             return "item_skipped", {"item": item, "reason": reason.value}
         case DownloadArtifactCreated(item=item, path=path):
