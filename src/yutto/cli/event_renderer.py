@@ -21,6 +21,8 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
+_PROGRESS_LABEL_WIDTH = 20
+
 
 def _render_bar(
     committed: int,
@@ -134,8 +136,7 @@ class CliApplicationEventRenderer:
         buffered_color: Color = "red" if progress.is_congested else "yellow"
         buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
         committed_bytes = progress.current - buffered_bytes
-        label = _truncate_label(progress.item, 20)
-        label_prefix = f"{label} " if label else ""
+        label_prefix = f"{_fit_label(progress.item, _PROGRESS_LABEL_WIDTH)} " if progress.item is not None else ""
         bar_width = min(get_terminal_size()[0] - 40 - get_string_width(label_prefix), 50)
         bar = (
             _render_bar(
@@ -202,3 +203,8 @@ def _truncate_label(item: str | None, max_width: int) -> str:
         characters.append(character)
         current += width
     return "".join(characters) + suffix
+
+
+def _fit_label(item: str, width: int) -> str:
+    label = _truncate_label(item, width)
+    return label + " " * max(0, width - get_string_width(label))
