@@ -185,19 +185,10 @@ class Fetcher:
     @MaxRetry(2)
     async def get_size(scope: ExecutionScope, url: str) -> int | None:
         async with scope.fetch_guard():
-            resp = await scope.session.get(
-                url,
-                headers={"Range": "bytes=0-1"},
-            )
-            if resp.status_code == 206:
-                content_range = resp.header("Content-Range")
-                if content_range is None:
-                    return None
-                size = int(content_range.split("/")[-1])
+            size = await scope.session.probe_size(url)
+            if size is not None:
                 emit_download_report(f"Get size: {url} {size}", level=ReportLevel.DEBUG)
-                return size
-            else:
-                return None
+            return size
 
     @staticmethod
     @MaxRetry(2)

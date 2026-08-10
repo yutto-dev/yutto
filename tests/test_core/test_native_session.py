@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from tests.helpers.http_range_server import LocalRangeServer
+from tests.helpers.http_range_server import LocalRangeServer, RangeFault
 from yutto._native import (
     HttpStatusError,
     InvalidUrlError,
@@ -42,6 +42,22 @@ async def test_yutto_session_get_exposes_response_and_typed_errors():
 
 
 @as_sync
+async def test_yutto_session_probes_size_without_accepting_an_ignored_range():
+    payload = b"media payload"
+    with LocalRangeServer(payload) as server:
+        session = YuttoSession(use_system_proxy=False)
+        size = await session.probe_size(server.url)
+        request = server.requests[-1]
+
+    assert size == len(payload)
+    assert request.range_header == "bytes=0-1"
+
+    with LocalRangeServer(payload, faults=[((0, 1), RangeFault.IGNORE)]) as server:
+        session = YuttoSession(use_system_proxy=False)
+        assert await session.probe_size(server.url) is None
+
+
+@as_sync
 async def test_yutto_session_close_is_idempotent_and_rejects_new_work(tmp_path):
     session = YuttoSession(use_system_proxy=False)
 
@@ -51,6 +67,8 @@ async def test_yutto_session_close_is_idempotent_and_rejects_new_work(tmp_path):
     assert session.is_closed
     with pytest.raises(SessionClosedError):
         await session.get("https://example.com")
+    with pytest.raises(SessionClosedError):
+        await session.probe_size("https://example.com")
     with pytest.raises(SessionClosedError):
         session.start_transfer(["https://example.com/media"], tmp_path / "media", 1)
 
