@@ -21,6 +21,12 @@ from yutto.utils.console.logger import Badge, Logger
 if TYPE_CHECKING:
     from yutto.utils.console.colorful import Color, Style
 
+PROGRESS_BAR_MIN_WIDTH = 10
+PROGRESS_LABEL_MAX_WIDTH = 20
+PROGRESS_LABEL_MIN_WIDTH = 10
+PROGRESS_SIZE_MIN_WIDTH = 10
+PROGRESS_SPEED_MIN_WIDTH = 12
+
 
 def _render_bar(
     committed: int,
@@ -134,9 +140,27 @@ class CliApplicationEventRenderer:
         buffered_color: Color = "red" if progress.is_congested else "yellow"
         buffered_bytes = min(max(progress.buffered_bytes, 0), progress.current)
         committed_bytes = progress.current - buffered_bytes
-        label = _truncate_label(progress.item, 20)
-        label_prefix = f"{label} " if label else ""
-        bar_width = min(get_terminal_size()[0] - 40 - get_string_width(label_prefix), 50)
+        speed_color: Color = "green" if is_fast else "cyan"
+        speed_style: list[Style] | None = ["bold"] if is_fast else None
+        speed_suffix = "/⚡" if is_fast else "/s"
+        current_text = f"{size_format(progress.current):>{PROGRESS_SIZE_MIN_WIDTH}}"
+        total_text = f"{size_format(progress.total):>{PROGRESS_SIZE_MIN_WIDTH}}"
+        speed_text = f"{size_format(progress.speed_per_second) + speed_suffix:>{PROGRESS_SPEED_MIN_WIDTH}}"
+        stats_text = f"{current_text}/{total_text} {speed_text}  "
+        rendered_stats = (
+            f"{current_text}/{total_text} {colored_string(speed_text, fore=speed_color, style=speed_style)}  "
+        )
+        terminal_width = get_terminal_size()[0]
+        available_width = max(0, terminal_width - get_string_width(stats_text))
+        if progress.item is None:
+            label_prefix = ""
+            bar_width = min(max(0, available_width - 1), 50)
+        else:
+            label_width = min(PROGRESS_LABEL_MAX_WIDTH, max(0, available_width - 1))
+            label_prefix = (
+                f"{_fit_label(progress.item, label_width)} " if label_width >= PROGRESS_LABEL_MIN_WIDTH else ""
+            )
+            bar_width = min(max(0, available_width - PROGRESS_LABEL_MAX_WIDTH - 2), 50)
         bar = (
             _render_bar(
                 committed_bytes,
@@ -146,23 +170,10 @@ class CliApplicationEventRenderer:
                 buffered_color,
                 bar_width,
             )
-            if bar_width >= 10 and progress.total > 0
+            if bar_width >= PROGRESS_BAR_MIN_WIDTH and progress.total > 0
             else ""
         )
-        speed_color: Color = "green" if is_fast else "cyan"
-        speed_style: list[Style] | None = ["bold"] if is_fast else None
-        speed_suffix = "/⚡" if is_fast else "/s"
-        rendered = "{}{}{:>10}/{:>10} {:>12}  ".format(
-            label_prefix,
-            bar + " " if bar else "",
-            size_format(progress.current),
-            size_format(progress.total),
-            colored_string(
-                size_format(progress.speed_per_second) + speed_suffix,
-                fore=speed_color,
-                style=speed_style,
-            ),
-        )
+        rendered = f"{label_prefix}{bar + ' ' if bar else ''}{rendered_stats}"
         if progress.item is None:
             Logger.status.set(rendered)
         else:
@@ -202,3 +213,8 @@ def _truncate_label(item: str | None, max_width: int) -> str:
         characters.append(character)
         current += width
     return "".join(characters) + suffix
+
+
+def _fit_label(item: str, width: int) -> str:
+    label = _truncate_label(item, width)
+    return label + " " * max(0, width - get_string_width(label))
