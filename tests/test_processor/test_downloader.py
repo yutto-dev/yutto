@@ -340,6 +340,9 @@ async def test_native_transfer_reuses_the_scope_session_and_maps_workers(
         window_saturated = False
 
     class Handle:
+        async def wait(self) -> None:
+            pass
+
         def done(self) -> bool:
             return True
 
