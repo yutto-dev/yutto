@@ -76,7 +76,42 @@ async def test_yutto_session_starts_a_transfer_with_its_client(tmp_path):
     with LocalRangeServer(payload) as server:
         session = YuttoSession(use_system_proxy=False)
         handle = session.start_transfer([server.url], target, len(payload), overwrite=True)
-        committed = await wait_for_transfer(handle, poll_interval=0)
+        await asyncio.gather(handle.wait(), handle.wait())
+        await handle.wait()
+        committed = await wait_for_transfer(handle)
 
     assert committed == len(payload)
     assert target.read_bytes() == payload
+
+
+@as_sync
+async def test_yutto_session_transfer_wait_preserves_failure(tmp_path):
+    session = YuttoSession(use_system_proxy=False)
+    handle = session.start_transfer(["not a URL"], tmp_path / "media", 1)
+
+    await handle.wait()
+
+    assert handle.done()
+    with pytest.raises(RuntimeError, match="invalid source URL"):
+        await wait_for_transfer(handle)
+
+
+@as_sync
+async def test_wait_for_transfer_cancels_and_reaps_native_work(tmp_path):
+    payload = b"native transfer"
+    target = tmp_path / "media"
+
+    with LocalRangeServer(payload, delays={(0, len(payload) - 1): 0.2}) as server:
+        session = YuttoSession(use_system_proxy=False)
+        handle = session.start_transfer([server.url], target, len(payload), overwrite=True)
+        wait_task = asyncio.create_task(wait_for_transfer(handle))
+        while not server.requests:
+            await asyncio.sleep(0)
+
+        wait_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await wait_task
+
+    assert handle.done()
+    with pytest.raises(RuntimeError, match="transfer was cancelled"):
+        handle.result()

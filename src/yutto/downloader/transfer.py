@@ -91,7 +91,7 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
                     block_size=plan.block_size,
                 )
                 handles.append(handle)
-                wait_task = asyncio.create_task(wait_for_transfer(handle, poll_interval=0.05))
+                wait_task = asyncio.create_task(wait_for_transfer(handle))
                 wait_tasks.append(wait_task)
                 batch_tasks.append(wait_task)
 

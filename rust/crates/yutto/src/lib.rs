@@ -195,10 +195,19 @@ impl YuttoSession {
 struct TransferHandle {
     state: Arc<Mutex<TransferState>>,
     cancellation: CancellationToken,
+    completion: CancellationToken,
 }
 
 #[pymethods]
 impl TransferHandle {
+    fn wait<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let completion = self.completion.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            completion.cancelled_owned().await;
+            Ok(())
+        })
+    }
+
     fn done(&self) -> bool {
         !matches!(
             self.state
@@ -279,6 +288,8 @@ fn start_transfer_with_session(
 
     let cancellation = CancellationToken::new();
     let task_cancellation = cancellation.clone();
+    let completion = CancellationToken::new();
+    let task_completion = completion.clone();
     let state = Arc::new(Mutex::new(TransferState {
         expected_bytes: expected_size,
         origin_bytes: 0,
@@ -310,11 +321,13 @@ fn start_transfer_with_session(
             .lock()
             .expect("transfer state lock poisoned")
             .outcome = outcome;
+        task_completion.cancel();
     });
 
     Ok(TransferHandle {
         state,
         cancellation,
+        completion,
     })
 }
 
