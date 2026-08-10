@@ -72,6 +72,38 @@ impl HttpRangeSource {
     }
 }
 
+/// Probes the size of a media resource without consuming its response body.
+///
+/// A valid probe response is an identity-encoded `206` for bytes `0-1` with a
+/// known total in `Content-Range`. Other HTTP responses are treated as an
+/// unavailable size; request failures retain their source error.
+/// The client must have reqwest's automatic response decompression disabled.
+pub async fn probe_size(client: &Client, url: Url) -> Result<Option<u64>, SourceError> {
+    let request = client
+        .get(url)
+        .header(ACCEPT_ENCODING, HeaderValue::from_static("identity"))
+        .header(RANGE, HeaderValue::from_static("bytes=0-1"))
+        .build()
+        .map_err(classify_reqwest_error)?;
+    let response = client
+        .execute(request)
+        .await
+        .map_err(classify_reqwest_error)?;
+    if response.status() != StatusCode::PARTIAL_CONTENT {
+        return Ok(None);
+    }
+    Ok(size_from_probe_headers(response.headers()))
+}
+
+fn size_from_probe_headers(headers: &HeaderMap) -> Option<u64> {
+    validate_content_encoding(headers).ok()?;
+    let content_range = satisfied_content_range(headers).ok()?;
+    if content_range.start != 0 || content_range.end != 1 {
+        return None;
+    }
+    content_range.total
+}
+
 #[async_trait]
 impl RangeSource for HttpRangeSource {
     async fn open(&self, range: ByteRange) -> Result<ByteStream, SourceError> {
@@ -238,16 +270,70 @@ fn status_error(status: StatusCode) -> SourceError {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use reqwest::{
         Client, Url,
         header::{ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_RANGE, HeaderMap, IF_RANGE, RANGE},
     };
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+        sync::oneshot,
+        time::timeout,
+    };
 
-    use super::{HttpRangeSource, satisfied_content_range, validate_content_encoding};
+    use super::{
+        HttpRangeSource, probe_size, satisfied_content_range, size_from_probe_headers,
+        validate_content_encoding,
+    };
     use haya::ByteRange;
 
     fn install_rustls_provider() {
         let _ = rustls::crypto::ring::default_provider().install_default();
+    }
+
+    async fn serve_ignored_range_headers() -> (Url, oneshot::Receiver<String>, oneshot::Sender<()>)
+    {
+        let listener = TcpListener::bind("127.0.0.1:0").await.expect("listener");
+        let address = listener.local_addr().expect("address");
+        let (request_sender, request_receiver) = oneshot::channel();
+        let (release_sender, release_receiver) = oneshot::channel();
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("connection");
+            let mut request = Vec::new();
+            while !request.ends_with(b"\r\n\r\n") {
+                let mut chunk = [0; 1024];
+                let length = stream.read(&mut chunk).await.expect("request");
+                if length == 0 {
+                    break;
+                }
+                request.extend_from_slice(&chunk[..length]);
+            }
+            let _ = request_sender.send(String::from_utf8_lossy(&request).into_owned());
+            stream
+                .write_all(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: 1000000000\r\nConnection: close\r\n\r\n",
+                )
+                .await
+                .expect("response headers");
+            let _ = release_receiver.await;
+        });
+        (
+            Url::parse(&format!("http://{address}/media")).expect("URL"),
+            request_receiver,
+            release_sender,
+        )
+    }
+
+    fn probe_client() -> Client {
+        Client::builder()
+            .no_gzip()
+            .no_brotli()
+            .no_deflate()
+            .no_zstd()
+            .build()
+            .expect("client")
     }
 
     #[test]
@@ -322,5 +408,40 @@ mod tests {
 
         headers.insert(CONTENT_ENCODING, "identity".parse().expect("header"));
         assert!(validate_content_encoding(&headers).is_ok());
+    }
+
+    #[test]
+    fn size_probe_requires_the_requested_range_and_known_total() {
+        let mut headers = HeaderMap::new();
+        assert_eq!(size_from_probe_headers(&headers), None);
+
+        headers.insert(CONTENT_RANGE, "bytes 0-1/9".parse().expect("header"));
+        assert_eq!(size_from_probe_headers(&headers), Some(9));
+
+        headers.insert(CONTENT_RANGE, "bytes 1-2/9".parse().expect("header"));
+        assert_eq!(size_from_probe_headers(&headers), None);
+
+        headers.insert(CONTENT_RANGE, "bytes 0-1/*".parse().expect("header"));
+        assert_eq!(size_from_probe_headers(&headers), None);
+
+        headers.insert(CONTENT_RANGE, "bytes 0-1/9".parse().expect("header"));
+        headers.insert(CONTENT_ENCODING, "gzip".parse().expect("header"));
+        assert_eq!(size_from_probe_headers(&headers), None);
+    }
+
+    #[tokio::test]
+    async fn size_probe_drops_an_ignored_range_without_waiting_for_the_full_body() {
+        install_rustls_provider();
+        let (url, request, _held_body) = serve_ignored_range_headers().await;
+
+        let size = timeout(Duration::from_secs(1), probe_size(&probe_client(), url))
+            .await
+            .expect("probe waited for the ignored full response body")
+            .expect("probe request");
+        let request = request.await.expect("captured request");
+
+        assert_eq!(size, None);
+        assert!(request.contains("range: bytes=0-1\r\n"));
+        assert!(request.contains("accept-encoding: identity\r\n"));
     }
 }

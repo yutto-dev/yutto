@@ -155,6 +155,13 @@ impl YuttoSession {
         })
     }
 
+    fn probe_size<'py>(&self, py: Python<'py>, url: String) -> PyResult<Bound<'py, PyAny>> {
+        let session = self.session.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            session.probe_size(url).await.map_err(session_error_to_py)
+        })
+    }
+
     #[pyo3(signature = (name, *, url="https://www.bilibili.com/"))]
     fn cookie(&self, name: &str, url: &str) -> PyResult<Option<String>> {
         self.session.cookie(name, url).map_err(session_error_to_py)

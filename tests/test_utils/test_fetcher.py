@@ -143,6 +143,28 @@ class _StatusSession:
 
 
 @as_sync
+async def test_get_size_uses_the_native_probe_and_only_logs_a_known_size(monkeypatch: pytest.MonkeyPatch):
+    class SizeSession:
+        def __init__(self):
+            self.sizes = [42, None]
+            self.urls: list[str] = []
+
+        async def probe_size(self, url: str) -> int | None:
+            self.urls.append(url)
+            return self.sizes.pop(0)
+
+    reports: list[str] = []
+    monkeypatch.setattr(fetcher_module, "emit_download_report", lambda message, **_kwargs: reports.append(message))
+    session = SizeSession()
+    scope = ExecutionScope(cast("Any", session))
+
+    assert await Fetcher.get_size(scope, "https://example.com/known") == Success(42)
+    assert await Fetcher.get_size(scope, "https://example.com/unknown") == Success(None)
+    assert session.urls == ["https://example.com/known", "https://example.com/unknown"]
+    assert reports == ["Get size: https://example.com/known 42"]
+
+
+@as_sync
 async def test_fetcher_preserves_query_parameter_encoding():
     class QuerySession(_StatusSession):
         params: list[tuple[str, str]] | None = None

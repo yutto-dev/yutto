@@ -9,6 +9,8 @@ use std::{
 
 use bytes::Bytes;
 use flate2::read::{DeflateDecoder, GzDecoder, ZlibDecoder};
+use haya::{SourceError, SourceErrorKind};
+use haya_http::probe_size as probe_media_size;
 use reqwest::{
     Certificate, Client, ClientBuilder, Proxy, StatusCode, Url,
     cookie::{CookieStore, Jar},
@@ -202,6 +204,14 @@ impl Session {
         })
     }
 
+    pub async fn probe_size(&self, url: String) -> Result<Option<u64>, SessionError> {
+        let url = parse_url(&url)?;
+        let client = self.client()?;
+        probe_media_size(&client, url)
+            .await
+            .map_err(classify_source_error)
+    }
+
     pub fn cookie(&self, name: &str, url: &str) -> Result<Option<String>, SessionError> {
         let url = parse_url(url)?;
         let Some(header) = self.inner.cookies.cookies(&url) else {
@@ -307,6 +317,13 @@ fn classify_reqwest_error(error: reqwest::Error) -> SessionError {
         SessionError::Timeout(error.to_string())
     } else {
         SessionError::Transport(error.to_string())
+    }
+}
+
+fn classify_source_error(error: SourceError) -> SessionError {
+    match error.kind {
+        SourceErrorKind::Timeout => SessionError::Timeout(error.message),
+        _ => SessionError::Transport(error.message),
     }
 }
 
