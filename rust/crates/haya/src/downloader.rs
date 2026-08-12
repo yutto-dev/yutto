@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::VecDeque, num::NonZeroUsize, sync::Arc};
 
 use bytes::{Bytes, BytesMut};
 use futures_util::{FutureExt, StreamExt, future::BoxFuture, stream::FuturesUnordered};
@@ -197,9 +197,14 @@ impl Downloader {
                     pool.record_success(completed.source);
                     received = received.saturating_add(bytes.len() as u64);
                     insert_range(&mut ring, self.spec.page_size, completed.work.range, bytes)?;
-                    for (offset, data) in ring.pop_contiguous() {
-                        let end = offset.saturating_add(data.len() as u64);
-                        if let Err(error) = self.sink.append(offset, data).await {
+                    let batch_size = self
+                        .sink
+                        .append_batch_size_hint()
+                        .map(NonZeroUsize::get)
+                        .unwrap_or(self.spec.page_size);
+                    while let Some(batch) = ring.pop_contiguous_batch(batch_size)? {
+                        let end = batch.end_offset();
+                        if let Err(error) = self.sink.append_batch(batch).await {
                             return self.fail_after_flush(error.into()).await;
                         }
                         committed = end;
@@ -383,8 +388,11 @@ mod tests {
         )
         .expect("range fits");
 
-        let pages = ring.pop_contiguous();
-        assert_eq!(pages[0].1.as_ptr(), block_start);
-        assert_eq!(pages[1].1.as_ptr(), block_start.wrapping_add(4));
+        let batch = ring
+            .pop_contiguous_batch(8)
+            .expect("valid batch")
+            .expect("contiguous batch");
+        assert_eq!(batch.chunks()[0].as_ptr(), block_start);
+        assert_eq!(batch.chunks()[1].as_ptr(), block_start.wrapping_add(4));
     }
 }
