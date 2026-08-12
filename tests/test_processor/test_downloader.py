@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
@@ -9,13 +10,13 @@ from returns.result import Failure, Success
 import yutto.downloader.transfer as transfer_module
 from tests.helpers.http_range_server import LocalRangeServer, RangeFault
 from tests.test_processor.test_download_result import make_request, make_resource_only_episode
+from yutto._native import TransferWorkerLimit
 from yutto.core.events import DownloadEvent, DownloadProgress
 from yutto.core.execution import ExecutionScope
 from yutto.core.operation import bind_download_event_sink
 from yutto.downloader.planner import DownloadPlanner
 from yutto.downloader.progressbar import show_progress
 from yutto.downloader.transfer import (
-    _allocate_native_worker_batches,
     _probe_media_size,
     _wait_for_native_transfers,
     download_video_and_audio,
@@ -28,6 +29,12 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 pytestmark = pytest.mark.processor
+
+
+@pytest.mark.parametrize("capacity", [-1, 0, sys.maxsize])
+def test_native_worker_limit_rejects_invalid_capacity(capacity: int):
+    with pytest.raises(ValueError):
+        TransferWorkerLimit(capacity)
 
 
 @as_sync
@@ -153,19 +160,6 @@ async def test_probe_media_size_rejects_a_source_without_a_known_length(monkeypa
     monkeypatch.setattr(Fetcher, "get_size", get_size)
     with pytest.raises(MaxRetryError, match="未返回长度"):
         await _probe_media_size(ExecutionScope(cast("Any", object())), "primary", [])
-
-
-@pytest.mark.parametrize(
-    ("workers", "transfers", "expected"),
-    [
-        (8, 2, [[4, 4]]),
-        (3, 2, [[2, 1]]),
-        (1, 2, [[1], [1]]),
-    ],
-)
-def test_native_worker_budget_is_global(workers: int, transfers: int, expected: list[list[int]]):
-    assert _allocate_native_worker_batches(workers, transfers) == expected
-    assert all(sum(batch) <= workers for batch in expected)
 
 
 @as_sync
@@ -333,6 +327,10 @@ async def test_native_transfer_reuses_the_scope_session_and_maps_workers(
 ):
     captured: dict[str, Any] = {}
 
+    class WorkerLimit:
+        def __init__(self, capacity: int) -> None:
+            self.capacity = capacity
+
     class Snapshot:
         origin_bytes = 0
         received_bytes = 123
@@ -365,6 +363,7 @@ async def test_native_transfer_reuses_the_scope_session_and_maps_workers(
             return Handle()
 
     monkeypatch.setattr(Fetcher, "get_size", get_size)
+    monkeypatch.setattr(transfer_module, "TransferWorkerLimit", WorkerLimit)
 
     episode = make_resource_only_episode()
     episode["audios"] = [
@@ -404,6 +403,171 @@ async def test_native_transfer_reuses_the_scope_session_and_maps_workers(
     assert args[2] == 123
     assert kwargs["workers"] == 3
     assert kwargs["block_size"] == 64 * 1024
+    assert isinstance(kwargs["worker_limit"], WorkerLimit)
+    assert kwargs["worker_limit"].capacity == 3
+
+
+@as_sync
+async def test_item_transfers_start_together_and_share_one_worker_limit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    started: list[tuple[object, dict[str, object]]] = []
+    both_started = asyncio.Event()
+
+    class WorkerLimit:
+        def __init__(self, capacity: int) -> None:
+            self.capacity = capacity
+
+    class Snapshot:
+        origin_bytes = 0
+        received_bytes = 1
+        committed_bytes = 1
+        window_saturated = False
+
+    class Handle:
+        async def wait(self) -> None:
+            await both_started.wait()
+
+        def done(self) -> bool:
+            return both_started.is_set()
+
+        def cancel(self) -> None:
+            raise AssertionError("completed handle must not be cancelled")
+
+        def snapshot(self) -> Snapshot:
+            return Snapshot()
+
+        def result(self) -> int:
+            return 1
+
+    async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
+        return Success(1)
+
+    class FakeSession:
+        def start_transfer(self, *args: object, **kwargs: object) -> Handle:
+            started.append((args[0], kwargs))
+            if len(started) == 2:
+                both_started.set()
+            return Handle()
+
+    monkeypatch.setattr(Fetcher, "get_size", get_size)
+    monkeypatch.setattr(transfer_module, "TransferWorkerLimit", WorkerLimit)
+
+    episode = make_resource_only_episode()
+    episode["videos"] = [
+        {
+            "url": "https://video.example/media",
+            "mirrors": [],
+            "codec": "avc",
+            "width": 1920,
+            "height": 1080,
+            "quality": 80,
+        }
+    ]
+    episode["audios"] = [
+        {
+            "url": "https://audio.example/media",
+            "mirrors": [],
+            "codec": "mp4a",
+            "width": 0,
+            "height": 0,
+            "quality": 30280,
+        }
+    ]
+    base_request = make_request(tmp_path, video=True, audio=True)
+    plan = DownloadPlanner().plan(episode, type(base_request).model_validate(base_request.model_dump()))
+
+    await download_video_and_audio(
+        ExecutionScope(cast("Any", FakeSession()), download_workers=2),
+        plan,
+    )
+
+    assert len(started) == 2
+    limits = [kwargs["worker_limit"] for _, kwargs in started]
+    assert limits[0] is limits[1]
+    assert isinstance(limits[0], WorkerLimit)
+    assert limits[0].capacity == 2
+    assert all(kwargs["workers"] == 2 for _, kwargs in started)
+
+
+@as_sync
+async def test_one_worker_preserves_serial_transfer_setup(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    started: list[str] = []
+
+    class WorkerLimit:
+        def __init__(self, capacity: int) -> None:
+            self.capacity = capacity
+
+    class Snapshot:
+        origin_bytes = 0
+        received_bytes = 1
+        committed_bytes = 1
+        window_saturated = False
+
+    class Handle:
+        def __init__(self, source: str) -> None:
+            self.source = source
+
+        async def wait(self) -> None:
+            assert started[-1] == self.source
+
+        def done(self) -> bool:
+            return True
+
+        def cancel(self) -> None:
+            raise AssertionError("completed handle must not be cancelled")
+
+        def snapshot(self) -> Snapshot:
+            return Snapshot()
+
+        def result(self) -> int:
+            return 1
+
+    async def get_size(_scope: ExecutionScope, _url: str) -> Success[int]:
+        return Success(1)
+
+    class FakeSession:
+        def start_transfer(self, sources: list[str], *_args: object, **_kwargs: object) -> Handle:
+            started.append(sources[0])
+            return Handle(sources[0])
+
+    monkeypatch.setattr(Fetcher, "get_size", get_size)
+    monkeypatch.setattr(transfer_module, "TransferWorkerLimit", WorkerLimit)
+
+    episode = make_resource_only_episode()
+    episode["videos"] = [
+        {
+            "url": "video",
+            "mirrors": [],
+            "codec": "avc",
+            "width": 1920,
+            "height": 1080,
+            "quality": 80,
+        }
+    ]
+    episode["audios"] = [
+        {
+            "url": "audio",
+            "mirrors": [],
+            "codec": "mp4a",
+            "width": 0,
+            "height": 0,
+            "quality": 30280,
+        }
+    ]
+    base_request = make_request(tmp_path, video=True, audio=True)
+    plan = DownloadPlanner().plan(episode, type(base_request).model_validate(base_request.model_dump()))
+
+    await download_video_and_audio(
+        ExecutionScope(cast("Any", FakeSession()), download_workers=1),
+        plan,
+    )
+
+    assert started == ["video", "audio"]
 
 
 @as_sync

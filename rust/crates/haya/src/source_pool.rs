@@ -78,6 +78,12 @@ impl SourcePool {
         self.health.iter().any(|health| !health.disabled)
     }
 
+    pub fn has_ready(&self, now: Instant) -> bool {
+        self.health
+            .iter()
+            .any(|health| !health.disabled && health.ready_at <= now)
+    }
+
     pub fn next_ready_at(&self) -> Option<Instant> {
         self.health
             .iter()
