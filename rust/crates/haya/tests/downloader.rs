@@ -25,6 +25,22 @@ struct MemorySink {
     cancel_on_append: Option<CancellationToken>,
 }
 
+struct BatchedMemorySink {
+    inner: MemorySink,
+    batch_size: usize,
+    batches: Mutex<Vec<(u64, Vec<usize>)>>,
+}
+
+impl BatchedMemorySink {
+    fn new(batch_size: usize) -> Self {
+        Self {
+            inner: MemorySink::default(),
+            batch_size,
+            batches: Mutex::new(Vec::new()),
+        }
+    }
+}
+
 impl MemorySink {
     fn with_bytes(bytes: &[u8]) -> Self {
         Self {
@@ -70,6 +86,37 @@ impl CommitSink for MemorySink {
     async fn close(&self) -> Result<(), SinkError> {
         self.closes.fetch_add(1, Ordering::Relaxed);
         self.flush().await
+    }
+}
+
+#[async_trait]
+impl CommitSink for BatchedMemorySink {
+    async fn committed_offset(&self) -> Result<u64, SinkError> {
+        self.inner.committed_offset().await
+    }
+
+    async fn append(&self, offset: u64, data: Bytes) -> Result<(), SinkError> {
+        self.inner.append(offset, data).await
+    }
+
+    fn append_batch_size_hint(&self) -> Option<std::num::NonZeroUsize> {
+        std::num::NonZeroUsize::new(self.batch_size)
+    }
+
+    async fn append_batch(&self, batch: haya::CommitBatch) -> Result<(), SinkError> {
+        self.batches.lock().expect("batch lock poisoned").push((
+            batch.offset(),
+            batch.chunks().iter().map(Bytes::len).collect(),
+        ));
+        CommitSink::append_batch(&self.inner, batch).await
+    }
+
+    async fn flush(&self) -> Result<(), SinkError> {
+        self.inner.flush().await
+    }
+
+    async fn close(&self) -> Result<(), SinkError> {
+        self.inner.close().await
     }
 }
 
@@ -325,6 +372,35 @@ async fn downloads_out_of_order_ranges_and_a_short_final_page() {
     assert_eq!(report.committed_bytes, expected.len() as u64);
     assert_eq!(report.received_bytes, expected.len() as u64);
     assert_eq!(sink.closes.load(Ordering::Relaxed), 1);
+}
+
+#[tokio::test]
+async fn commits_contiguous_pages_in_sink_bounded_batches() {
+    let expected = payload(5 * 1024 - 7);
+    let sink = Arc::new(BatchedMemorySink::new(2 * 1024));
+    let mut download_spec = spec(expected.len() as u64, 1024);
+    download_spec.block_size = expected.len();
+    download_spec.workers = 1;
+
+    Downloader::new(
+        download_spec,
+        vec![Arc::new(MemorySource::new(expected.clone()))],
+        sink.clone(),
+    )
+    .expect("valid downloader")
+    .run()
+    .await
+    .expect("download succeeds");
+
+    assert_eq!(sink.inner.bytes(), expected);
+    assert_eq!(
+        *sink.batches.lock().expect("batch lock poisoned"),
+        [
+            (0, vec![1024, 1024]),
+            (2048, vec![1024, 1024]),
+            (4096, vec![1017]),
+        ]
+    );
 }
 
 #[tokio::test]
