@@ -4,7 +4,7 @@ import asyncio
 import re
 from typing import TYPE_CHECKING
 
-from yutto._native import wait_for_transfer
+from yutto._native import TransferWorkerLimit, wait_for_transfer
 from yutto.core.events import DownloadStage, DownloadStageChanged
 from yutto.core.operation import emit_download_event, emit_download_report
 from yutto.downloader.progressbar import show_progress
@@ -75,20 +75,20 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
             size = await _probe_media_size(scope, stream.url, mirrors)
             prepared_transfers.append(([stream.url, *mirrors], target, size))
 
-        completed_transfers = 0
         total_size = sum(size for _, _, size in prepared_transfers)
-        for worker_batch in _allocate_native_worker_batches(scope.download_workers, len(prepared_transfers)):
+        worker_limit = TransferWorkerLimit(scope.download_workers)
+        batch_size = 1 if scope.download_workers == 1 else len(prepared_transfers)
+        for batch_start in range(0, len(prepared_transfers), batch_size):
             batch_tasks = []
-            for workers in worker_batch:
-                sources, target, size = prepared_transfers[completed_transfers]
-                completed_transfers += 1
+            for sources, target, size in prepared_transfers[batch_start : batch_start + batch_size]:
                 handle = scope.session.start_transfer(
                     sources,
                     target,
                     size,
                     overwrite=plan.overwrite,
-                    workers=workers,
+                    workers=scope.download_workers,
                     block_size=plan.block_size,
+                    worker_limit=worker_limit,
                 )
                 handles.append(handle)
                 wait_task = asyncio.create_task(wait_for_transfer(handle))
@@ -111,17 +111,6 @@ async def download_video_and_audio(scope: ExecutionScope, plan: DownloadPlan) ->
         except asyncio.CancelledError:
             await cleanup_task
             raise
-
-
-def _allocate_native_worker_batches(total_workers: int, transfer_count: int) -> list[list[int]]:
-    batches = []
-    remaining = transfer_count
-    while remaining:
-        batch_size = min(total_workers, remaining)
-        workers_per_transfer, extra_workers = divmod(total_workers, batch_size)
-        batches.append([workers_per_transfer + (index < extra_workers) for index in range(batch_size)])
-        remaining -= batch_size
-    return batches
 
 
 async def _wait_for_native_transfers(wait_tasks: Iterable[asyncio.Task[int]]) -> None:

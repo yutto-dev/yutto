@@ -44,6 +44,11 @@ class TransferHandle:
     def snapshot(self) -> TransferSnapshot: ...
     def result(self) -> int: ...
 
+class TransferWorkerLimit:
+    def __init__(self, capacity: int) -> None: ...
+    @property
+    def capacity(self) -> int: ...
+
 class YuttoSession:
     def __init__(
         self,
@@ -79,4 +84,5 @@ class YuttoSession:
         overwrite: bool = ...,
         workers: int = ...,
         block_size: int = ...,
+        worker_limit: TransferWorkerLimit | None = ...,
     ) -> TransferHandle: ...
