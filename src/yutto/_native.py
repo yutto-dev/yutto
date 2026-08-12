@@ -12,6 +12,7 @@ from yutto._core import (
     SessionClosedError,
     TransferHandle,
     TransferSnapshot,
+    TransferWorkerLimit,
     UnsupportedProtocolError,
     YuttoSession,
 )
@@ -26,6 +27,7 @@ __all__ = [
     "SessionClosedError",
     "TransferHandle",
     "TransferSnapshot",
+    "TransferWorkerLimit",
     "UnsupportedProtocolError",
     "YuttoSession",
     "wait_for_transfer",

@@ -2,12 +2,12 @@ use std::{collections::VecDeque, sync::Arc};
 
 use bytes::{Bytes, BytesMut};
 use futures_util::{FutureExt, StreamExt, future::BoxFuture, stream::FuturesUnordered};
-use tokio::time::Instant;
+use tokio::{sync::OwnedSemaphorePermit, time::Instant};
 use tokio_util::sync::CancellationToken;
 
 use crate::{
     ByteRange, CommitSink, DownloadError, DownloadReport, DownloadSnapshot, DownloadSpec,
-    NullProgressSink, ProgressSink, RangeSource, SourceError, SourceErrorKind,
+    NullProgressSink, ProgressSink, RangeSource, SourceError, SourceErrorKind, WorkerLimit,
     buffer::OrderedBuffer, sink::SharedSink, source::SharedSource, source_pool::SourcePool,
 };
 
@@ -23,12 +23,25 @@ struct AttemptResult {
     result: Result<Bytes, SourceError>,
 }
 
+type PendingWorker = BoxFuture<'static, OwnedSemaphorePermit>;
+
+fn release_workers(
+    in_flight: &mut FuturesUnordered<BoxFuture<'static, AttemptResult>>,
+    pending_worker: &mut Option<PendingWorker>,
+    ready_worker: &mut Option<OwnedSemaphorePermit>,
+) {
+    in_flight.clear();
+    pending_worker.take();
+    ready_worker.take();
+}
+
 pub struct Downloader {
     spec: DownloadSpec,
     sources: Vec<SharedSource>,
     sink: SharedSink,
     progress: Arc<dyn ProgressSink>,
     cancellation: CancellationToken,
+    worker_limit: WorkerLimit,
 }
 
 impl Downloader {
@@ -37,12 +50,15 @@ impl Downloader {
         sources: Vec<Arc<dyn RangeSource>>,
         sink: Arc<dyn CommitSink>,
     ) -> Result<Self, DownloadError> {
+        let spec = spec.validate()?;
+        let worker_limit = WorkerLimit::new(spec.workers)?;
         Ok(Self {
-            spec: spec.validate()?,
+            spec,
             sources,
             sink,
             progress: Arc::new(NullProgressSink),
             cancellation: CancellationToken::new(),
+            worker_limit,
         })
     }
 
@@ -53,6 +69,11 @@ impl Downloader {
 
     pub fn with_cancellation_token(mut self, cancellation: CancellationToken) -> Self {
         self.cancellation = cancellation;
+        self
+    }
+
+    pub fn with_worker_limit(mut self, worker_limit: WorkerLimit) -> Self {
+        self.worker_limit = worker_limit;
         self
     }
 
@@ -93,6 +114,8 @@ impl Downloader {
         let mut queue = VecDeque::new();
         let mut in_flight: FuturesUnordered<BoxFuture<'static, AttemptResult>> =
             FuturesUnordered::new();
+        let mut pending_worker: Option<PendingWorker> = None;
+        let mut ready_worker: Option<OwnedSemaphorePermit> = None;
         let mut next_offset = origin;
         let mut committed = origin;
         let mut received = 0_u64;
@@ -100,6 +123,7 @@ impl Downloader {
 
         loop {
             if self.cancellation.is_cancelled() {
+                release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                 return self.cancelled().await;
             }
             self.enqueue_new_work(
@@ -110,18 +134,37 @@ impl Downloader {
                 in_flight.len(),
             )?;
 
+            let now = Instant::now();
+            if queue.is_empty() || in_flight.len() >= self.spec.workers || !pool.has_ready(now) {
+                pending_worker = None;
+                ready_worker = None;
+            }
+
             while in_flight.len() < self.spec.workers {
-                let Some(work) = queue.pop_front() else {
+                if queue.is_empty() || !pool.has_ready(Instant::now()) {
+                    break;
+                }
+                let worker = if let Some(worker) = ready_worker.take() {
+                    worker
+                } else if let Some(worker) = self.worker_limit.try_acquire_owned() {
+                    worker
+                } else {
+                    if pending_worker.is_none() {
+                        pending_worker = Some(self.worker_limit.clone().acquire_owned().boxed());
+                    }
                     break;
                 };
+                let work = queue.pop_front().expect("the queue was checked above");
                 let Some((source, range_source)) = pool.select(Instant::now()) else {
                     queue.push_front(work);
+                    ready_worker = Some(worker);
                     break;
                 };
                 attempts += 1;
                 let attempt_timeout = self.spec.attempt_timeout;
                 in_flight.push(
                     async move {
+                        let _worker = worker;
                         let result = tokio::time::timeout(
                             attempt_timeout,
                             fetch_exact(range_source, work.range),
@@ -146,6 +189,7 @@ impl Downloader {
             self.publish_progress(received, committed, &ring, next_offset, in_flight.len());
 
             if committed == expected {
+                release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                 self.sink.close().await?;
                 return Ok(DownloadReport {
                     committed_bytes: committed,
@@ -154,7 +198,7 @@ impl Downloader {
                 });
             }
 
-            if in_flight.is_empty() {
+            if in_flight.is_empty() && pending_worker.is_none() && ready_worker.is_none() {
                 if !pool.has_usable() {
                     return self.fail_after_flush(DownloadError::NoUsableSource).await;
                 }
@@ -169,27 +213,48 @@ impl Downloader {
                 return self.fail_after_flush(DownloadError::Stalled).await;
             }
 
-            let cooldown_ready_at = if !queue.is_empty() && in_flight.len() < self.spec.workers {
+            let cooldown_ready_at = if !queue.is_empty()
+                && in_flight.len() < self.spec.workers
+                && !pool.has_ready(Instant::now())
+            {
                 pool.next_ready_at()
             } else {
                 None
             };
-            let completed = if let Some(ready_at) = cooldown_ready_at {
+            enum SchedulerEvent {
+                Completed(AttemptResult),
+                WorkerReady(OwnedSemaphorePermit),
+                CooldownReady,
+                Cancelled,
+            }
+            let event = if let Some(ready_at) = cooldown_ready_at {
                 tokio::select! {
                     biased;
-                    _ = self.cancellation.cancelled() => return self.cancelled().await,
-                    result = in_flight.next() => Some(result.ok_or(DownloadError::Stalled)?),
-                    _ = tokio::time::sleep_until(ready_at) => None,
+                    _ = self.cancellation.cancelled() => SchedulerEvent::Cancelled,
+                    result = in_flight.next(), if !in_flight.is_empty() => SchedulerEvent::Completed(result.ok_or(DownloadError::Stalled)?),
+                    worker = async { pending_worker.as_mut().expect("guarded pending worker").await }, if pending_worker.is_some() => SchedulerEvent::WorkerReady(worker),
+                    _ = tokio::time::sleep_until(ready_at) => SchedulerEvent::CooldownReady,
                 }
             } else {
                 tokio::select! {
                     biased;
-                    _ = self.cancellation.cancelled() => return self.cancelled().await,
-                    result = in_flight.next() => Some(result.ok_or(DownloadError::Stalled)?),
+                    _ = self.cancellation.cancelled() => SchedulerEvent::Cancelled,
+                    result = in_flight.next(), if !in_flight.is_empty() => SchedulerEvent::Completed(result.ok_or(DownloadError::Stalled)?),
+                    worker = async { pending_worker.as_mut().expect("guarded pending worker").await }, if pending_worker.is_some() => SchedulerEvent::WorkerReady(worker),
                 }
             };
-            let Some(completed) = completed else {
-                continue;
+            let completed = match event {
+                SchedulerEvent::Completed(completed) => completed,
+                SchedulerEvent::WorkerReady(worker) => {
+                    pending_worker = None;
+                    ready_worker = Some(worker);
+                    continue;
+                }
+                SchedulerEvent::CooldownReady => continue,
+                SchedulerEvent::Cancelled => {
+                    release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
+                    return self.cancelled().await;
+                }
             };
 
             match completed.result {
@@ -200,20 +265,24 @@ impl Downloader {
                     for (offset, data) in ring.pop_contiguous() {
                         let end = offset.saturating_add(data.len() as u64);
                         if let Err(error) = self.sink.append(offset, data).await {
+                            release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                             return self.fail_after_flush(error.into()).await;
                         }
                         committed = end;
                         if self.cancellation.is_cancelled() {
+                            release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                             return self.cancelled().await;
                         }
                     }
                 }
                 Err(error) => {
                     if let Err(config_error) = pool.record_failure(completed.source, &error) {
+                        release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                         return self.fail_after_flush(config_error).await;
                     }
                     let attempt = completed.work.attempts + 1;
                     if !pool.has_usable() {
+                        release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                         return self
                             .fail_after_flush(DownloadError::RetryExhausted {
                                 range: completed.work.range,
@@ -239,6 +308,7 @@ impl Downloader {
                             attempts: 0,
                         });
                     } else {
+                        release_workers(&mut in_flight, &mut pending_worker, &mut ready_worker);
                         return self
                             .fail_after_flush(DownloadError::RetryExhausted {
                                 range: completed.work.range,

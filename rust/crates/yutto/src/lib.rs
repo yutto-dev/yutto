@@ -6,7 +6,7 @@ use std::{
 };
 
 use haya::{
-    CommitSink, DownloadSnapshot, DownloadSpec, Downloader, ProgressSink,
+    CommitSink, DownloadSnapshot, DownloadSpec, Downloader, ProgressSink, WorkerLimit,
     file::{FileOpenMode, FileSink},
 };
 use haya_http::HttpRangeSource;
@@ -176,7 +176,8 @@ impl YuttoSession {
         self.session.is_closed()
     }
 
-    #[pyo3(signature = (sources, target, expected_size, *, overwrite=false, workers=8, block_size=524288))]
+    #[pyo3(signature = (sources, target, expected_size, *, overwrite=false, workers=8, block_size=524288, worker_limit=None))]
+    #[allow(clippy::too_many_arguments)]
     fn start_transfer(
         &self,
         sources: Vec<String>,
@@ -185,6 +186,7 @@ impl YuttoSession {
         overwrite: bool,
         workers: usize,
         block_size: usize,
+        worker_limit: Option<PyRef<'_, TransferWorkerLimit>>,
     ) -> PyResult<TransferHandle> {
         start_transfer_with_session(
             &self.session,
@@ -194,7 +196,30 @@ impl YuttoSession {
             overwrite,
             workers,
             block_size,
+            worker_limit.map(|limit| limit.inner.clone()),
         )
+    }
+}
+
+#[pyclass(frozen, module = "yutto._core")]
+struct TransferWorkerLimit {
+    inner: WorkerLimit,
+}
+
+#[pymethods]
+impl TransferWorkerLimit {
+    #[new]
+    fn new(capacity: i64) -> PyResult<Self> {
+        let capacity = usize::try_from(capacity)
+            .map_err(|_| PyValueError::new_err("worker limit capacity must be positive"))?;
+        let inner =
+            WorkerLimit::new(capacity).map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Ok(Self { inner })
+    }
+
+    #[getter]
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
     }
 }
 
@@ -272,6 +297,7 @@ impl ProgressSink for StateProgress {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn start_transfer_with_session(
     session: &Session,
     sources: Vec<String>,
@@ -280,6 +306,7 @@ fn start_transfer_with_session(
     overwrite: bool,
     workers: usize,
     block_size: usize,
+    worker_limit: Option<WorkerLimit>,
 ) -> PyResult<TransferHandle> {
     if sources.is_empty() {
         return Err(PyValueError::new_err("at least one source is required"));
@@ -315,6 +342,7 @@ fn start_transfer_with_session(
             target,
             overwrite,
             spec,
+            worker_limit,
             cancellation: task_cancellation.clone(),
             state: task_state.clone(),
         })
@@ -344,6 +372,7 @@ struct TransferArgs {
     target: PathBuf,
     overwrite: bool,
     spec: DownloadSpec,
+    worker_limit: Option<WorkerLimit>,
     cancellation: CancellationToken,
     state: Arc<Mutex<TransferState>>,
 }
@@ -385,12 +414,14 @@ async fn run_transfer(args: TransferArgs) -> Result<u64, String> {
     }
 
     let progress = Arc::new(StateProgress { state: args.state });
-    let result = Downloader::new(args.spec, sources, sink.clone())
+    let mut downloader = Downloader::new(args.spec, sources, sink.clone())
         .map_err(|error| error.to_string())?
         .with_progress_sink(progress)
-        .with_cancellation_token(args.cancellation)
-        .run()
-        .await;
+        .with_cancellation_token(args.cancellation);
+    if let Some(worker_limit) = args.worker_limit {
+        downloader = downloader.with_worker_limit(worker_limit);
+    }
+    let result = downloader.run().await;
     let close_result = sink.close().await;
     match (result, close_result) {
         (Ok(report), Ok(())) => Ok(report.committed_bytes),
@@ -436,6 +467,7 @@ fn yutto(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<YuttoSession>()?;
     module.add_class::<NativeResponse>()?;
     module.add_class::<TransferHandle>()?;
+    module.add_class::<TransferWorkerLimit>()?;
     module.add_class::<TransferSnapshot>()?;
     module.add("HttpError", module.py().get_type::<HttpError>())?;
     module.add("InvalidUrlError", module.py().get_type::<InvalidUrlError>())?;
