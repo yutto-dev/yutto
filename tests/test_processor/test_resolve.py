@@ -17,14 +17,16 @@ from yutto.core.result import ResolvedItem, ResolveFailure, ResolveResult
 from yutto.download_manager import DownloadManager
 from yutto.exceptions import ErrorCode, MaxRetryError, NotFoundError, NotLoginError, ResolveFailedError
 from yutto.extractor._abc import BatchExtractor
+from yutto.extractor.common import build_bangumi_info
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
-from yutto.types import AId, CId, ResolvableEpisode
+from yutto.types import AId, BvId, CId, EpisodeId, ResolvableEpisode
 from yutto.utils.fetcher import Fetcher
 from yutto.utils.filter import PublicationTimeFilter
 from yutto.utils.functional import as_sync
 
 if TYPE_CHECKING:
+    from yutto.api.bangumi import BangumiListItem
     from yutto.api.ugc_video import UgcVideoList
     from yutto.core.events import DownloadEvent
     from yutto.extractor._abc import EpisodeListedCallback, ExtractorResolveOutcome
@@ -34,12 +36,92 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.processor
 
 
+@pytest.fixture
+def extractor_options() -> ExtractorOptions:
+    return {
+        "episodes": "1",
+        "with_extra_episodes": False,
+        "skip_preview": False,
+        "require_video": True,
+        "require_audio": True,
+        "require_danmaku": True,
+        "require_subtitle": True,
+        "require_metadata": False,
+        "require_cover": True,
+        "require_chapter_info": True,
+        "danmaku_format": "ass",
+        "subpath_template": "{auto}",
+        "ai_translation_language": None,
+        "publication_time_filter": PublicationTimeFilter.from_strings(),
+    }
+
+
+def test_build_bangumi_info_projects_listing_metadata(extractor_options: ExtractorOptions):
+    bangumi_info: BangumiListItem = {
+        "id": 1,
+        "name": "第1话 冒险的结束",
+        "cid": CId("1277806556"),
+        "episode_id": EpisodeId("779775"),
+        "avid": BvId("BV1Nw411C7qS"),
+        "duration": 1559933,
+        "is_section": False,
+        "is_preview": False,
+        "metadata": {
+            "title": "第1话 冒险的结束",
+            "show_title": "《葬送的芙莉莲》第1话 冒险的结束",
+            "plot": "寿命逾千年的魔法使芙莉莲，踏上了了解人类的旅途。",
+            "thumb": "https://i0.hdslb.com/cover.png",
+            "premiered": 1698148800,
+            "dateadded": 1700000000,
+            "actor": [
+                {
+                    "name": "哔哩哔哩番剧",
+                    "role": "UP主",
+                    "thumb": "https://i1.hdslb.com/avatar.jpg",
+                    "profile": "https://space.bilibili.com/928123",
+                    "order": 0,
+                }
+            ],
+            "genre": [],
+            "tag": ["漫画改", "奇幻", "治愈", "冒险"],
+            "source": "",
+            "original_filename": "",
+            "website": "",
+            "chapter_info_data": [],
+        },
+    }
+
+    info = build_bangumi_info(
+        bangumi_info,
+        extractor_options,
+        {"title": "葬送的芙莉莲"},
+        "{title}/{name}",
+    )
+
+    assert info["listing"] == ResolvedItem(
+        avid=BvId("BV1Nw411C7qS"),
+        cid=CId("1277806556"),
+        url="https://www.bilibili.com/bangumi/play/ep779775",
+        name="第1话 冒险的结束",
+        title="葬送的芙莉莲",
+        cover_url="https://i0.hdslb.com/cover.png",
+        planned_path=Path("葬送的芙莉莲/第1话 冒险的结束"),
+        uploader="哔哩哔哩番剧",
+        description="寿命逾千年的魔法使芙莉莲，踏上了了解人类的旅途。",
+        tags=("漫画改", "奇幻", "治愈", "冒险"),
+        pubdate=1698148800,
+        duration=1559,
+    )
+
+
 def make_info(
     name: str,
     display_group: str | None = None,
     *,
     description: str = "视频简介",
     tags: tuple[str, ...] = ("标签A", "标签B"),
+    pubdate: int = 0,
+    duration: int = 0,
 ) -> EpisodeInfo:
     planned_path = Path(f"标题/{name}")
     return {
@@ -53,6 +135,8 @@ def make_info(
             uploader="某UP主",
             description=description,
             tags=tags,
+            pubdate=pubdate,
+            duration=duration,
             planned_path=planned_path,
             display_group=display_group,
         ),
@@ -130,6 +214,8 @@ async def test_resolve_items_lists_stable_info_without_resolving_data(monkeypatc
         uploader="某UP主",
         description="视频简介",
         tags=("标签A", "标签B"),
+        pubdate=0,
+        duration=0,
     )
     assert items.items == (expected_item,)
     assert items.failures == ()

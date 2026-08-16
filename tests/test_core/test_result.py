@@ -42,6 +42,8 @@ def test_resolved_item_is_a_typed_immutable_listing_snapshot():
         "uploader": "某UP主",
         "description": "视频简介",
         "tags": ("标签A", "标签B"),
+        "pubdate": 1698148800,
+        "duration": 1559,
     }
     item = ResolvedItem.model_validate(payload)
 
@@ -54,6 +56,8 @@ def test_resolved_item_is_a_typed_immutable_listing_snapshot():
     assert serialized["cid"] == "10"
     assert serialized["planned_path"] == "标题/P1"
     assert serialized["tags"] == ["标签A", "标签B"]
+    assert serialized["pubdate"] == 1698148800
+    assert serialized["duration"] == 1559
     schema = ResolvedItem.model_json_schema(mode="serialization")
     assert schema["properties"]["avid"]["type"] == "string"
     assert schema["properties"]["cid"]["type"] == "string"

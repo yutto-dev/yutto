@@ -443,6 +443,8 @@ def test_listing_event_and_result_share_jsonrpc_wire_shape():
         uploader="某UP主",
         description="视频简介",
         tags=("标签A", "标签B"),
+        pubdate=1698148800,
+        duration=1559,
     )
     expected = {
         "avid": "1",
@@ -456,6 +458,8 @@ def test_listing_event_and_result_share_jsonrpc_wire_shape():
         "uploader": "某UP主",
         "description": "视频简介",
         "tags": ["标签A", "标签B"],
+        "pubdate": 1698148800,
+        "duration": 1559,
     }
     event_wire, result_wire = serialize_both(item)
 
@@ -463,6 +467,8 @@ def test_listing_event_and_result_share_jsonrpc_wire_shape():
     assert type(event_wire["avid"]) is str
     assert type(event_wire["planned_path"]) is str
     assert type(event_wire["tags"]) is list
+    assert type(event_wire["pubdate"]) is int
+    assert type(event_wire["duration"]) is int
 
     default_item = ResolvedItem(
         avid=AId("2"),
@@ -485,6 +491,8 @@ def test_listing_event_and_result_share_jsonrpc_wire_shape():
         "uploader": "",
         "description": "",
         "tags": [],
+        "pubdate": 0,
+        "duration": 0,
     }
 
     assert serialize_both(default_item) == (default_expected, default_expected)

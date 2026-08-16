@@ -73,6 +73,8 @@ class ResolvedItem(_ResultModel):
     uploader: str = ""
     description: str = ""
     tags: tuple[str, ...] = ()
+    pubdate: int = 0
+    duration: int = 0
 
     @field_validator("avid", mode="plain", json_schema_input_type=str)
     @classmethod

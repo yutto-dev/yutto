@@ -19,7 +19,7 @@ from yutto.types import (
 )
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
-from yutto.utils.metadata import MetaData
+from yutto.utils.metadata import Actor, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
@@ -37,6 +37,7 @@ class BangumiListItem(TypedDict):
     cid: CId
     episode_id: EpisodeId
     avid: AvId
+    duration: int
     is_section: bool  # 是否属于专区
     is_preview: bool
     metadata: MetaData
@@ -83,9 +84,15 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
                 cid=CId(str(item["cid"])),
                 episode_id=EpisodeId(str(item["id"])),
                 avid=BvId(item["bvid"]),
+                duration=item.get("duration", 0),
                 is_section=i >= len(result["episodes"]),
                 is_preview=item["badge"] == "预告",  # 并不是一种鲁棒的方式，但目前貌似没有更好的方式了
-                metadata=_parse_bangumi_metadata(item),
+                metadata=_parse_bangumi_metadata(
+                    item,
+                    evaluate=result.get("evaluate"),
+                    styles=result.get("styles"),
+                    up_info=result.get("up_info"),
+                ),
             )
             for i, item in enumerate(result["episodes"] + section_episodes)
         ],
@@ -204,18 +211,56 @@ def _bangumi_episode_title(title: str, extra_title: str) -> str:
     return " ".join(title_parts)
 
 
-def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
+def _parse_bangumi_styles(styles: object) -> list[str]:
+    if not isinstance(styles, list):
+        return []
+    tags: list[str] = []
+    for style in styles:
+        name = style if isinstance(style, str) else style.get("name") if isinstance(style, dict) else None
+        if isinstance(name, str) and name:
+            tags.append(name)
+    return tags
+
+
+def _parse_bangumi_actor(up_info: object) -> list[Actor]:
+    if not isinstance(up_info, dict):
+        return []
+    name = up_info.get("uname")
+    if not isinstance(name, str) or not name:
+        return []
+    thumb = up_info.get("avatar")
+    mid = up_info.get("mid")
+    profile = f"https://space.bilibili.com/{mid}" if isinstance(mid, (int, str)) and str(mid) else ""
+    return [
+        Actor(
+            name=name,
+            role="UP主",
+            thumb=thumb if isinstance(thumb, str) else "",
+            profile=profile,
+            order=0,
+        )
+    ]
+
+
+def _parse_bangumi_metadata(
+    item: dict[str, Any],
+    *,
+    evaluate: object = None,
+    styles: object = None,
+    up_info: object = None,
+) -> MetaData:
+    plot = evaluate if isinstance(evaluate, str) and evaluate else item["share_copy"]
     return MetaData(
         title=_bangumi_episode_title(item["title"], item["long_title"]),
         show_title=item["share_copy"],
-        plot=item["share_copy"],
+        plot=plot,
         thumb=item["cover"],
         premiered=item["pub_time"],
         dateadded=get_time_stamp_by_now(),
         source="",  # TODO
-        actor=[],  # TODO
+        actor=_parse_bangumi_actor(up_info),
         genre=[],  # TODO
-        tag=[],  # TODO
+        tag=_parse_bangumi_styles(styles),
         website="",  # TODO
         original_filename="",  # TODO
         chapter_info_data=[],  # There are no chapter info in bangumi for now
