@@ -9,6 +9,7 @@ from yutto.core.events import (
     DownloadEventSink,
     DownloadItemListed,
     DownloadItemSkipped,
+    DownloadMediaSelected,
     DownloadProgress,
     DownloadRequestQueued,
     DownloadStageChanged,
@@ -200,6 +201,30 @@ def _encode_runtime_event(event: DownloadEvent) -> tuple[str, dict[str, object]]
             if item is not None:
                 data["item"] = item
             return "progress", data
+        case DownloadMediaSelected(item=item, video=video, audio=audio):
+            return "media_selected", {
+                "item": item,
+                "video": (
+                    {
+                        "codec": video.codec,
+                        "quality": video.quality,
+                        "width": video.width,
+                        "height": video.height,
+                        "save_codec": video.save_codec,
+                    }
+                    if video is not None
+                    else None
+                ),
+                "audio": (
+                    {
+                        "codec": audio.codec,
+                        "quality": audio.quality,
+                        "save_codec": audio.save_codec,
+                    }
+                    if audio is not None
+                    else None
+                ),
+            }
         case DownloadItemSkipped(item=item, reason=reason):
             return "item_skipped", {"item": item, "reason": reason.value}
         case DownloadArtifactCreated(item=item, path=path):

@@ -12,10 +12,13 @@ from yutto.core.events import (
     DownloadEventSink,
     DownloadItemListed,
     DownloadItemSkipped,
+    DownloadMediaSelected,
     DownloadProgress,
     DownloadRequestQueued,
     DownloadStage,
     DownloadStageChanged,
+    SelectedAudioStream,
+    SelectedVideoStream,
 )
 from yutto.core.execution import ExecutionScopeFactory, RequestExecutionScopeFactory
 from yutto.core.operation import emit_download_event
@@ -53,6 +56,19 @@ class RecordingApplication:
 
     async def download(self, request: DownloadRequest) -> DownloadResult:
         self.event_sink.emit(DownloadStageChanged(name=DownloadStage.RESOLVING))
+        self.event_sink.emit(
+            DownloadMediaSelected(
+                item="video",
+                video=SelectedVideoStream(
+                    codec="av1",
+                    quality=120,
+                    width=3840,
+                    height=2160,
+                    save_codec="copy",
+                ),
+                audio=None,
+            )
+        )
         self.calls.append((self.scope_factory, request.source.url))
         return self.result
 
@@ -92,6 +108,15 @@ async def test_download_task_service_runs_requests_in_order_and_bridges_events()
         assert [(event.kind, event.data) for event in first_replay.events if event.kind == "stage"] == [
             ("stage", {"name": "resolving"})
         ]
+        selected = [event for event in first_replay.events if event.kind == "media_selected"]
+        assert len(selected) == 1
+        assert selected[0].data["video"] == {
+            "codec": "av1",
+            "quality": 120,
+            "width": 3840,
+            "height": 2160,
+            "save_codec": "copy",
+        }
 
 
 @as_sync
@@ -167,6 +192,37 @@ async def test_download_events_are_noop_outside_application_context():
             ),
         ),
         (
+            DownloadMediaSelected(
+                item="video",
+                video=SelectedVideoStream(
+                    codec="av1",
+                    quality=120,
+                    width=3840,
+                    height=2160,
+                    save_codec="copy",
+                ),
+                audio=SelectedAudioStream(codec="mp4a", quality=30280, save_codec="copy"),
+            ),
+            (
+                "media_selected",
+                {
+                    "item": "video",
+                    "video": {
+                        "codec": "av1",
+                        "quality": 120,
+                        "width": 3840,
+                        "height": 2160,
+                        "save_codec": "copy",
+                    },
+                    "audio": {
+                        "codec": "mp4a",
+                        "quality": 30280,
+                        "save_codec": "copy",
+                    },
+                },
+            ),
+        ),
+        (
             DownloadItemSkipped(item="video", reason=ItemSkipReason.ALREADY_EXISTS),
             ("item_skipped", {"item": "video", "reason": "already_exists"}),
         ),
@@ -184,6 +240,24 @@ def test_download_event_annotations_are_available_at_runtime():
     assert get_type_hints(DownloadArtifactCreated)["path"] is Path
     assert get_type_hints(DownloadItemSkipped)["reason"] is ItemSkipReason
     assert get_type_hints(DownloadItemListed)["item"] is ResolvedItem
+
+
+def test_encode_runtime_event_media_selected_omits_urls_and_handles_missing_streams():
+    kind, data = _encode_runtime_event(
+        DownloadMediaSelected(
+            item="audio-only",
+            video=None,
+            audio=SelectedAudioStream(codec="flac", quality=30251, save_codec="flac"),
+        )
+    )
+
+    assert kind == "media_selected"
+    assert data == {
+        "item": "audio-only",
+        "video": None,
+        "audio": {"codec": "flac", "quality": 30251, "save_codec": "flac"},
+    }
+    assert "url" not in repr(data).casefold()
 
 
 def test_encode_runtime_event_item_listed_carries_full_wire_fields():

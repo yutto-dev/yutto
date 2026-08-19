@@ -5,8 +5,11 @@ from typing import TYPE_CHECKING
 from yutto.core.events import (
     DownloadArtifactCreated,
     DownloadItemSkipped,
+    DownloadMediaSelected,
     DownloadStage,
     DownloadStageChanged,
+    SelectedAudioStream,
+    SelectedVideoStream,
 )
 from yutto.core.operation import ReportColor, ReportLevel, emit_download_event, emit_download_report
 from yutto.core.result import Artifact, ArtifactKind, ItemResult, ItemSkipReason, ItemState
@@ -112,6 +115,31 @@ class DownloadExecutor:
 
 
 def emit_streams_selected(episode_data: EpisodeData, plan: DownloadPlan) -> None:
+    emit_download_event(
+        DownloadMediaSelected(
+            item=plan.item,
+            video=(
+                SelectedVideoStream(
+                    codec=plan.video.codec,
+                    quality=plan.video.quality,
+                    width=plan.video.width,
+                    height=plan.video.height,
+                    save_codec=plan.video_save_codec,
+                )
+                if plan.video is not None
+                else None
+            ),
+            audio=(
+                SelectedAudioStream(
+                    codec=plan.audio.codec,
+                    quality=plan.audio.quality,
+                    save_codec=plan.audio_save_codec,
+                )
+                if plan.audio is not None
+                else None
+            ),
+        )
+    )
     videos = episode_data["videos"]
     selected_video_index = plan.video.index if plan.video is not None else -1
     if not videos:

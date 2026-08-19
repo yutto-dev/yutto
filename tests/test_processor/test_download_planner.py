@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING, Literal
 import pytest
 
 from tests.test_processor.test_download_result import make_audio, make_request, make_resource_only_episode
+from yutto.core.events import DownloadMediaSelected, SelectedAudioStream, SelectedVideoStream
+from yutto.core.operation import bind_download_event_sink
+from yutto.downloader.executor import emit_streams_selected
 from yutto.downloader.planner import DownloadPlan, DownloadPlanner
 
 if TYPE_CHECKING:
@@ -105,6 +108,34 @@ def test_planner_snapshots_inputs_without_exposing_signed_urls(tmp_path: Path):
     assert plan.resources.danmaku.block_keyword_patterns == ("original-pattern",)
     assert "signed.example.test" not in repr(plan)
     assert "mirror.example.test" not in repr(plan)
+
+
+def test_stream_selection_event_projects_only_the_final_safe_media_values(tmp_path: Path):
+    episode, _, plan = make_plan(tmp_path, video_codec="av1", audio_codec="mp4a")
+    events = []
+
+    class Sink:
+        def emit(self, event) -> None:
+            events.append(event)
+
+    with bind_download_event_sink(Sink()):
+        emit_streams_selected(episode, plan)
+
+    assert events == [
+        DownloadMediaSelected(
+            item="episode",
+            video=SelectedVideoStream(
+                codec="av1",
+                quality=80,
+                width=1920,
+                height=1080,
+                save_codec="copy",
+            ),
+            audio=SelectedAudioStream(codec="mp4a", quality=30280, save_codec="copy"),
+        )
+    ]
+    assert "signed.example.test" not in repr(events)
+    assert "mirror.example.test" not in repr(events)
 
 
 def test_planner_resolves_nested_temporary_paths_and_forced_transcode(tmp_path: Path):

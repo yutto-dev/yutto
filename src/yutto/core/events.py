@@ -9,6 +9,8 @@ from yutto.core.result import (  # noqa: TC001 - runtime type hints support sche
     ItemSkipReason,
     ResolvedItem,
 )
+from yutto.media.codec import AudioCodec, VideoCodec  # noqa: TC001 - runtime event contract
+from yutto.media.quality import AudioQuality, VideoQuality  # noqa: TC001 - runtime event contract
 
 
 class DownloadStage(StrEnum):
@@ -51,6 +53,29 @@ class DownloadProgress:
 
 
 @dataclass(frozen=True, slots=True)
+class SelectedVideoStream:
+    codec: VideoCodec
+    quality: VideoQuality
+    width: int
+    height: int
+    save_codec: str
+
+
+@dataclass(frozen=True, slots=True)
+class SelectedAudioStream:
+    codec: AudioCodec
+    quality: AudioQuality
+    save_codec: str
+
+
+@dataclass(frozen=True, slots=True)
+class DownloadMediaSelected:
+    item: str
+    video: SelectedVideoStream | None
+    audio: SelectedAudioStream | None
+
+
+@dataclass(frozen=True, slots=True)
 class DownloadItemSkipped:
     item: str
     reason: ItemSkipReason
@@ -74,6 +99,7 @@ DownloadEvent: TypeAlias = (
     | DownloadRequestQueued
     | DownloadStageChanged
     | DownloadProgress
+    | DownloadMediaSelected
     | DownloadItemSkipped
     | DownloadArtifactCreated
     | DownloadItemListed
