@@ -63,11 +63,12 @@ def build_bangumi_info(
     auto_subpath_template: str = "{name}",
 ) -> EpisodeInfo:
     avid = bangumi_info["avid"]
+    episode_name_prefix = "【预告】" if bangumi_info["is_preview"] else ""
     subpath_variables_base: PathTemplateVariableDict = {
         "id": bangumi_info["id"],
         "aid": str(avid.as_aid()),
         "bvid": str(avid.as_bvid()),
-        "name": bangumi_info["name"],
+        "name": f"{episode_name_prefix}{bangumi_info['name']}",
         "title": UNKNOWN,
         "username": UNKNOWN,
         "series_title": UNKNOWN,
@@ -85,7 +86,7 @@ def build_bangumi_info(
             avid=avid,
             cid=bangumi_info["cid"],
             url=f"https://www.bilibili.com/bangumi/play/ep{bangumi_info['episode_id']}",
-            name=bangumi_info["name"],
+            name=f"{episode_name_prefix}{bangumi_info['name']}",
             title=str(subpath_variables_base["title"]),
             cover_url=bangumi_info["metadata"]["thumb"],
             uploader=uploader,
