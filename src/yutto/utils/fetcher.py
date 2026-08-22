@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import quote, unquote, urlparse
 
@@ -22,7 +22,7 @@ from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import MaxRetryError
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Coroutine, Mapping
+    from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
 
     from yutto.auth import AuthInfo
     from yutto.core.execution import ExecutionScope
@@ -71,6 +71,33 @@ class MaxRetry:
             return Failure(MaxRetryError("超出最大重试次数！"))
 
         return connect_n_times
+
+
+class _FetchTrace:
+    def __init__(self, operation: str, url: str):
+        self.operation = operation
+        self.url = url
+
+    def complete(self, detail: str | None = None) -> None:
+        suffix = f" ({detail})" if detail is not None else ""
+        emit_download_report(f"{self.operation} completed: {self.url}{suffix}", level=ReportLevel.DEBUG)
+
+
+@contextmanager
+def trace_fetch(operation: str, url: str) -> Iterator[_FetchTrace]:
+    emit_download_report(f"{operation} started: {url}", level=ReportLevel.DEBUG)
+    trace = _FetchTrace(operation, url)
+    try:
+        yield trace
+    except (asyncio.CancelledError, Exception) as error:
+        error_detail = type(error).__name__
+        if str(error):
+            error_detail += f": {error}"
+        emit_download_report(
+            f"{operation} failed: {url} ({error_detail})",
+            level=ReportLevel.DEBUG,
+        )
+        raise
 
 
 def unwrap_fetch_result(result: Result[RetT, MaxRetryError]) -> RetT:
@@ -127,11 +154,14 @@ class Fetcher:
         encoding: str | None = None,
     ) -> str | None:
         async with scope.fetch_guard():
-            emit_download_report(f"Fetch text: {url}", level=ReportLevel.DEBUG)
-            resp = await scope.session.get(url, params=_query_params(params))
-            if not resp.is_success:
-                return None
-            return resp.body.decode(encoding or "utf-8", errors="replace")
+            with trace_fetch("Fetch text", url) as trace:
+                resp = await scope.session.get(url, params=_query_params(params))
+                if not resp.is_success:
+                    trace.complete(f"HTTP {resp.status_code}")
+                    return None
+                body = resp.body
+                trace.complete(f"HTTP {resp.status_code}, {len(body)} bytes")
+                return body.decode(encoding or "utf-8", errors="replace")
 
     @staticmethod
     @MaxRetry(2)
@@ -142,11 +172,14 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> bytes | None:
         async with scope.fetch_guard():
-            emit_download_report(f"Fetch bin: {url}", level=ReportLevel.DEBUG)
-            resp = await scope.session.get(url, params=_query_params(params))
-            if not resp.is_success:
-                return None
-            return resp.body
+            with trace_fetch("Fetch bin", url) as trace:
+                resp = await scope.session.get(url, params=_query_params(params))
+                if not resp.is_success:
+                    trace.complete(f"HTTP {resp.status_code}")
+                    return None
+                body = resp.body
+                trace.complete(f"HTTP {resp.status_code}, {len(body)} bytes")
+                return body
 
     @staticmethod
     @MaxRetry(2)
@@ -157,11 +190,14 @@ class Fetcher:
         params: Mapping[str, Any] | None = None,
     ) -> Any:
         async with scope.fetch_guard():
-            emit_download_report(f"Fetch json: {url}", level=ReportLevel.DEBUG)
-            resp = await scope.session.get(url, params=_query_params(params))
-            if not resp.is_success:
-                resp.raise_for_status()
-            return json.loads(resp.body)
+            with trace_fetch("Fetch json", url) as trace:
+                resp = await scope.session.get(url, params=_query_params(params))
+                if not resp.is_success:
+                    resp.raise_for_status()
+                body = resp.body
+                result = json.loads(body)
+                trace.complete(f"HTTP {resp.status_code}, {len(body)} bytes")
+                return result
 
     @staticmethod
     @MaxRetry(2)
@@ -170,36 +206,38 @@ class Fetcher:
         # 为 SEO 的搜索引擎链接、甚至有的 av、BV 链接实际上是番剧页面，一一列举实在太麻烦，而且最后一种
         # 情况需要在 av、BV 解析一部分信息后才能知道是否是番剧页面，处理起来非常麻烦（bilili 就是这么做的）
         async with scope.fetch_guard():
-            resp = await scope.session.get(url)
-            redirected_url = resp.url
-            if redirected_url == url:
-                emit_download_report(f"Get redircted url: {url}", level=ReportLevel.DEBUG)
-            else:
-                emit_download_report(
-                    f"Get redircted url: {url} -> {redirected_url}",
-                    level=ReportLevel.DEBUG,
-                )
-            return redirected_url
+            with trace_fetch("Fetch redirected url", url) as trace:
+                resp = await scope.session.get(url)
+                redirected_url = resp.url
+                if redirected_url == url:
+                    trace.complete(f"HTTP {resp.status_code}, unchanged")
+                else:
+                    trace.complete(f"HTTP {resp.status_code}, redirected to {redirected_url}")
+                return redirected_url
 
     @staticmethod
     @MaxRetry(2)
     async def get_size(scope: ExecutionScope, url: str) -> int | None:
         async with scope.fetch_guard():
-            size = await scope.session.probe_size(url)
-            if size is not None:
-                emit_download_report(f"Get size: {url} {size}", level=ReportLevel.DEBUG)
-            return size
+            with trace_fetch("Fetch size", url) as trace:
+                size = await scope.session.probe_size(url)
+                if size is not None:
+                    trace.complete(f"{size} bytes")
+                else:
+                    trace.complete("size unknown")
+                return size
 
     @staticmethod
     @MaxRetry(2)
     async def touch_url(scope: ExecutionScope, url: str) -> None:
         if url in scope.touched_urls:
-            emit_download_report(f"touch_url cache hit: {url}", level=ReportLevel.DEBUG)
+            emit_download_report(f"Fetch touch skipped: {url} (cache hit)", level=ReportLevel.DEBUG)
             return
         async with scope.fetch_guard():
-            emit_download_report(f"Touch url: {url}", level=ReportLevel.DEBUG)
-            await scope.session.get(url)
-            scope.touched_urls.add(url)
+            with trace_fetch("Fetch touch", url) as trace:
+                resp = await scope.session.get(url)
+                scope.touched_urls.add(url)
+                trace.complete(f"HTTP {resp.status_code}")
 
 
 def _query_params(params: Mapping[str, Any] | None) -> list[tuple[str, str]] | None:
