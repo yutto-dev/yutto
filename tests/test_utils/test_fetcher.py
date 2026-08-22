@@ -143,7 +143,7 @@ class _StatusSession:
 
 
 @as_sync
-async def test_get_size_uses_the_native_probe_and_only_logs_a_known_size(monkeypatch: pytest.MonkeyPatch):
+async def test_get_size_reports_started_and_completed_with_probe_result(monkeypatch: pytest.MonkeyPatch):
     class SizeSession:
         def __init__(self):
             self.sizes = [42, None]
@@ -161,7 +161,12 @@ async def test_get_size_uses_the_native_probe_and_only_logs_a_known_size(monkeyp
     assert await Fetcher.get_size(scope, "https://example.com/known") == Success(42)
     assert await Fetcher.get_size(scope, "https://example.com/unknown") == Success(None)
     assert session.urls == ["https://example.com/known", "https://example.com/unknown"]
-    assert reports == ["Get size: https://example.com/known 42"]
+    assert reports == [
+        "Fetch size started: https://example.com/known",
+        "Fetch size completed: https://example.com/known (42 bytes)",
+        "Fetch size started: https://example.com/unknown",
+        "Fetch size completed: https://example.com/unknown (size unknown)",
+    ]
 
 
 @as_sync
