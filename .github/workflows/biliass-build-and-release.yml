@@ -9,12 +9,12 @@ on:
     paths:
       - "packages/biliass/**"
       - ".github/workflows/biliass-build-and-release.yml"
-      - ".github/workflows/native-build-and-release.yml"
+      - ".github/workflows/build-and-release.yml"
   pull_request:
     paths:
       - "packages/biliass/**"
       - ".github/workflows/biliass-build-and-release.yml"
-      - ".github/workflows/native-build-and-release.yml"
+      - ".github/workflows/build-and-release.yml"
   merge_group:
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   build-and-release:
-    uses: ./.github/workflows/native-build-and-release.yml
+    uses: ./.github/workflows/build-and-release.yml
     with:
       working-directory: packages/biliass
       artifact-prefix: wheels

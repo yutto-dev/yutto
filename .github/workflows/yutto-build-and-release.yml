@@ -1,13 +1,37 @@
-name: Release
+name: Build and Release (yutto)
 
 on:
   push:
     tags:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches:
+      - main
+    paths:
+      - "src/yutto/**"
+      - "rust/**"
+      - "pyproject.toml"
+      - "README.md"
+      - "LICENSE"
+      - ".github/workflows/yutto-build-and-release.yml"
+      - ".github/workflows/build-and-release.yml"
+  pull_request:
+    paths:
+      - "src/yutto/**"
+      - "rust/**"
+      - "pyproject.toml"
+      - "README.md"
+      - "LICENSE"
+      - ".github/workflows/yutto-build-and-release.yml"
+      - ".github/workflows/build-and-release.yml"
+  merge_group:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   msrv:
@@ -28,7 +52,7 @@ jobs:
 
   build-and-release:
     needs: msrv
-    uses: ./.github/workflows/native-build-and-release.yml
+    uses: ./.github/workflows/build-and-release.yml
     with:
       working-directory: .
       artifact-prefix: yutto

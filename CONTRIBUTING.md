@@ -329,7 +329,7 @@ git push origin --delete <NEW_BRANCH>                       # 同时删除远程
 just release
 ```
 
-简单来说就是创建一个 tag 并 push，此时便会触发 GitHub Actions 中的 [Release](.github/workflows/release.yml) 构建
+简单来说就是创建一个 tag 并 push，此时便会触发 GitHub Actions 中的 [Release](.github/workflows/yutto-build-and-release.yml) 构建
 
 如果你想要手动发布到 PyPI，可以使用下面的命令
 
