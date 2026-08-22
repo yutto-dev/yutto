@@ -14,5 +14,8 @@ insert_final_newline = true
 [*.{py,pyi,rs,sh,proto}]
 indent_size = 4
 
+[Dockerfile]
+indent_size = 4
+
 [*.md]
 indent_size = 3
