@@ -67,6 +67,7 @@ def make_request(tmp_dir: Path | None) -> DownloadRequest:
             "scope": {"batch": False, "with_section": True},
             "selection": {
                 "episodes": "2,4",
+                "skip_preview": True,
                 "start_time": "2024-01-02 03:04:05",
                 "end_time": "2025-06-07",
             },
@@ -189,6 +190,7 @@ async def test_process_request_preserves_extractor_mapping_and_passes_download_r
     assert captured_extractor_options == {
         "episodes": "2,4",
         "with_section": True,
+        "skip_preview": True,
         "require_video": True,
         "require_audio": False,
         "require_danmaku": True,

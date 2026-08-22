@@ -373,6 +373,7 @@ class DownloadManager:
                 extractor_options = ExtractorOptions(
                     episodes=request.selection.episodes,
                     with_section=request.scope.with_section,
+                    skip_preview=request.selection.skip_preview,
                     require_video=request.resources.video,
                     require_audio=request.resources.audio,
                     require_danmaku=request.resources.danmaku,

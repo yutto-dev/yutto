@@ -35,6 +35,7 @@ def download_request_from_namespace(args: argparse.Namespace) -> DownloadRequest
         },
         "selection": {
             "episodes": args.episodes,
+            "skip_preview": args.skip_preview,
             "start_time": args.batch_filter_start_time,
             "end_time": args.batch_filter_end_time,
         },
@@ -125,6 +126,7 @@ def _download_request_defaults_from_settings(settings: YuttoSettings) -> dict[st
         "scope": {"batch": False, "with_section": settings.batch.with_section},
         "selection": {
             "episodes": "1~-1",
+            "skip_preview": settings.batch.skip_preview,
             "start_time": settings.batch.batch_filter_start_time,
             "end_time": settings.batch.batch_filter_end_time,
         },

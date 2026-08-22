@@ -147,6 +147,7 @@ async def test_manager_reports_unmatched_url_as_structured_error(monkeypatch: py
 EMPTY_EXTRACTOR_OPTIONS: ExtractorOptions = {
     "episodes": "1",
     "with_section": False,
+    "skip_preview": False,
     "require_video": True,
     "require_audio": True,
     "require_danmaku": True,

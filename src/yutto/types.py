@@ -218,6 +218,7 @@ class MultiLangSubtitle(TypedDict):
 class ExtractorOptions(TypedDict):
     episodes: str
     with_section: bool
+    skip_preview: bool
     require_video: bool
     require_audio: bool
     require_danmaku: bool

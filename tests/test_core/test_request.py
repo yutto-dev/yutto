@@ -32,6 +32,7 @@ def test_default_namespace_maps_to_grouped_core_request():
     assert request.access.auth_profile == "default"
     assert request.scope.batch is False
     assert request.selection.episodes == "1~-1"
+    assert request.selection.skip_preview is False
     assert request.resources.video is True
     assert request.resources.metadata is False
     assert request.stream.video_download_codec == "avc"
@@ -58,6 +59,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
                 "--episodes",
                 "2,4~6",
                 "--with-section",
+                "--skip-preview",
                 "--batch-filter-start-time",
                 "2026-01-01",
                 "--batch-filter-end-time",
@@ -137,6 +139,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
     assert request.scope.model_dump() == {"batch": True, "with_section": True}
     assert request.selection.model_dump() == {
         "episodes": "2,4~6",
+        "skip_preview": True,
         "start_time": "2026-01-01",
         "end_time": "2026-02-01",
     }

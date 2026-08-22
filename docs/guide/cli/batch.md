@@ -83,6 +83,14 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 - 配置项 `batch.with_section`
 - 默认值 `False`
 
+## 跳过预告片
+
+- 参数 `--skip-preview`
+- 配置项 `batch.skip_preview`
+- 默认值 `False`
+
+启用后，番剧批量下载会在选集前排除预告片。因此 `--skip-preview -p=-1` 会选择最后一话正式内容。
+
 ## 指定稿件发布时间范围
 
 - 参数 `--batch-filter-start-time` 和 `--batch-filter-end-time` 分别表示`开始`和`结束`时间，该区间**左闭右开**

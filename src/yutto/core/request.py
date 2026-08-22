@@ -39,6 +39,7 @@ class SelectionRequestOptions(_RequestModel):
     """Filters applied while selecting episodes from an expanded scope."""
 
     episodes: str = "1~-1"
+    skip_preview: bool = False
     start_time: str | None = None
     end_time: str | None = None
 
