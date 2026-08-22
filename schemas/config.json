@@ -261,6 +261,11 @@
           "title": "With Section",
           "type": "boolean"
         },
+        "skip_preview": {
+          "default": false,
+          "title": "Skip Preview",
+          "type": "boolean"
+        },
         "batch_filter_start_time": {
           "anyOf": [
             {
@@ -486,6 +491,7 @@
       "$ref": "#/$defs/YuttoBatchSettings",
       "default": {
         "with_section": false,
+        "skip_preview": false,
         "batch_filter_start_time": null,
         "batch_filter_end_time": null
       }

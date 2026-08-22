@@ -85,9 +85,11 @@ class BangumiBatchExtractor(BatchExtractor):
         bangumi_list["pages"] = list(
             filter(lambda item: options["with_section"] or not item["is_section"], bangumi_list["pages"])
         )
+        if options["skip_preview"]:
+            bangumi_list["pages"] = list(filter(lambda item: not item["is_preview"], bangumi_list["pages"]))
         # 选集过滤
         episodes = parse_episodes_selection(options["episodes"], len(bangumi_list["pages"]))
-        bangumi_list["pages"] = list(filter(lambda item: item["id"] in episodes, bangumi_list["pages"]))
+        bangumi_list["pages"] = [item for index, item in enumerate(bangumi_list["pages"], start=1) if index in episodes]
         return ResolveOutcome(
             items=tuple(
                 make_bangumi_episode(

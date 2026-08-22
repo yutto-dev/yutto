@@ -455,6 +455,12 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         help="同时下载附加剧集（PV、预告以及特别篇等专区内容）",
     )
     group_batch.add_argument(
+        "--skip-preview",
+        action="store_true",
+        default=settings.batch.skip_preview,
+        help="跳过预告片",
+    )
+    group_batch.add_argument(
         "--batch-filter-start-time",
         default=settings.batch.batch_filter_start_time,
         help="只下载该时间之后（包含临界值）发布的稿件",
