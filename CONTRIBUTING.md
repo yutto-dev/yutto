@@ -24,11 +24,9 @@
 
 当然，如果你有更熟悉的编辑器或 IDE 的话，也是完全可以的。
 
-### Rust 开发工具链（可选）
+### Rust 开发工具链
 
-本 repo 是一个 monorepo，同时包含 yutto 和 biliass 两个包，其中 biliass 采用 Rust 编写，如果你有 biliass 联调的需求，则需要安装 Rust 工具链，安装方法请参考 [Rust 官方文档](https://www.rust-lang.org/tools/install)
-
-如果你不需要联调 biliass，那么可以通过注释掉 [pyproject.toml](./pyproject.toml) 中的 `tool.uv.sources` 和 `tool.uv.workspace`，避免 uv 将其当作一个子项目来处理。此时 uv 会安装 pypi 上预编译的 biliass wheel 包，而不会编译源码。这在大多数情况下是没有问题的，除非 yutto 使用了 biliass 的最新特性。
+yutto 虽然是一个 Python 项目，但是为了获得更好的性能，yutto 的部分功能模块是使用 Rust 编写的，这包含了当前 monorepo 中的 package biliass 以及 yutto 中的部分核心模块（下载器模块 haya 等）。因此如需开发 yutto，安装 Rust 开发工具链是必要的，安装方法请参考 [Rust 官方文档](https://www.rust-lang.org/tools/install)
 
 ## 本地调试
 
