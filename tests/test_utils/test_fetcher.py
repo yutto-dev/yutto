@@ -216,7 +216,11 @@ async def test_fetch_bin_keeps_non_success_status_as_success_none():
 
 
 @as_sync
-async def test_fetch_json_retries_non_success_status():
+async def test_fetch_json_retries_non_success_status(monkeypatch: pytest.MonkeyPatch):
+    async def no_sleep(_delay: float) -> None:
+        return None
+
+    monkeypatch.setattr(fetcher_module.asyncio, "sleep", no_sleep)
     scope = ExecutionScope(cast("Any", _StatusSession(404)))
     match await Fetcher.fetch_json(scope, "https://example.com"):
         case Failure(error):

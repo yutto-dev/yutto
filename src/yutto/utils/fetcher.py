@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import random
 from contextlib import asynccontextmanager, contextmanager
 from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import quote, unquote, urlparse
@@ -31,46 +32,59 @@ RetT = TypeVar("RetT")
 InputT = ParamSpec("InputT")
 
 
-class MaxRetry:
-    """重试装饰器，为请求方法提供一定的重试次数
+class WithReconnect:
+    """重连装饰器，为请求方法提供一定的额外尝试次数。"""
 
-    ### Args
+    DEFAULT_MAX_RETRY = 4
+    RETRY_BACKOFF_BASE = 0.5
+    RETRY_BACKOFF_MAX = 4.0
+    RETRY_JITTER_RATIO = 0.2
 
-    - max_retry (int): 额外重试次数（如重试次数为 2，则最多尝试 3 次）
-    """
-
-    def __init__(self, max_retry: int = 2):
+    def __init__(self, max_retry: int = DEFAULT_MAX_RETRY):
         self.max_retry = max_retry
 
     def __call__(
         self, connect_once: Callable[InputT, Coroutine[Any, Any, RetT]]
     ) -> Callable[InputT, Coroutine[Any, Any, Result[RetT, MaxRetryError]]]:
         async def connect_n_times(*args: InputT.args, **kwargs: InputT.kwargs) -> Result[RetT, MaxRetryError]:
-            retry = self.max_retry + 1
-            while retry:
+            attempts = self.max_retry + 1
+            last_error: HttpError | None = None
+            for attempt in range(attempts):
                 try:
                     return Success(await connect_once(*args, **kwargs))
                 except SessionClosedError:
                     raise
-                except HttpTimeoutError:
-                    emit_download_report(
-                        f"抓取超时，正在重试，剩余 {retry - 1} 次",
-                        level=ReportLevel.WARNING,
-                    )
-                except (InvalidUrlError, UnsupportedProtocolError) as e:
-                    raise e
-                except HttpError as e:
-                    await asyncio.sleep(0.5)
-                    error_type = e.__class__.__name__
-                    emit_download_report(
-                        f"抓取失败（{error_type}），正在重试，剩余 {retry - 1} 次",
-                        level=ReportLevel.WARNING,
-                    )
-                finally:
-                    retry -= 1
+                except (InvalidUrlError, UnsupportedProtocolError):
+                    raise
+                except HttpError as error:
+                    last_error = error
+
+                remaining = attempts - attempt - 1
+                if remaining == 0:
+                    break
+                delay = self._retry_delay(attempt)
+                error_label = (
+                    "抓取超时"
+                    if isinstance(last_error, HttpTimeoutError)
+                    else f"抓取失败（{type(last_error).__name__}）"
+                )
+                emit_download_report(
+                    f"{error_label}，将在 {delay:.1f} 秒后重试，剩余 {remaining} 次",
+                    level=ReportLevel.WARNING,
+                )
+                await asyncio.sleep(delay)
+
             return Failure(MaxRetryError("超出最大重试次数！"))
 
         return connect_n_times
+
+    @staticmethod
+    def _retry_delay(attempt: int) -> float:
+        base = min(WithReconnect.RETRY_BACKOFF_BASE * 2**attempt, WithReconnect.RETRY_BACKOFF_MAX)
+        return random.uniform(
+            base * (1 - WithReconnect.RETRY_JITTER_RATIO),
+            min(base * (1 + WithReconnect.RETRY_JITTER_RATIO), WithReconnect.RETRY_BACKOFF_MAX),
+        )
 
 
 class _FetchTrace:
@@ -145,7 +159,7 @@ def cookies_from_auth(auth_info: AuthInfo | None) -> dict[str, str]:
 
 class Fetcher:
     @staticmethod
-    @MaxRetry(2)
+    @WithReconnect()
     async def fetch_text(
         scope: ExecutionScope,
         url: str,
@@ -164,7 +178,7 @@ class Fetcher:
                 return body.decode(encoding or "utf-8", errors="replace")
 
     @staticmethod
-    @MaxRetry(2)
+    @WithReconnect()
     async def fetch_bin(
         scope: ExecutionScope,
         url: str,
@@ -182,7 +196,7 @@ class Fetcher:
                 return body
 
     @staticmethod
-    @MaxRetry(2)
+    @WithReconnect()
     async def fetch_json(
         scope: ExecutionScope,
         url: str,
@@ -200,7 +214,7 @@ class Fetcher:
                 return result
 
     @staticmethod
-    @MaxRetry(2)
+    @WithReconnect()
     async def get_redirected_url(scope: ExecutionScope, url: str) -> str:
         # 关于为什么要前往重定向 url，是因为 B 站的 url 类型实在是太多了，比如有 b23.tv 的短链接
         # 为 SEO 的搜索引擎链接、甚至有的 av、BV 链接实际上是番剧页面，一一列举实在太麻烦，而且最后一种
@@ -216,7 +230,7 @@ class Fetcher:
                 return redirected_url
 
     @staticmethod
-    @MaxRetry(2)
+    @WithReconnect()
     async def get_size(scope: ExecutionScope, url: str) -> int | None:
         async with scope.fetch_guard():
             with trace_fetch("Fetch size", url) as trace:
@@ -228,7 +242,7 @@ class Fetcher:
                 return size
 
     @staticmethod
-    @MaxRetry(2)
+    @WithReconnect()
     async def touch_url(scope: ExecutionScope, url: str) -> None:
         if url in scope.touched_urls:
             emit_download_report(f"Fetch touch skipped: {url} (cache hit)", level=ReportLevel.DEBUG)
