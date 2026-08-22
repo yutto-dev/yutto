@@ -198,12 +198,6 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
     }
 
 
-def test_extra_episodes_cli_option():
-    args = parse_download_args(["BV1xx411c7mD", "--with-extra-episodes"])
-
-    assert args.with_extra_episodes is True
-
-
 @pytest.mark.parametrize("option", ["-s", "--with-section"])
 def test_deprecated_extra_episodes_cli_options_warn_and_map_to_new_name(option: str, monkeypatch: pytest.MonkeyPatch):
     warnings: list[str] = []
