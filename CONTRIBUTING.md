@@ -47,47 +47,73 @@ uv run yutto -v
 
 这部分内容带你了解下 yutto 的主要模块结构与工作流程。
 
-> 本部分内容可能略有滞后，这里列出的是 2024-09-09 时 [bb207c1a0cff4ff338a0464dd2d6f967441ca0e2](https://github.com/yutto-dev/yutto/tree/bb207c1a0cff4ff338a0464dd2d6f967441ca0e2) 的模块结构，
+> 本部分内容可能略有滞后，这里列出的是 2026-08-22 时 [487aab0f6764bd40a072d5969d4019bc390d2912](https://github.com/yutto-dev/yutto/tree/487aab0f6764bd40a072d5969d4019bc390d2912) 的模块结构。
 
 ### 模块结构
 
 ```text
 .
-├── CONTRIBUTING.md                       # 贡献指南
-├── Dockerfile                            # 一个轻量的 yutto docker
-├── LICENSE                               # GPL-3.0 License
-├── README.md                             # 项目说明
-├── _typos.toml                           # typos 配置
-├── justfile                              # just 命令启动文件
-├── pyproject.toml                        # Python 统一配置，含各种工具链配置、依赖项声明等
+├── .github
+│   └── workflows                         # CI、构建与发布工作流
+├── docs                                  # VitePress 文档站点
+├── packages
+│   └── biliass                           # 独立发布的 biliass package
+│       ├── rust                          # biliass Rust 扩展
+│       └── src
+│           └── biliass                   # biliass Python package
+├── rust                                  # yutto Rust workspace
+│   └── crates
+│       ├── haya                          # 异步 Range 下载核心
+│       ├── haya-http                     # haya 的 HTTP 适配层
+│       └── yutto                         # 原生会话、下载后端与 PyO3 绑定
+├── schemas                               # 生成的配置 Schema
+├── scripts                               # 版本读取、Schema 生成等维护脚本
+├── skills                                # 随仓库分发的使用说明
 ├── src
-│   └── yutto
-│       ├── __init__.py
-│       ├── __main__.py                   # 命令行入口，含所有命令选项
-│       ├── __version__.py
-│       ├── types.py                      # yutto 的主要类型声明（非全部，部分类型是定义在自己模块之内的）
-│       ├── api                           # bilibili API 的基本函数封装，输入输出转换为 yutto 的主要类型
+│   └── yutto                             # yutto Python package
+│       ├── api                           # Bilibili API 封装
 │       │   ├── __init__.py
 │       │   ├── bangumi.py                # 番剧相关
 │       │   ├── cheese.py                 # 课程相关
 │       │   ├── collection.py             # 合集相关
-│       │   ├── danmaku.py                # 弹幕相关（xml、protobuf）
-│       │   ├── space.py                  # 个人空间相关（收藏夹、合集、列表）
+│       │   ├── danmaku.py                # 弹幕相关
+│       │   ├── space.py                  # 个人空间相关
 │       │   ├── ugc_video.py              # 投稿视频相关
 │       │   └── user_info.py              # 用户信息相关
-│       ├── cli                           # 命令行界面相关模块
+│       ├── cli                           # 命令行界面
 │       │   ├── __init__.py
-│       │   ├── cli.py                    # 命令行解析
-│       │   └── settings.py               # 设置相关
-│       ├── download_manager.py           # 下载管理器
-│       ├── media                         # bilibili 自己的一些数据类型绑定
+│       │   ├── cli.py                    # 参数解析
+│       │   ├── event_renderer.py         # CLI 事件渲染
+│       │   ├── request_adapter.py        # CLI 参数到请求模型的转换
+│       │   └── settings.py               # 配置文件模型与加载
+│       ├── core                          # 与前端无关的应用层
 │       │   ├── __init__.py
-│       │   ├── codec.py                  # bilibili 的 codec
-│       │   └── quality.py                # bilibili 的 qn
-│       ├── exceptions.py                 # yutto 异常声明模块
-│       ├── extractor                     # 页面提取器（每种入口 url 对应一个 extractor）
+│       │   ├── application.py            # 应用编排
+│       │   ├── events.py                 # 下载事件
+│       │   ├── execution.py              # 请求级执行上下文
+│       │   ├── operation.py              # 事件与日志绑定
+│       │   ├── request.py                # 下载请求模型
+│       │   ├── result.py                 # 下载与解析结果模型
+│       │   ├── serialization.py          # 结果序列化
+│       │   └── task_service.py           # server 任务服务
+│       ├── downloader                    # 下载处理模块
 │       │   ├── __init__.py
-│       │   ├── _abc.py                   # 基本抽象类
+│       │   ├── artifact_writer.py        # 字幕、弹幕等附加资源写入
+│       │   ├── downloader.py             # 单条目下载入口
+│       │   ├── executor.py               # 下载计划执行
+│       │   ├── media_muxer.py            # FFmpeg 音视频封装
+│       │   ├── path_leases.py            # 输出路径租约
+│       │   ├── planner.py                # 下载计划生成
+│       │   ├── progressbar.py            # 下载进度显示
+│       │   ├── selector.py               # 音视频流选择
+│       │   └── transfer.py               # 原生媒体传输
+│       ├── extractor                     # 页面提取器
+│       │   ├── utils
+│       │   │   ├── __init__.py
+│       │   │   ├── batch.py              # 批量提取辅助方法
+│       │   │   └── favourite.py          # 收藏夹辅助方法
+│       │   ├── __init__.py
+│       │   ├── _abc.py                   # 提取器抽象类
 │       │   ├── bangumi.py                # 番剧单话
 │       │   ├── bangumi_batch.py          # 番剧全集
 │       │   ├── cheese.py                 # 课程单话
@@ -95,100 +121,109 @@ uv run yutto -v
 │       │   ├── collection.py             # 合集
 │       │   ├── common.py                 # 低阶提取器（投稿视频、番剧、课程），每种视频类型对应一个低阶提取器
 │       │   ├── favourites.py             # 收藏夹
+│       │   ├── outcome.py                # 提取结果模型
 │       │   ├── series.py                 # 视频列表
 │       │   ├── ugc_video.py              # 投稿视频单集
 │       │   ├── ugc_video_batch.py        # 投稿视频批量
 │       │   ├── user_all_favourites.py    # 全部收藏夹
-│       │   ├── user_all_ugc_videos.py    # 个人空间全部
+│       │   ├── user_all_ugc_videos.py    # 个人空间全部投稿
 │       │   └── user_watch_later.py       # 稍后再看
-│       ├── downloader                    # 下载器相关模块
+│       ├── media                         # 编码与清晰度定义
 │       │   ├── __init__.py
-│       │   ├── downloader.py             # 下载器
-│       │   ├── progressbar.py            # 进度条（本部分可替换成为其他行为以支持更丰富的进度显示方式）
-│       │   └── selector.py               # 选集、内容过滤器（本部分可修改成支持交互的）
-│       ├── input_parser.py               # 文件解析器（解析任务列表、alias 文件）
-│       ├── path_templates.py             # 路径处理器（需处理路径变量）
-│       ├── py.typed
-│       ├── utils                         # yutto 无关或弱相关模块，不应依赖 yutto 强相关模块（api、extractor、downloader），含部分类型资源的基本封装（弹幕、字幕、描述文件）
+│       │   ├── codec.py
+│       │   └── quality.py
+│       ├── runtime                       # 长生命周期任务运行时
 │       │   ├── __init__.py
-│       │   ├── asynclib.py               # 封装部分异步相关方法
-│       │   ├── console                   # 命令行打印相关
+│       │   └── tasks.py
+│       ├── server                        # 本地 WebSocket JSON-RPC server
+│       │   ├── __init__.py
+│       │   ├── command.py                # server 命令入口
+│       │   ├── rpc.py                    # JSON-RPC 分发
+│       │   ├── service.py                # server 策略与数据转换
+│       │   └── websocket.py              # WebSocket server
+│       ├── utils                         # 网络、FFmpeg 与通用工具
+│       │   ├── console                   # 命令行输出
 │       │   │   ├── __init__.py
 │       │   │   ├── attributes.py
 │       │   │   ├── colorful.py
 │       │   │   ├── formatter.py
-│       │   │   ├── logger.py             # 其中的 Logger 是 yutto 主要的打印方式，yutto 中只应使用这一种打印方式
-│       │   │   └── status_bar.py         # 底部状态栏（主要用于显示进度条）
-│       │   ├── danmaku.py                # 「资源文件」弹幕基本封装
-│       │   ├── fetcher.py                # 基本抓取器
-│       │   ├── ffmpeg.py                 # FFmpeg 驱动单例模块
-│       │   ├── file_buffer.py            # 文件缓冲器（yutto 下载原理的核心）
-│       │   ├── filter.py                 # 数据过滤器（根据时间过滤选择的剧集）
-│       │   ├── functional                # yutto 需要用的一些实用基本函数（很多是直接参考 StackOverflow 的）
-│       │   │   ├── __init__.py           # 一些实用函数
-│       │   │   ├── async_object.py       # 一个简单的抽象类
-│       │   │   ├── async_to_sync.py      # 异步转同步
-│       │   │   ├── data_access.py        # 数据访问
-│       │   │   ├── filter_none_values.py # 过滤 None 值
-│       │   │   ├── functional.py         # 函数式编程工具
-│       │   │   ├── singleton.py          # 单例模式
-│       │   │   └── xmerge.py             # 合并多个迭代器
-│       │   ├── metadata.py               # 「资源文件」描述文件基本封装
-│       │   ├── priority.py               # 资源优先级判定（用于 codec、quality 判定）
-│       │   ├── subtitle.py               # 「资源文件」字幕基本封装
-│       │   └── time.py                   # 时间基本模块
-│       └── validator.py                  # 命令参数验证器（内含初期全局状态的设置）
-├── tests                                 # 测试目录
-│   ├── __init__.py
-│   ├── conftest.py                       # pytest 配置
-│   ├── test_api                          # API 测试模块，对应 yutto/api
-│   │   ├── __init__.py
-│   │   ├── test_bangumi.py
-│   │   ├── test_cheese.py
-│   │   ├── test_collection.py
-│   │   ├── test_danmaku.py
-│   │   ├── test_space.py
-│   │   ├── test_ugc_video.py
-│   │   └── test_user_info.py
-│   ├── test_e2e.py                       # 端到端测试
-│   ├── test_processor                    # processor 测试模块，对应 yutto/downloader
-│   │   ├── __init__.py
-│   │   ├── test_downloader.py
-│   │   ├── test_path_resolver.py
-│   │   └── test_selector.py
-│   └── test_utils                        # utils 测试模块，对应 yutto/utils
+│       │   │   ├── logger.py
+│       │   │   └── status_bar.py
+│       │   ├── functional                # 通用函数
+│       │   │   ├── __init__.py
+│       │   │   ├── async_to_sync.py
+│       │   │   ├── data_access.py
+│       │   │   ├── filter_none_values.py
+│       │   │   ├── functional.py
+│       │   │   ├── singleton.py
+│       │   │   └── xmerge.py
+│       │   ├── __init__.py
+│       │   ├── asynclib.py               # 异步辅助方法
+│       │   ├── danmaku.py                # 弹幕资源处理
+│       │   ├── fetcher.py                # 网络请求封装
+│       │   ├── ffmpeg.py                 # FFmpeg 驱动
+│       │   ├── filter.py                 # 发布时间过滤
+│       │   ├── metadata.py               # 描述文件处理
+│       │   ├── priority.py               # 编码与清晰度优先级
+│       │   ├── subtitle.py               # 字幕资源处理
+│       │   └── time.py                   # 时间处理
 │       ├── __init__.py
-│       ├── test_data_access.py
-│       └── test_ffmpeg.py
-└── uv.lock                               # uv 依赖 lockfile
+│       ├── __main__.py                   # CLI 总入口
+│       ├── __version__.py                # 版本号
+│       ├── _core.pyi                     # 原生扩展类型声明
+│       ├── _native.py                    # 原生扩展适配
+│       ├── auth.py                       # 认证信息
+│       ├── download_manager.py           # 请求解析与下载调度
+│       ├── exceptions.py                 # 异常类型
+│       ├── input_parser.py               # alias 与任务列表解析
+│       ├── login.py                      # 登录流程
+│       ├── path_templates.py             # 下载路径模板
+│       ├── py.typed
+│       ├── types.py                      # 主要类型声明
+│       └── validator.py                  # 命令参数验证
+├── tests                                 # 测试目录
+│   ├── helpers                           # 测试辅助设施
+│   ├── test_api                          # API 测试
+│   ├── test_biliass                      # biliass 测试
+│   ├── test_core                         # 应用层与执行上下文测试
+│   ├── test_processor                    # 提取与下载处理测试
+│   ├── test_runtime                      # 任务运行时测试
+│   ├── test_server                       # server 测试
+│   └── test_utils                        # 通用工具测试
+├── CONTRIBUTING.md                       # 贡献指南
+├── Dockerfile                            # yutto Docker 镜像
+├── LICENSE                               # GPL-3.0 License
+├── README.md                             # 项目说明
+├── _typos.toml                           # typos 配置
+├── justfile                              # 开发与 CI 命令入口
+├── pyproject.toml                        # Python package 与 uv workspace 配置
+└── uv.lock                               # Python 依赖锁文件
 ```
 
 ### 工作流程
 
 切入代码的最好方式自然是从入口开始啦～ yutto 的命令行入口是 [`src/yutto/__main__.py`](./src/yutto/__main__.py)，这里列出了 yutto 整个的工作流程：
 
-1. 解析参数并利用 [yutto/validator.py](./src/yutto/validator.py) 验证参数的正确性，虽然 argparse 已经做了基本的验证，但 validator 会进一步的验证。另外目前 validator 还会顺带做全局状态的设置的工作，这部分以后可能修改。
-2. 利用 [yutto/input_parser.py](./src/yutto/input_parser.py) 解析 alias 和任务列表
-3. 遍历任务列表下载：
-   1. 初始化提取器 [yutto/extractor/](./src/yutto/extractor/)
-   2. 利用所有提取器处理 id 为可识别的 url
-   3. 重定向一下入口 url 到可识别的 url
-   4. 从入口 url 提取信息，构造解析任务
-      1. 如果是单话下载（继承 `yutto.extractor._abc.SingleExtractor`）
-         1. 解析有用信息以提供给路径变量
-         2. 使用 `yutto.extractor.common` 里的低阶提取器构造链接解析任务
-      2. 如果是批量下载（继承 `yutto.extractor._abc.BatchExtractor`）
-         1. 循环解析列表
-         2. 展平列表
-         3. 选集（如果支持的话）
-         4. 根据列表构造协程任务（任务包含了解析信息和利用低阶提取器提取）
-         5. 构造解析任务
-   5. 依次执行解析任务，并将结果依次传入 [`src/yutto/downloader/downloader.py`](src/yutto/downloader/downloader.py) 进行下载
-      1. 选择清晰度
-      2. 显示详细信息
-      3. 字幕、弹幕、描述文件等额外资源下载
-      4. 下载音频、视频
-      5. 合并音频、视频
+1. 使用 [`src/yutto/cli/cli.py`](./src/yutto/cli/cli.py) 解析参数，并利用 [`src/yutto/validator.py`](./src/yutto/validator.py) 进一步验证参数。
+2. 利用 [`src/yutto/input_parser.py`](./src/yutto/input_parser.py) 解析 alias 和任务列表。
+3. 利用 [`src/yutto/cli/request_adapter.py`](./src/yutto/cli/request_adapter.py) 将展开后的每组参数转换为下载请求。
+4. 处理任务列表中的下载请求：
+   1. 根据单话或批量模式初始化对应的 [`extractor`](./src/yutto/extractor/)。
+   2. 利用 extractor 将裸 ID 转换为可识别的 URL。
+   3. 重定向入口 URL，并选择能够处理该 URL 的 extractor。
+   4. 从入口 URL 提取信息，构造解析任务：
+      1. 如果是单话下载（继承 `yutto.extractor._abc.SingleExtractor`）：
+         1. 解析标题、路径等基本信息。
+         2. 构造用于获取音视频流和附加资源的解析任务。
+      2. 如果是批量下载（继承 `yutto.extractor._abc.BatchExtractor`）：
+         1. 解析并展平列表。
+         2. 根据选集、发布时间、分区和预告等条件过滤列表。
+         3. 为列表中的每一项构造解析任务。
+   5. [`src/yutto/download_manager.py`](./src/yutto/download_manager.py) 根据 `--jobs` 设置并发调度各项，并将解析结果传入 [`src/yutto/downloader/downloader.py`](./src/yutto/downloader/downloader.py) 下载：
+      1. 选择音视频清晰度和编码。
+      2. 生成字幕、弹幕、描述文件等附加资源。
+      3. 下载音频和视频。
+      4. 使用 FFmpeg 合并音频和视频。
 
 ## 改动
 
@@ -208,7 +243,7 @@ just test
 
 如果你的改动是需要用户感知的，请务必更新文档，文档位于 [docs](./docs) 目录下，你可以在本地启动文档服务来查看你的修改
 
-在此之前，请确保自行安装 Node.js 18 或以上版本
+在此之前，请确保自行安装 Node.js 24 或以上版本
 
 ```bash
 # 启用 corepack，确保 pnpm 可用
