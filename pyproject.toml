@@ -52,6 +52,17 @@ dev = [
   "pytest-codspeed>=5.0.3",
 ]
 
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "rust/Cargo.toml" },
+  { file = "rust/Cargo.lock" },
+  { file = "rust/crates/*/Cargo.toml" },
+  { file = "rust/crates/*/src/**/*.rs" },
+  { env = "MATURIN_PEP517_ARGS" },
+  { env = "RUSTFLAGS" },
+]
+
 [tool.uv.sources]
 biliass = { workspace = true }
 

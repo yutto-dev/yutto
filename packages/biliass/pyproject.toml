@@ -35,6 +35,18 @@ Issues = "https://github.com/yutto-dev/yutto/issues"
 [project.scripts]
 biliass = "biliass.__main__:main"
 
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "rust/Cargo.toml" },
+  { file = "rust/Cargo.lock" },
+  { file = "rust/build.rs" },
+  { file = "rust/src/**/*.rs" },
+  { file = "rust/proto/**/*.proto" },
+  { env = "MATURIN_PEP517_ARGS" },
+  { env = "RUSTFLAGS" },
+]
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
 module-name = "biliass._core"
