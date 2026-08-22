@@ -23,10 +23,10 @@ classifiers = [
 dependencies = [
   "biliass==2.5.0",
   "colorama>=0.4.6; sys_platform == 'win32'",
-  "typing-extensions>=4.15.0",
+  "typing-extensions>=4.16.0",
   "dict2xml>=1.7.8",
-  "pydantic>=2.12.5",
-  "returns>=0.26.0",
+  "pydantic>=2.13.4",
+  "returns>=0.29.0",
   "segno>=1.6.6",
   "websockets>=17,<18",
 ]
