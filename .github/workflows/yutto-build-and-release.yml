@@ -1,4 +1,4 @@
-name: Release
+name: Build and Release (yutto)
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
 
   build-and-release:
     needs: msrv
-    uses: ./.github/workflows/native-build-and-release.yml
+    uses: ./.github/workflows/build-and-release.yml
     with:
       working-directory: .
       artifact-prefix: yutto

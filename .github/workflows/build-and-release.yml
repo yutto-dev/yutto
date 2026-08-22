@@ -1,4 +1,4 @@
-name: Build and release native Python distributions
+name: Build and release Python distributions
 
 on:
   workflow_call:
