@@ -217,7 +217,7 @@ class MultiLangSubtitle(TypedDict):
 
 class ExtractorOptions(TypedDict):
     episodes: str
-    with_section: bool
+    with_extra_episodes: bool
     skip_preview: bool
     require_video: bool
     require_audio: bool

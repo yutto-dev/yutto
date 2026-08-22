@@ -58,7 +58,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
                 "--batch",
                 "--episodes",
                 "2,4~6",
-                "--with-section",
+                "--with-extra-episodes",
                 "--skip-preview",
                 "--batch-filter-start-time",
                 "2026-01-01",
@@ -136,7 +136,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "login_strict": True,
         "vip_strict": True,
     }
-    assert request.scope.model_dump() == {"batch": True, "with_section": True}
+    assert request.scope.model_dump() == {"batch": True, "with_extra_episodes": True}
     assert request.selection.model_dump() == {
         "episodes": "2,4~6",
         "skip_preview": True,

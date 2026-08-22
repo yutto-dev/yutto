@@ -102,7 +102,7 @@ block_keyword_patterns = [
 
 [batch]
 # 下载额外剧集
-with_section = true
+with_extra_episodes = true
 ```
 
 如果你使用 VS Code 对配置文件编辑，强烈建议使用 [Even Better TOML](https://marketplace.visualstudio.com/items?itemName=tamasfe.even-better-toml) 扩展，配合我提供的 schema，可以获得最佳的提示体验。

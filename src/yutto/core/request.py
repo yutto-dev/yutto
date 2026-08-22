@@ -32,7 +32,7 @@ class ScopeRequestOptions(_RequestModel):
     """Whether resolution targets one episode or an expanded collection."""
 
     batch: bool = False
-    with_section: bool = False
+    with_extra_episodes: bool = False
 
 
 class SelectionRequestOptions(_RequestModel):

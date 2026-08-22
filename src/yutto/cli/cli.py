@@ -33,6 +33,21 @@ SUBCOMMANDS: list[str] = ["download", "auth", "serve"]
 REMOVED_TOP_LEVEL_SUBCOMMANDS: list[str] = ["login"]
 
 
+class _DeprecatedExtraEpisodesAction(argparse.Action):
+    def __init__(self, option_strings: Sequence[str], dest: str, **kwargs: Any):
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:
+        Logger.deprecated_warning(f"参数 {option_string} 已弃用，推荐改用 --with-extra-episodes")
+        setattr(namespace, self.dest, True)
+
+
 def handle_default_subcommand(argv: list[str]) -> list[str]:
     if len(argv) == 0:
         return ["download", *argv]
@@ -448,11 +463,18 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     group_batch.add_argument("-b", "--batch", action="store_true", help="批量下载")
     group_batch.add_argument("-p", "--episodes", default="1~-1", help="选集")
     group_batch.add_argument(
+        "--with-extra-episodes",
+        action="store_true",
+        default=settings.batch.with_extra_episodes,
+        help="同时下载附加剧集（PV、预告以及特别篇等专区内容）",
+    )
+    group_batch.add_argument(
         "-s",
         "--with-section",
-        action="store_true",
-        default=settings.batch.with_section,
-        help="同时下载附加剧集（PV、预告以及特别篇等专区内容）",
+        dest="with_extra_episodes",
+        action=_DeprecatedExtraEpisodesAction,
+        default=argparse.SUPPRESS,
+        help="（弃用）等同于 --with-extra-episodes，请迁移到正式名称",
     )
     group_batch.add_argument(
         "--skip-preview",
