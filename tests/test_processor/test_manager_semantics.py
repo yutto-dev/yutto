@@ -64,7 +64,7 @@ def make_request(tmp_dir: Path | None) -> DownloadRequest:
     return DownloadRequest.model_validate(
         {
             "source": {"url": "BV1baseline"},
-            "scope": {"batch": False, "with_section": True},
+            "scope": {"batch": False, "with_extra_episodes": True},
             "selection": {
                 "episodes": "2,4",
                 "skip_preview": True,
@@ -189,7 +189,7 @@ async def test_process_request_preserves_extractor_mapping_and_passes_download_r
     ]
     assert captured_extractor_options == {
         "episodes": "2,4",
-        "with_section": True,
+        "with_extra_episodes": True,
         "skip_preview": True,
         "require_video": True,
         "require_audio": False,

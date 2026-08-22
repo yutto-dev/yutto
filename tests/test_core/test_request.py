@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 import yutto.__main__ as main_module
+import yutto.cli.cli as cli_module
 from yutto.cli.cli import add_download_arguments, cli, handle_default_subcommand
 from yutto.cli.request_adapter import (
     download_request_from_mapping,
@@ -58,7 +59,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
                 "--batch",
                 "--episodes",
                 "2,4~6",
-                "--with-section",
+                "--with-extra-episodes",
                 "--skip-preview",
                 "--batch-filter-start-time",
                 "2026-01-01",
@@ -136,7 +137,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "login_strict": True,
         "vip_strict": True,
     }
-    assert request.scope.model_dump() == {"batch": True, "with_section": True}
+    assert request.scope.model_dump() == {"batch": True, "with_extra_episodes": True}
     assert request.selection.model_dump() == {
         "episodes": "2,4~6",
         "skip_preview": True,
@@ -195,6 +196,23 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "block_colorful": True,
         "block_keyword_patterns": ["spoiler", "广告"],
     }
+
+
+def test_extra_episodes_cli_option():
+    args = parse_download_args(["BV1xx411c7mD", "--with-extra-episodes"])
+
+    assert args.with_extra_episodes is True
+
+
+@pytest.mark.parametrize("option", ["-s", "--with-section"])
+def test_deprecated_extra_episodes_cli_options_warn_and_map_to_new_name(option: str, monkeypatch: pytest.MonkeyPatch):
+    warnings: list[str] = []
+    monkeypatch.setattr(cli_module.Logger, "deprecated_warning", warnings.append)
+
+    args = parse_download_args(["BV1xx411c7mD", option])
+
+    assert args.with_extra_episodes is True
+    assert warnings == [f"参数 {option} 已弃用，推荐改用 --with-extra-episodes"]
 
 
 def test_cli_and_secret_options_do_not_cross_core_boundary(tmp_path: Path):

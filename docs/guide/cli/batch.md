@@ -79,9 +79,11 @@ yutto <url> -b -p "~3,10,12~14,16,-4~"
 
 ## 同时下载附加剧集
 
-- 参数 `-s` 或 `--with-section`
-- 配置项 `batch.with_section`
+- 参数 `--with-extra-episodes`
+- 配置项 `batch.with_extra_episodes`
 - 默认值 `False`
+
+`-s` 和 `--with-section` 已弃用。目前仍可兼容旧脚本，但会打印弃用提示，请迁移到 `--with-extra-episodes`。
 
 ## 跳过预告片
 

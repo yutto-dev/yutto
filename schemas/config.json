@@ -256,9 +256,9 @@
     },
     "YuttoBatchSettings": {
       "properties": {
-        "with_section": {
+        "with_extra_episodes": {
           "default": false,
-          "title": "With Section",
+          "title": "With Extra Episodes",
           "type": "boolean"
         },
         "skip_preview": {
@@ -490,7 +490,7 @@
     "batch": {
       "$ref": "#/$defs/YuttoBatchSettings",
       "default": {
-        "with_section": false,
+        "with_extra_episodes": false,
         "skip_preview": false,
         "batch_filter_start_time": null,
         "batch_filter_end_time": null

@@ -76,7 +76,7 @@ class YuttoDanmakuSettings(BaseModel):
 
 
 class YuttoBatchSettings(BaseModel):
-    with_section: Annotated[bool, Field(False)]
+    with_extra_episodes: Annotated[bool, Field(False)]
     skip_preview: Annotated[bool, Field(False)]
     batch_filter_start_time: Annotated[str | None, Field(None)]
     batch_filter_end_time: Annotated[str | None, Field(None)]

@@ -31,7 +31,7 @@ def download_request_from_namespace(args: argparse.Namespace) -> DownloadRequest
         },
         "scope": {
             "batch": args.batch,
-            "with_section": args.with_section,
+            "with_extra_episodes": args.with_extra_episodes,
         },
         "selection": {
             "episodes": args.episodes,
@@ -123,7 +123,7 @@ def _download_request_defaults_from_settings(settings: YuttoSettings) -> dict[st
             "login_strict": settings.basic.login_strict,
             "vip_strict": settings.basic.vip_strict,
         },
-        "scope": {"batch": False, "with_section": settings.batch.with_section},
+        "scope": {"batch": False, "with_extra_episodes": settings.batch.with_extra_episodes},
         "selection": {
             "episodes": "1~-1",
             "skip_preview": settings.batch.skip_preview,
