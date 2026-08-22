@@ -7,7 +7,6 @@ on:
     branches:
       - main
     paths:
-      - "src/yutto/**"
       - "rust/**"
       - "pyproject.toml"
       - "README.md"
@@ -16,7 +15,6 @@ on:
       - ".github/workflows/build-and-release.yml"
   pull_request:
     paths:
-      - "src/yutto/**"
       - "rust/**"
       - "pyproject.toml"
       - "README.md"
