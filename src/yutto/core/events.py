@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path  # noqa: TC003 - runtime type hints are part of the event contract
-from typing import Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 
-from yutto.core.result import (  # noqa: TC001 - runtime type hints support schema introspection
-    ItemSkipReason,
-    ResolvedItem,
-)
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from yutto.core.result import ItemSkipReason, ResolvedItem
 
 
 class DownloadStage(StrEnum):

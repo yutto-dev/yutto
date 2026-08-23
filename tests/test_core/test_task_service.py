@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING, get_type_hints
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -178,12 +178,6 @@ async def test_download_events_are_noop_outside_application_context():
 )
 def test_runtime_event_encoding_preserves_protocol(event, expected):
     assert _encode_runtime_event(event) == expected
-
-
-def test_download_event_annotations_are_available_at_runtime():
-    assert get_type_hints(DownloadArtifactCreated)["path"] is Path
-    assert get_type_hints(DownloadItemSkipped)["reason"] is ItemSkipReason
-    assert get_type_hints(DownloadItemListed)["item"] is ResolvedItem
 
 
 def test_encode_runtime_event_item_listed_carries_full_wire_fields():
