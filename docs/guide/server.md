@@ -99,10 +99,11 @@ yutto serve --token-file ~/.config/yutto/server.token --ffmpeg-path /opt/ffmpeg/
 | ------------------ | ---------------------------------------------------------- | ------------------------------------------ |
 | `stage`            | `{ name, item? }`                                          | 进入解析、资源写入、下载或后处理阶段       |
 | `progress`         | `{ phase, current, total, speed_per_second, unit, item? }` | 音视频字节下载进度                         |
+| `media_selected`   | `{ item, video, audio }`                                   | 下载计划最终选中的音视频流                 |
 | `item_skipped`     | `{ item, reason }`                                         | 条目因媒体已存在或没有请求到可用媒体流跳过 |
 | `artifact_created` | `{ item, path }`                                           | 本次任务生成了最终媒体文件                 |
 
-`stage.name` 目前可能为 `resolving`、`preparing`、`writing_resources`、`downloading` 或 `postprocessing`。`artifact_created` 只在本次新生成最终媒体文件时发送；其他 sidecar 产物通过完成结果获取。
+`stage.name` 目前可能为 `resolving`、`preparing`、`writing_resources`、`downloading` 或 `postprocessing`。`media_selected` 在下载计划确定后、资源写入与媒体传输前发送；`video` 包含 `codec` / `quality` / `width` / `height` / `save_codec`，`audio` 包含 `codec` / `quality` / `save_codec`，没有选择对应轨道时为 `null`。其中 `quality` 是原始质量编号，`save_codec` 是计划保存时使用的编码。事件只包含最终选择，不包含候选流、播放 URL、镜像 URL 或认证信息。`artifact_created` 只在本次新生成最终媒体文件时发送；其他 sidecar 产物通过完成结果获取。
 
 ## 解析任务
 
