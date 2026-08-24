@@ -55,7 +55,7 @@ class _BangumiSection(TypedDict):
     episodes: list[_BangumiEpisode]
 
 
-class _BangumiSeason(TypedDict):
+class _BangumiSeasonResult(TypedDict):
     title: str
     episodes: list[_BangumiEpisode]
     evaluate: str
@@ -101,7 +101,7 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
     resp_json = list_result.unwrap()
     if resp_json.get("result") is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}），原因：{resp_json.get('message')}")
-    result = cast("_BangumiSeason", resp_json["result"])
+    result = cast("_BangumiSeasonResult", resp_json["result"])
     section_episodes = []
     for section in result.get("section", []):
         if section["type"] != 5:
@@ -276,7 +276,7 @@ def _parse_bangumi_metadata(
         source="",  # TODO
         actor=_parse_bangumi_actor(up_info),
         genre=[],  # TODO
-        tag=styles,
+        tag=list(styles),
         website="",  # TODO
         original_filename="",  # TODO
         chapter_info_data=[],  # There are no chapter info in bangumi for now
