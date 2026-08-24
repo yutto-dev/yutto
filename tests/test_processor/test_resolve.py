@@ -73,7 +73,15 @@ def test_build_bangumi_info_projects_listing_metadata(extractor_options: Extract
             "thumb": "https://i0.hdslb.com/cover.png",
             "premiered": 1698148800,
             "dateadded": 1700000000,
-            "actor": [],
+            "actor": [
+                {
+                    "name": "哔哩哔哩番剧",
+                    "role": "UP主",
+                    "thumb": "https://i1.hdslb.com/avatar.jpg",
+                    "profile": "https://space.bilibili.com/928123",
+                    "order": 0,
+                }
+            ],
             "genre": [],
             "tag": ["漫画改", "奇幻", "治愈", "冒险"],
             "source": "",
@@ -98,7 +106,7 @@ def test_build_bangumi_info_projects_listing_metadata(extractor_options: Extract
         title="葬送的芙莉莲",
         cover_url="https://i0.hdslb.com/cover.png",
         planned_path=Path("葬送的芙莉莲/第1话 冒险的结束"),
-        uploader="",
+        uploader="哔哩哔哩番剧",
         description="寿命逾千年的魔法使芙莉莲，踏上了了解人类的旅途。",
         tags=("漫画改", "奇幻", "治愈", "冒险"),
         pubdate=1698148800,

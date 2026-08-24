@@ -19,7 +19,7 @@ from yutto.types import (
 )
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
-from yutto.utils.metadata import MetaData
+from yutto.utils.metadata import Actor, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
@@ -29,6 +29,12 @@ if TYPE_CHECKING:
         MediaId,
         MultiLangSubtitle,
     )
+
+
+class _BangumiUpInfo(TypedDict):
+    mid: int
+    uname: str
+    avatar: str
 
 
 class _BangumiEpisode(TypedDict):
@@ -55,6 +61,7 @@ class _BangumiSeasonResult(TypedDict):
     evaluate: str
     styles: list[str]
     section: NotRequired[list[_BangumiSection]]
+    up_info: NotRequired[_BangumiUpInfo]
 
 
 class BangumiListItem(TypedDict):
@@ -117,6 +124,7 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
                     item,
                     evaluate=result["evaluate"],
                     styles=result["styles"],
+                    up_info=result.get("up_info"),
                 ),
             )
             for i, item in enumerate(result["episodes"] + section_episodes)
@@ -236,11 +244,26 @@ def _bangumi_episode_title(title: str, extra_title: str) -> str:
     return " ".join(title_parts)
 
 
+def _parse_bangumi_actor(up_info: _BangumiUpInfo | None) -> list[Actor]:
+    if up_info is None:
+        return []
+    return [
+        Actor(
+            name=up_info["uname"],
+            role="UP主",
+            thumb=up_info["avatar"],
+            profile=f"https://space.bilibili.com/{up_info['mid']}",
+            order=0,
+        )
+    ]
+
+
 def _parse_bangumi_metadata(
     item: _BangumiEpisode,
     *,
     evaluate: str,
     styles: list[str],
+    up_info: _BangumiUpInfo | None,
 ) -> MetaData:
     plot = evaluate or item["share_copy"]
     return MetaData(
@@ -251,7 +274,7 @@ def _parse_bangumi_metadata(
         premiered=item["pub_time"],
         dateadded=get_time_stamp_by_now(),
         source="",  # TODO
-        actor=[],
+        actor=_parse_bangumi_actor(up_info),
         genre=[],  # TODO
         tag=list(styles),
         website="",  # TODO
