@@ -31,11 +31,6 @@ async def test_get_bangumi_list_reuses_season_metadata(monkeypatch: pytest.Monke
                     "title": "葬送的芙莉莲",
                     "evaluate": "寿命逾千年的魔法使芙莉莲，踏上了了解人类的旅途。",
                     "styles": ["漫画改", "奇幻"],
-                    "up_info": {
-                        "mid": 928123,
-                        "uname": "哔哩哔哩番剧",
-                        "avatar": "https://i1.hdslb.com/avatar.jpg",
-                    },
                     "section": [],
                     "episodes": [
                         {
@@ -68,15 +63,7 @@ async def test_get_bangumi_list_reuses_season_metadata(monkeypatch: pytest.Monke
     assert item["metadata"]["tag"] == ["漫画改", "奇幻"]
     assert item["metadata"]["premiered"] == 1698148800
     assert item["metadata"]["thumb"] == "https://i0.hdslb.com/cover.png"
-    assert item["metadata"]["actor"] == [
-        {
-            "name": "哔哩哔哩番剧",
-            "role": "UP主",
-            "thumb": "https://i1.hdslb.com/avatar.jpg",
-            "profile": "https://space.bilibili.com/928123",
-            "order": 0,
-        }
-    ]
+    assert item["metadata"]["actor"] == []
 
 
 @pytest.mark.api
