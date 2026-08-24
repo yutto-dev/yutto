@@ -12,18 +12,17 @@ enum XmlVersion {
     V2,
 }
 
-fn parse_raw_p(reader: &mut Reader<&[u8]>, element: &BytesStart) -> Result<String, ParseError> {
+fn parse_raw_p(element: &BytesStart) -> Result<String, ParseError> {
     let mut attr_p = None;
     for attr_result in element.attributes() {
         let attr = attr_result.map_err(|e| ParseError::Xml(e.to_string()))?;
-        if attr.key.as_ref() == b"p" {
+        if attr.key.as_ref() == "p" {
             attr_p = Some(
-                attr.decoded_and_normalized_value(
-                    quick_xml::XmlVersion::Implicit1_0,
-                    reader.decoder(),
-                )
-                .map(|s| s.to_string())
-                .map_err(|e| ParseError::Xml(format!("Error decoding version attribute: {e}")))?,
+                attr.normalized_value(quick_xml::XmlVersion::Implicit1_0)
+                    .map(|s| s.to_string())
+                    .map_err(|e| {
+                        ParseError::Xml(format!("Error decoding version attribute: {e}"))
+                    })?,
             );
         }
     }
@@ -37,14 +36,10 @@ fn parse_comment_content(reader: &mut Reader<&[u8]>) -> Result<String, ParseErro
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Text(e)) => {
-                let text = e
-                    .decode()
-                    .map_err(|e| ParseError::Xml(format!("Error decoding text: {e}")))?;
-                content.push_str(&text);
+                content.push_str(e.as_ref());
             }
             Ok(Event::GeneralRef(e)) => {
-                let entity_str = std::str::from_utf8(e.as_ref())
-                    .map_err(|e| ParseError::Xml(format!("Error decoding entity: {e}")))?;
+                let entity_str = e.as_ref();
                 let resolved_entity = quick_xml::escape::resolve_predefined_entity(entity_str)
                     .ok_or_else(|| {
                         ParseError::Xml(format!("Error resolving entity: {entity_str}"))
@@ -176,7 +171,7 @@ fn parse_comment(
     if version == XmlVersion::V2 {
         return Err(ParseError::Xml("Not implemented".to_string()));
     }
-    let raw_p = parse_raw_p(reader, &element)?;
+    let raw_p = parse_raw_p(&element)?;
     let content = parse_comment_content(reader)?;
     let parsed_p = parse_comment_item(
         &raw_p,
@@ -217,8 +212,8 @@ where
             Ok(Event::Decl(decl)) => {
                 let version_literal = decl.version().map_err(|e| ParseError::Xml(e.to_string()))?;
                 match version_literal.as_ref() {
-                    b"1.0" => version = Some(XmlVersion::V1),
-                    b"2.0" => version = Some(XmlVersion::V2),
+                    "1.0" => version = Some(XmlVersion::V1),
+                    "2.0" => version = Some(XmlVersion::V2),
                     _ => {
                         return Err(BiliassError::ParseError(ParseError::Xml(
                             "Unknown XML version".to_string(),
@@ -226,7 +221,7 @@ where
                     }
                 }
             }
-            Ok(Event::Start(e)) if e.name().as_ref() == b"d" => {
+            Ok(Event::Start(e)) if e.name().as_ref() == "d" => {
                 if version.is_none() {
                     return Err(BiliassError::ParseError(ParseError::Xml(
                         "No version specified".to_string(),
