@@ -267,6 +267,8 @@ def test_encode_runtime_event_item_listed_carries_full_wire_fields():
         uploader="某UP主",
         description="视频简介",
         tags=("标签A", "标签B"),
+        pubdate=1698148800,
+        duration=1559,
     )
     kind, data = _encode_runtime_event(DownloadItemListed(item=item))
     assert kind == "item_listed"
@@ -274,3 +276,5 @@ def test_encode_runtime_event_item_listed_carries_full_wire_fields():
     assert data["cid"] == "10"
     assert data["planned_path"] == "标题/P1"
     assert data["tags"] == ["标签A", "标签B"]
+    assert data["pubdate"] == 1698148800
+    assert data["duration"] == 1559

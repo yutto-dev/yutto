@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict, cast
 
 from returns.result import Failure
 
@@ -19,7 +19,7 @@ from yutto.types import (
 )
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
-from yutto.utils.metadata import MetaData
+from yutto.utils.metadata import Actor, MetaData
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
@@ -31,12 +31,46 @@ if TYPE_CHECKING:
     )
 
 
+class _BangumiUpInfo(TypedDict):
+    mid: int
+    uname: str
+    avatar: str
+
+
+class _BangumiEpisode(TypedDict):
+    title: str
+    long_title: str
+    cid: int
+    id: int
+    bvid: str
+    badge: str
+    share_copy: str
+    cover: str
+    pub_time: int
+    duration: int
+
+
+class _BangumiSection(TypedDict):
+    type: int
+    episodes: list[_BangumiEpisode]
+
+
+class _BangumiSeasonResult(TypedDict):
+    title: str
+    episodes: list[_BangumiEpisode]
+    evaluate: str
+    styles: list[str]
+    section: NotRequired[list[_BangumiSection]]
+    up_info: NotRequired[_BangumiUpInfo]
+
+
 class BangumiListItem(TypedDict):
     id: int
     name: str
     cid: CId
     episode_id: EpisodeId
     avid: AvId
+    duration: int
     is_section: bool  # 是否属于专区
     is_preview: bool
     metadata: MetaData
@@ -67,7 +101,7 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
     resp_json = list_result.unwrap()
     if resp_json.get("result") is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}），原因：{resp_json.get('message')}")
-    result = resp_json["result"]
+    result = cast("_BangumiSeasonResult", resp_json["result"])
     section_episodes = []
     for section in result.get("section", []):
         if section["type"] != 5:
@@ -83,9 +117,15 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
                 cid=CId(str(item["cid"])),
                 episode_id=EpisodeId(str(item["id"])),
                 avid=BvId(item["bvid"]),
+                duration=item["duration"],
                 is_section=i >= len(result["episodes"]),
                 is_preview=item["badge"] == "预告",  # 并不是一种鲁棒的方式，但目前貌似没有更好的方式了
-                metadata=_parse_bangumi_metadata(item),
+                metadata=_parse_bangumi_metadata(
+                    item,
+                    evaluate=result["evaluate"],
+                    styles=result["styles"],
+                    up_info=result.get("up_info"),
+                ),
             )
             for i, item in enumerate(result["episodes"] + section_episodes)
         ],
@@ -204,18 +244,39 @@ def _bangumi_episode_title(title: str, extra_title: str) -> str:
     return " ".join(title_parts)
 
 
-def _parse_bangumi_metadata(item: dict[str, Any]) -> MetaData:
+def _parse_bangumi_actor(up_info: _BangumiUpInfo | None) -> list[Actor]:
+    if up_info is None:
+        return []
+    return [
+        Actor(
+            name=up_info["uname"],
+            role="UP主",
+            thumb=up_info["avatar"],
+            profile=f"https://space.bilibili.com/{up_info['mid']}",
+            order=0,
+        )
+    ]
+
+
+def _parse_bangumi_metadata(
+    item: _BangumiEpisode,
+    *,
+    evaluate: str,
+    styles: list[str],
+    up_info: _BangumiUpInfo | None,
+) -> MetaData:
+    plot = evaluate or item["share_copy"]
     return MetaData(
         title=_bangumi_episode_title(item["title"], item["long_title"]),
         show_title=item["share_copy"],
-        plot=item["share_copy"],
+        plot=plot,
         thumb=item["cover"],
         premiered=item["pub_time"],
         dateadded=get_time_stamp_by_now(),
         source="",  # TODO
-        actor=[],  # TODO
+        actor=_parse_bangumi_actor(up_info),
         genre=[],  # TODO
-        tag=[],  # TODO
+        tag=list(styles),
         website="",  # TODO
         original_filename="",  # TODO
         chapter_info_data=[],  # There are no chapter info in bangumi for now

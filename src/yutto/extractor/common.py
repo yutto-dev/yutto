@@ -92,6 +92,8 @@ def build_bangumi_info(
             uploader=uploader,
             description=description,
             tags=tuple(tags),
+            pubdate=bangumi_info["metadata"]["premiered"],
+            duration=bangumi_info["duration"] // 1000,
             planned_path=planned_path,
             display_group=None,
         ),
