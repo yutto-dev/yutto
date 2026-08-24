@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict, cast
 
 from returns.result import Failure
 
@@ -29,6 +29,39 @@ if TYPE_CHECKING:
         MediaId,
         MultiLangSubtitle,
     )
+
+
+class _BangumiUpInfo(TypedDict):
+    mid: int
+    uname: str
+    avatar: str
+
+
+class _BangumiEpisode(TypedDict):
+    title: str
+    long_title: str
+    cid: int
+    id: int
+    bvid: str
+    badge: str
+    share_copy: str
+    cover: str
+    pub_time: int
+    duration: int
+
+
+class _BangumiSection(TypedDict):
+    type: int
+    episodes: list[_BangumiEpisode]
+
+
+class _BangumiSeason(TypedDict):
+    title: str
+    episodes: list[_BangumiEpisode]
+    evaluate: str
+    styles: list[str]
+    section: NotRequired[list[_BangumiSection]]
+    up_info: NotRequired[_BangumiUpInfo]
 
 
 class BangumiListItem(TypedDict):
@@ -68,7 +101,7 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
     resp_json = list_result.unwrap()
     if resp_json.get("result") is None:
         raise NoAccessPermissionError(f"无法解析该番剧列表（season_id: {season_id}），原因：{resp_json.get('message')}")
-    result = resp_json["result"]
+    result = cast("_BangumiSeason", resp_json["result"])
     section_episodes = []
     for section in result.get("section", []):
         if section["type"] != 5:
@@ -84,13 +117,13 @@ async def get_bangumi_list(scope: ExecutionScope, season_id: SeasonId) -> Bangum
                 cid=CId(str(item["cid"])),
                 episode_id=EpisodeId(str(item["id"])),
                 avid=BvId(item["bvid"]),
-                duration=item.get("duration", 0),
+                duration=item["duration"],
                 is_section=i >= len(result["episodes"]),
                 is_preview=item["badge"] == "预告",  # 并不是一种鲁棒的方式，但目前貌似没有更好的方式了
                 metadata=_parse_bangumi_metadata(
                     item,
-                    evaluate=result.get("evaluate"),
-                    styles=result.get("styles"),
+                    evaluate=result["evaluate"],
+                    styles=result["styles"],
                     up_info=result.get("up_info"),
                 ),
             )
@@ -211,45 +244,28 @@ def _bangumi_episode_title(title: str, extra_title: str) -> str:
     return " ".join(title_parts)
 
 
-def _parse_bangumi_styles(styles: object) -> list[str]:
-    if not isinstance(styles, list):
+def _parse_bangumi_actor(up_info: _BangumiUpInfo | None) -> list[Actor]:
+    if up_info is None:
         return []
-    tags: list[str] = []
-    for style in styles:
-        name = style if isinstance(style, str) else style.get("name") if isinstance(style, dict) else None
-        if isinstance(name, str) and name:
-            tags.append(name)
-    return tags
-
-
-def _parse_bangumi_actor(up_info: object) -> list[Actor]:
-    if not isinstance(up_info, dict):
-        return []
-    name = up_info.get("uname")
-    if not isinstance(name, str) or not name:
-        return []
-    thumb = up_info.get("avatar")
-    mid = up_info.get("mid")
-    profile = f"https://space.bilibili.com/{mid}" if isinstance(mid, (int, str)) and str(mid) else ""
     return [
         Actor(
-            name=name,
+            name=up_info["uname"],
             role="UP主",
-            thumb=thumb if isinstance(thumb, str) else "",
-            profile=profile,
+            thumb=up_info["avatar"],
+            profile=f"https://space.bilibili.com/{up_info['mid']}",
             order=0,
         )
     ]
 
 
 def _parse_bangumi_metadata(
-    item: dict[str, Any],
+    item: _BangumiEpisode,
     *,
-    evaluate: object = None,
-    styles: object = None,
-    up_info: object = None,
+    evaluate: str,
+    styles: list[str],
+    up_info: _BangumiUpInfo | None,
 ) -> MetaData:
-    plot = evaluate if isinstance(evaluate, str) and evaluate else item["share_copy"]
+    plot = evaluate or item["share_copy"]
     return MetaData(
         title=_bangumi_episode_title(item["title"], item["long_title"]),
         show_title=item["share_copy"],
@@ -260,7 +276,7 @@ def _parse_bangumi_metadata(
         source="",  # TODO
         actor=_parse_bangumi_actor(up_info),
         genre=[],  # TODO
-        tag=_parse_bangumi_styles(styles),
+        tag=styles,
         website="",  # TODO
         original_filename="",  # TODO
         chapter_info_data=[],  # There are no chapter info in bangumi for now

@@ -30,7 +30,7 @@ async def test_get_bangumi_list_reuses_season_metadata(monkeypatch: pytest.Monke
                 "result": {
                     "title": "葬送的芙莉莲",
                     "evaluate": "寿命逾千年的魔法使芙莉莲，踏上了了解人类的旅途。",
-                    "styles": ["漫画改", {"name": "奇幻"}, {"id": 3}, None],
+                    "styles": ["漫画改", "奇幻"],
                     "up_info": {
                         "mid": 928123,
                         "uname": "哔哩哔哩番剧",
@@ -81,12 +81,14 @@ async def test_get_bangumi_list_reuses_season_metadata(monkeypatch: pytest.Monke
 
 @pytest.mark.api
 @as_sync
-async def test_get_bangumi_list_falls_back_when_season_metadata_is_missing(monkeypatch: pytest.MonkeyPatch):
+async def test_get_bangumi_list_falls_back_when_optional_metadata_is_empty(monkeypatch: pytest.MonkeyPatch):
     async def fake_fetch_json(scope: ExecutionScope, url: str):
         return Success(
             {
                 "result": {
                     "title": "番剧",
+                    "evaluate": "",
+                    "styles": [],
                     "section": [],
                     "episodes": [
                         {
@@ -95,6 +97,7 @@ async def test_get_bangumi_list_falls_back_when_season_metadata_is_missing(monke
                             "cid": 10,
                             "id": 20,
                             "bvid": "BV1f34y1k7D5",
+                            "duration": 0,
                             "badge": "",
                             "share_copy": "番剧第1话",
                             "cover": "",
