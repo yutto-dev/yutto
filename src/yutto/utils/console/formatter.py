@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from typing import Literal
 
 from yutto.utils.console.colorful import no_colored_string
@@ -40,10 +41,22 @@ def get_char_width(char: str) -> int:
     o = ord(char)
     if o == 0xE or o == 0xF:
         return 0
+
+    width = 1
     for num, wid in widths:
         if o <= num:
-            return wid
-    return 1
+            width = wid
+            break
+
+    # 旧表中的部分现代宽字符可能仍被判为 1，这里用当前 Unicode 宽度属性补正为 2 。
+    if (
+        width == 1
+        and unicodedata.category(char) not in {"Mn", "Me", "Mc", "Cf"}
+        and unicodedata.east_asian_width(char) in {"W", "F"}
+    ):
+        return 2
+
+    return width
 
 
 def get_string_width(string: str) -> int:
