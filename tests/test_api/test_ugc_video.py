@@ -22,15 +22,20 @@ async def test_get_ugc_video_info():
     aid = AId("84271171")
     avid = bvid
     episode_id = EpisodeId("300998")
+
     async with create_client() as client:
         scope = ExecutionScope(client)
         video_info = await get_ugc_video_info(scope, avid=avid)
+
         assert video_info["avid"] == aid or video_info["avid"] == bvid
         assert video_info["aid"] == aid
         assert video_info["bvid"] == bvid
         assert video_info["episode_id"] == episode_id
         assert video_info["is_bangumi"] is True
-        assert video_info["cid"] == CId("144541892")
+
+        assert video_info["pages"]
+        assert video_info["pages"][0]["cid"] == CId("144541892")
+
         assert video_info["title"] == "【独播】我的三体之章北海传 第1集"
 
 

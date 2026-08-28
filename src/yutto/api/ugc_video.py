@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from returns.result import Failure
 
@@ -33,8 +33,8 @@ if TYPE_CHECKING:
 
 
 class _UgcVideoPageInfo(TypedDict):
+    cid: CId
     part: str
-    first_frame: str | None  # 该属性已经废弃，可能会在未来彻底移除
 
 
 class _UgcVideoInfo(TypedDict):
@@ -43,7 +43,6 @@ class _UgcVideoInfo(TypedDict):
     bvid: BvId
     episode_id: EpisodeId
     is_bangumi: bool
-    cid: CId
     picture: str
     title: str
     pubdate: int
@@ -114,15 +113,14 @@ async def get_ugc_video_info(scope: ExecutionScope, avid: AvId) -> _UgcVideoInfo
         bvid=BvId(res_json_data["bvid"]),
         episode_id=episode_id,
         is_bangumi=bool(episode_id),
-        cid=CId(str(res_json_data["cid"])),
         picture=res_json_data["pic"],
         title=res_json_data["title"],
         pubdate=res_json_data["pubdate"],
         description=res_json_data["desc"],
         pages=[
             _UgcVideoPageInfo(
+                cid=CId(str(page["cid"])),
                 part=page["part"],
-                first_frame=page.get("first_frame"),
             )
             for page in res_json_data["pages"]
         ],
@@ -143,31 +141,20 @@ async def get_ugc_video_list(scope: ExecutionScope, avid: AvId) -> UgcVideoList:
         "pubdate": video_info["pubdate"],
         "pages": [],
     }
-    list_api = "https://api.bilibili.com/x/player/pagelist?aid={aid}&bvid={bvid}&jsonp=jsonp"
-    res_json = (await Fetcher.fetch_json(scope, list_api.format(**avid.to_dict()))).value_or(None)
-    if res_json is None or res_json.get("data") is None:
-        emit_download_report(f"啊叻？视频 {avid} 不见了诶", ReportLevel.WARNING)
-        return result
-
     # 对无意义的分 p 视频名进行修改
-    for i, (item, page_info) in enumerate(zip(cast("list[Any]", res_json["data"]), video_info["pages"], strict=True)):
-        # TODO: 这里 part 出现了两次，需要都修改，后续去除其中一个冗余数据
-        if _is_meaningless_name(item["part"]):
-            item["part"] = f"{video_title}_P{i + 1:02}"
+    for i, page_info in enumerate(video_info["pages"]):
         if _is_meaningless_name(page_info["part"]):
             page_info["part"] = f"{video_title}_P{i + 1:02}"
 
     result["pages"] = [
         UgcVideoListItem(
             id=i + 1,
-            name=item["part"],
+            name=page_info["part"],
             avid=avid,
-            cid=CId(str(item["cid"])),
+            cid=page_info["cid"],
             metadata=_parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
         )
-        for i, (item, page_info) in enumerate(
-            zip(cast("list[Any]", res_json["data"]), video_info["pages"], strict=True)
-        )
+        for i, page_info in enumerate(video_info["pages"])
     ]
     return result
 
@@ -218,7 +205,7 @@ def show_ai_translation_language(resp_json: dict[str, Any], ai_translation_langu
 async def get_ugc_video_playurl(
     scope: ExecutionScope, avid: AvId, cid: CId, ai_translation_language: str | None = None
 ) -> tuple[list[VideoUrlMeta], list[AudioUrlMeta]]:
-    # 4048 = 16(useDash) | 64(useHDR) | 128(use4K) | 256(useDolby) | 512(useXXX) | 1024(use8K) | 2048(useAV1)
+    # 4048 = 16(useDash) | 64(useHDR) | 128(use4K) | 256(useDolbyAudio) | 512(useDolbyVision) | 1024(use8K) | 2048(useAV1)
     play_api = "https://api.bilibili.com/x/player/playurl?avid={aid}&bvid={bvid}&cid={cid}&qn=127&type=&otype=json&fnver=0&fnval=4048&fourk=1"
     if ai_translation_language:
         play_api += f"&cur_language={ai_translation_language}"
