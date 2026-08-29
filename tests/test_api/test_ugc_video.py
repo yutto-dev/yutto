@@ -9,7 +9,7 @@ from yutto.api.ugc_video import (
     get_ugc_video_subtitles,
 )
 from yutto.core.execution import ExecutionScope
-from yutto.types import AId, BvId, CId, EpisodeId
+from yutto.types import AId, BvId, CId, EpisodeId, MId, SeriesId
 from yutto.utils.fetcher import create_client
 from yutto.utils.functional import as_sync
 
@@ -47,6 +47,23 @@ async def test_get_ugc_video_title():
         scope = ExecutionScope(client)
         title = (await get_ugc_video_list(scope, avid))["title"]
         assert title == "用 bilili 下载 B 站视频"
+
+
+@pytest.mark.api
+@as_sync
+async def test_get_ugc_video_collection_title():
+    avid = BvId("BV1SU4y1e78w")
+    async with create_client() as client:
+        scope = ExecutionScope(client)
+        ugc_video_list = await get_ugc_video_list(scope, avid)
+        page = ugc_video_list["pages"][0]
+        assert ugc_video_list["title"] == "【动物园怪谈解析重置版01】游客规则逐条全解"
+        assert ugc_video_list["collection"] == {
+            "series_id": SeriesId("590244"),
+            "title": "【01】游客规则逐条全解",
+        }
+        assert page["owner_uid"] == MId("5303577")
+        assert page["owner_uname"] == "狼蛹1126"
 
 
 @pytest.mark.api

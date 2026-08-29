@@ -12,7 +12,7 @@ from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.extractor.utils.batch import resolve_ugc_video_lists
 from yutto.input_parser import parse_episodes_selection
-from yutto.types import MId, SeriesId
+from yutto.types import SeriesId
 
 if TYPE_CHECKING:
     from yutto.api.ugc_video import UgcVideoList
@@ -26,21 +26,19 @@ class CollectionExtractor(BatchExtractor):
     """视频合集"""
 
     REGEX_COLLECTION_LISTS = re.compile(
-        r"https?://space\.bilibili\.com/(?P<mid>\d+)/lists/(?P<series_id>\d+)\?type=season"
+        r"https?://space\.bilibili\.com/\d+/lists/(?P<series_id>\d+)\?type=season"
     )
     # 订阅合集后，在个人空间的收藏夹页面
     REGEX_COLLECTION_FAV_PAGE: re.Pattern[str] = re.compile(
-        r"https?://space\.bilibili\.com/(?P<mid>\d+)/favlist\?fid=(?P<series_id>\d+)&ftype=collect"
+        r"https?://space\.bilibili\.com/\d+/favlist\?fid=(?P<series_id>\d+)&ftype=collect"
     )
 
-    mid: MId
     series_id: SeriesId
 
     def match(self, url: str) -> bool:
         if (match_obj := self.REGEX_COLLECTION_LISTS.match(url)) or (
             match_obj := self.REGEX_COLLECTION_FAV_PAGE.match(url)
         ):
-            self.mid = MId(match_obj.group("mid"))
             self.series_id = SeriesId(match_obj.group("series_id"))
             return True
         else:
@@ -53,10 +51,8 @@ class CollectionExtractor(BatchExtractor):
         *,
         on_item: EpisodeListedCallback | None = None,
     ) -> ExtractorResolveOutcome:
-        username, collection_details = await asyncio.gather(
-            get_user_name(scope, self.mid),
-            get_collection_details(scope, self.series_id, self.mid),
-        )
+        collection_details = await get_collection_details(scope, self.series_id)
+        username = await get_user_name(scope, collection_details["mid"])
         collection_title = collection_details["title"]
         emit_download_report(collection_title, badge="视频合集")
 
@@ -78,6 +74,12 @@ class CollectionExtractor(BatchExtractor):
                     f"视频合集 {collection_title} 中的视频 {items[index]['avid']} 包含多个视频！",
                     ReportLevel.ERROR,
                 )
+            collection = ugc_video_list["collection"]
+            video_title = (
+                collection["title"]
+                if collection is not None and collection["series_id"] == self.series_id
+                else ugc_video_list["title"]
+            )
             built: list[ResolvableEpisode] = []
             for ugc_video_item in ugc_video_list["pages"]:
                 episode = make_ugc_video_episode(
@@ -87,10 +89,9 @@ class CollectionExtractor(BatchExtractor):
                     options,
                     {
                         # TODO: 关于对于 id 的优化
-                        # TODO: 关于对于 title 的优化（最好使用合集标题，而不是原来的视频标题）
                         "series_title": collection_title,
                         "username": username,  # 虽然默认模板的用不上，但这里可以提供一下
-                        "title": ugc_video_list["title"],
+                        "title": video_title,
                         "pubdate": ugc_video_list["pubdate"],
                     },
                     "{series_title}/{title}",

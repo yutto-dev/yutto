@@ -14,12 +14,13 @@ from yutto.utils.functional import as_sync
 async def test_get_collection_details():
     # 测试页面：https://space.bilibili.com/6762654/lists?sid=39879&ctype=0
     series_id = SeriesId("39879")
-    mid = MId("6762654")
     async with create_client() as client:
         scope = ExecutionScope(client)
-        collection_details = await get_collection_details(scope, series_id=series_id, mid=mid)
+        collection_details = await get_collection_details(scope, series_id=series_id)
         title = collection_details["title"]
-        avids = [page["avid"] for page in collection_details["pages"]]
+        pages = collection_details["pages"]
+        avids = [page["avid"] for page in pages]
+        assert collection_details["mid"] == MId("6762654")
         assert title == "傻开心整活"
         assert BvId("BV1er4y1H7tQ") in avids
         assert BvId("BV1Yi4y1C7u6") in avids

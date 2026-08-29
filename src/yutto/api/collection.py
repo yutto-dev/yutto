@@ -1,63 +1,67 @@
 from __future__ import annotations
 
-import asyncio
 import math
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
-from yutto.types import BvId
+from yutto.types import BvId, MId
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
 if TYPE_CHECKING:
     from yutto.core.execution import ExecutionScope
-    from yutto.types import AvId, MId, SeriesId
+    from yutto.types import AvId, SeriesId
 
 
 class CollectionDetailsItem(TypedDict):
     id: int
-    title: str
     avid: AvId
 
 
 class CollectionDetails(TypedDict):
+    mid: MId
     title: str
     pages: list[CollectionDetailsItem]
 
 
-async def get_collection_details(scope: ExecutionScope, series_id: SeriesId, mid: MId) -> CollectionDetails:
-    title, avids = await asyncio.gather(
-        _get_collection_title(scope, series_id),
-        _get_collection_avids(scope, series_id, mid),
+async def _get_collection_page(
+    scope: ExecutionScope,
+    series_id: SeriesId,
+    pn: int,
+    ps: int,
+) -> dict[str, Any]:
+    api = "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list?season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
+    collection_url = api.format(
+        series_id=series_id,
+        pn=pn,
+        ps=ps,
     )
-    return CollectionDetails(
-        title=title,
-        pages=[
-            CollectionDetailsItem(
-                id=i + 1,
-                title="",  # TODO: 这里应该是合集内的标题，但目前没找到相关的 API
-                avid=avid,
-            )
-            for i, avid in enumerate(avids)
-        ],
-    )
+    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, collection_url))
+    return json_data["data"]
 
 
-async def _get_collection_avids(scope: ExecutionScope, series_id: SeriesId, mid: MId) -> list[AvId]:
-    api = "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list?mid={mid}&season_id={series_id}&sort_reverse=false&page_num={pn}&page_size={ps}"
+async def get_collection_details(
+    scope: ExecutionScope,
+    series_id: SeriesId,
+) -> CollectionDetails:
     ps = 30
-    pn = 1
-    total = 1
-    all_avid: list[AvId] = []
 
-    while pn <= total:
-        space_videos_url = api.format(series_id=series_id, ps=ps, pn=pn, mid=mid)
-        json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, space_videos_url))
-        total = math.ceil(json_data["data"]["page"]["total"] / ps)
-        pn += 1
-        all_avid += [BvId(archives["bvid"]) for archives in json_data["data"]["archives"]]
-    return all_avid
+    data = await _get_collection_page(scope, series_id, 1, ps)
 
+    mid = MId(str(data["meta"]["mid"]))
+    title = data["meta"]["title"]
+    total = math.ceil(data["page"]["total"] / ps)
 
-async def _get_collection_title(scope: ExecutionScope, series_id: SeriesId) -> str:
-    api = "https://api.bilibili.com/x/v1/medialist/info?type=8&biz_id={series_id}"
-    json_data = unwrap_fetch_result(await Fetcher.fetch_json(scope, api.format(series_id=series_id)))
-    return json_data["data"]["title"]
+    pages: list[CollectionDetailsItem] = []
+
+    for pn in range(1, total + 1):
+        if pn > 1:
+            data = await _get_collection_page(scope, series_id, pn, ps)
+
+        pages.extend(
+            CollectionDetailsItem(
+                id=ps * (pn - 1) + i + 1,
+                avid=BvId(archive["bvid"]),
+            )
+            for i, archive in enumerate(data["archives"])
+        )
+
+    return CollectionDetails(mid=mid, title=title, pages=pages)

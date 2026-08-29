@@ -266,14 +266,8 @@ def build_ugc_video_info(
     auto_subpath_template: str = "{title}",
     display_group: str | None = None,
 ) -> EpisodeInfo:
-    owner_uid: str = (
-        ugc_video_info["metadata"]["actor"][0]["profile"].split("/")[-1]
-        if ugc_video_info["metadata"]["actor"]
-        else UNKNOWN
-    )
-    owner_uname: str = (
-        ugc_video_info["metadata"]["actor"][0]["name"] if ugc_video_info["metadata"]["actor"] else UNKNOWN
-    )
+    owner_uid = str(ugc_video_info["owner_uid"])
+    owner_uname = ugc_video_info["owner_uname"]
     subpath_variables_base: PathTemplateVariableDict = {
         "id": ugc_video_info["id"],
         "aid": str(avid.as_aid()),

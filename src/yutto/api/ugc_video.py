@@ -18,7 +18,9 @@ from yutto.types import (
     BvId,
     CId,
     EpisodeId,
+    MId,
     MultiLangSubtitle,
+    SeriesId,
     VideoUrlMeta,
     format_ids,
 )
@@ -37,6 +39,11 @@ class _UgcVideoPageInfo(TypedDict):
     part: str
 
 
+class _UgcCollectionInfo(TypedDict):
+    series_id: SeriesId
+    title: str
+
+
 class _UgcVideoInfo(TypedDict):
     avid: AvId
     aid: AId
@@ -45,6 +52,9 @@ class _UgcVideoInfo(TypedDict):
     is_bangumi: bool
     picture: str
     title: str
+    collection: _UgcCollectionInfo | None
+    owner_uid: MId
+    owner_uname: str
     pubdate: int
     description: str
     pages: list[_UgcVideoPageInfo]
@@ -58,11 +68,14 @@ class UgcVideoListItem(TypedDict):
     name: str
     avid: AvId
     cid: CId
+    owner_uid: MId
+    owner_uname: str
     metadata: MetaData
 
 
 class UgcVideoList(TypedDict):
     title: str
+    collection: _UgcCollectionInfo | None
     pubdate: int
     avid: AvId
     pages: list[UgcVideoListItem]
@@ -104,6 +117,7 @@ async def get_ugc_video_info(scope: ExecutionScope, avid: AvId) -> _UgcVideoInfo
     if res_json_data.get("redirect_url") and (ep_match := regex_ep.match(res_json_data["redirect_url"])):
         episode_id = EpisodeId(ep_match.group("episode_id"))
 
+    owner = res_json_data["owner"]
     actors = _parse_actor_info(res_json_data)
     genres = _parse_genre_info(res_json_data)
     tags: list[str] = await get_ugc_video_tag(scope, avid)
@@ -115,6 +129,9 @@ async def get_ugc_video_info(scope: ExecutionScope, avid: AvId) -> _UgcVideoInfo
         is_bangumi=bool(episode_id),
         picture=res_json_data["pic"],
         title=res_json_data["title"],
+        collection=_parse_ugc_collection_info(res_json_data),
+        owner_uid=MId(str(owner["mid"])),
+        owner_uname=owner["name"],
         pubdate=res_json_data["pubdate"],
         description=res_json_data["desc"],
         pages=[
@@ -137,6 +154,7 @@ async def get_ugc_video_list(scope: ExecutionScope, avid: AvId) -> UgcVideoList:
     video_title = video_info["title"]
     result: UgcVideoList = {
         "title": video_title,
+        "collection": video_info["collection"],
         "avid": avid,
         "pubdate": video_info["pubdate"],
         "pages": [],
@@ -152,6 +170,8 @@ async def get_ugc_video_list(scope: ExecutionScope, avid: AvId) -> UgcVideoList:
             name=page_info["part"],
             avid=avid,
             cid=page_info["cid"],
+            owner_uid=video_info["owner_uid"],
+            owner_uname=video_info["owner_uname"],
             metadata=_parse_ugc_video_metadata(video_info, page_info, is_first_page=i == 0),
         )
         for i, page_info in enumerate(video_info["pages"])
@@ -353,6 +373,25 @@ def _parse_ugc_video_metadata(
         website=video_info["bvid"].to_url(),
         chapter_info_data=[],
     )
+
+
+def _parse_ugc_collection_info(video_info: dict[str, Any]) -> _UgcCollectionInfo | None:
+    ugc_season = video_info.get("ugc_season")
+    if not isinstance(ugc_season, dict):
+        return None
+
+    for section in ugc_season.get("sections", []):
+        for episode in section.get("episodes", []):
+            if episode.get("bvid") != video_info["bvid"]:
+                continue
+            title = episode.get("title")
+            season_id = episode.get("season_id")
+            if isinstance(title, str) and title and season_id is not None:
+                return _UgcCollectionInfo(
+                    series_id=SeriesId(str(season_id)),
+                    title=title,
+                )
+    return None
 
 
 def _parse_actor_info(video_info: dict[str, Any]):
