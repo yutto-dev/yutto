@@ -43,9 +43,9 @@ yutto = "yutto.__main__:main"
 [dependency-groups]
 dev = [
   "aiofiles>=25.1.0",
-  "ty>=0.0.75",
+  "ty>=0.0.77",
   "ruff>=0.16.5",
-  "typos>=1.50.0",
+  "typos>=1.50.1",
   "pytest>=9.1.1",
   "pytest-rerunfailures>=16.6",
   "syrupy>=6.0.0",
