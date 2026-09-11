@@ -118,14 +118,11 @@ jobs:
 
       - uses: voidzero-dev/setup-vp@v1
         with:
+          working-directory: ./docs
           node-version: '24'
           cache: true
-          cache-dependency-path: "docs/pnpm-lock.yaml"
-          run-install: false
-
-      - name: Install dependencies
-        working-directory: ./docs
-        run: vp i --frozen-lockfile
+          run-install: |
+            args: ['--frozen-lockfile']
 
       - name: Lint, format and type check
         working-directory: ./docs
