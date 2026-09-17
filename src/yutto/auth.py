@@ -6,7 +6,7 @@ import re
 import tomllib
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 
@@ -28,6 +28,7 @@ def xdg_config_home() -> Path:
 class AuthInfo(TypedDict):
     SESSDATA: str
     bili_jct: str | None
+    cookies: NotRequired[dict[str, str]]
 
 
 class AuthProfileModel(BaseModel):
@@ -35,6 +36,7 @@ class AuthProfileModel(BaseModel):
 
     sessdata: str = Field(validation_alias=AliasChoices("sessdata", "SESSDATA"))
     bili_jct: str | None = None
+    cookies: dict[str, str] | None = None
     updated_at: str | None = None
 
 
@@ -45,19 +47,29 @@ class AuthFileModel(BaseModel):
 
 
 def parse_auth_inline(auth: str) -> AuthInfo | None:
-    cookies: dict[str, str] = {}
+    lowered: dict[str, str] = {}
+    names: dict[str, str] = {}
     for part in auth.split(";"):
         item = part.strip()
         if not item or "=" not in item:
             continue
         key, value = item.split("=", 1)
-        cookies[key.strip().lower()] = value.strip()
+        name = key.strip()
+        if not name:
+            continue
+        lowered[name.lower()] = value.strip()
+        # 保留原始大小写的 Cookie 名（后出现的同名键覆盖先出现的）
+        names[name.lower()] = name
 
-    sessdata = cookies.get("sessdata")
+    sessdata = lowered.get("sessdata")
     if not sessdata:
         return None
-    bili_jct = cookies.get("bili_jct")
-    return AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct or None)
+    bili_jct = lowered.get("bili_jct")
+    auth_info = AuthInfo(SESSDATA=sessdata, bili_jct=bili_jct or None)
+    extra = {names[name]: value for name, value in lowered.items() if name not in ("sessdata", "bili_jct") and value}
+    if extra:
+        auth_info["cookies"] = extra
+    return auth_info
 
 
 def format_auth_inline(sessdata: str, bili_jct: str | None = None) -> str:
@@ -110,7 +122,7 @@ def resolve_auth(args: Namespace) -> AuthInfo | None:
     entry = auth_file_model.profiles.get(args.auth_profile)
     if entry is None or not entry.sessdata:
         return None
-    return AuthInfo(SESSDATA=entry.sessdata, bili_jct=entry.bili_jct or None)
+    return _auth_info_from_profile(entry)
 
 
 def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
@@ -124,10 +136,23 @@ def load_auth(auth_file: Path, profile: str) -> AuthInfo | None:
         return None
     if not entry.sessdata:
         return None
-    return AuthInfo(SESSDATA=entry.sessdata, bili_jct=entry.bili_jct or None)
+    return _auth_info_from_profile(entry)
 
 
-def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None):
+def _auth_info_from_profile(entry: AuthProfileModel) -> AuthInfo:
+    auth_info = AuthInfo(SESSDATA=entry.sessdata, bili_jct=entry.bili_jct or None)
+    if entry.cookies:
+        auth_info["cookies"] = dict(entry.cookies)
+    return auth_info
+
+
+def save_auth(
+    auth_file: Path,
+    profile: str,
+    sessdata: str,
+    bili_jct: str | None,
+    cookies: dict[str, str] | None = None,
+):
     validate_profile(profile)
 
     profiles: dict[str, AuthProfileModel] = {}
@@ -145,6 +170,11 @@ def save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None
         entry_payload["bili_jct"] = bili_jct
     else:
         entry_payload.pop("bili_jct", None)
+    if cookies is not None:
+        if cookies:
+            entry_payload["cookies"] = dict(cookies)
+        else:
+            entry_payload.pop("cookies", None)
     entry_payload["updated_at"] = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     profiles[profile] = AuthProfileModel.model_validate(entry_payload)
@@ -181,8 +211,18 @@ def write_auth_file(auth_file: Path, profiles: dict[str, AuthProfileModel]) -> N
         profile_entry_dict = profiles[profile_name].model_dump(exclude_none=True)
         lines.append(f"[profiles.{profile_name}]")
         for key, value in profile_entry_dict.items():
+            if key == "cookies":
+                continue
             if isinstance(value, str):
                 lines.append(f'{key} = "{escape_toml_basic_string(value)}"')
+        cookies = profile_entry_dict.get("cookies")
+        if isinstance(cookies, dict) and cookies:
+            lines.append(f"[profiles.{profile_name}.cookies]")
+            for name in sorted(cookies.keys()):
+                value = cookies[name]
+                if not isinstance(value, str) or not value:
+                    continue
+                lines.append(f'{format_toml_key(name)} = "{escape_toml_basic_string(value)}"')
         lines.append("")
 
     auth_file.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
@@ -196,3 +236,12 @@ def save_sessdata(auth_file: Path, profile: str, sessdata: str):
 
 def escape_toml_basic_string(raw: str) -> str:
     return raw.replace("\\", "\\\\").replace('"', '\\"')
+
+
+_TOML_BARE_KEY_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def format_toml_key(raw: str) -> str:
+    if _TOML_BARE_KEY_RE.match(raw):
+        return raw
+    return f'"{escape_toml_basic_string(raw)}"'
