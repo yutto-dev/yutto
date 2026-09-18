@@ -119,6 +119,27 @@ def test_cookies_from_auth_returns_native_cookie_mapping():
     }
 
 
+def test_cookies_from_auth_forwards_extra_cookies():
+    assert cookies_from_auth(
+        {
+            "SESSDATA": "sessdata-value",
+            "bili_jct": "csrf-token",
+            "cookies": {
+                "buvid3": "xyz",
+                "DedeUserID": "123",
+                "SESSDATA": "should-not-override",
+                "bili_jct": "should-not-override",
+                "empty": "  ",
+            },
+        }
+    ) == {
+        "SESSDATA": "sessdata-value",
+        "bili_jct": "csrf-token",
+        "buvid3": "xyz",
+        "DedeUserID": "123",
+    }
+
+
 class _StatusResponse:
     def __init__(self, status_code: int, url: str):
         self.status_code = status_code
