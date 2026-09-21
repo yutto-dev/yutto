@@ -317,7 +317,7 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
     group_auth.add_argument(
         "--auth",
         default=settings.auth.auth,
-        help="登录 Cookie，格式如 `SESSDATA=xxxxx; bili_jct=yyyyy`",
+        help="登录 Cookie，格式如 `SESSDATA=xxxxx; bili_jct=yyyyy`，也可传入浏览器完整 Cookie（其余字段会一并发送）",
     )
     group_auth.add_argument(
         "--auth-file",
