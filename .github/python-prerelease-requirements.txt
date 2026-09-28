@@ -1,7 +1,0 @@
-# CI-only overlay, not a supported production dependency set.
-# Pydantic's Python 3.15 support is still a prerelease as of 2026-09-28:
-# https://github.com/pydantic/pydantic/blob/v2.14.0b2/HISTORY.md
-# Keep the exact upstream core pairing and required typing-inspection update.
-pydantic==2.14.0b2
-pydantic-core==2.49.0
-typing-inspection==0.4.4
