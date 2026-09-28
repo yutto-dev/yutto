@@ -13,6 +13,9 @@ jobs:
         python-version: ["3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
         architecture: ["x64"]
     name: Python ${{ matrix.python-version }} on ${{ matrix.architecture }} latest release test
+    env:
+      # uv otherwise prefers an installed stable interpreter over a prerelease.
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
