@@ -148,7 +148,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "audio": False,
         "danmaku": False,
         "subtitle": False,
-        "subtitle_languages": [],
+        "subtitle_languages": None,
         "metadata": True,
         "cover": False,
         "chapter_info": False,
@@ -204,14 +204,14 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         ([], ["zh"], True),
         (["--subtitle-languages", "zh,en"], ["zh", "en"], True),
         (["--subtitle-languages", " zh-CN , en "], ["zh-CN", "en"], True),
-        (["--subtitle-languages", "all"], [], True),
+        (["--subtitle-languages", "all"], None, True),
         (["--subtitle-only", "--subtitle-languages", "en"], ["en"], True),
         (["--no-subtitle", "--subtitle-languages", "zh,en"], ["zh", "en"], False),
         (["--subtitle-languages", "zh,en", "--no-subtitle"], ["zh", "en"], False),
     ],
 )
 def test_subtitle_language_cli_overrides_config(
-    tmp_path: Path, arguments: list[str], languages: list[str], subtitle: bool
+    tmp_path: Path, arguments: list[str], languages: list[str] | None, subtitle: bool
 ):
     config = tmp_path / "yutto.toml"
     config.write_text('[resource]\nsubtitle_languages = ["zh"]\n', encoding="utf-8")
@@ -237,11 +237,13 @@ def test_subtitle_language_cli_rejects_empty_codes(value: str):
 
 
 def test_subtitle_language_defaults_and_rpc_overrides():
-    assert DownloadRequest.model_validate({"source": {"url": "BV1xx"}}).resources.subtitle_languages == []
-    assert download_request_from_namespace(parse_download_args(["BV1xx"])).resources.subtitle_languages == []
+    assert DownloadRequest.model_validate({"source": {"url": "BV1xx"}}).resources.subtitle_languages is None
+    assert download_request_from_namespace(parse_download_args(["BV1xx"])).resources.subtitle_languages is None
     settings = YuttoSettings.model_validate({"resource": {"subtitle_languages": ["zh", "en"]}})
     payload: dict[str, Any] = {"source": {"url": "BV1xx"}}
     assert download_request_from_mapping(payload, settings).resources.subtitle_languages == ["zh", "en"]
+    payload["resources"] = {"subtitle_languages": None}
+    assert download_request_from_mapping(payload, settings).resources.subtitle_languages is None
     payload["resources"] = {"subtitle_languages": []}
     assert download_request_from_mapping(payload, settings).resources.subtitle_languages == []
     payload["resources"] = {"subtitle_languages": ["ja"]}

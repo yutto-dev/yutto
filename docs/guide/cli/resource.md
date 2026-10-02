@@ -51,22 +51,19 @@ aside: true
 - 参数 `--subtitle-languages`
 - 默认值 `all`（下载所有可用字幕）
 
-使用逗号分隔 B 站字幕的语言代码（`lan`，不是显示名称 `lan_doc`）：
+使用逗号分隔语言代码，例如 `zh` 仅选择中文，`zh,en` 选择中文和英文。常用语言代码如下：
 
-```bash
-# 仅下载中文字幕
-yutto <url> --subtitle-languages zh
-# 仅下载中文和英文字幕
-yutto <url> --subtitle-languages zh,en
-# 仅生成中文和英文字幕文件，不下载音视频等其它资源
-yutto <url> --subtitle-only --subtitle-languages zh,en
-# 覆盖配置文件中的语言选择，恢复下载全部字幕
-yutto <url> --subtitle-languages all
-```
+- `zh`：中文
+- `en`：英文
+- `ja`：日文
+- `ko`：韩文
+- `es`：西班牙文
+- `pt`：葡萄牙文
+- `fr`：法文
+- `de`：德文
+- `ru`：俄文
 
-语言代码不区分大小写。`zh` 匹配 `zh-CN`、`zh-Hans`、`zh-Hant` 等地区/文字变体及 `ai-zh` 自动生成字幕；`en` 同样匹配 `en-US`、`ai-en` 等。也可以指定更具体的代码（如 `zh-Hans`）缩小范围，或指定 `ai-zh` 仅选择自动生成的中文字幕。
-
-该选项适用于投稿视频、番剧和课程，在拉取字幕内容之前过滤，不改变现有字幕文件命名。没有匹配语言时不生成字幕文件，也不会回退到全部字幕；它不会启用已被 `--no-subtitle` 或 `resource.require_subtitle = false` 禁用的字幕。与 `--ai-translation-language` 的原声翻译设置相互独立。
+匹配不区分大小写，并包含地区、文字及 AI 变体：例如 `zh` 包含 `zh-CN`、`zh-Hans`、`zh-Hant`、`ai-zh`，`en` 包含 `en-US`、`ai-en`。指定更具体的代码可缩小范围，例如 `zh-Hans` 选择简体中文，`ai-zh` 仅选择自动生成的中文字幕。
 
 ## 生成媒体元数据文件
 
@@ -146,15 +143,9 @@ require_danmaku = false
 ### 字幕语言选择
 
 - 配置项 `resource.subtitle_languages`
-- 默认值 `[]`（下载所有可用字幕）
+- 默认值 `None`（下载所有可用字幕）
 
-匹配规则与 `--subtitle-languages` 相同，配置值使用语言代码数组。命令行参数会替换配置中的数组，而不是追加。
-
-```toml [yutto.toml]
-[resource]
-subtitle_languages = ["zh", "en"] # 仅中文和英文；仅中文可使用 ["zh"]
-# subtitle_languages = []        # 下载全部字幕
-```
+空数组 `[]` 表示不选择任何字幕。
 
 ### 是否需要媒体元数据
 

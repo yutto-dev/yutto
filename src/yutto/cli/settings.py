@@ -53,7 +53,7 @@ class YuttoResourceSettings(BaseModel):
     require_audio: Annotated[bool, Field(True)]
     require_danmaku: Annotated[bool, Field(True)]
     require_subtitle: Annotated[bool, Field(True)]
-    subtitle_languages: Annotated[list[str], Field(default_factory=list)]
+    subtitle_languages: Annotated[list[str] | None, Field(None)]
     require_metadata: Annotated[bool, Field(False)]
     require_cover: Annotated[bool, Field(True)]
     require_chapter_info: Annotated[bool, Field(True)]

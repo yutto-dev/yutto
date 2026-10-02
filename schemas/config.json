@@ -398,11 +398,19 @@
           "type": "boolean"
         },
         "subtitle_languages": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Subtitle Languages",
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitle Languages"
         },
         "require_metadata": {
           "default": false,
@@ -470,7 +478,7 @@
         "require_audio": true,
         "require_danmaku": true,
         "require_subtitle": true,
-        "subtitle_languages": [],
+        "subtitle_languages": null,
         "require_metadata": false,
         "require_cover": true,
         "require_chapter_info": true,

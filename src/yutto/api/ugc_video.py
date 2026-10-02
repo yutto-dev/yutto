@@ -285,7 +285,7 @@ async def get_ugc_video_playurl(
 
 
 async def get_ugc_video_subtitles(
-    scope: ExecutionScope, avid: AvId, cid: CId, languages: Sequence[str] = ()
+    scope: ExecutionScope, avid: AvId, cid: CId, languages: Sequence[str] | None = None
 ) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/wbi/v2?aid={aid}&bvid={bvid}&cid={cid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
@@ -296,7 +296,7 @@ async def get_ugc_video_subtitles(
         return []
     results: list[MultiLangSubtitle] = []
     for sub_info in res_json["data"]["subtitle"]["subtitles"]:
-        if not matches_subtitle_language(sub_info.get("lan", ""), languages):
+        if not matches_subtitle_language(sub_info["lan"], languages):
             continue
         subtitle_url = sub_info["subtitle_url"]
 

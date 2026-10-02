@@ -152,7 +152,7 @@ EMPTY_EXTRACTOR_OPTIONS: ExtractorOptions = {
     "require_audio": True,
     "require_danmaku": True,
     "require_subtitle": True,
-    "subtitle_languages": [],
+    "subtitle_languages": None,
     "require_metadata": False,
     "require_cover": True,
     "require_chapter_info": True,

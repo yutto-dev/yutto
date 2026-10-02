@@ -162,9 +162,9 @@ def add_serve_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
     )
 
 
-def parse_subtitle_languages(value: str) -> list[str]:
+def parse_subtitle_languages(value: str) -> list[str] | None:
     if value.strip().lower() == "all":
-        return []
+        return None
     languages = [language.strip() for language in value.split(",")]
     if not all(languages):
         raise argparse.ArgumentTypeError("字幕语言代码不能为空，使用 `,` 分隔，或使用 all 下载全部字幕")

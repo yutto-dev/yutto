@@ -127,7 +127,7 @@ async def get_cheese_playurl(
 
 
 async def get_cheese_subtitles(
-    scope: ExecutionScope, avid: AvId, cid: CId, languages: Sequence[str] = ()
+    scope: ExecutionScope, avid: AvId, cid: CId, languages: Sequence[str] | None = None
 ) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
@@ -143,7 +143,7 @@ async def get_cheese_subtitles(
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
-        if not matches_subtitle_language(sub_info.get("lan", ""), languages):
+        if not matches_subtitle_language(sub_info["lan"], languages):
             continue
         subtitle_url = sub_info["subtitle_url"]
 

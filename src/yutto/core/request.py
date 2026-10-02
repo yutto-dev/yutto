@@ -51,7 +51,7 @@ class ResourceRequestOptions(_RequestModel):
     audio: bool = True
     danmaku: bool = True
     subtitle: bool = True
-    subtitle_languages: list[str] = Field(default_factory=list)
+    subtitle_languages: list[str] | None = None
     metadata: bool = False
     cover: bool = True
     chapter_info: bool = True

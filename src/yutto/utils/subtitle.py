@@ -18,9 +18,9 @@ SubtitleLineData = TypedDict(
 SubtitleData = list[SubtitleLineData]
 
 
-def matches_subtitle_language(code: str, languages: Sequence[str]) -> bool:
-    """Match Bilibili language codes, including regional and AI variants."""
-    if not languages:
+def matches_subtitle_language(code: str, languages: Sequence[str] | None) -> bool:
+    """Match language codes and their variants; None selects all, [] selects none."""
+    if languages is None:
         return True
     code = code.lower()
     for language in languages:
