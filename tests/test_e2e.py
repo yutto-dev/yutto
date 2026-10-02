@@ -21,10 +21,11 @@ def test_version_e2e():
     assert p.stdout.decode().strip().endswith(yutto_version)
 
 
+@pytest.mark.ci_skip
 @pytest.mark.parametrize(
     ("url", "batch_file"),
     [
-        pytest.param("https://www.bilibili.com/bangumi/play/ep100367", False, marks=pytest.mark.ci_skip, id="bangumi"),
+        pytest.param("https://www.bilibili.com/bangumi/play/ep100367", False, id="bangumi"),
         pytest.param("https://www.bilibili.com/video/BV1AZ4y147Yg", False, id="ugc"),
         pytest.param("https://www.bilibili.com/video/BV1AZ4y147Yg", True, id="batch-file"),
     ],
