@@ -156,9 +156,9 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
                 break
         # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):
-            line_args = shlex.split(line)
-            if line_args[0] == "download":
-                line_args = line_args[1:]
+            command, *line_args = handle_default_subcommand(shlex.split(line))
+            if command != "download":
+                parser.error("下载列表仅支持 download 子命令")
             local_args = parser.parse_args(line_args, copy.copy(args))
             if local_args.no_inherit:
                 local_args = parser.parse_args(line_args)

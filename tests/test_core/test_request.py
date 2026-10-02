@@ -381,24 +381,26 @@ def test_rpc_mapping_inherits_local_settings_without_credentials():
     assert "legacy-secret" not in request.model_dump_json()
 
 
+@pytest.mark.parametrize("command_prefix", ["", "download "], ids=["implicit-download", "explicit-download"])
 def test_task_list_preserves_inheritance_and_per_item_overrides(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    command_prefix: str,
 ):
     config = tmp_path / "yutto.toml"
     config.write_text('[basic]\ndir = "configured"\n[auth]\nauth_file = "configured-auth.toml"\n')
     monkeypatch.setattr(main_module.sys, "argv", ["yutto", "--config", str(config)])
     monkeypatch.setattr(validator_module, "FFmpeg", lambda: SimpleNamespace(video_encodecs=[], audio_encodecs=[]))
     nested = tmp_path / "nested.txt"
-    nested.write_text("BV1nested --auth-profile nested")
+    nested.write_text(f"{command_prefix}BV1nested --auth-profile nested")
     task_list = tmp_path / "downloads.txt"
     task_list.write_text(
         "\n".join(
             [
-                "BV1first --proxy no --fetch-workers 2 --num-workers 3 --auth-profile first",
-                "BV1second --no-inherit --proxy auto --fetch-workers 5 --num-workers 7 --auth-profile second",
-                "BV1third",
-                f'"{nested}" --proxy no',
+                f"{command_prefix}BV1first --proxy no --fetch-workers 2 --num-workers 3 --auth-profile first",
+                f"{command_prefix}BV1second --no-inherit --proxy auto --fetch-workers 5 --num-workers 7 --auth-profile second",
+                f"{command_prefix}BV1third",
+                f'{command_prefix}"{nested}" --proxy no',
             ]
         ),
         encoding="utf-8",
