@@ -378,6 +378,7 @@ class DownloadManager:
                     require_audio=request.resources.audio,
                     require_danmaku=request.resources.danmaku,
                     require_subtitle=request.resources.subtitle,
+                    subtitle_languages=request.resources.subtitle_languages,
                     require_metadata=request.resources.metadata,
                     require_cover=request.resources.cover,
                     require_chapter_info=request.resources.chapter_info,

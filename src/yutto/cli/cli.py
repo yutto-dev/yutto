@@ -162,6 +162,15 @@ def add_serve_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings
     )
 
 
+def parse_subtitle_languages(value: str) -> list[str] | None:
+    if value.strip().lower() == "all":
+        return None
+    languages = [language.strip() for language in value.split(",")]
+    if not all(languages):
+        raise argparse.ArgumentTypeError("字幕语言代码不能为空，使用 `,` 分隔，或使用 all 下载全部字幕")
+    return languages
+
+
 def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSettings):
     parser.add_argument("url", help="视频主页 url 或 url 列表（需使用 file scheme）")
     group_basic = parser.add_argument_group("basic", "基础参数")
@@ -368,6 +377,13 @@ def add_download_arguments(parser: argparse.ArgumentParser, settings: YuttoSetti
         dest="require_subtitle",
         action=create_select_required_action(select=["subtitle"], deselect=invert_selection(["subtitle"])),
         help="仅生成字幕文件",
+    )
+    group_resource.add_argument(
+        "--subtitle-languages",
+        default=settings.resource.subtitle_languages,
+        type=parse_subtitle_languages,
+        metavar="LANGUAGES",
+        help="字幕语言代码，使用 `,` 分隔（如 zh 或 zh,en），包含地区及 AI 变体；默认 all 下载全部字幕",
     )
     group_resource.add_argument(
         "--with-metadata",
