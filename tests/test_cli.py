@@ -16,6 +16,7 @@ from yutto.cli.cli import (
     add_download_arguments,
     add_login_arguments,
     cli,
+    get_download_subparser,
     handle_default_subcommand,
 )
 from yutto.cli.settings import YuttoSettings
@@ -205,6 +206,15 @@ def test_root_parser_accepts_auth_logout(tmp_path: Path):
     assert args.command == "auth"
     assert args.auth_command == "logout"
     assert args.auth_file == auth_file
+
+
+@pytest.mark.parametrize("subcommand", [None, "auth"])
+def test_get_download_subparser_reports_missing_download(subcommand: str | None):
+    parser = argparse.ArgumentParser()
+    if subcommand is not None:
+        parser.add_subparsers().add_parser(subcommand)
+    with pytest.raises(ValueError, match="download subparser not found"):
+        get_download_subparser(parser)
 
 
 def test_root_parser_rejects_removed_top_level_login():

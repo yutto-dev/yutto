@@ -59,6 +59,14 @@ def handle_default_subcommand(argv: list[str]) -> list[str]:
     return argv
 
 
+def get_download_subparser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction) and "download" in action.choices:
+            return action.choices["download"]
+    else:
+        raise ValueError("download subparser not found")
+
+
 def parse_config_path() -> Path | None:
     pre_parser = argparse.ArgumentParser(description="yutto pre parser", add_help=False)
     pre_parser.add_argument(
