@@ -19,9 +19,12 @@ from yutto.types import (
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 from yutto.utils.functional import data_has_chained_keys
 from yutto.utils.metadata import MetaData
+from yutto.utils.subtitle import matches_subtitle_language
 from yutto.utils.time import get_time_stamp_by_now
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from yutto.core.execution import ExecutionScope
     from yutto.types import (
         AvId,
@@ -123,7 +126,9 @@ async def get_cheese_playurl(
     )
 
 
-async def get_cheese_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> list[MultiLangSubtitle]:
+async def get_cheese_subtitles(
+    scope: ExecutionScope, avid: AvId, cid: CId, languages: Sequence[str] = ()
+) -> list[MultiLangSubtitle]:
     subtitle_api = "https://api.bilibili.com/x/player/v2?cid={cid}&aid={aid}&bvid={bvid}"
     subtitle_url = subtitle_api.format(**avid.to_dict(), cid=cid)
     subtitles_json_info = (await Fetcher.fetch_json(scope, subtitle_url)).value_or(None)
@@ -138,6 +143,8 @@ async def get_cheese_subtitles(scope: ExecutionScope, avid: AvId, cid: CId) -> l
     subtitles_info = subtitles_json_info["data"]["subtitle"]
     results: list[MultiLangSubtitle] = []
     for sub_info in subtitles_info["subtitles"]:
+        if not matches_subtitle_language(sub_info.get("lan", ""), languages):
+            continue
         subtitle_url = sub_info["subtitle_url"]
 
         # 检查 subtitle_url 是否有效

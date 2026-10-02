@@ -121,7 +121,11 @@ async def extract_bangumi_data(
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )
-        subtitles = await get_bangumi_subtitles(scope, avid, cid) if options["require_subtitle"] else []
+        subtitles = (
+            await get_bangumi_subtitles(scope, avid, cid, options["subtitle_languages"])
+            if options["require_subtitle"]
+            else []
+        )
         danmaku = (
             await get_danmaku(scope, cid, avid, options["danmaku_format"])
             if options["require_danmaku"]
@@ -218,7 +222,11 @@ async def extract_cheese_data(
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )
-        subtitles = await get_cheese_subtitles(scope, avid, cid) if options["require_subtitle"] else []
+        subtitles = (
+            await get_cheese_subtitles(scope, avid, cid, options["subtitle_languages"])
+            if options["require_subtitle"]
+            else []
+        )
         danmaku = (
             await get_danmaku(scope, cid, avid, options["danmaku_format"])
             if options["require_danmaku"]
@@ -324,7 +332,11 @@ async def extract_ugc_video_data(
             if options["require_video"] or options["require_audio"]
             else ([], [])
         )
-        subtitles = await get_ugc_video_subtitles(scope, avid, cid) if options["require_subtitle"] else []
+        subtitles = (
+            await get_ugc_video_subtitles(scope, avid, cid, options["subtitle_languages"])
+            if options["require_subtitle"]
+            else []
+        )
         chapter_info_data = await get_ugc_video_chapters(scope, avid, cid) if options["require_chapter_info"] else []
         danmaku = (
             await get_danmaku(scope, cid, avid, options["danmaku_format"])

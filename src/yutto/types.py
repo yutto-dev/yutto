@@ -223,6 +223,7 @@ class ExtractorOptions(TypedDict):
     require_audio: bool
     require_danmaku: bool
     require_subtitle: bool
+    subtitle_languages: list[str]
     require_metadata: bool
     require_cover: bool
     require_chapter_info: bool

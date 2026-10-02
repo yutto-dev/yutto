@@ -46,6 +46,7 @@ def extractor_options() -> ExtractorOptions:
         "require_audio": True,
         "require_danmaku": True,
         "require_subtitle": True,
+        "subtitle_languages": [],
         "require_metadata": False,
         "require_cover": True,
         "require_chapter_info": True,

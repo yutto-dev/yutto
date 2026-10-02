@@ -13,7 +13,7 @@ from yutto.cli.request_adapter import (
     download_request_from_namespace,
     download_request_parser_from_settings,
 )
-from yutto.cli.settings import YuttoSettings
+from yutto.cli.settings import YuttoSettings, load_settings_file
 from yutto.core.request import DownloadRequest
 
 pytestmark = pytest.mark.processor
@@ -148,6 +148,7 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "audio": False,
         "danmaku": False,
         "subtitle": False,
+        "subtitle_languages": [],
         "metadata": True,
         "cover": False,
         "chapter_info": False,
@@ -195,6 +196,56 @@ def test_namespace_adapter_preserves_download_semantics(tmp_path: Path):
         "block_colorful": True,
         "block_keyword_patterns": ["spoiler", "广告"],
     }
+
+
+@pytest.mark.parametrize(
+    ("arguments", "languages", "subtitle"),
+    [
+        ([], ["zh"], True),
+        (["--subtitle-languages", "zh,en"], ["zh", "en"], True),
+        (["--subtitle-languages", " zh-CN , en "], ["zh-CN", "en"], True),
+        (["--subtitle-languages", "all"], [], True),
+        (["--subtitle-only", "--subtitle-languages", "en"], ["en"], True),
+        (["--no-subtitle", "--subtitle-languages", "zh,en"], ["zh", "en"], False),
+        (["--subtitle-languages", "zh,en", "--no-subtitle"], ["zh", "en"], False),
+    ],
+)
+def test_subtitle_language_cli_overrides_config(
+    tmp_path: Path, arguments: list[str], languages: list[str], subtitle: bool
+):
+    config = tmp_path / "yutto.toml"
+    config.write_text('[resource]\nsubtitle_languages = ["zh"]\n', encoding="utf-8")
+    settings = load_settings_file(config)
+    parser = argparse.ArgumentParser()
+    add_download_arguments(parser, settings)
+
+    request = download_request_from_namespace(parser.parse_args(["BV1xx", *arguments]))
+
+    assert request.resources.subtitle_languages == languages
+    assert request.resources.subtitle is subtitle
+    if "--subtitle-only" in arguments:
+        assert request.resources.video is False
+        assert request.resources.audio is False
+
+
+@pytest.mark.parametrize("value", ["", " ", "zh,", ",en", "zh,,en"])
+def test_subtitle_language_cli_rejects_empty_codes(value: str):
+    with pytest.raises(SystemExit) as exc_info:
+        parse_download_args(["BV1xx", "--subtitle-languages", value])
+
+    assert exc_info.value.code == 2
+
+
+def test_subtitle_language_defaults_and_rpc_overrides():
+    assert DownloadRequest.model_validate({"source": {"url": "BV1xx"}}).resources.subtitle_languages == []
+    assert download_request_from_namespace(parse_download_args(["BV1xx"])).resources.subtitle_languages == []
+    settings = YuttoSettings.model_validate({"resource": {"subtitle_languages": ["zh", "en"]}})
+    payload: dict[str, Any] = {"source": {"url": "BV1xx"}}
+    assert download_request_from_mapping(payload, settings).resources.subtitle_languages == ["zh", "en"]
+    payload["resources"] = {"subtitle_languages": []}
+    assert download_request_from_mapping(payload, settings).resources.subtitle_languages == []
+    payload["resources"] = {"subtitle_languages": ["ja"]}
+    assert download_request_from_mapping(payload, settings).resources.subtitle_languages == ["ja"]
 
 
 def test_cli_and_secret_options_do_not_cross_core_boundary(tmp_path: Path):
