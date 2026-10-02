@@ -20,7 +20,7 @@ from yutto._native import (
     YuttoSession,
 )
 from yutto.core.operation import ReportLevel, emit_download_report
-from yutto.exceptions import MaxRetryError
+from yutto.exceptions import MaxRetryError, RiskControlError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
@@ -126,6 +126,8 @@ def unwrap_fetch_result(result: Result[RetT, MaxRetryError]) -> RetT:
 DEFAULT_PROXY = None
 DEFAULT_TRUST_ENV = True
 DEFAULT_FETCH_WORKERS = 8
+# 触发 B 站风控的 HTTP 状态码，重试只会让封禁更严重，因此直接抛出 RiskControlError。
+RISK_CONTROL_STATUS_CODES = frozenset({412, 429})
 DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36",
     "Referer": "https://www.bilibili.com",
@@ -165,11 +167,13 @@ class Fetcher:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
         encoding: str | None = None,
     ) -> str | None:
         async with scope.fetch_guard():
             with trace_fetch("Fetch text", url) as trace:
-                resp = await scope.session.get(url, params=_query_params(params))
+                resp = await scope.session.get(url, params=_query_params(params), headers=_request_headers(headers))
+                _raise_if_risk_control(resp)
                 if not resp.is_success:
                     trace.complete(f"HTTP {resp.status_code}")
                     return None
@@ -184,10 +188,12 @@ class Fetcher:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> bytes | None:
         async with scope.fetch_guard():
             with trace_fetch("Fetch bin", url) as trace:
-                resp = await scope.session.get(url, params=_query_params(params))
+                resp = await scope.session.get(url, params=_query_params(params), headers=_request_headers(headers))
+                _raise_if_risk_control(resp)
                 if not resp.is_success:
                     trace.complete(f"HTTP {resp.status_code}")
                     return None
@@ -202,10 +208,32 @@ class Fetcher:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> Any:
         async with scope.fetch_guard():
             with trace_fetch("Fetch json", url) as trace:
-                resp = await scope.session.get(url, params=_query_params(params))
+                resp = await scope.session.get(url, params=_query_params(params), headers=_request_headers(headers))
+                _raise_if_risk_control(resp)
+                if not resp.is_success:
+                    resp.raise_for_status()
+                body = resp.body
+                result = json.loads(body)
+                trace.complete(f"HTTP {resp.status_code}, {len(body)} bytes")
+                return result
+
+    @staticmethod
+    @WithReconnect()
+    async def post_json(
+        scope: ExecutionScope,
+        url: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> Any:
+        async with scope.fetch_guard():
+            with trace_fetch("Post json", url) as trace:
+                resp = await scope.session.post(url, params=_query_params(params), headers=_request_headers(headers))
+                _raise_if_risk_control(resp)
                 if not resp.is_success:
                     resp.raise_for_status()
                 body = resp.body
@@ -270,6 +298,18 @@ def _query_value(value: Any) -> str:
     if isinstance(value, bool):
         return str(value).lower()
     return str(value)
+
+
+def _request_headers(headers: Mapping[str, str] | None) -> dict[str, str] | None:
+    return dict(headers) if headers else None
+
+
+def _raise_if_risk_control(resp: Any) -> None:
+    status_code = resp.status_code
+    if status_code in RISK_CONTROL_STATUS_CODES:
+        raise RiskControlError(
+            f"请求被 B 站风控拦截（HTTP {status_code}），请稍后重试，或使用登录 Cookie / 代理后重试～"
+        )
 
 
 @asynccontextmanager

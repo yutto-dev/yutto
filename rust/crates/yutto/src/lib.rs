@@ -162,9 +162,34 @@ impl YuttoSession {
         })
     }
 
+    #[pyo3(signature = (url, *, params=None, headers=None))]
+    fn post<'py>(
+        &self,
+        py: Python<'py>,
+        url: String,
+        params: Option<Vec<(String, String)>>,
+        headers: Option<HashMap<String, String>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let session = self.session.clone();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            session
+                .post(url, params.unwrap_or_default(), headers.unwrap_or_default())
+                .await
+                .map(|response| NativeResponse { response })
+                .map_err(session_error_to_py)
+        })
+    }
+
     #[pyo3(signature = (name, *, url="https://www.bilibili.com/"))]
     fn cookie(&self, name: &str, url: &str) -> PyResult<Option<String>> {
         self.session.cookie(name, url).map_err(session_error_to_py)
+    }
+
+    #[pyo3(signature = (name, value, *, url="https://www.bilibili.com/"))]
+    fn set_cookie(&self, name: &str, value: &str, url: &str) -> PyResult<()> {
+        self.session
+            .set_cookie(name, value, url)
+            .map_err(session_error_to_py)
     }
 
     fn close(&self) {

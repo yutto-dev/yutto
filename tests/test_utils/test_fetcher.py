@@ -10,6 +10,7 @@ from returns.result import Failure, Success
 import yutto.utils.fetcher as fetcher_module
 from yutto._native import HttpStatusError, SessionClosedError
 from yutto.core.execution import ExecutionScope
+from yutto.exceptions import RiskControlError
 from yutto.utils.fetcher import Fetcher, cookies_from_auth, create_client, resolve_proxy
 from yutto.utils.functional import as_sync
 
@@ -228,6 +229,70 @@ async def test_fetch_json_retries_non_success_status(monkeypatch: pytest.MonkeyP
             assert error.message == "超出最大重试次数！"
         case result:
             pytest.fail(f"expected Failure, got {result}")
+
+
+class _RecordingSession:
+    def __init__(self, status_code: int = 200, body: bytes = b"{}"):
+        self.status_code = status_code
+        self.body = body
+        self.calls = 0
+        self.last_params: Any = None
+        self.last_headers: Any = None
+
+    def _respond(self, url: str) -> _StatusResponse:
+        response = _StatusResponse(self.status_code, url)
+        response.body = self.body
+        return response
+
+    async def get(self, url: str, **kwargs: Any) -> _StatusResponse:
+        self.calls += 1
+        self.last_params = kwargs.get("params")
+        self.last_headers = kwargs.get("headers")
+        return self._respond(url)
+
+    async def post(self, url: str, **kwargs: Any) -> _StatusResponse:
+        self.calls += 1
+        self.last_params = kwargs.get("params")
+        self.last_headers = kwargs.get("headers")
+        return self._respond(url)
+
+
+@as_sync
+async def test_fetch_json_raises_risk_control_without_retry():
+    session = _RecordingSession(status_code=412)
+    scope = ExecutionScope(cast("Any", session))
+    with pytest.raises(RiskControlError, match="风控"):
+        await Fetcher.fetch_json(scope, "https://example.com")
+    assert session.calls == 1
+
+
+@as_sync
+async def test_fetch_json_forwards_custom_headers():
+    session = _RecordingSession()
+    scope = ExecutionScope(cast("Any", session))
+    await Fetcher.fetch_json(
+        scope,
+        "https://api.bilibili.com/x/space/wbi/arc/search",
+        params={"mid": "1"},
+        headers={"Referer": "https://space.bilibili.com/1/video"},
+    )
+    assert session.last_params == [("mid", "1")]
+    assert session.last_headers == {"Referer": "https://space.bilibili.com/1/video"}
+
+
+@as_sync
+async def test_post_json_uses_post_and_forwards_params_headers():
+    session = _RecordingSession()
+    scope = ExecutionScope(cast("Any", session))
+    await Fetcher.post_json(
+        scope,
+        "https://api.bilibili.com/bapis/bilibili.api.ticket.v1.Ticket/GenWebTicket",
+        params={"key_id": "ec02"},
+        headers={"Referer": "https://www.bilibili.com/"},
+    )
+    assert session.calls == 1
+    assert session.last_params == [("key_id", "ec02")]
+    assert session.last_headers == {"Referer": "https://www.bilibili.com/"}
 
 
 @as_sync

@@ -18,6 +18,7 @@ class ErrorCode(Enum):
     CRYPTO_ERROR = 19
     POSTPROCESSING_ERROR = 20
     RESOLVE_FAILED_ERROR = 21
+    RISK_CONTROL_ERROR = 22
 
     # 异常状况，但并不算错误
     PAUSED_DOWNLOAD = 101
@@ -87,3 +88,9 @@ class ResolveFailedError(YuttoBaseException):
     """解析任务未得到任何条目，且存在预期内的失败（多个失败聚合时使用；单一失败直接抛原始异常）"""
 
     code = ErrorCode.RESOLVE_FAILED_ERROR
+
+
+class RiskControlError(YuttoBaseException):
+    """B 站风控拦截（HTTP 412/429 等），不应盲目重试。"""
+
+    code = ErrorCode.RISK_CONTROL_ERROR

@@ -5,17 +5,59 @@ from typing import TYPE_CHECKING, Any, cast
 
 from returns.result import Failure, Result, Success
 
-from yutto.api.user_info import encode_wbi, get_wbi_img
+from yutto.api.user_info import (
+    X_BILI_DEVICE_REQ_JSON,
+    X_BILI_LOCALE_JSON,
+    encode_wbi,
+    get_wbi_img,
+)
+from yutto.api.web_identity import ensure_web_identity
 from yutto.core.operation import ReportLevel, emit_download_report
-from yutto.exceptions import NotLoginError
+from yutto.exceptions import NotLoginError, RiskControlError
 from yutto.types import BvId, FavouriteMetaData, FavouriteVideoData, FId
 from yutto.utils.fetcher import Fetcher, unwrap_fetch_result
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from yutto.api.user_info import WbiImg
     from yutto.core.execution import ExecutionScope
     from yutto.types import AvId, MId, SeriesId
+
+
+# 网页端空间接口携带的固定参数，缺失时极易触发风控
+SPACE_ORIGIN = "https://space.bilibili.com"
+SPACE_ARC_WEB_LOCATION = "333.1387"
+SPACE_ACC_WEB_LOCATION = "1550101"
+
+
+def _space_headers(mid: MId, *, page: str = "upload/video") -> dict[str, str]:
+    return {
+        "Referer": f"{SPACE_ORIGIN}/{mid}/{page}",
+        "Origin": SPACE_ORIGIN,
+    }
+
+
+def _build_user_space_params(mid: MId, pn: int, ps: int, wbi_img: WbiImg) -> dict[str, Any]:
+    """构造与网页端一致的投稿视频列表请求参数（含 WBI 签名）。"""
+    return encode_wbi(
+        {
+            "mid": mid,
+            "ps": ps,
+            "tid": 0,
+            "pn": pn,
+            "order": "pubdate",
+            "special_type": "",
+            "index": 0,
+            "keyword": "",
+            "order_avoided": "true",
+            "platform": "web",
+            "web_location": SPACE_ARC_WEB_LOCATION,
+            "x-bili-locale-json": X_BILI_LOCALE_JSON,
+            "x-bili-device-req-json": X_BILI_DEVICE_REQ_JSON,
+        },
+        wbi_img,
+    )
 
 
 # 个人空间·全部
@@ -27,23 +69,22 @@ async def get_user_space_all_videos_avids(
     stop_before_timestamp: int | None = None,
 ) -> list[AvId]:
     space_videos_api = "https://api.bilibili.com/x/space/wbi/arc/search"
-    # ps 随机设置有时会出现错误，因此暂时固定在 30
-    # ps: int = random.randint(3, 6) * 10
-    ps = 30
+    # ps 固定为 40，与网页端保持一致，随机值容易触发风控
+    ps = 40
     pn = 1
     total = 1
     all_avid: list[AvId] = []
+    await ensure_web_identity(scope)
     wbi_img = await get_wbi_img(scope)
+    headers = _space_headers(mid)
     while pn <= total:
-        params = {
-            "mid": mid,
-            "ps": ps,
-            "tid": 0,
-            "pn": pn,
-            "order": "pubdate",
-        }
-        params = encode_wbi(params, wbi_img)
-        match await Fetcher.fetch_json(scope, space_videos_api, params=params):
+        params = _build_user_space_params(mid, pn, ps, wbi_img)
+        try:
+            result = await Fetcher.fetch_json(scope, space_videos_api, params=params, headers=headers)
+        except RiskControlError as error:
+            emit_download_report(f"获取用户空间视频列表第 {pn} 页失败：{error}", ReportLevel.ERROR)
+            break
+        match result:
             case Success(json_data):
                 match _parse_user_space_videos_page(json_data, ps):
                     case Success((total, video_infos)):
@@ -65,7 +106,11 @@ def _parse_user_space_videos_page(json_data: Any, page_size: int) -> Result[tupl
         return Failure(f"响应数据格式异常：{json_data}")
 
     if json_data.get("code") != 0:
-        return Failure(f"{json_data.get('message', '未知错误')}（code: {json_data.get('code')}）")
+        code = json_data.get("code")
+        message = json_data.get("message", "未知错误")
+        if code == -352:
+            message = f"{message}，疑似触发 B 站风控，请稍后重试，或使用登录 Cookie / 代理"
+        return Failure(f"{message}（code: {code}）")
 
     try:
         data = cast("dict[str, Any]", json_data["data"])
@@ -94,12 +139,21 @@ def _should_stop_user_space_pagination(video_infos: list[dict[str, Any]], stop_b
 
 # 个人空间·用户名
 async def get_user_name(scope: ExecutionScope, mid: MId) -> str:
+    await ensure_web_identity(scope)
     wbi_img = await get_wbi_img(scope)
-    params = {"mid": mid}
-    params = encode_wbi(params, wbi_img)
+    params = encode_wbi(
+        {"mid": mid, "token": "", "platform": "web", "web_location": SPACE_ACC_WEB_LOCATION},
+        wbi_img,
+    )
     space_info_api = "https://api.bilibili.com/x/space/wbi/acc/info"
     unwrap_fetch_result(await Fetcher.touch_url(scope, "https://www.bilibili.com"))
-    match await Fetcher.fetch_json(scope, space_info_api, params=params):
+    headers = _space_headers(mid, page="video")
+    try:
+        result = await Fetcher.fetch_json(scope, space_info_api, params=params, headers=headers)
+    except RiskControlError as error:
+        emit_download_report(f"获取用户名失败：{error}", ReportLevel.ERROR)
+        return f"「用户{mid}」"
+    match result:
         case Success({"code": 0, "data": {"name": username}}):
             return str(username)
         case Success({"code": -404}):

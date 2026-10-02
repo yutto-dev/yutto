@@ -204,6 +204,32 @@ impl Session {
         })
     }
 
+    pub async fn post(
+        &self,
+        url: String,
+        params: Vec<(String, String)>,
+        headers: HashMap<String, String>,
+    ) -> Result<Response, SessionError> {
+        let url = parse_url(&url)?;
+        let request = self
+            .client()?
+            .post(url)
+            .query(&params)
+            .headers(build_headers(headers)?);
+        let response = request.send().await.map_err(classify_reqwest_error)?;
+        let status = response.status();
+        let url = response.url().clone();
+        let headers = response.headers().clone();
+        let body = response.bytes().await.map_err(classify_reqwest_error)?;
+        let body = decode_response_body(&headers, body)?;
+        Ok(Response {
+            status,
+            url,
+            headers,
+            body,
+        })
+    }
+
     pub async fn probe_size(&self, url: String) -> Result<Option<u64>, SessionError> {
         let url = parse_url(&url)?;
         let client = self.client()?;
@@ -224,6 +250,11 @@ impl Session {
             let (cookie_name, value) = cookie.split_once('=')?;
             (cookie_name == name).then(|| value.to_owned())
         }))
+    }
+
+    pub fn set_cookie(&self, name: &str, value: &str, url: &str) -> Result<(), SessionError> {
+        let _ = parse_url(url)?;
+        self.inner.cookies.set(name, value)
     }
 
     pub fn close(&self) {
@@ -376,6 +407,7 @@ fn decode_reader(mut decoder: impl Read, encoding: &str) -> Result<Vec<u8>, Sess
 struct SessionCookieStore {
     jar: Jar,
     initial: BTreeMap<String, String>,
+    dynamic: Mutex<BTreeMap<String, String>>,
 }
 
 impl SessionCookieStore {
@@ -388,7 +420,19 @@ impl SessionCookieStore {
         Ok(Self {
             jar: Jar::default(),
             initial: initial.into_iter().collect(),
+            dynamic: Mutex::new(BTreeMap::new()),
         })
+    }
+
+    fn set(&self, name: &str, value: &str) -> Result<(), SessionError> {
+        HeaderValue::from_str(&format!("{name}={value}")).map_err(|error| {
+            SessionError::Configuration(format!("invalid cookie {name:?}: {error}"))
+        })?;
+        self.dynamic
+            .lock()
+            .expect("session cookie lock poisoned")
+            .insert(name.to_owned(), value.to_owned());
+        Ok(())
     }
 }
 
@@ -399,6 +443,13 @@ impl CookieStore for SessionCookieStore {
 
     fn cookies(&self, url: &Url) -> Option<HeaderValue> {
         let mut values = self.initial.clone();
+        if let Ok(dynamic) = self.dynamic.lock() {
+            values.extend(
+                dynamic
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.clone())),
+            );
+        }
         if let Some(header) = self.jar.cookies(url) {
             if let Ok(header) = header.to_str() {
                 for cookie in header.split(';').map(str::trim) {
@@ -705,6 +756,66 @@ mod tests {
             session.cookie("token", &url).expect("cookie"),
             Some("updated".into())
         );
+    }
+
+    #[tokio::test]
+    async fn set_cookie_is_sent_on_subsequent_requests() {
+        let (url, request) = serve_once(
+            "HTTP/1.1 200 OK\r\nContent-Length: 7\r\nConnection: close\r\n\r\npayload",
+            Duration::ZERO,
+        )
+        .await;
+        let session = Session::new(SessionConfig {
+            use_system_proxy: false,
+            ..SessionConfig::default()
+        })
+        .expect("session");
+
+        session
+            .set_cookie("buvid3", "device-fingerprint", &url)
+            .expect("set cookie");
+        assert_eq!(
+            session.cookie("buvid3", &url).expect("cookie"),
+            Some("device-fingerprint".into())
+        );
+
+        let response = session
+            .get(url, vec![], HashMap::new())
+            .await
+            .expect("response");
+        let request = request.await.expect("captured request");
+
+        assert_eq!(response.body, "payload");
+        assert!(request.contains("cookie: buvid3=device-fingerprint\r\n"));
+    }
+
+    #[tokio::test]
+    async fn post_sends_query_and_returns_response() {
+        let (url, request) = serve_once(
+            "HTTP/1.1 200 OK\r\nContent-Length: 7\r\nConnection: close\r\n\r\npayload",
+            Duration::ZERO,
+        )
+        .await;
+        let session = Session::new(SessionConfig {
+            use_system_proxy: false,
+            ..SessionConfig::default()
+        })
+        .expect("session");
+
+        let response = session
+            .post(
+                url,
+                vec![("key_id".into(), "ec02".into())],
+                HashMap::from([("Referer".into(), "https://www.bilibili.com/".into())]),
+            )
+            .await
+            .expect("response");
+        let request = request.await.expect("captured request");
+
+        assert_eq!(response.status.as_u16(), 200);
+        assert_eq!(response.body, "payload");
+        assert!(request.starts_with("POST /resource?key_id=ec02 HTTP/1.1\r\n"));
+        assert!(request.contains("referer: https://www.bilibili.com/\r\n"));
     }
 
     #[tokio::test]

@@ -31,6 +31,8 @@ class ExecutionScope:
     user_info_lock: asyncio.Lock
     wbi_img_cache: Mapping[str, str] | None
     wbi_img_lock: asyncio.Lock
+    web_identity_cache: Mapping[str, str] | None
+    web_identity_lock: asyncio.Lock
     touched_urls: set[str]
 
     def __init__(
@@ -51,6 +53,8 @@ class ExecutionScope:
         self.user_info_lock = asyncio.Lock()
         self.wbi_img_cache = None
         self.wbi_img_lock = asyncio.Lock()
+        self.web_identity_cache = None
+        self.web_identity_lock = asyncio.Lock()
         self.touched_urls = set()
 
     @asynccontextmanager

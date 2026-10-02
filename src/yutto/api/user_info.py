@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import base64
 import hashlib
-import random
 import re
-import string
 import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any, TypedDict, cast
@@ -21,8 +18,17 @@ class WbiImg(TypedDict):
     sub_key: str
 
 
-dm_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(16, 64))).encode())[:-2].decode()  # fmt: skip
-dm_cover_img_str_cache: str = base64.b64encode("".join(random.choices(string.printable, k=random.randint(32, 128))).encode())[:-2].decode()  # fmt: skip
+# 浏览器实际发送的设备指纹参数：dm_img_str 为 WebGL 渲染器信息、
+# dm_cover_img_str 为 GPU 信息、dm_img_inter 为窗口/设备信息。
+DM_IMG_STR = "V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ"
+DM_COVER_IMG_STR = (
+    "QU5HTEUgKEludGVsLCBJbnRlbChSKSBBcmMoVE0pIEEzMTAgR3JhcGhpY3MgKDB4MDAwMDU2QTYpIERpcmVjdDNEMTEg"
+    "dnNfNV8wIHBzXzVfMCwgRDNEMTEpR29vZ2xlIEluYy4gKEludGVsKQ"
+)
+DM_IMG_INTER = '{"ds":[],"wh":[2906,3307,98],"of":[456,912,456]}'
+# 部分接口要求携带设备/语言信息，值需与浏览器一致才不易触发风控。
+X_BILI_LOCALE_JSON = '{"c_locale":{"language":"zh","script":"Hans"},"always_translate":false}'
+X_BILI_DEVICE_REQ_JSON = '{"platform":"web","device":"pc","spmid":"333.1387","mobi_app":"web_cn"}'
 USER_INFO_API = "https://api.bilibili.com/x/web-interface/nav"
 
 
@@ -109,8 +115,9 @@ def encode_wbi(params: dict[str, Any], wbi_img: WbiImg) -> dict[str, Any]:
     params_with_dm = {
         **params_with_wts,
         "dm_img_list": "[]",
-        "dm_img_str": dm_img_str_cache,
-        "dm_cover_img_str": dm_cover_img_str_cache,
+        "dm_img_str": DM_IMG_STR,
+        "dm_cover_img_str": DM_COVER_IMG_STR,
+        "dm_img_inter": DM_IMG_INTER,
     }
     url_encoded_params = urllib.parse.urlencode(
         {
