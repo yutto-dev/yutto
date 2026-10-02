@@ -68,3 +68,10 @@ async def test_get_cheese_playurl():
         playlist: tuple[list[VideoUrlMeta], list[AudioUrlMeta]] = await get_cheese_playurl(scope, avid, episode_id, cid)
         assert len(playlist[0]) > 0
         assert len(playlist[1]) > 0
+
+
+@pytest.mark.api
+@as_sync
+async def test_get_cheese_subtitles():
+    # TODO: 暂未找到需要字幕的课程
+    pass
