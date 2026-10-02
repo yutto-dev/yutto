@@ -9,7 +9,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from yutto.api.user_info import validate_user_info
-from yutto.cli.cli import cli, handle_default_subcommand
+from yutto.cli.cli import cli, get_download_subparser, handle_default_subcommand
 from yutto.cli.event_renderer import CliApplicationEventRenderer
 from yutto.cli.request_adapter import download_request_from_namespace
 from yutto.core.application import YuttoApplication
@@ -150,11 +150,16 @@ def flatten_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> l
     # 是否为下载列表
     if re.match(r"file://", args.url) or os.path.isfile(args.url):  # noqa: PTH113
         args_list: list[argparse.Namespace] = []
+        # 子命令分发会新建 Namespace 并覆盖父级参数，因此直接使用下载子解析器。
+        download_parser = get_download_subparser(parser)
         # TODO: 如果是相对路径，需要相对于当前 list 路径
         for line in file_scheme_parser(args.url):
-            local_args = parser.parse_args(handle_default_subcommand(shlex.split(line)), args)
+            command, *line_args = handle_default_subcommand(shlex.split(line))
+            if command != "download":
+                download_parser.error("下载列表仅支持 download 子命令")
+            local_args = download_parser.parse_args(line_args, copy.copy(args))
             if local_args.no_inherit:
-                local_args = parser.parse_args(handle_default_subcommand(shlex.split(line)))
+                local_args = download_parser.parse_args(line_args)
             Logger.debug(f"列表参数: {local_args}")
             args_list += flatten_args(local_args, parser)
         return args_list

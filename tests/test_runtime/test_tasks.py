@@ -395,17 +395,24 @@ async def test_worker_count_allows_bounded_concurrency():
         return payload
 
     async with TaskRuntime(handler, worker_count=2) as runtime:
-        first = await runtime.submit(1)
-        second = await runtime.submit(2)
-        await both_started.wait()
-        assert runtime.worker_count == 2
+        tasks = [await runtime.submit(index) for index in range(3)]
+        await asyncio.wait_for(both_started.wait(), timeout=1)
+        # Let every worker attempt to dequeue work while the first two remain blocked.
+        await asyncio.sleep(0)
+        assert [task.state for task in runtime.list()] == [
+            TaskState.RUNNING,
+            TaskState.RUNNING,
+            TaskState.QUEUED,
+        ]
         assert max_running == 2
         release.set()
-        first_completed = await runtime.wait(first.task_id)
-        second_completed = await runtime.wait(second.task_id)
-        assert first_completed is not None and second_completed is not None
-        assert first_completed.state is TaskState.COMPLETED
-        assert second_completed.state is TaskState.COMPLETED
+        completed = await asyncio.wait_for(
+            asyncio.gather(*(runtime.wait(task.task_id) for task in tasks)),
+            timeout=1,
+        )
+        assert [task.result for task in completed if task is not None] == [0, 1, 2]
+        assert all(task is not None and task.state is TaskState.COMPLETED for task in completed)
+        assert max_running == 2
 
 
 @pytest.mark.processor

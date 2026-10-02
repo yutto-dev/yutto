@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+import json
 from contextlib import asynccontextmanager
-from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
 import yutto.login as login_module
 from yutto._native import HttpTransportError
 from yutto.api.user_info import USER_INFO_API
+from yutto.auth import load_auth, save_auth
 from yutto.exceptions import ErrorCode
 from yutto.utils.functional import as_sync
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @as_sync
@@ -49,89 +53,70 @@ async def test_validate_saved_auth_uses_yutto_session_with_auth_cookies(monkeypa
     assert calls["params"] == {}
 
 
-@as_sync
-async def test_run_login_reuses_one_verified_yutto_session(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-    sessions: list[object] = []
-    fake_session = object()
+def test_run_login_saves_and_validates_auth(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+):
+    clients: list[dict[str, Any]] = []
+    requested: list[str] = []
+    redirect = "https://passport.bilibili.com/confirmed?SESSDATA=sess%2Cdata&bili_jct=csrf-token"
+
+    class LoginSession:
+        async def get(self, url: str, **kwargs: Any):
+            requested.append(url)
+            if url == login_module.QR_GENERATE_API:
+                payload = {"code": 0, "data": {"url": "https://example.com/qr", "qrcode_key": "qr-key"}}
+            elif url == login_module.QR_POLL_API:
+                assert dict(kwargs["params"])["qrcode_key"] == "qr-key"
+                payload = {"code": 0, "data": {"code": 0, "url": redirect}}
+            elif url == USER_INFO_API:
+                payload = {"data": {"vipStatus": 0, "isLogin": True}}
+            else:
+                assert url == redirect
+                payload = {}
+            return SimpleNamespace(body=json.dumps(payload).encode(), url=url, raise_for_status=lambda: None)
+
+        def cookie(self, name: str, *, url: str) -> None:
+            return None
 
     @asynccontextmanager
-    async def fake_create_client(**kwargs: Any):
-        calls.update(kwargs)
-        yield fake_session
+    async def create_client(**kwargs: Any):
+        clients.append(kwargs)
+        yield LoginSession()
 
-    async def fake_generate_qr_login(session: object) -> tuple[str, str]:
-        sessions.append(session)
-        return ("https://example.com/qr", "qr-key")
-
-    def fake_show_qr_code(url: str, mode: str) -> None:
-        calls["qr"] = (url, mode)
-
-    async def fake_poll_qr_login(
-        session: object,
-        qrcode_key: str,
-        *,
-        timeout: int,
-        poll_interval: float,
-    ) -> str:
-        sessions.append(session)
-        calls["poll"] = (qrcode_key, timeout, poll_interval)
-        return "https://example.com/redirect"
-
-    async def fake_complete_login(
-        session: object,
-        redirect_url: str,
-    ) -> tuple[str, str | None, str | None]:
-        sessions.append(session)
-        calls["redirect_url"] = redirect_url
-        return ("https://www.bilibili.com", "sessdata", "csrf-token")
-
-    def fake_resolve_auth_file(args: SimpleNamespace) -> Path:
-        return Path("/tmp/auth.toml")
-
-    def fake_save_auth(auth_file: Path, profile: str, sessdata: str, bili_jct: str | None) -> None:
-        calls["saved"] = (auth_file, profile, sessdata, bili_jct)
-
-    async def fake_validate_saved_auth(
-        auth: dict[str, str | None],
-        *,
-        proxy: str | None,
-        trust_env: bool,
-    ) -> bool:
-        calls["validated"] = (auth, proxy, trust_env)
-        return True
-
-    monkeypatch.setattr(login_module, "create_client", fake_create_client)
-    monkeypatch.setattr(login_module, "generate_qr_login", fake_generate_qr_login)
-    monkeypatch.setattr(login_module, "show_qr_code", fake_show_qr_code)
-    monkeypatch.setattr(login_module, "poll_qr_login", fake_poll_qr_login)
-    monkeypatch.setattr(login_module, "complete_login", fake_complete_login)
-    monkeypatch.setattr(login_module, "resolve_auth_file", fake_resolve_auth_file)
-    monkeypatch.setattr(login_module, "save_auth", fake_save_auth)
-    monkeypatch.setattr(login_module, "validate_saved_auth", fake_validate_saved_auth)
-
-    await login_module.run_login(
+    monkeypatch.setattr(login_module, "create_client", create_client)
+    auth_file = tmp_path / "auth.toml"
+    login_module.run_auth(
         SimpleNamespace(
+            auth_command="login",
             proxy="auto",
-            auth_profile="default",
+            auth_file=auth_file,
+            auth_profile="test",
             mode="terminal",
-            timeout=180,
-            poll_interval=2.0,
+            timeout=10,
+            poll_interval=0,
         )
     )
 
-    assert calls["verify"] is True
-    assert calls["timeout"] == 10
-    assert sessions == [fake_session, fake_session, fake_session]
-    assert calls["qr"] == ("https://example.com/qr", "terminal")
-    assert calls["poll"] == ("qr-key", 180, 2.0)
-    assert calls["saved"] == (Path("/tmp/auth.toml"), "default", "sessdata", "csrf-token")
+    assert load_auth(auth_file, "test") == {"SESSDATA": "sess,data", "bili_jct": "csrf-token"}
+    assert requested == [login_module.QR_GENERATE_API, login_module.QR_POLL_API, redirect, USER_INFO_API]
+    assert len(clients) == 2
+    assert all(client["verify"] is True for client in clients)
+    assert clients[1]["cookies"] == {"SESSDATA": "sess%2Cdata", "bili_jct": "csrf-token"}
+    output = capsys.readouterr().out
+    assert "登录成功，已写入认证文件" in output
+    assert "sess%2Cdata" not in output and "csrf-token" not in output
 
 
 @as_sync
-async def test_poll_qr_login_reports_status_changes_and_returns_redirect(monkeypatch: pytest.MonkeyPatch):
+async def test_poll_qr_login_reports_status_changes_and_returns_redirect(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+):
     responses = iter(
         [
+            {"code": 0, "data": {"code": login_module.QR_STATUS_NOT_SCANNED}},
             {"code": 0, "data": {"code": login_module.QR_STATUS_NOT_SCANNED}},
             {"code": 0, "data": {"code": login_module.QR_STATUS_SCANNED}},
             {
@@ -143,11 +128,6 @@ async def test_poll_qr_login_reports_status_changes_and_returns_redirect(monkeyp
             },
         ]
     )
-    messages: list[str] = []
-    sleeps: list[float] = []
-
-    async def fake_sleep(interval: float) -> None:
-        sleeps.append(interval)
 
     async def poll_request(session: object, url: str, *, params: dict[str, str]) -> dict[str, Any]:
         assert session is fake_session
@@ -158,20 +138,15 @@ async def test_poll_qr_login_reports_status_changes_and_returns_redirect(monkeyp
     fake_session = object()
     captured_params: list[dict[str, str]] = []
     monkeypatch.setattr(login_module, "request_json", poll_request)
-    monkeypatch.setattr(login_module.asyncio, "sleep", fake_sleep)
-    monkeypatch.setattr(login_module.Logger, "info", messages.append)
 
     assert (
-        await login_module.poll_qr_login(cast("Any", fake_session), "qr-key", timeout=10, poll_interval=0.25)
+        await login_module.poll_qr_login(cast("Any", fake_session), "qr-key", timeout=10, poll_interval=0)
         == "https://passport.bilibili.com/confirmed"
     )
-    assert captured_params == [
-        {"qrcode_key": "qr-key", "source": "main-fe-header"},
-        {"qrcode_key": "qr-key", "source": "main-fe-header"},
-        {"qrcode_key": "qr-key", "source": "main-fe-header"},
-    ]
-    assert messages == ["二维码待扫描", "已扫码，请在 App 内确认登录"]
-    assert sleeps == [0.25, 0.25]
+    assert captured_params == [{"qrcode_key": "qr-key", "source": "main-fe-header"}] * 4
+    output = capsys.readouterr().out
+    assert output.count("二维码待扫描") == 1
+    assert output.count("已扫码，请在 App 内确认登录") == 1
 
 
 @as_sync
@@ -187,8 +162,7 @@ async def test_poll_qr_login_rejects_invalid_intervals():
 
 
 @as_sync
-async def test_complete_login_falls_back_to_redirect_query(monkeypatch: pytest.MonkeyPatch):
-    warnings: list[str] = []
+async def test_complete_login_falls_back_to_redirect_query(capsys: pytest.CaptureFixture[str]):
     redirect_url = "https://passport.bilibili.com/confirmed?SESSDATA=sess%2Cdata&bili_jct=csrf-token"
 
     class FailedRedirectSession:
@@ -198,14 +172,12 @@ async def test_complete_login_falls_back_to_redirect_query(monkeypatch: pytest.M
         def cookie(self, name: str, *, url: str) -> None:
             return None
 
-    monkeypatch.setattr(login_module.Logger, "warning", warnings.append)
-
     assert await login_module.complete_login(cast("Any", FailedRedirectSession()), redirect_url) == (
         redirect_url,
         "sess,data",
         "csrf-token",
     )
-    assert warnings and "将尝试从返回 URL 提取 cookies" in warnings[0]
+    assert "将尝试从返回 URL 提取 cookies" in capsys.readouterr().out
 
 
 def test_get_cookie_value_probes_bilibili_domains_in_priority_order():
@@ -223,267 +195,80 @@ def test_get_cookie_value_probes_bilibili_domains_in_priority_order():
     assert probes == list(login_module.COOKIE_PROBE_URLS[:2])
 
 
-def test_run_auth_is_the_single_sync_cli_boundary(monkeypatch: pytest.MonkeyPatch):
-    calls: list[str] = []
+@pytest.mark.parametrize(
+    ("state", "exit_code", "message"),
+    [
+        ("vip", None, "大会员"),
+        ("logged-in", None, "当前账号已登录，但不是大会员"),
+        ("missing", ErrorCode.NOT_LOGIN_ERROR.value, "未找到可用认证信息"),
+        ("invalid-file", ErrorCode.WRONG_ARGUMENT_ERROR.value, "认证信息文件格式无效"),
+        ("expired", ErrorCode.NOT_LOGIN_ERROR.value, "已失效或尚未登录"),
+        ("network-error", ErrorCode.HTTP_STATUS_ERROR.value, "登录状态检查失败"),
+    ],
+)
+def test_auth_status(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    state: str,
+    exit_code: int | None,
+    message: str,
+):
+    auth_file = tmp_path / "auth.toml"
+    if state == "invalid-file":
+        auth_file.write_text("[invalid")
+    elif state != "missing":
+        save_auth(auth_file, "test", "sessdata", None)
 
-    async def fake_login(args: SimpleNamespace) -> None:
-        calls.append(f"login:{args.auth_command}")
+    async def fetch_user_info(auth, *, proxy: str | None, trust_env: bool):
+        assert state not in {"missing", "invalid-file"}
+        assert auth == {"SESSDATA": "sessdata", "bili_jct": None}
+        assert proxy == "https://127.0.0.1:7890" and trust_env is False
+        if state == "network-error":
+            raise HttpTransportError("connection failed")
+        return {"vip_status": state == "vip", "is_login": state != "expired"}
 
-    async def fake_status(args: SimpleNamespace) -> None:
-        calls.append(f"status:{args.auth_command}")
-
-    def fake_logout(args: SimpleNamespace) -> None:
-        calls.append(f"logout:{args.auth_command}")
-
-    monkeypatch.setattr(login_module, "run_login", fake_login)
-    monkeypatch.setattr(login_module, "run_auth_status", fake_status)
-    monkeypatch.setattr(login_module, "run_auth_logout", fake_logout)
-
-    for command in ("login", "status", "logout"):
-        login_module.run_auth(SimpleNamespace(auth_command=command))
-
-    assert calls == ["login:login", "status:status", "logout:logout"]
-
-
-@as_sync
-async def test_run_auth_status_reports_vip_login(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
-        return {"SESSDATA": "sessdata", "bili_jct": "csrf-token"}
-
-    async def fake_fetch_authenticated_user_info(
-        auth: dict[str, str | None],
-        *,
-        proxy: str | None,
-        trust_env: bool,
-    ) -> dict[str, bool]:
-        calls["proxy"] = proxy
-        calls["trust_env"] = trust_env
-        return {"vip_status": True, "is_login": True}
-
-    def fake_custom(message: str, badge: object, *args: Any, **kwargs: Any) -> None:
-        calls["message"] = message
-        calls["badge"] = str(badge)
-
-    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
-    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fake_fetch_authenticated_user_info)
-    monkeypatch.setattr(login_module.Logger, "custom", fake_custom)
-
-    await login_module.run_auth_status(
-        SimpleNamespace(
-            proxy="https://127.0.0.1:7890",
-            auth="",
-            auth_file=Path("/tmp/auth.toml"),
-            auth_profile="default",
-        )
+    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fetch_user_info)
+    args = SimpleNamespace(
+        auth_command="status", proxy="https://127.0.0.1:7890", auth="", auth_file=auth_file, auth_profile="test"
     )
+    if exit_code is None:
+        login_module.run_auth(args)
+    else:
+        with pytest.raises(SystemExit) as exc_info:
+            login_module.run_auth(args)
+        assert exc_info.value.code == exit_code
+    assert message in capsys.readouterr().out
 
-    assert calls["proxy"] == "https://127.0.0.1:7890"
-    assert calls["trust_env"] is False
-    assert "当前认证信息有效" in calls["message"]
-    assert "大会员" in calls["badge"]
+
+def test_auth_logout_removes_only_selected_profile_and_is_idempotent(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    auth_file = tmp_path / "auth.toml"
+    save_auth(auth_file, "test", "sessdata", None)
+    save_auth(auth_file, "other", "keep", None)
+    args = SimpleNamespace(auth_command="logout", auth_file=auth_file, auth_profile="test")
+    login_module.run_auth(args)
+    assert load_auth(auth_file, "test") is None
+    assert load_auth(auth_file, "other") == {"SESSDATA": "keep", "bili_jct": None}
+    assert "已退出登录并移除认证信息" in capsys.readouterr().out
+    login_module.run_auth(args)
+    assert "无需退出" in capsys.readouterr().out
 
 
-@as_sync
-async def test_run_auth_status_exits_when_auth_missing(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_resolve_auth(args: SimpleNamespace) -> None:
-        return None
-
-    def fake_warning(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
-    monkeypatch.setattr(login_module.Logger, "warning", fake_warning)
-
+@pytest.mark.parametrize("inline_auth", [False, True], ids=["invalid-file", "inline-auth"])
+def test_auth_logout_rejects_invalid_auth(tmp_path: Path, capsys: pytest.CaptureFixture[str], inline_auth: bool):
+    auth_file = tmp_path / "auth.toml"
+    auth_file.write_text("[invalid")
     with pytest.raises(SystemExit) as exc_info:
-        await login_module.run_auth_status(
+        login_module.run_auth(
             SimpleNamespace(
-                proxy="auto",
-                auth="",
-                auth_file=Path("/tmp/auth.toml"),
+                auth_command="logout",
+                auth="SESSDATA=inline" if inline_auth else "",
+                auth_file=auth_file,
                 auth_profile="default",
             )
         )
-
-    assert exc_info.value.code == ErrorCode.NOT_LOGIN_ERROR.value
-    assert "未找到可用认证信息" in calls["message"]
-
-
-@as_sync
-async def test_run_auth_status_exits_on_invalid_auth_file(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
-        raise ValueError("认证信息文件格式无效：/tmp/auth.toml")
-
-    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
-    monkeypatch.setattr(login_module.Logger, "error", fake_error)
-
-    with pytest.raises(SystemExit) as exc_info:
-        await login_module.run_auth_status(
-            SimpleNamespace(
-                proxy="auto",
-                auth="",
-                auth_file=Path("/tmp/auth.toml"),
-                auth_profile="default",
-            )
-        )
-
     assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
-    assert "认证信息文件格式无效" in calls["message"]
-
-
-@as_sync
-async def test_run_auth_status_exits_when_not_logged_in(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
-        return {"SESSDATA": "sessdata", "bili_jct": None}
-
-    async def fake_fetch_authenticated_user_info(
-        auth: dict[str, str | None],
-        *,
-        proxy: str | None,
-        trust_env: bool,
-    ) -> dict[str, bool]:
-        return {"vip_status": False, "is_login": False}
-
-    def fake_warning(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
-    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fake_fetch_authenticated_user_info)
-    monkeypatch.setattr(login_module.Logger, "warning", fake_warning)
-
-    with pytest.raises(SystemExit) as exc_info:
-        await login_module.run_auth_status(
-            SimpleNamespace(
-                proxy="auto",
-                auth="",
-                auth_file=Path("/tmp/auth.toml"),
-                auth_profile="default",
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.NOT_LOGIN_ERROR.value
-    assert "已失效或尚未登录" in calls["message"]
-
-
-@as_sync
-async def test_run_auth_status_exits_when_status_check_fails(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_resolve_auth(args: SimpleNamespace) -> dict[str, str | None]:
-        return {"SESSDATA": "sessdata", "bili_jct": None}
-
-    async def fake_fetch_authenticated_user_info(
-        auth: dict[str, str | None],
-        *,
-        proxy: str | None,
-        trust_env: bool,
-    ) -> dict[str, bool]:
-        raise RuntimeError("boom")
-
-    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "resolve_auth", fake_resolve_auth)
-    monkeypatch.setattr(login_module, "fetch_authenticated_user_info", fake_fetch_authenticated_user_info)
-    monkeypatch.setattr(login_module.Logger, "error", fake_error)
-
-    with pytest.raises(SystemExit) as exc_info:
-        await login_module.run_auth_status(
-            SimpleNamespace(
-                proxy="auto",
-                auth="",
-                auth_file=Path("/tmp/auth.toml"),
-                auth_profile="default",
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.HTTP_STATUS_ERROR.value
-    assert "登录状态检查失败" in calls["message"]
-
-
-def test_run_auth_logout_removes_auth(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_remove_auth(auth_file: Path, profile: str) -> bool:
-        calls["auth_file"] = auth_file
-        calls["profile"] = profile
-        return True
-
-    def fake_info(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "remove_auth", fake_remove_auth)
-    monkeypatch.setattr(login_module.Logger, "info", fake_info)
-
-    login_module.run_auth_logout(SimpleNamespace(auth_file=Path("/tmp/auth.toml"), auth_profile="default"))
-
-    assert calls["auth_file"] == Path("/tmp/auth.toml")
-    assert calls["profile"] == "default"
-    assert "已退出登录并移除认证信息" in calls["message"]
-
-
-def test_run_auth_logout_is_idempotent(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_remove_auth(auth_file: Path, profile: str) -> bool:
-        return False
-
-    def fake_info(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "remove_auth", fake_remove_auth)
-    monkeypatch.setattr(login_module.Logger, "info", fake_info)
-
-    login_module.run_auth_logout(SimpleNamespace(auth_file=Path("/tmp/auth.toml"), auth_profile="default"))
-
-    assert "无需退出" in calls["message"]
-
-
-def test_run_auth_logout_exits_on_invalid_auth_file(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_remove_auth(auth_file: Path, profile: str) -> bool:
-        raise ValueError("bad auth file")
-
-    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module, "remove_auth", fake_remove_auth)
-    monkeypatch.setattr(login_module.Logger, "error", fake_error)
-
-    with pytest.raises(SystemExit) as exc_info:
-        login_module.run_auth_logout(SimpleNamespace(auth_file=Path("/tmp/auth.toml"), auth_profile="default"))
-
-    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
-    assert "bad auth file" in calls["message"]
-
-
-def test_run_auth_logout_rejects_inline_auth(monkeypatch: pytest.MonkeyPatch):
-    calls: dict[str, Any] = {}
-
-    def fake_error(message: str, *args: Any, **kwargs: Any) -> str:
-        return str(calls.setdefault("message", message))
-
-    monkeypatch.setattr(login_module.Logger, "error", fake_error)
-
-    with pytest.raises(SystemExit) as exc_info:
-        login_module.run_auth_logout(
-            SimpleNamespace(
-                auth="SESSDATA=inline-auth",
-                auth_file=Path("/tmp/auth.toml"),
-                auth_profile="default",
-            )
-        )
-
-    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
-    assert "inline auth" in calls["message"]
+    assert ("inline auth" if inline_auth else "认证信息文件格式无效") in capsys.readouterr().out
+    assert auth_file.read_text() == "[invalid"

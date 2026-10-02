@@ -11,7 +11,7 @@ install:
   uv sync
 
 test:
-  uv run pytest -m '(api or e2e or processor or biliass) and not (ci_only or ignore)'
+  uv run pytest -m 'not (ci_only or ignore)'
   just clean
 
 fmt:
@@ -81,7 +81,7 @@ ci-lint:
   just lint
 
 ci-test pyversion:
-  uv run -p {{pyversion}} pytest -m "(api or processor or biliass) and not (ci_skip or ignore)" --reruns 3 --reruns-delay 1
+  uv run -p {{pyversion}} pytest -m "not (e2e or ci_skip or ignore)" --reruns 3 --reruns-delay 1
 
 ci-e2e-test pyversion:
   uv run -p {{pyversion}} pytest -m "e2e and not (ci_skip or ignore)"
