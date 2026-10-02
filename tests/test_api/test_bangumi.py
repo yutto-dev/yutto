@@ -8,7 +8,6 @@ from returns.result import Success
 from yutto.api.bangumi import (
     get_bangumi_list,
     get_bangumi_playurl,
-    get_bangumi_subtitles,  # noqa: F401
     get_season_id_by_episode_id,
     get_season_id_by_media_id,
 )
@@ -181,10 +180,3 @@ async def test_get_bangumi_playurl():
         playlist = await get_bangumi_playurl(scope, avid, cid)
         assert len(playlist[0]) > 0
         assert len(playlist[1]) > 0
-
-
-@pytest.mark.api
-@as_sync
-async def test_get_bangumi_subtitles():
-    # TODO: 暂未找到需要字幕的番剧（非港澳台）
-    pass

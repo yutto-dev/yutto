@@ -1,59 +1,74 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
-import tempfile
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from yutto.__version__ import VERSION as yutto_version
 
-from .conftest import TEST_DIR
+if TYPE_CHECKING:
+    from pathlib import Path
 
 PYTHON = sys.executable
+pytestmark = pytest.mark.e2e
 
 
-@pytest.mark.e2e
 def test_version_e2e():
-    p = subprocess.run([PYTHON, "-m", "yutto", "-v"], capture_output=True, check=True)
-    res = p.stdout.decode()
-    assert res.strip().endswith(yutto_version)
+    p = subprocess.run([PYTHON, "-m", "yutto", "-v"], capture_output=True, check=True, timeout=30)
+    assert p.stdout.decode().strip().endswith(yutto_version)
 
 
-@pytest.mark.e2e
-@pytest.mark.ci_skip
-def test_bangumi_e2e():
-    short_bangumi = "https://www.bilibili.com/bangumi/play/ep100367"
-    subprocess.run(
-        [PYTHON, "-m", "yutto", short_bangumi, f"-d={TEST_DIR}", "-q=16", "-w"],
+@pytest.mark.parametrize(
+    ("url", "batch_file"),
+    [
+        pytest.param("https://www.bilibili.com/bangumi/play/ep100367", False, marks=pytest.mark.ci_skip, id="bangumi"),
+        pytest.param("https://www.bilibili.com/video/BV1AZ4y147Yg", False, id="ugc"),
+        pytest.param("https://www.bilibili.com/video/BV1AZ4y147Yg", True, id="batch-file"),
+    ],
+)
+def test_download_e2e(tmp_path: Path, url: str, batch_file: bool):
+    config = tmp_path / "yutto.toml"
+    config.write_text("")
+    output = tmp_path / "downloads"
+    if batch_file:
+        source = tmp_path / "batch.txt"
+        source.write_text(f'{url} --batch -p $ --no-danmaku --vcodec="hevc:copy"\n')
+        url = str(source)
+    result = subprocess.run(
+        [
+            PYTHON,
+            "-m",
+            "yutto",
+            url,
+            "--config",
+            str(config),
+            "--auth-file",
+            str(tmp_path / "auth.toml"),
+            "-d",
+            str(output),
+            "-q=16",
+            "-w",
+            "--no-progress",
+        ],
         capture_output=True,
-        check=True,
+        text=True,
+        timeout=180,
     )
-
-
-@pytest.mark.e2e
-def test_ugc_video_e2e():
-    short_ugc_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
-    subprocess.run(
-        [PYTHON, "-m", "yutto", short_ugc_video, f"-d={TEST_DIR}", "-q=16", "-w"],
+    assert result.returncode == 0, result.stdout + result.stderr
+    media_files = [path for path in output.rglob("*") if path.suffix in {".mp4", ".mkv", ".mov"}]
+    assert len(media_files) == 1, result.stdout + result.stderr
+    media = media_files[0]
+    assert media.stat().st_size > 0
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(media)],
         capture_output=True,
+        text=True,
         check=True,
+        timeout=30,
     )
-
-
-@pytest.mark.e2e
-def test_batch_file_e2e():
-    short_ugc_video = "https://www.bilibili.com/video/BV1AZ4y147Yg"
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as tmp:
-        tmp.write(f'{short_ugc_video} --batch -p $ --no-danmaku --vcodec="hevc:copy"\n')
-        tmp.flush()  # Ensure content is written to disk before subprocess reads it
-        tmp_path = Path(tmp.name)
-    try:
-        subprocess.run(
-            [PYTHON, "-m", "yutto", str(tmp_path), f"-d={TEST_DIR}", "-q=16", "-w"],
-            capture_output=True,
-            check=True,
-        )
-    finally:
-        tmp_path.unlink()
+    info = json.loads(probe.stdout)
+    assert {stream["codec_type"] for stream in info["streams"]} >= {"video", "audio"}
+    assert float(info["format"]["duration"]) > 0
