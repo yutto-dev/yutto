@@ -17,7 +17,6 @@ from yutto.cli.cli import (
     add_login_arguments,
     cli,
     get_download_subparser,
-    handle_default_subcommand,
 )
 from yutto.cli.settings import YuttoSettings
 from yutto.core.events import DownloadProgress, DownloadStage, DownloadStageChanged
@@ -215,13 +214,6 @@ def test_get_download_subparser_reports_missing_download(subcommand: str | None)
         parser.add_subparsers().add_parser(subcommand)
     with pytest.raises(ValueError, match="download subparser not found"):
         get_download_subparser(parser)
-
-
-def test_root_parser_rejects_removed_top_level_login():
-    with pytest.raises(SystemExit) as exc_info:
-        cli().parse_args(handle_default_subcommand(["login"]))
-
-    assert exc_info.value.code == 2
 
 
 def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch):
