@@ -217,11 +217,12 @@ def test_get_download_subparser_reports_missing_download(subcommand: str | None)
         get_download_subparser(parser)
 
 
-def test_root_parser_rejects_removed_top_level_login():
-    with pytest.raises(SystemExit) as exc_info:
-        cli().parse_args(handle_default_subcommand(["login"]))
+@pytest.mark.parametrize("url", ["login", "not-a-command", "https://example.com"])
+def test_root_parser_defaults_to_download(url: str):
+    args = cli().parse_args(handle_default_subcommand([url]))
 
-    assert exc_info.value.code == 2
+    assert args.command == "download"
+    assert args.url == url
 
 
 def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch):

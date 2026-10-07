@@ -30,7 +30,6 @@ DOWNLOAD_RESOURCE_TYPES: list[DownloadResourceType] = [
     "chapter_info",
 ]
 SUBCOMMANDS: list[str] = ["download", "auth", "serve"]
-REMOVED_TOP_LEVEL_SUBCOMMANDS: list[str] = ["login"]
 
 
 class _DeprecatedExtraEpisodesAction(argparse.Action):
@@ -51,8 +50,6 @@ class _DeprecatedExtraEpisodesAction(argparse.Action):
 def handle_default_subcommand(argv: list[str]) -> list[str]:
     if len(argv) == 0:
         return ["download", *argv]
-    if argv[0] in REMOVED_TOP_LEVEL_SUBCOMMANDS:
-        return argv
     if argv[0] not in SUBCOMMANDS and argv[0] not in ["-v", "--version"]:
         argv.insert(0, "download")
 
