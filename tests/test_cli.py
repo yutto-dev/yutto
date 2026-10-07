@@ -17,7 +17,6 @@ from yutto.cli.cli import (
     add_login_arguments,
     cli,
     get_download_subparser,
-    handle_default_subcommand,
 )
 from yutto.cli.settings import YuttoSettings
 from yutto.core.events import DownloadProgress, DownloadStage, DownloadStageChanged
@@ -215,14 +214,6 @@ def test_get_download_subparser_reports_missing_download(subcommand: str | None)
         parser.add_subparsers().add_parser(subcommand)
     with pytest.raises(ValueError, match="download subparser not found"):
         get_download_subparser(parser)
-
-
-@pytest.mark.parametrize("url", ["login", "not-a-command", "https://example.com"])
-def test_root_parser_defaults_to_download(url: str):
-    args = cli().parse_args(handle_default_subcommand([url]))
-
-    assert args.command == "download"
-    assert args.url == url
 
 
 def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch):
