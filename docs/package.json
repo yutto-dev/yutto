@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/yutto-dev/yutto.git"
   },
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.9.1",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
@@ -21,7 +21,7 @@
   "devDependencies": {
     "@moefy-canvas/core": "^0.6.0",
     "@moefy-canvas/theme-sparkler": "^0.6.0",
-    "vite": "^8.3.1",
+    "vite": "^8.3.2",
     "vite-plus": "latest",
     "vitepress": "^2.0.0-alpha.20",
     "vitepress-plugin-group-icons": "^1.7.6",

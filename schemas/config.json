@@ -397,6 +397,21 @@
           "title": "Require Subtitle",
           "type": "boolean"
         },
+        "subtitle_languages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subtitle Languages"
+        },
         "require_metadata": {
           "default": false,
           "title": "Require Metadata",
@@ -463,6 +478,7 @@
         "require_audio": true,
         "require_danmaku": true,
         "require_subtitle": true,
+        "subtitle_languages": null,
         "require_metadata": false,
         "require_cover": true,
         "require_chapter_info": true,

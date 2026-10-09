@@ -46,6 +46,25 @@ aside: true
 - 参数 `--subtitle-only`
 - 默认值 `False`
 
+## 选择字幕语言
+
+- 参数 `--subtitle-languages`
+- 默认值 `all`（下载所有可用字幕）
+
+使用逗号分隔语言代码，例如 `zh` 仅选择中文，`zh,en` 选择中文和英文。常用语言代码如下：
+
+- `zh`：中文
+- `en`：英文
+- `ja`：日文
+- `ko`：韩文
+- `es`：西班牙文
+- `pt`：葡萄牙文
+- `fr`：法文
+- `de`：德文
+- `ru`：俄文
+
+匹配不区分大小写，并包含地区、文字及 AI 变体：例如 `zh` 包含 `zh-CN`、`zh-Hans`、`zh-Hant`、`ai-zh`，`en` 包含 `en-US`、`ai-en`。指定更具体的代码可缩小范围，例如 `zh-Hans` 选择简体中文，`ai-zh` 仅选择自动生成的中文字幕。
+
 ## 生成媒体元数据文件
 
 - 参数 `--with-metadata`
@@ -120,6 +139,13 @@ require_danmaku = false
 
 - 配置项 `resource.require_subtitle`
 - 默认值 `True`
+
+### 字幕语言选择
+
+- 配置项 `resource.subtitle_languages`
+- 默认值 `None`（下载所有可用字幕）
+
+空数组 `[]` 表示不选择任何字幕。
 
 ### 是否需要媒体元数据
 

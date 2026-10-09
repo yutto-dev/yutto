@@ -26,7 +26,7 @@ dependencies = [
   "colorama>=0.4.6; sys_platform == 'win32'",
   "typing-extensions>=4.16.0",
   "dict2xml>=1.7.8",
-  "pydantic>=2.14.0b2",
+  "pydantic>=2.14.0",
   "returns>=0.29.0",
   "segno>=1.6.6",
   "websockets>=17,<18",
@@ -45,7 +45,7 @@ yutto = "yutto.__main__:main"
 dev = [
   "aiofiles>=25.1.0",
   "ty>=0.0.84",
-  "ruff>=0.16.9",
+  "ruff>=0.16.10",
   "typos>=1.50.3",
   "pytest>=9.1.1",
   "pytest-rerunfailures>=16.7",

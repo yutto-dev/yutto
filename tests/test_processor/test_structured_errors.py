@@ -11,6 +11,7 @@ import yutto.__main__ as main_module
 import yutto.download_manager as download_manager_module
 import yutto.extractor.bangumi as bangumi_module
 import yutto.extractor.cheese as cheese_module
+import yutto.validator as validator_module
 from yutto._native import InvalidUrlError
 from yutto.core.execution import ExecutionScope
 from yutto.core.request import DownloadRequest
@@ -35,6 +36,8 @@ from yutto.validator import validate_batch_selection
 pytestmark = pytest.mark.processor
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from yutto.types import ExtractorOptions
 
 
@@ -152,6 +155,7 @@ EMPTY_EXTRACTOR_OPTIONS: ExtractorOptions = {
     "require_audio": True,
     "require_danmaku": True,
     "require_subtitle": True,
+    "subtitle_languages": None,
     "require_metadata": False,
     "require_cover": True,
     "require_chapter_info": True,
@@ -198,98 +202,53 @@ async def test_single_extractors_raise_when_episode_is_missing(
     assert_error(exc_info.value, "在列表中未找到该剧集", ErrorCode.EPISODE_NOT_FOUND_ERROR)
 
 
-def configure_download_cli(
+@pytest.mark.parametrize(
+    ("failure", "exit_code", "message"),
+    [
+        (WrongUrlError("url 不正确呀～"), ErrorCode.WRONG_URL_ERROR.value, "url 不正确呀～"),
+        (SystemExit(ErrorCode.WRONG_ARGUMENT_ERROR.value), ErrorCode.WRONG_ARGUMENT_ERROR.value, None),
+        (KeyboardInterrupt(), ErrorCode.PAUSED_DOWNLOAD.value, "已终止下载，再次运行即可继续下载～"),
+        (asyncio.CancelledError(), ErrorCode.PAUSED_DOWNLOAD.value, "已终止下载，再次运行即可继续下载～"),
+    ],
+    ids=["structured-error", "system-exit", "keyboard-interrupt", "cancelled"],
+)
+def test_download_cli_reports_failures(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
     failure: BaseException,
-    *,
-    replace_logger: bool = True,
-) -> tuple[list[str], list[str]]:
-    parser = SimpleNamespace(
-        parse_args=lambda args: SimpleNamespace(command="download", no_progress=True, jobs=1, ffmpeg_path="ffmpeg")
+    exit_code: int,
+    message: str | None,
+):
+    config = tmp_path / "yutto.toml"
+    config.write_text("")
+    monkeypatch.setattr(
+        main_module.sys,
+        "argv",
+        [
+            "yutto",
+            "av1",
+            "--config",
+            str(config),
+            "--auth-file",
+            str(tmp_path / "auth.toml"),
+            "--no-progress",
+        ],
     )
-    rendered_errors: list[str] = []
-    rendered_info: list[str] = []
+    monkeypatch.setattr(validator_module, "FFmpeg", lambda: SimpleNamespace(video_encodecs=[], audio_encodecs=[]))
 
-    def fail_download(
-        scope_factory: object,
-        requests: list[DownloadRequest],
-        renderer: object,
-        *,
-        jobs: int,
-    ):
+    def fail_download(scope_factory, requests, renderer, *, jobs):
+        assert len(requests) == 1 and requests[0].source.url == "av1"
         raise failure
 
-    monkeypatch.setattr(main_module, "cli", lambda: parser)
-    monkeypatch.setattr(main_module.sys, "argv", ["yutto", "BV1structured"])
-    monkeypatch.setattr(main_module, "initial_validation", lambda args: None)
-    monkeypatch.setattr(main_module.FFmpeg, "setup_ffmpeg_path", lambda path: None)
-    monkeypatch.setattr(main_module, "flatten_args", lambda args, parser: [args])
-    monkeypatch.setattr(main_module, "hydrate_auth", lambda args: None)
-    monkeypatch.setattr(main_module, "download_request_from_namespace", lambda args: make_request())
     monkeypatch.setattr(main_module, "run_download", fail_download)
-    if replace_logger:
-        monkeypatch.setattr(
-            main_module,
-            "Logger",
-            SimpleNamespace(error=rendered_errors.append, info=rendered_info.append),
-        )
-    return rendered_errors, rendered_info
-
-
-@pytest.mark.processor
-def test_download_cli_renders_structured_error_once(monkeypatch: pytest.MonkeyPatch):
-    message = "url 不正确呦～"
-    rendered_errors, rendered_info = configure_download_cli(monkeypatch, WrongUrlError(message))
-
     with pytest.raises(SystemExit) as exc_info:
         main_module.main()
-
-    assert exc_info.value.code == ErrorCode.WRONG_URL_ERROR.value
-    assert rendered_errors == [message]
-    assert rendered_info == []
-
-
-@pytest.mark.processor
-def test_download_cli_renders_error_badge_without_traceback(
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-):
-    message = "url 不正确呀～"
-    configure_download_cli(monkeypatch, WrongUrlError(message), replace_logger=False)
-
-    with pytest.raises(SystemExit) as exc_info:
-        main_module.main()
-
+    assert exc_info.value.code == exit_code
     captured = capsys.readouterr()
-    assert exc_info.value.code == ErrorCode.WRONG_URL_ERROR.value
-    assert "ERROR" in captured.out
-    assert message in captured.out
+    if message is not None:
+        assert captured.out.count(message) == 1
+    else:
+        assert "已终止下载" not in captured.out
+    assert ("ERROR" in captured.out) == isinstance(failure, WrongUrlError)
     assert "Traceback" not in captured.out + captured.err
-
-
-@pytest.mark.processor
-def test_download_cli_does_not_treat_system_exit_as_pause(monkeypatch: pytest.MonkeyPatch):
-    rendered_errors, rendered_info = configure_download_cli(
-        monkeypatch,
-        SystemExit(ErrorCode.WRONG_ARGUMENT_ERROR.value),
-    )
-
-    with pytest.raises(SystemExit) as exc_info:
-        main_module.main()
-
-    assert exc_info.value.code == ErrorCode.WRONG_ARGUMENT_ERROR.value
-    assert rendered_errors == []
-    assert rendered_info == []
-
-
-@pytest.mark.processor
-@pytest.mark.parametrize("interruption", [KeyboardInterrupt(), asyncio.CancelledError()])
-def test_download_cli_keeps_pause_mapping(monkeypatch: pytest.MonkeyPatch, interruption: BaseException):
-    rendered_errors, rendered_info = configure_download_cli(monkeypatch, interruption)
-
-    with pytest.raises(SystemExit) as exc_info:
-        main_module.main()
-
-    assert exc_info.value.code == ErrorCode.PAUSED_DOWNLOAD.value
-    assert rendered_errors == []
-    assert rendered_info == ["已终止下载，再次运行即可继续下载～"]

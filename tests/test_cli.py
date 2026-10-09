@@ -8,6 +8,7 @@ import pytest
 
 import yutto.__main__ as main_module
 import yutto.cli.event_renderer as renderer_module
+import yutto.utils.console.colorful as colorful_module
 import yutto.validator as validator_module
 from yutto.cli.cli import (
     add_auth_logout_arguments,
@@ -15,7 +16,7 @@ from yutto.cli.cli import (
     add_download_arguments,
     add_login_arguments,
     cli,
-    handle_default_subcommand,
+    get_download_subparser,
 )
 from yutto.cli.settings import YuttoSettings
 from yutto.core.events import DownloadProgress, DownloadStage, DownloadStageChanged
@@ -27,6 +28,7 @@ from yutto.core.operation import (
     emit_download_report,
 )
 from yutto.exceptions import ErrorCode
+from yutto.utils.console.colorful import no_colored_string
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -205,11 +207,13 @@ def test_root_parser_accepts_auth_logout(tmp_path: Path):
     assert args.auth_file == auth_file
 
 
-def test_root_parser_rejects_removed_top_level_login():
-    with pytest.raises(SystemExit) as exc_info:
-        cli().parse_args(handle_default_subcommand(["login"]))
-
-    assert exc_info.value.code == 2
+@pytest.mark.parametrize("subcommand", [None, "auth"])
+def test_get_download_subparser_reports_missing_download(subcommand: str | None):
+    parser = argparse.ArgumentParser()
+    if subcommand is not None:
+        parser.add_subparsers().add_parser(subcommand)
+    with pytest.raises(ValueError, match="download subparser not found"):
+        get_download_subparser(parser)
 
 
 def test_progress_renderer_respects_no_progress(monkeypatch: pytest.MonkeyPatch):
@@ -291,39 +295,25 @@ def test_progress_bar_renders_committed_buffered_and_remaining_segments(monkeypa
 
 
 def test_progress_renderer_turns_only_buffered_segment_red(monkeypatch: pytest.MonkeyPatch):
-    rendered_bars: list[tuple[object, ...]] = []
+    rendered: list[str] = []
     monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (80, 24))
-    monkeypatch.setattr(
-        renderer_module,
-        "_render_bar",
-        lambda *args: rendered_bars.append(args) or "bar",
-    )
-    monkeypatch.setattr(renderer_module.Logger.status, "set", lambda _message: None)
+    monkeypatch.setattr(colorful_module, "_no_color", False)
+    monkeypatch.setattr(renderer_module.Logger.status, "set", rendered.append)
 
     renderer = renderer_module.CliApplicationEventRenderer()
-    renderer.emit(
-        DownloadProgress(
-            current=1024,
-            total=2048,
-            speed_per_second=1024,
-            buffered_bytes=512,
-            is_congested=False,
+    for congested in (False, True):
+        renderer.emit(
+            DownloadProgress(
+                current=1024,
+                total=2048,
+                speed_per_second=1024,
+                buffered_bytes=512,
+                is_congested=congested,
+            )
         )
-    )
-    renderer.emit(
-        DownloadProgress(
-            current=1024,
-            total=2048,
-            speed_per_second=1024,
-            buffered_bytes=512,
-            is_congested=True,
-        )
-    )
-
-    assert rendered_bars == [
-        (512, 512, 2048, "cyan", "yellow", 43),
-        (512, 512, 2048, "cyan", "red", 43),
-    ]
+    assert no_colored_string(rendered[0]) == no_colored_string(rendered[1])
+    assert rendered[0].startswith("\x1b[36m" + "━" * 11 + "\x1b[0m\x1b[33m" + "━" * 10 + "╸")
+    assert rendered[1] == rendered[0].replace("\x1b[33m", "\x1b[31m")
 
 
 def test_progress_renderer_tracks_multiple_items_and_removes_completed_rows(monkeypatch: pytest.MonkeyPatch):
@@ -345,91 +335,67 @@ def test_progress_renderer_tracks_multiple_items_and_removes_completed_rows(monk
     assert removed == ["视频一"]
 
 
-def test_progress_labels_are_truncated_by_terminal_width():
-    assert renderer_module._truncate_label("short", 10) == "short"
-    assert renderer_module._truncate_label("一二三四五六", 7) == "一二三…"
-
-
-def test_progress_renderer_aligns_bars_for_different_label_widths(monkeypatch: pytest.MonkeyPatch):
+def test_progress_renderer_aligns_and_truncates_labels(monkeypatch: pytest.MonkeyPatch):
     rendered: list[str] = []
-    bar_widths: list[int] = []
     monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (100, 24))
     monkeypatch.setattr(
-        renderer_module,
-        "_render_bar",
-        lambda *args: bar_widths.append(args[-1]) or "bar",
+        renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(no_colored_string(text))
     )
-    monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(text))
 
     renderer = renderer_module.CliApplicationEventRenderer()
     for title in ("短标题", "中等长度标题", "这是一个普通长度标题", "这是一个超过固定列宽的占位标题"):
         renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item=title))
 
-    assert bar_widths == [42, 42, 42, 42]
-    assert [renderer_module.get_string_width(line[: line.index("bar")]) for line in rendered] == [21, 21, 21, 21]
-    assert "…" in rendered[-1]
+    assert [renderer_module.get_string_width(line[: line.index("━")]) for line in rendered] == [21] * 4
+    assert [renderer_module.get_string_width(line) for line in rendered] == [100] * 4
+    assert rendered[0].startswith("短标题" + " " * 15)
+    assert rendered[-1].startswith("这是一个超过固定列…  ")
 
 
 @pytest.mark.parametrize(
-    ("terminal_width", "expected_label_width", "expected_bar_width"),
+    ("terminal_width", "expected_prefix", "bar_width"),
     [
-        (100, 20, 42),
-        (68, 20, 10),
-        (67, 20, 0),
-        (57, 20, 0),
-        (56, 19, 0),
-        (47, 10, 0),
-        (46, 0, 0),
-        (37, 0, 0),
+        (100, "短标题" + " " * 15, 42),
+        (68, "短标题" + " " * 15, 10),
+        (67, "短标题" + " " * 15, 0),
+        (57, "短标题" + " " * 15, 0),
+        (56, "短标题" + " " * 14, 0),
+        (47, "短标题" + " " * 5, 0),
+        (46, "1.00 Bytes/", 0),
+        (37, "1.00 Bytes/", 0),
     ],
 )
 def test_progress_renderer_compresses_bar_before_label(
     monkeypatch: pytest.MonkeyPatch,
     terminal_width: int,
-    expected_label_width: int,
-    expected_bar_width: int,
+    expected_prefix: str,
+    bar_width: int,
 ):
     rendered: list[str] = []
-    bar_widths: list[int] = []
     monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (terminal_width, 24))
     monkeypatch.setattr(
-        renderer_module,
-        "_render_bar",
-        lambda *args: bar_widths.append(args[-1]) or "bar",
+        renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(no_colored_string(text))
     )
-    monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(text))
-    monkeypatch.setattr(renderer_module, "size_format", lambda _: "1234567890")
-
-    renderer = renderer_module.CliApplicationEventRenderer()
-    renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item="短标题"))
-
-    if expected_label_width:
-        expected_label = f"{renderer_module._fit_label('短标题', expected_label_width)} "
-        assert rendered[0].startswith(expected_label)
-    else:
-        expected_stats = f"{'1234567890':>{renderer_module.PROGRESS_SIZE_MIN_WIDTH}}/"
-        assert rendered[0].startswith(expected_stats)
-    assert bar_widths == ([expected_bar_width] if expected_bar_width else [])
+    renderer_module.CliApplicationEventRenderer().emit(
+        DownloadProgress(current=1, total=2, speed_per_second=3, item="短标题")
+    )
+    assert rendered[0].startswith(expected_prefix)
+    assert sum(rendered[0].count(glyph) for glyph in ("━", "╸")) == bar_width
+    assert renderer_module.get_string_width(rendered[0]) <= terminal_width
+    assert "1.00 Bytes/" in rendered[0] and "2.00 Bytes" in rendered[0] and "3.00 Bytes/s" in rendered[0]
 
 
 def test_progress_renderer_avoids_wrapping_for_wide_stats(monkeypatch: pytest.MonkeyPatch):
     rendered: list[str] = []
-    bar_widths: list[int] = []
     monkeypatch.setattr(renderer_module, "get_terminal_size", lambda: (112, 24))
     monkeypatch.setattr(
-        renderer_module,
-        "_render_bar",
-        lambda *args: bar_widths.append(args[-1]) or "━" * args[-1],
+        renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(no_colored_string(text))
     )
-    monkeypatch.setattr(renderer_module, "colored_string", lambda text, **_: text)
-    monkeypatch.setattr(renderer_module.Logger.status, "set_line", lambda _key, text: rendered.append(text))
-
     renderer = renderer_module.CliApplicationEventRenderer()
     renderer.emit(DownloadProgress(current=1, total=2, speed_per_second=3, item="短标题"))
     renderer.emit(DownloadProgress(current=1023, total=1023, speed_per_second=1023, item="另一个标题"))
-
-    assert bar_widths == [50, 45]
     assert [renderer_module.get_string_width(line) for line in rendered] == [108, 112]
+    assert [sum(line.count(glyph) for glyph in ("━", "╸")) for line in rendered] == [50, 45]
 
 
 def test_run_download_scopes_report_renderer_and_cleans_up_on_cancel(monkeypatch: pytest.MonkeyPatch):

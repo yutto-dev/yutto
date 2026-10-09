@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -117,47 +116,6 @@ async def test_download_task_service_runs_requests_in_order_and_bridges_events()
             "height": 2160,
             "save_codec": "copy",
         }
-
-
-@as_sync
-async def test_download_task_service_runs_up_to_worker_count_concurrently():
-    scope_factory = RequestExecutionScopeFactory()
-    both_started = asyncio.Event()
-    release = asyncio.Event()
-    active = 0
-    max_active = 0
-
-    class ConcurrentApplication:
-        async def download(self, request: DownloadRequest) -> DownloadResult:
-            nonlocal active, max_active
-            active += 1
-            max_active = max(max_active, active)
-            if active == 2:
-                both_started.set()
-            try:
-                await release.wait()
-                return DownloadResult()
-            finally:
-                active -= 1
-
-    service = DownloadTaskService(
-        scope_factory,
-        application_factory=lambda factory, event_sink: ConcurrentApplication(),
-        worker_count=2,
-    )
-    async with service:
-        first = await service.submit(DownloadRequest.model_validate({"source": {"url": "BV1first"}}))
-        second = await service.submit(DownloadRequest.model_validate({"source": {"url": "BV1second"}}))
-        await asyncio.wait_for(both_started.wait(), timeout=1)
-        release.set()
-        first_done, second_done = await asyncio.gather(
-            service.runtime.wait(first.task_id),
-            service.runtime.wait(second.task_id),
-        )
-
-    assert first_done is not None and first_done.state is TaskState.COMPLETED
-    assert second_done is not None and second_done.state is TaskState.COMPLETED
-    assert max_active == 2
 
 
 @as_sync

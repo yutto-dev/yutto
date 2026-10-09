@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 SubtitleLineData = TypedDict(
     "SubtitleLineData",
@@ -13,6 +16,19 @@ SubtitleLineData = TypedDict(
 )
 
 SubtitleData = list[SubtitleLineData]
+
+
+def matches_subtitle_language(code: str, languages: Sequence[str] | None) -> bool:
+    """Match language codes and their variants; None selects all, [] selects none."""
+    if languages is None:
+        return True
+    code = code.lower()
+    for language in languages:
+        language = language.strip().lower()
+        for candidate in (code, code.removeprefix("ai-")):
+            if candidate == language or candidate.startswith(language + "-"):
+                return True
+    return False
 
 
 class Subtitle:
