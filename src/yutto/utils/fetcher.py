@@ -154,6 +154,15 @@ def cookies_from_auth(auth_info: AuthInfo | None) -> dict[str, str]:
     cookies["SESSDATA"] = quote(unquote(auth_info["SESSDATA"]))
     if auth_info["bili_jct"]:
         cookies["bili_jct"] = auth_info["bili_jct"]
+    for name, value in (auth_info.get("cookies") or {}).items():
+        name = name.strip()
+        value = value.strip()
+        if not name or not value:
+            continue
+        # SESSDATA 与 bili_jct 以顶层字段为准，避免大小写不同的重复键
+        if name.lower() in ("sessdata", "bili_jct"):
+            continue
+        cookies[name] = value
     return cookies
 
 
