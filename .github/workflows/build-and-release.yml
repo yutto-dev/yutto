@@ -138,7 +138,7 @@ jobs:
       - id: setup-python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.15"
           architecture: ${{ matrix.platform.target }}
           allow-prereleases: true
       - name: Build abi3 wheel
