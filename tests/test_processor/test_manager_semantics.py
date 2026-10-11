@@ -310,13 +310,10 @@ async def test_execute_uses_request_scopes_and_keeps_path_resolver_order():
             return (ItemResult(state=ItemState.DONE, output_path=Path(path)),)
 
     def resolve_credentials(request: DownloadRequest) -> AuthInfo:
-        return cast(
-            "AuthInfo",
-            {
-                "SESSDATA": f"{request.access.auth_profile},session",
-                "bili_jct": None,
-            },
-        )
+        return {
+            "SESSDATA": f"{request.access.auth_profile},session",
+            "bili_jct": None,
+        }
 
     manager = RecordingManager()
     result = await manager.execute(RequestExecutionScopeFactory(resolve_credentials), requests)

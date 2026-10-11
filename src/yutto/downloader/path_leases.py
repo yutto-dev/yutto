@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable
+    from collections.abc import AsyncGenerator, Iterable
     from pathlib import Path
 
 
@@ -17,7 +17,7 @@ class DownloadPathLeasePool:
         self._leased: set[Path] = set()
 
     @asynccontextmanager
-    async def lease(self, paths: Iterable[Path]) -> AsyncIterator[None]:
+    async def lease(self, paths: Iterable[Path]) -> AsyncGenerator[None]:
         keys = frozenset(path.resolve() for path in paths)
         if not keys:
             raise ValueError("at least one path lease key is required")
