@@ -28,7 +28,7 @@ jobs:
       - name: Install python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.14"
+          python-version: "3.15"
           architecture: "x64"
 
       - name: Install toolchain
