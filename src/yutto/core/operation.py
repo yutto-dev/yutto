@@ -7,7 +7,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
     from yutto.core.events import DownloadEvent, DownloadEventSink
 
@@ -33,7 +33,7 @@ _report_sink: ContextVar[ReportSink | None] = ContextVar("yutto_download_report_
 
 
 @contextmanager
-def bind_download_event_sink(sink: DownloadEventSink) -> Iterator[None]:
+def bind_download_event_sink(sink: DownloadEventSink) -> Generator[None]:
     token = _event_sink.set(sink)
     try:
         yield
@@ -42,7 +42,7 @@ def bind_download_event_sink(sink: DownloadEventSink) -> Iterator[None]:
 
 
 @contextmanager
-def bind_download_report_sink(sink: ReportSink) -> Iterator[None]:
+def bind_download_report_sink(sink: ReportSink) -> Generator[None]:
     token = _report_sink.set(sink)
     try:
         yield

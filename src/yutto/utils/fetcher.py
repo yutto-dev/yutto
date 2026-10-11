@@ -23,7 +23,7 @@ from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import MaxRetryError
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Coroutine, Iterator, Mapping
+    from collections.abc import AsyncGenerator, Callable, Coroutine, Generator, Mapping
 
     from yutto.auth import AuthInfo
     from yutto.core.execution import ExecutionScope
@@ -98,7 +98,7 @@ class _FetchTrace:
 
 
 @contextmanager
-def trace_fetch(operation: str, url: str) -> Iterator[_FetchTrace]:
+def trace_fetch(operation: str, url: str) -> Generator[_FetchTrace]:
     emit_download_report(f"{operation} started: {url}", level=ReportLevel.DEBUG)
     trace = _FetchTrace(operation, url)
     try:
@@ -281,7 +281,7 @@ async def create_client(
     timeout: float = 5,
     *,
     verify: bool = False,
-) -> AsyncIterator[YuttoSession]:
+) -> AsyncGenerator[YuttoSession]:
     ca_cert_file = os.environ.get("SSL_CERT_FILE") if trust_env and verify else None
     ca_cert_dir = os.environ.get("SSL_CERT_DIR") if trust_env and verify and not ca_cert_file else None
     session = YuttoSession(

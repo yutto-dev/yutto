@@ -12,7 +12,7 @@ from yutto.utils.fetcher import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+    from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
     from contextlib import AbstractAsyncContextManager
 
     from yutto._native import YuttoSession
@@ -78,7 +78,7 @@ class RequestExecutionScopeFactory:
         self._on_open = on_open
 
     @asynccontextmanager
-    async def open(self, request: DownloadRequest) -> AsyncIterator[ExecutionScope]:
+    async def open(self, request: DownloadRequest) -> AsyncGenerator[ExecutionScope]:
         proxy, trust_env = resolve_proxy(request.network.proxy)
         auth = self._credential_resolver(request)
         cookies = cookies_from_auth(auth)
