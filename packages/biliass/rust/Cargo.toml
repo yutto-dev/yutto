@@ -28,7 +28,7 @@ abi3t = ["pyo3/abi3t-py315"]
 
 [build-dependencies]
 prost-build = "0.14.4"
-protox = "0.9.1"
+protox = "0.10.0"
 
 [profile.release]
 lto = "fat"             # Full link-time optimization
