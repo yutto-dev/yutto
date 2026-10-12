@@ -36,6 +36,8 @@ yutto <url>
 yutto <url> --auth "SESSDATA=xxxxx; bili_jct=yyyyy"
 ```
 
+如果某些视频（例如充电专属视频）返回的清晰度不符合预期，可以把浏览器完整 Cookie 字符串直接传给 `--auth`，除 `SESSDATA`、`bili_jct` 之外的字段也会一并发送（例如 `buvid3`、`buvid4`）。不过命令行参数会留在 shell 历史和进程列表里，更推荐把完整 Cookie 写进下面的认证文件。
+
 ::: details `SESSDATA`、`bili_jct` 获取方式
 
 这里用 Chrome 作为示例，其它浏览器请尝试类似方法。
@@ -76,6 +78,20 @@ auth = "SESSDATA=xxxxx; bili_jct=yyyyy"
 1. `--auth-file`
 2. `auth.auth_file`
 3. 默认路径（`~/.config/yutto/auth.toml` 或系统等价路径）
+
+扫码登录只会写入 `SESSDATA` 与 `bili_jct`。如果需要附带浏览器其它 Cookie（例如 `buvid3`、`buvid4`），可以在对应 profile 下手动添加 `cookies` 子表，其余字段会在请求时一并发送：
+
+```toml
+[profiles.default]
+sessdata = "xxxxx"
+bili_jct = "yyyyy"
+
+[profiles.default.cookies]
+buvid3 = "zzzzzz"
+buvid4 = "wwwwww"
+```
+
+后续再次扫码登录只会更新 `SESSDATA` 与 `bili_jct`，不会清除已有的 `cookies` 子表。
 
 ## 认证 Profile
 
