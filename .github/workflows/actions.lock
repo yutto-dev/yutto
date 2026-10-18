@@ -3,8 +3,6 @@
 # Docs: https://gh.io/actions-lockfile
 version: 'v0.0.3'
 workflows:
-    '.github/workflows/actions-lock.yml':
-        - 'actions/checkout@v7'
     '.github/workflows/biliass-build-and-release.yml': []
     '.github/workflows/build-and-release.yml':
         - 'actions/checkout@v7'

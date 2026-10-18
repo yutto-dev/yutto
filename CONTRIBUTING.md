@@ -264,21 +264,6 @@ yutto 使用 Ruff 对代码进行格式化，如果你的编辑器或 IDE 没有
 just fmt
 ```
 
-## GitHub Actions 依赖锁文件
-
-工作流依赖通过 GitHub 官方的 [workflow dependency lockfile](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles) 锁定。修改工作流的 `uses` 依赖后，请使用 [gh-actions-lock](https://github.com/github/gh-actions-lock) 生成锁文件并一起提交，不要手动编辑 `.github/workflows/actions.lock`：
-
-```bash
-# 首次安装；已安装时可用 gh extension upgrade gh-actions-lock 更新
-gh extension install github/gh-actions-lock --pin v0.2.0
-# 保留工作流现有的版本引用，不自动收窄到完整版本号
-gh actions-lock --no-narrow --no-migrate-local-actions
-# 联网验证仓库身份、提交及依赖覆盖情况，不修改文件
-gh actions-lock --verify
-```
-
-普通生成会保留已锁定的提交；需要更新 `stable`、`v1` 等可移动引用时，先确认上游变更，再运行 `gh actions-lock --relock --no-narrow --no-migrate-local-actions` 并审查差异。离线可用 `gh actions-lock --verify-local` 检查依赖覆盖情况，但它不验证提交可信性，不能替代 CI 的联网验证。
-
 ## 提交 PR
 
 提交 PR 的最佳实践是 fork 一个新的 repo 到你的账户下，并创建一个新的分支，在该分支下进行改动后提交到 GitHub 上，并发起 PR（请注意在发起 PR 时不要取消掉默认已经勾选的 `Allow edits from maintainers` 选项）
