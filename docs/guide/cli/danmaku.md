@@ -88,8 +88,5 @@ aside: true
 
 ```toml [yutto.toml]
 [danmaku]
-block_keyword_patterns = [
-   ".*keyword1.*",
-   ".*keyword2.*",
-]
+block_keyword_patterns = [".*keyword1.*", ".*keyword2.*"]
 ```

@@ -95,10 +95,7 @@ require_subtitle = false
 # 设置弹幕速度
 speed = 2.0
 # 设置弹幕屏蔽关键词
-block_keyword_patterns = [
-   ".*keyword1.*",
-   ".*keyword2.*",
-]
+block_keyword_patterns = [".*keyword1.*", ".*keyword2.*"]
 
 [batch]
 # 下载额外剧集
