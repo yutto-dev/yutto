@@ -42,11 +42,13 @@ class Subtitle:
         self._text += string + "\n"
 
     @staticmethod
-    def time_format(seconds: int):
-        ms = int(1000 * (seconds - int(seconds)))
-        seconds = int(seconds)
-        minutes, sec = seconds // 60, seconds % 60
-        hour, min = minutes // 60, minutes % 60
+    def time_format(seconds: float):
+        # Round once to whole milliseconds; truncating the float fraction loses 1 ms
+        # for values such as 2.3 (0.2999...) and never carries into the next second.
+        total_ms = round(seconds * 1000)
+        total_seconds, ms = divmod(total_ms, 1000)
+        minutes, sec = divmod(total_seconds, 60)
+        hour, min = divmod(minutes, 60)
         return f"{hour:02}:{min:02}:{sec:02},{ms:03}"
 
     def write_subtitle(self, subtitle_line_data: SubtitleLineData) -> None:
