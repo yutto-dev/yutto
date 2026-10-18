@@ -51,7 +51,7 @@ struct TransferState {
     outcome: TransferOutcome,
 }
 
-#[pyclass(frozen, get_all, module = "yutto._core", skip_from_py_object)]
+#[pyclass(frozen, get_all, module = "yutto._core")]
 #[derive(Clone, Debug)]
 struct TransferSnapshot {
     expected_bytes: u64,
@@ -63,7 +63,7 @@ struct TransferSnapshot {
     in_flight: usize,
 }
 
-#[pyclass(frozen, module = "yutto._core", skip_from_py_object)]
+#[pyclass(frozen, module = "yutto._core")]
 struct NativeResponse {
     response: Response,
 }
