@@ -43,8 +43,6 @@ class Subtitle:
 
     @staticmethod
     def time_format(seconds: float):
-        # Round once to whole milliseconds; truncating the float fraction loses 1 ms
-        # for values such as 2.3 (0.2999...) and never carries into the next second.
         total_ms = round(seconds * 1000)
         total_seconds, ms = divmod(total_ms, 1000)
         minutes, sec = divmod(total_seconds, 60)
