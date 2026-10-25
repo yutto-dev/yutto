@@ -23,14 +23,15 @@ def is_comment(line: str) -> bool:
 
 def alias_parser(file_path: str) -> dict[str, str]:
     result: dict[str, str] = {}
-    re_alias_splitter = re.compile(r"[\s=]")
+    # 空格或 `=` 都是分隔符。`[\s=]` 只吃掉一个字符，`alias = url` 会把 URL 收成 `= url`。
+    re_alias_splitter = re.compile(r"\s*=\s*|\s+")
     with path_from_cli(file_path).open("r") as f_alias:
         for line in f_alias:
             line = line.strip()
             if not line or is_comment(line):
                 continue
             alias, url = re_alias_splitter.split(line, maxsplit=1)
-            result[alias] = url
+            result[alias] = url.strip()
     return result
 
 
