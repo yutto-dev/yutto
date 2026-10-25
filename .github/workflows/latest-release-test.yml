@@ -18,7 +18,7 @@ jobs:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: true
 
