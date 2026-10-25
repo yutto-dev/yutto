@@ -39,7 +39,8 @@ def file_scheme_parser(url: str) -> list[str]:
     file_path = path_from_cli(urllib.request.url2pathname(file_url))
     emit_download_report(f"解析下载列表 {file_path} 中...")
     result: list[str] = []
-    with file_path.open("r", encoding="utf-8") as f:
+    # utf-8 会把 BOM 留在第一行前面，第一条链接就匹配不上。
+    with file_path.open("r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
             if not line or is_comment(line):
