@@ -44,7 +44,11 @@ class MediaMuxer:
         if plan.video is not None and plan.resources.has_cover:
             cover_input = command_builder.add_video_input(plan.paths.cover)
             output.use(cover_input)
-            output.set_cover(cover_input)
+            # Cover downloads keep a .jpg suffix even when the content is PNG/APNG.
+            # Preserve JPEG bytes; normalize other images to a supported still codec.
+            with plan.paths.cover.open("rb") as cover_file:
+                cover_codec = "copy" if cover_file.read(3) == b"\xff\xd8\xff" else "png"
+            output.set_cover(cover_input, codec=cover_codec)
 
         if plan.video is not None and plan.resources.has_chapter_info:
             metadata_input = command_builder.add_metadata_input(plan.paths.chapter_info)

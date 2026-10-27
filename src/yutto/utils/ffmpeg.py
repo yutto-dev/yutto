@@ -144,6 +144,7 @@ class FFmpegOutput:
         self.vcodec: str | None = None
         self.acodec: str | None = None
         self.cover_input: FFmpegVideoInput | None = None
+        self.cover_codec = "copy"
         self.metadata_input: FFmpegMetadataInput | None = None
         self.extra_commands: list[str] = []
 
@@ -159,8 +160,9 @@ class FFmpegOutput:
         self.acodec = codec
         return self
 
-    def set_cover(self, cover: FFmpegVideoInput):
+    def set_cover(self, cover: FFmpegVideoInput, *, codec: str = "copy"):
         self.cover_input = cover
+        self.cover_codec = codec
         return self
 
     def set_metadata(self, metadata: FFmpegMetadataInput):
@@ -179,13 +181,17 @@ class FFmpegOutput:
         cover_options = (
             [
                 f"-c:v:{self.cover_input.stream_id}",
-                "copy",
+                self.cover_codec,
                 f"-disposition:v:{self.cover_input.stream_id}",
                 "attached_pic",
             ]
             if self.cover_input
             else []
         )
+        if self.cover_input and self.cover_codec != "copy":
+            # Keep only the first animation frame. Unlike -frames:v, this does not
+            # stop the whole output before the main video/audio have finished.
+            cover_options.extend([f"-filter:v:{self.cover_input.stream_id}", r"select=eq(n\,0)"])
         # Using double dash to make sure that the output file name is not parsed as an option
         # if the output file name starts with a dash
         return selected_inputs + vcodec + acodec + cover_options + self.extra_commands + ["--"] + [str(self.path)]
