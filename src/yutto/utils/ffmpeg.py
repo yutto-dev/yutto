@@ -189,9 +189,9 @@ class FFmpegOutput:
             else []
         )
         if self.cover_input and self.cover_codec != "copy":
-            # Keep only the first animation frame. Unlike -frames:v, this does not
-            # stop the whole output before the main video/audio have finished.
-            cover_options.extend([f"-filter:v:{self.cover_input.stream_id}", r"select=eq(n\,0)"])
+            # Keep only the first animation frame and end the cover filter.
+            # Unlike -frames:v, this does not stop the main video/audio early.
+            cover_options.extend([f"-filter:v:{self.cover_input.stream_id}", "trim=end_frame=1"])
         # Using double dash to make sure that the output file name is not parsed as an option
         # if the output file name starts with a dash
         return selected_inputs + vcodec + acodec + cover_options + self.extra_commands + ["--"] + [str(self.path)]

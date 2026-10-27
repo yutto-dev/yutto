@@ -79,7 +79,7 @@ def test_cover_filter_is_scoped_and_does_not_limit_output_frames(cover_first: bo
     command = builder.build()
 
     assert command[command.index(f"-c:v:{cover.stream_id}") + 1] == "png"
-    assert command[command.index(f"-filter:v:{cover.stream_id}") + 1] == r"select=eq(n\,0)"
+    assert command[command.index(f"-filter:v:{cover.stream_id}") + 1] == "trim=end_frame=1"
     assert f"-filter:v:{video.stream_id}" not in command
     assert not any(option.startswith("-frames") for option in command)
 
@@ -150,13 +150,18 @@ def cover_media(tmp_path_factory: pytest.TempPathFactory) -> tuple[str, str, Pat
 
 @pytest.mark.parametrize("container", ["mp4", "mkv"])
 @pytest.mark.parametrize("cover_name", ["png.jpg", "apng.jpg", "jpeg.jpg", "jpeg.png"])
+@pytest.mark.parametrize("video_save_codec", ["copy", "mpeg4"], ids=["main-copy", "main-transcode"])
 @as_sync
 async def test_mux_preserves_cover_and_complete_media(
-    tmp_path: Path, cover_media: tuple[str, str, Path], container: str, cover_name: str
+    tmp_path: Path, cover_media: tuple[str, str, Path], container: str, cover_name: str, video_save_codec: str
 ):
     ffmpeg, ffprobe, media = cover_media
     plan = make_cover_plan(tmp_path)
-    plan = replace(plan, paths=replace(plan.paths, output=tmp_path / f"output.{container}"))
+    plan = replace(
+        plan,
+        video_save_codec=video_save_codec,
+        paths=replace(plan.paths, output=tmp_path / f"output.{container}"),
+    )
     shutil.copyfile(media / "video.mp4", plan.paths.video)
     shutil.copyfile(media / "audio.m4a", plan.paths.audio)
     shutil.copyfile(media / cover_name, plan.paths.cover)
@@ -185,6 +190,8 @@ async def test_mux_preserves_cover_and_complete_media(
     # Matroska retains an image video track, not MP4's attached_pic disposition.
     if container == "mp4":
         assert cover["disposition"]["attached_pic"] == 1
+        assert float(video["duration"]) == pytest.approx(float(source_video["duration"]))
+        assert float(audio["duration"]) == pytest.approx(float(source_audio["duration"]))
 
     extracted = run_tool(
         ffmpeg,
