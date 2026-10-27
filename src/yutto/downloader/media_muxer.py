@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING
 from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import PostprocessingError
 from yutto.utils.ffmpeg import FFmpeg, FFmpegCommandBuilder
+from yutto.utils.image import detect_image_extension
 
 if TYPE_CHECKING:
     import subprocess
+    from pathlib import Path
     from typing import Protocol
 
     from yutto.downloader.planner import DownloadPlan
@@ -44,11 +46,7 @@ class MediaMuxer:
         if plan.video is not None and plan.resources.has_cover:
             cover_input = command_builder.add_video_input(plan.paths.cover)
             output.use(cover_input)
-            # Cover downloads keep a .jpg suffix even when the content is PNG/APNG.
-            # Preserve JPEG bytes; normalize other images to a supported still codec.
-            with plan.paths.cover.open("rb") as cover_file:
-                cover_codec = "copy" if cover_file.read(3) == b"\xff\xd8\xff" else "png"
-            output.set_cover(cover_input, codec=cover_codec)
+            output.set_cover(cover_input, codec=get_cover_codec(plan.paths.cover))
 
         if plan.video is not None and plan.resources.has_chapter_info:
             metadata_input = command_builder.add_metadata_input(plan.paths.chapter_info)
@@ -77,3 +75,8 @@ class MediaMuxer:
         if not plan.paths.output.exists():
             raise PostprocessingError("合并失败：FFmpeg 未生成目标文件！")
         emit_download_report("合并完成！")
+
+
+def get_cover_codec(path: Path) -> str:
+    with path.open("rb") as cover_file:
+        return "copy" if detect_image_extension(cover_file.read(12)) == ".jpg" else "png"
