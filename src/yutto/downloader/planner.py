@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from yutto.downloader.selector import select_audio, select_video
+from yutto.utils.image import detect_image_extension
 from yutto.utils.time import TIME_FULL_FMT
 
 if TYPE_CHECKING:
@@ -133,6 +134,7 @@ class DownloadPlanner:
             request.output.temporary_directory or request.output.directory,
             episode_data["info"]["path"],
             suffix,
+            cover_suffix=detect_image_extension(episode_data["cover_data"] or b"") or ".jpg",
         )
 
         video_save_codec = request.stream.video_save_codec
@@ -210,6 +212,8 @@ def resolve_paths(
     base_temporary_dir: Path,
     path: Path,
     output_suffix: str,
+    *,
+    cover_suffix: str = ".jpg",
 ) -> DownloadPaths:
     output_full_path = base_output_dir / path
     output_dir, filename = output_full_path.parent, output_full_path.name
@@ -224,8 +228,8 @@ def resolve_paths(
         output=output_dir / f"{filename}{output_suffix}",
         video=temporary_dir / f"{filename}_video.m4s",
         audio=temporary_dir / f"{filename}_audio.m4s",
-        cover=temporary_dir / f"{filename}_cover.jpg",
-        saved_cover=output_dir / f"{filename}-poster.jpg",
+        cover=temporary_dir / f"{filename}_cover{cover_suffix}",
+        saved_cover=output_dir / f"{filename}-poster{cover_suffix}",
         chapter_info=temporary_dir / f"{filename}_chapter_info.ini",
     )
 
