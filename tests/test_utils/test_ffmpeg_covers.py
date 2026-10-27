@@ -148,6 +148,7 @@ def cover_media(tmp_path_factory: pytest.TempPathFactory) -> tuple[str, str, Pat
     return ffmpeg, ffprobe, directory
 
 
+@pytest.mark.e2e
 @pytest.mark.parametrize("container", ["mp4", "mkv"])
 @pytest.mark.parametrize("cover_name", ["png.jpg", "apng.jpg", "jpeg.jpg", "jpeg.png"])
 @pytest.mark.parametrize("video_save_codec", ["copy", "mpeg4"], ids=["main-copy", "main-transcode"])
