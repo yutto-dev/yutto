@@ -7,6 +7,7 @@ from yutto.api.ugc_video import get_ugc_video_list
 from yutto.core.operation import ReportLevel, emit_download_report
 from yutto.exceptions import NoAccessPermissionError, NotFoundError
 from yutto.extractor._abc import BatchExtractor
+from yutto.extractor.collection import CollectionExtractor
 from yutto.extractor.common import make_ugc_video_episode
 from yutto.extractor.outcome import ResolveOutcome
 from yutto.input_parser import parse_episodes_selection
@@ -76,6 +77,13 @@ class UgcVideoBatchExtractor(BatchExtractor):
             # 由于获取 info 时候也会因为视频不存在而报错，因此这里需要捕捉下
             emit_download_report(e.message, ReportLevel.ERROR)
             return ResolveOutcome(failures=(e,))
+
+        if collection := ugc_video_list.get("collection"):
+            mid, series_id = collection
+            extractor = CollectionExtractor()
+            extractor.mid = mid
+            extractor.series_id = series_id
+            return await extractor.extract(scope, options, on_item=on_item)
 
         # 选集过滤
         episodes = parse_episodes_selection(options["episodes"], len(ugc_video_list["pages"]))
