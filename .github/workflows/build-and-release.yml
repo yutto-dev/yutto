@@ -38,7 +38,7 @@ jobs:
             manylinux: auto
           - runner: ubuntu-latest
             target: x86
-            manylinux: auto
+            manylinux: 2_28
           - runner: ubuntu-latest
             target: aarch64
             manylinux: ${{ inputs.manylinux-aarch64 }}
