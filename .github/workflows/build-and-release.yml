@@ -36,7 +36,7 @@ jobs:
           - runner: ubuntu-latest
             target: x86_64
             manylinux: auto
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86
             manylinux: auto
           - runner: ubuntu-latest
@@ -88,7 +88,7 @@ jobs:
         platform:
           - runner: ubuntu-latest
             target: x86_64
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86
           - runner: ubuntu-latest
             target: aarch64
