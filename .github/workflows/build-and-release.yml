@@ -36,9 +36,9 @@ jobs:
           - runner: ubuntu-latest
             target: x86_64
             manylinux: auto
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86
-            manylinux: 2_28
+            manylinux: auto
           - runner: ubuntu-latest
             target: aarch64
             manylinux: ${{ inputs.manylinux-aarch64 }}
