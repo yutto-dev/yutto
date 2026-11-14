@@ -27,7 +27,7 @@ abi3 = ["pyo3/abi3-py311"]
 abi3t = ["pyo3/abi3t-py315"]
 
 [build-dependencies]
-prost-build = "0.14.4"
+prost-build = "0.14.6"
 protox = "0.10.0"
 
 [profile.release]
