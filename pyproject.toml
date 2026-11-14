@@ -49,7 +49,7 @@ dev = [
   "typos>=1.52.2",
   "pytest>=9.2.0",
   "pytest-rerunfailures>=16.7",
-  "syrupy>=6.1.1",
+  "syrupy>=7.0.0",
   "pytest-codspeed>=5.0.4",
 ]
 
