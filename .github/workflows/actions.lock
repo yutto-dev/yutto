@@ -105,12 +105,12 @@ dependencies:
             - 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd'
     'dtolnay/rust-toolchain@1.85.0':
         ref: '1.85.0'
-        commit: 'sha1-cfcaf53ba4c621917ec7f78a66bff7a8848ddad4'
+        commit: 'sha1-9d8ce8d04e0f46cc2c817f1369e4bd480df4ccc6'
         owner_id: 1940490
         repo_id: 260749683
     'dtolnay/rust-toolchain@stable':
         ref: 'stable'
-        commit: 'sha1-b725eda525362e7cf34af9a7243cac1e3f01a7ec'
+        commit: 'sha1-39008827e6b4319a349e9a42dfc90579dd25f1ca'
         owner_id: 1940490
         repo_id: 260749683
     'extractions/setup-crate@0551596312d4008a6dfbc4d3c38fa20eaef46d2d':
