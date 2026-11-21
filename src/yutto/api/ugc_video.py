@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from returns.result import Failure
 
+from yutto.api.user_info import encode_wbi, get_wbi_img
 from yutto.core.operation import ReportColor, ReportLevel, emit_download_report
 from yutto.exceptions import (
     NoAccessPermissionError,
@@ -84,8 +85,11 @@ async def get_ugc_video_tag(scope: ExecutionScope, avid: AvId) -> list[str]:
 
 async def get_ugc_video_info(scope: ExecutionScope, avid: AvId) -> _UgcVideoInfo:
     regex_ep = re.compile(r"https?://www\.bilibili\.com/bangumi/play/ep(?P<episode_id>\d+)")
-    info_api = "http://api.bilibili.com/x/web-interface/view?aid={aid}&bvid={bvid}"
-    info_result = await Fetcher.fetch_json(scope, info_api.format(**avid.to_dict()))
+    # 与 web 端保持一致，使用 WBI 签名的接口（未签名的 x/web-interface/view 在部分地区会返回 412）
+    info_api = "https://api.bilibili.com/x/web-interface/wbi/view"
+    wbi_img = await get_wbi_img(scope)
+    params = encode_wbi({key: value for key, value in avid.to_dict().items() if value}, wbi_img)
+    info_result = await Fetcher.fetch_json(scope, info_api, params=params)
     if isinstance(info_result, Failure):
         raise NotFoundError(f"无法获取该视频 {avid} 信息") from info_result.failure()
     res_json = info_result.unwrap()
