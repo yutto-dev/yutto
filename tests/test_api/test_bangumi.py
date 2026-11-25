@@ -13,6 +13,8 @@ from yutto.api.bangumi import (
     get_season_id_by_media_id,
 )
 from yutto.core.execution import ExecutionScope
+from yutto.core.operation import ReportLevel, bind_download_report_sink
+from yutto.exceptions import UnSupportedTypeError
 from yutto.types import BvId, CId, EpisodeId, MediaId, SeasonId
 from yutto.utils.fetcher import Fetcher, create_client
 from yutto.utils.functional import as_sync
@@ -116,6 +118,67 @@ async def test_get_bangumi_list_falls_back_when_optional_metadata_is_empty(monke
     assert item["metadata"]["plot"] == "番剧第1话"
     assert item["metadata"]["tag"] == []
     assert item["metadata"]["actor"] == []
+
+
+@pytest.mark.api
+@pytest.mark.parametrize("preview_fields, expected_warnings", [({}, 0), ({"is_preview": 0}, 0), ({"is_preview": 1}, 1)])
+@as_sync
+async def test_get_bangumi_playurl_parses_dash_with_optional_preview_flag(
+    monkeypatch: pytest.MonkeyPatch, preview_fields: dict[str, int], expected_warnings: int
+):
+    video_url = "https://example.com/video.m4s"
+    audio_url = "https://example.com/audio.m4s"
+
+    async def fake_fetch_json(scope: ExecutionScope, url: str):
+        return Success(
+            {
+                "code": 0,
+                "message": "success",
+                "result": {
+                    "video_info": {
+                        **preview_fields,
+                        "dash": {
+                            "video": [
+                                {
+                                    "base_url": video_url,
+                                    "backup_url": None,
+                                    "codecid": 7,
+                                    "width": 1920,
+                                    "height": 1080,
+                                    "id": 80,
+                                }
+                            ],
+                            "audio": [{"base_url": audio_url, "backup_url": None, "codecid": 0, "id": 30280}],
+                            "dolby": None,
+                        },
+                    }
+                },
+            }
+        )
+
+    monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
+    reports: list[ReportLevel] = []
+
+    with bind_download_report_sink(lambda _message, level, _badge, _color: reports.append(level)):
+        videos, audios = await get_bangumi_playurl(
+            ExecutionScope(cast("Any", object())), BvId("BV1q7411v7Vd"), CId("1")
+        )
+
+    assert [video["url"] for video in videos] == [video_url]
+    assert [audio["url"] for audio in audios] == [audio_url]
+    assert reports == [ReportLevel.WARNING] * expected_warnings
+
+
+@pytest.mark.api
+@as_sync
+async def test_get_bangumi_playurl_reports_unsupported_format_without_preview_flag(monkeypatch: pytest.MonkeyPatch):
+    async def fake_fetch_json(scope: ExecutionScope, url: str):
+        return Success({"code": 0, "message": "success", "result": {"video_info": {}}})
+
+    monkeypatch.setattr(Fetcher, "fetch_json", fake_fetch_json)
+
+    with pytest.raises(UnSupportedTypeError, match="DASH"):
+        await get_bangumi_playurl(ExecutionScope(cast("Any", object())), BvId("BV1q7411v7Vd"), CId("1"))
 
 
 @pytest.mark.api
